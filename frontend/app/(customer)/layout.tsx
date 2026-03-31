@@ -1,0 +1,1 @@
+//customer auth guard before redirecting to the page
