@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://dyna-mail.vercel.app'),
-  title: 'Donclaudio\'s Lechon House',
+    metadataBase: new URL('https://don-claudios.vercel.app'),
+    title: 'Donclaudio\'s Lechon House',
   description:
     'Donclaudio\'s Lechon House is a premier destination for delicious lechon and traditional Filipino cuisine.',
   icons: {
@@ -28,11 +28,11 @@ export const metadata: Metadata = {
     title: 'Donclaudio\'s Lechon House',
     description:
       'Donclaudio\'s Lechon House is a premier destination for delicious lechon and traditional Filipino cuisine.',
-    url: 'https://dyna-mail.vercel.app/',
+    url: 'https://don-claudios.vercel.app/',
     type: 'website',
     images: [
       {
-        url: '/assets/og-image.webp', 
+        url: '/assets/logo.png', 
         width: 1200,
         height: 630,
         alt: 'Donclaudio\'s Lechon House Preview'
