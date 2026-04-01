@@ -1,6 +1,5 @@
 'use client';
 
-import logo from '@/public/assets/logo.png';
 import Image from 'next/image';
 import {Button} from '@/components/ui/button';
 import {ShoppingCart} from 'lucide-react';
@@ -69,7 +68,7 @@ export default function Header() {
           }}
           className="flex items-center gap-3"
         >
-          <Image src={logo} alt="DonClaudio's Logo" className="h-12 w-12" />
+          <Image src="/assets/logo.png" alt="DonClaudio's Logo" width={48} height={48} />
           <div>
             <h1 className="font-bold text-xl" style={{color: '#3c5e45'}}>
               DonClaudio&apos;s
