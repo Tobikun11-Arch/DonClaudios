@@ -5,11 +5,12 @@ import Image from 'next/image';
 import {Button} from '@/components/ui/button';
 import {ShoppingCart} from 'lucide-react';
 import {useEffect, useState} from 'react';
-import Router from 'next/router';
+import {useRouter} from 'next/navigation';
+import Link from 'next/link';
 
 export default function Header() {
   const [activeSection, setActiveSection] = useState('home');
-  const router = Router;
+  const router = useRouter();
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -53,13 +54,13 @@ export default function Header() {
     {id: 'home', label: 'Home'},
     {id: 'highlights', label: 'Highlights'},
     {id: 'promo', label: 'Promo'},
-    {id: 'about', label: 'About Us'},
-    {id: 'contact', label: 'Contact Us'}
+    {id: 'about', label: 'About'},
+    {id: 'contact', label: 'Contact'}
   ];
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm">
-      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+      <div className="container mx-auto px-10 py-3 flex items-center justify-between">
         <a
           href="#home"
           onClick={e => {
@@ -100,13 +101,16 @@ export default function Header() {
           ))}
         </nav>
 
-        <Button
-          onClick={()=> router.push('/order')}
-          className="flex items-center gap-2 bg-[#3c5e45]"
-        >
-          <ShoppingCart className="w-4 h-4" />
-          Order Now
-        </Button>
+        <div className='flex gap-4 items-center'>
+          <Link href="/sign-in">Login</Link>
+          <Button
+            onClick={() => router.push('/order')}
+            className="flex items-center gap-2 bg-[#3c5e45]"
+          >
+            <ShoppingCart className="w-4 h-4" />
+            Order Now
+          </Button>
+        </div>
       </div>
     </header>
   );
