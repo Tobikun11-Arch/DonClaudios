@@ -1,0 +1,57 @@
+name: Frontend CI - Monorepo
+
+on:
+  # 1️⃣ Run on push to development branch
+  push:
+    branches:
+      - development
+    paths:
+      - "frontend/**"
+      - ".github/workflows/**"
+
+  # 2️⃣ Run on pull request
+  pull_request:
+    branches:
+      - development   # CI for dev branch PRs
+      - production    # CI for prod branch PRs
+    paths:
+      - "frontend/**"
+
+jobs:
+  frontend-ci:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+
+    # Monorepo: run inside frontend
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      # 1 Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2 Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      # 3 Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # 4 Lint
+      - name: Run ESLint
+        run: npm run lint
+
+      # 5 Type check
+      - name: Type check
+        run: npm run typecheck
+
+      # 6 Build Next.js
+      - name: Build Next.js
+        run: npm run build
