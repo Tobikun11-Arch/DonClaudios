@@ -4,6 +4,7 @@ import {Star} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {scrollToSection} from '@/shared/utils/scroll';
 import {useRouter} from 'next/navigation';
+import Image from 'next/image';
 
 export default function HeroSection() {
   const router = useRouter();
@@ -27,11 +28,11 @@ export default function HeroSection() {
 
       <div className="container mx-auto relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="lg:space-y-8 text-white">
+          <div className="space-y-6 lg:space-y-8 text-white">
             <div className="flex items-center gap-2">
               <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
               <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-              <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />  
+              <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
               <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
               <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
               <span className="ml-2 text-sm font-medium">
@@ -39,7 +40,7 @@ export default function HeroSection() {
               </span>
             </div>
 
-            <h2 className="text-6xl md:text-7xl font-bold leading-tight">
+            <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
               Authentic
               <br />
               Filipino
@@ -62,10 +63,10 @@ export default function HeroSection() {
                 Place Your Order
               </Button>
               <button
-                onClick={() => scrollToSection('contact')}
+                onClick={() => scrollToSection('highlights')}
                 className="text-white hover:text-white/80 transition-colors font-medium"
               >
-                View Menu →
+                View Promo →
               </button>
             </div>
 
@@ -92,10 +93,12 @@ export default function HeroSection() {
           </div>
 
           <div className="relative">
-            <img
+            <Image
               src="https://images.unsplash.com/photo-1671642369756-753861409c32?w=800"
               alt="Delicious Lechon"
-              className="rounded-3xl shadow-2xl w-full h-150 object-cover"
+              width={800}
+              height={600}
+              className="rounded-3xl shadow-2xl w-full h-[600px] object-cover"
             />
             <div className="absolute bottom-8 left-8 right-8 bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-xl">
               <div className="flex items-center justify-between">
