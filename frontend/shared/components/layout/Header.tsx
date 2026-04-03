@@ -6,24 +6,12 @@ import {ShoppingCart} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
+import {navItems} from '@/shared/constants/navigation';
+import {scrollToSection} from '@/shared/utils/scroll';
 
 export default function Header() {
   const [activeSection, setActiveSection] = useState('home');
   const router = useRouter();
-
-  const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      const offset = 80;
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
-    }
-  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -49,14 +37,6 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navItems = [
-    {id: 'home', label: 'Home'},
-    {id: 'highlights', label: 'Highlights'},
-    {id: 'promo', label: 'Promo'},
-    {id: 'about', label: 'About'},
-    {id: 'contact', label: 'Contact'}
-  ];
-
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm">
       <div className="container mx-auto px-10 py-3 flex items-center justify-between">
@@ -68,7 +48,12 @@ export default function Header() {
           }}
           className="flex items-center gap-3"
         >
-          <Image src="/assets/logo.png" alt="DonClaudio's Logo" width={48} height={48} />
+          <Image
+            src="/assets/logo.png"
+            alt="DonClaudio's Logo"
+            width={48}
+            height={48}
+          />
           <div>
             <h1 className="font-bold text-xl" style={{color: '#3c5e45'}}>
               DonClaudio&apos;s
@@ -100,7 +85,7 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className='flex gap-4 items-center'>
+        <div className="flex gap-4 items-center">
           <Link href="/sign-in">Login</Link>
           <Button
             onClick={() => router.push('/order')}
