@@ -26,9 +26,9 @@ export default function HeroSection() {
         ></div>
       </div>
 
-      <div className="container mx-auto relative z-10">
+      <div className="container mx-auto relative z-10 pt-4 lg:pt-0">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6 lg:space-y-8 text-white">
+          <div className="lg:space-y-8  text-white">
             <div className="flex items-center gap-2">
               <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
               <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
@@ -70,7 +70,7 @@ export default function HeroSection() {
               </button>
             </div>
 
-            <div className="flex items-center gap-8 pt-6 border-t border-white/20">
+            <div className="flex items-center gap-12 pt-6 mt-4 lg:mt-0 border-t border-white/20">
               <div>
                 <p className="text-3xl font-bold" style={{color: '#fbd897'}}>
                   1000+
