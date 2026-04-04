@@ -94,7 +94,7 @@ export default function HeroSection() {
 
           <div className="relative">
             <Image
-              src="https://images.unsplash.com/photo-1671642369756-753861409c32?w=800"
+              src="/assets/HeroLechon.png"
               alt="Delicious Lechon"
               width={800}
               height={600}
