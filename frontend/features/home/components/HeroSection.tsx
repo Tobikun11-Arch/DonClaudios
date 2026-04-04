@@ -98,7 +98,7 @@ export default function HeroSection() {
               alt="Delicious Lechon"
               width={800}
               height={600}
-              className="rounded-3xl shadow-2xl w-full h-[600px] object-cover"
+              className="rounded-3xl w-full h-[600px] object-cover"
             />
             <div className="absolute bottom-8 left-8 right-8 bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-xl">
               <div className="flex items-center justify-between">
