@@ -88,7 +88,7 @@ export default function HeroSection() {
           </div>
 
           <div className="relative">
-            <div className="relative w-full h-[300px] sm:h-[400px] lg:h-[600px] rounded-3xl overflow-hidden">
+            <div className="relative w-full h-75 sm:h-100 lg:h-150 rounded-3xl overflow-hidden">
               <Image
                 src="/assets/HeroLechon.png"
                 alt="Delicious Lechon"
