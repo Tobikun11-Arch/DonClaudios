@@ -4,6 +4,11 @@
 
 @custom-variant dark (&:is(.dark *));
 
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 @layer utilities {
   .scrollbar-hide {
     -ms-overflow-style: none;
