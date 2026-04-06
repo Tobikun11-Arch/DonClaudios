@@ -25,9 +25,8 @@ export default function HighlightsSection() {
               <Image
                 src="/assets/Highlights1.png"
                 alt="Restaurant Interior"
-                width={1200}
-                height={800}
-                className="object-cover rounded-2xl shadow-2xl"
+                fill
+                className="object-cover"
                 priority
               />
             </div>
@@ -47,9 +46,8 @@ export default function HighlightsSection() {
                 <Image
                   src="/assets/Highlights2.png"
                   alt="Dining Area"
-                  width={600}
-                  height={400}
-                  className="object-cover rounded-2xl"
+                  fill
+                  className="object-cover"
                 />
               </div>
               <div className="absolute inset-0 bg-black/40 flex items-end p-6">
@@ -64,9 +62,8 @@ export default function HighlightsSection() {
                 <Image
                   src="/assets/Highlights3.png"
                   alt="Our Specialty"
-                  width={600}
-                  height={400}
-                  className="object-cover rounded-2xl"
+                  fill
+                  className="object-cover"
                 />
               </div>
               <div className="absolute inset-0 bg-black/40 flex items-end p-6">
