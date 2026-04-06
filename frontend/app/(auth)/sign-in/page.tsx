@@ -1,7 +1,90 @@
-import React from 'react'
+'use client';
+
+import {useState} from 'react';
+import Link from 'next/link';
+import {Eye, EyeOff, LogIn} from 'lucide-react';
+import {Button} from '@/components/ui/button';
+import {Input} from '@/components/ui/input';
+import {Label} from '@/components/ui/label';
 
 export default function SignInPage() {
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Sign in:', {email, password});
+  };
+
   return (
-    <div>Sign In Page</div>
-  )
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight text-foreground">
+          Welcome back
+        </h2>
+        <p className="text-muted-foreground">
+          Sign in to your account to continue
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            <Link
+              href="/forgot-password"
+              className="text-sm text-primary hover:underline font-medium"
+            >
+              Forgot password?
+            </Link>
+          </div>
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="••••••••"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </div>
+
+        <Button type="submit" className="w-full bg-[#3c5e45]" size="lg">
+          <LogIn size={18} />
+          Sign In
+        </Button>
+      </form>
+
+      <p className="text-center text-sm text-muted-foreground">
+        Don&apos;t have an account?{' '}
+        <Link
+          href="/sign-up"
+          className="text-[#3c5e45] font-semibold hover:underline"
+        >
+          Sign up
+        </Link>
+      </p>
+    </div>
+  );
 }
