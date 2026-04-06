@@ -12,109 +12,103 @@ export default function HeroSection() {
   return (
     <section
       id="home"
-      className="min-h-screen flex items-center p-4 pt-20 relative overflow-hidden"
-      style={{backgroundColor: '#3c5e45'}}
+      className="min-h-screen flex items-center px-4 pt-20 pb-10 relative overflow-hidden bg-[#3c5e45]"
     >
       <div className="absolute inset-0 opacity-10">
-        <div
-          className="absolute top-20 right-20 w-96 h-96 rounded-full blur-3xl"
-          style={{backgroundColor: '#fbd897'}}
-        ></div>
-        <div
-          className="absolute bottom-20 left-20 w-96 h-96 rounded-full blur-3xl"
-          style={{backgroundColor: '#a4bbab'}}
-        ></div>
+        <div className="absolute top-20 right-20 w-96 h-96 rounded-full blur-3xl bg-[#fbd897]" />
+        <div className="absolute bottom-20 left-20 w-96 h-96 rounded-full blur-3xl bg-[#a4bbab]" />
       </div>
 
       <div className="container mx-auto relative z-10 pt-4 lg:pt-0">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="lg:space-y-8  text-white">
-            <div className="flex items-center gap-2">
-              <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-              <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-              <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-              <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-              <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-              <span className="ml-2 text-sm font-medium">
+          <div className="space-y-6 lg:space-y-8 text-white">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className="w-4 h-4 sm:w-5 sm:h-5 fill-yellow-400 text-yellow-400"
+                />
+              ))}
+              <span className="ml-1 text-xs sm:text-sm font-medium">
                 Loved by locals in Tanza
               </span>
             </div>
 
-            <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
+            <h2 className="text-5xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
               Authentic
               <br />
               Filipino
               <br />
-              <span style={{color: '#fbd897'}}>Lechon</span>
+              <span className="text-[#fbd897]">Lechon</span>
             </h2>
 
-            <p className="text-xl text-white/90 max-w-lg">
+            <p className="text-base sm:text-xl text-white/90 max-w-lg">
               Slow-roasted to perfection with crispy golden skin and juicy,
               tender meat. Every celebration deserves the best.
             </p>
 
-            <div className="flex items-center gap-6 pt-4">
+            <div className="flex flex-wrap items-center gap-4">
               <Button
                 onClick={() => router.push('/order')}
                 size="lg"
-                className="px-8 py-6 text-lg"
-                style={{backgroundColor: '#fbd897', color: '#3c5e45'}}
+                className="px-6 sm:px-8 py-5 sm:py-6 text-base sm:text-lg bg-[#fbd897] text-[#3c5e45]"
               >
                 Place Your Order
               </Button>
               <button
                 onClick={() => scrollToSection('highlights')}
-                className="text-white hover:text-white/80 transition-colors font-medium"
+                className="text-white hover:text-white/80 transition-colors font-medium text-sm sm:text-base"
               >
                 View Promo →
               </button>
             </div>
 
-            <div className="flex items-center gap-12 pt-6 mt-4 lg:mt-0 border-t border-white/20">
+            <div className="flex items-center gap-6 sm:gap-12 pt-6 border-t border-white/20">
               <div>
-                <p className="text-3xl font-bold" style={{color: '#fbd897'}}>
+                <p className="text-2xl sm:text-3xl font-bold text-[#fbd897]">
                   1000+
                 </p>
-                <p className="text-sm text-white/70">Happy Customers</p>
+                <p className="text-xs sm:text-sm text-white/70">
+                  Happy Customers
+                </p>
               </div>
               <div>
-                <p className="text-3xl font-bold" style={{color: '#fbd897'}}>
+                <p className="text-2xl sm:text-3xl font-bold text-[#fbd897]">
                   Daily
                 </p>
-                <p className="text-sm text-white/70">Fresh Lechon</p>
+                <p className="text-xs sm:text-sm text-white/70">Fresh Lechon</p>
               </div>
               <div>
-                <p className="text-3xl font-bold" style={{color: '#fbd897'}}>
+                <p className="text-2xl sm:text-3xl font-bold text-[#fbd897]">
                   10 Yrs
                 </p>
-                <p className="text-sm text-white/70">Experience</p>
+                <p className="text-xs sm:text-sm text-white/70">Experience</p>
               </div>
             </div>
           </div>
 
           <div className="relative">
-            <Image
-              src="/assets/HeroLechon.png"
-              alt="Delicious Lechon"
-              width={800}
-              height={600}
-              className="rounded-3xl w-full h-[600px] object-cover"
-            />
-            <div className="absolute bottom-8 left-8 right-8 bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-xl">
+            <div className="relative w-full h-[300px] sm:h-[400px] lg:h-[600px] rounded-3xl overflow-hidden">
+              <Image
+                src="/assets/HeroLechon.png"
+                alt="Delicious Lechon"
+                fill
+                className="object-cover"
+              />
+            </div>
+            <div className="absolute bottom-4 sm:bottom-8 left-4 sm:left-8 right-4 sm:right-8 bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm mb-1" style={{color: '#a4bbab'}}>
+                  <p className="text-xs sm:text-sm mb-1 text-[#a4bbab]">
                     Opening Hours
                   </p>
-                  <p className="text-2xl font-bold" style={{color: '#3c5e45'}}>
+                  <p className="text-xl sm:text-2xl font-bold text-[#3c5e45]">
                     10AM - 10PM
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm mb-1" style={{color: '#a4bbab'}}>
-                    Days
-                  </p>
-                  <p className="font-bold" style={{color: '#3c5e45'}}>
+                  <p className="text-xs sm:text-sm mb-1 text-[#a4bbab]">Days</p>
+                  <p className="text-sm sm:text-base font-bold text-[#3c5e45]">
                     Tue - Sun
                   </p>
                 </div>

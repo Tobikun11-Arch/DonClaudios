@@ -55,7 +55,7 @@ export default function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm">
-      <div className="container mx-auto px-10 py-3 flex items-center justify-between">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-10 py-3 flex items-center justify-between">
         <a
           href="#home"
           onClick={e => {
@@ -71,16 +71,13 @@ export default function Header() {
             height={48}
           />
           <div>
-            <h1 className="font-bold text-xl" style={{color: '#3c5e45'}}>
+            <h1 className="font-bold text-xl text-[#3c5e45]">
               DonClaudio&apos;s
             </h1>
-            <p className="text-xs" style={{color: '#a4bbab'}}>
-              Lechon House
-            </p>
+            <p className="text-xs text-[#a4bbab]">Lechon House</p>
           </div>
         </a>
 
-        {/* Desktop Nav */}
         <nav className="hidden lg:flex items-center gap-8">
           {navItems.map(item => (
             <a
@@ -102,7 +99,6 @@ export default function Header() {
           ))}
         </nav>
 
-        {/* Desktop Actions */}
         <div className="hidden lg:flex gap-4 items-center">
           <Link href="/sign-in">Login</Link>
           <Button
@@ -114,7 +110,6 @@ export default function Header() {
           </Button>
         </div>
 
-        {/* Mobile Burger Icon */}
         <div className="flex lg:hidden items-center">
           <button
             onClick={() => setMobileMenuOpen(prev => !prev)}
@@ -130,9 +125,8 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile Dropdown Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-gray-100 bg-white/95 backdrop-blur-sm px-10 py-4 flex flex-col gap-4">
+        <div className="lg:hidden border-t border-gray-100 bg-white/95 backdrop-blur-sm px-4 sm:px-6 py-4 flex flex-col gap-4">
           {navItems.map(item => (
             <a
               key={item.id}
@@ -152,7 +146,6 @@ export default function Header() {
             </a>
           ))}
 
-          {/* Actions at bottom of mobile menu */}
           <div className="mt-4 flex flex-col gap-3 border-t border-gray-200 pt-4">
             <Link
               href="/sign-in"
