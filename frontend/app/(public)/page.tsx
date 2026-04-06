@@ -3,13 +3,13 @@ import Footer from '@/shared/components/layout/Footer';
 
 export default function HomePage() {
   return (
-    <div>
+    <>
       <HeroSection />
       <Highlights />
       <Promo />
       <About />
       <Contact />
       <Footer/>
-    </div>
+    </>
   );
 }
