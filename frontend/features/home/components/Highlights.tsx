@@ -23,7 +23,7 @@ export default function HighlightsSection() {
           <div className="md:col-span-2 relative overflow-hidden rounded-2xl h-125">
             <div className="absolute inset-0 transition-transform duration-700 scale-105 group-hover:scale-210">
               <Image
-                src="/assets/highlights1.png"
+                src="/assets/Highlights1.png"
                 alt="Restaurant Interior"
                 width={1200}
                 height={800}
@@ -45,7 +45,7 @@ export default function HighlightsSection() {
             <div className="relative overflow-hidden rounded-2xl h-60 group">
               <div className="absolute inset-0 transition-transform duration-700 scale-105">
                 <Image
-                  src="/assets/highlights2.png"
+                  src="/assets/Highlights2.png"
                   alt="Dining Area"
                   width={600}
                   height={400}
@@ -62,7 +62,7 @@ export default function HighlightsSection() {
             <div className="relative overflow-hidden rounded-2xl h-60 group">
               <div className="absolute inset-0 transition-transform duration-700 scale-105">
                 <Image
-                  src="/assets/highlights3.png"
+                  src="/assets/Highlights3.png"
                   alt="Our Specialty"
                   width={600}
                   height={400}
