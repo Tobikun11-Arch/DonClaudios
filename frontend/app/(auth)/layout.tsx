@@ -1,10 +1,10 @@
-import Image from "next/image";
+import Image from 'next/image';
 
 interface AuthLayoutProps {
   children: React.ReactNode;
 }
 
-const AuthLayout = ({ children }: AuthLayoutProps) => {
+const AuthLayout = ({children}: AuthLayoutProps) => {
   return (
     <div className="flex min-h-screen">
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
@@ -19,7 +19,8 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
         <div className="relative z-10 flex flex-col justify-end p-12 text-primary-foreground">
           <h1 className="text-4xl font-bold mb-3">DonClaudio&apos;s</h1>
           <p className="text-lg opacity-90">
-            Authentic Filipino Lechon — slow-roasted to perfection since day one.
+            Authentic Filipino Lechon — slow-roasted to perfection since day
+            one.
           </p>
         </div>
       </div>
