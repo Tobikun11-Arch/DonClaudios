@@ -48,7 +48,7 @@ export default function AboutSection() {
             <div className="absolute -inset-4 rounded-3xl"/>
             <div className="relative w-full h-150 rounded-3xl overflow-hidden">
               <Image
-                src="/assets/AboutImg.png"
+                src="/assets/ourstory.jpg"
                 alt="About DonClaudio's"
                 fill
                 className="object-cover"
