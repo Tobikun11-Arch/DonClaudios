@@ -49,7 +49,8 @@ export default function Header() {
   }, []);
 
   const handleNavClick = (id: string) => {
-    scrollToSection(id);
+    router.push('/');
+    setTimeout(() => scrollToSection(id), 100);
     setMobileMenuOpen(false);
   };
 
@@ -57,12 +58,11 @@ export default function Header() {
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm">
       <div className="container mx-auto px-4 sm:px-6 lg:px-10 py-3 flex items-center justify-between">
         <a
-          href="#home"
           onClick={e => {
             e.preventDefault();
-            handleNavClick('home');
+            handleNavClick('home')
           }}
-          className="flex items-center gap-3"
+          className="flex items-center gap-3 cursor-default"
         >
           <Image
             src="/assets/logo.png"
@@ -85,7 +85,7 @@ export default function Header() {
               href={`#${item.id}`}
               onClick={e => {
                 e.preventDefault();
-                scrollToSection(item.id);
+                handleNavClick(item.id)
               }}
               className={`text-sm font-medium transition-colors hover:opacity-80 ${
                 activeSection === item.id ? 'font-bold' : ''

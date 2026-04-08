@@ -9,7 +9,7 @@ export default function HomePage() {
       <Promo />
       <About />
       <Contact />
-      <Footer/>
+      <Footer />
     </>
   );
 }
