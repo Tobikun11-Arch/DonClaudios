@@ -12,6 +12,7 @@ import {scrollToSection} from '@/shared/utils/scroll';
 export default function Header() {
   const [activeSection, setActiveSection] = useState('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -54,13 +55,33 @@ export default function Header() {
     setMobileMenuOpen(false);
   };
 
+  const handleOrderNowClick = () => {
+    setOrderModalOpen(true);
+    setMobileMenuOpen(false);
+  };
+
+  const handleContinueAsGuest = () => {
+    setOrderModalOpen(false);
+    router.push('/order');
+  };
+
+  const handleGoToSignIn = () => {
+    setOrderModalOpen(false);
+    router.push('/sign-in');
+  };
+
+  const handleGoToSignUp = () => {
+    setOrderModalOpen(false);
+    router.push('/sign-up');
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm">
       <div className="container mx-auto px-4 sm:px-6 lg:px-10 py-3 flex items-center justify-between">
         <a
           onClick={e => {
             e.preventDefault();
-            handleNavClick('home')
+            handleNavClick('home');
           }}
           className="flex items-center gap-3 cursor-default"
         >
@@ -85,7 +106,7 @@ export default function Header() {
               href={`#${item.id}`}
               onClick={e => {
                 e.preventDefault();
-                handleNavClick(item.id)
+                handleNavClick(item.id);
               }}
               className={`text-sm font-medium transition-colors hover:opacity-80 ${
                 activeSection === item.id ? 'font-bold' : ''
@@ -102,7 +123,7 @@ export default function Header() {
         <div className="hidden lg:flex gap-4 items-center">
           <Link href="/sign-in">Login</Link>
           <Button
-            onClick={() => router.push('/order')}
+            onClick={handleOrderNowClick}
             className="flex items-center gap-2 bg-[#3c5e45]"
           >
             <ShoppingCart className="w-4 h-4" />
@@ -111,9 +132,12 @@ export default function Header() {
         </div>
 
         <div className="flex lg:hidden items-center">
-          <button
+          <Button
+            type="button"
             onClick={() => setMobileMenuOpen(prev => !prev)}
-            className="p-2 rounded-md text-[#3c5e45] hover:bg-[#3c5e45]/10 transition-colors"
+            variant="ghost"
+            size="icon"
+            className="text-[#3c5e45] hover:bg-[#3c5e45]/10 transition-colors"
             aria-label="Toggle menu"
           >
             {mobileMenuOpen ? (
@@ -121,7 +145,7 @@ export default function Header() {
             ) : (
               <Menu className="w-6 h-6" />
             )}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -154,12 +178,98 @@ export default function Header() {
               Login
             </Link>
             <Button
-              onClick={() => router.push('/order')}
+              onClick={handleOrderNowClick}
               className="flex items-center justify-center gap-2 bg-[#3c5e45] text-sm px-3 py-2"
             >
               <ShoppingCart className="w-4 h-4" />
               Order Now
             </Button>
+          </div>
+        </div>
+      )}
+
+      {orderModalOpen && (
+        <div
+          className="fixed inset-0 z-60 h-dvh flex items-center justify-center bg-black/50 px-4"
+          onClick={() => setOrderModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="relative w-full max-w-130 rounded-xl bg-white shadow-xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <Button
+              type="button"
+              onClick={() => setOrderModalOpen(false)}
+              variant="ghost"
+              size="icon"
+              className="absolute right-4 top-4 text-gray-500 hover:bg-gray-100"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+
+            <div className="px-8 pb-8 pt-12 text-center">
+              <div className="flex items-center justify-center gap-3">
+                <Image
+                  src="/assets/logo.png"
+                  alt="DonClaudio's Logo"
+                  width={56}
+                  height={56}
+                />
+                <span className="text-2xl font-extrabold text-[#3c5e45]">
+                  DonClaudio&apos;s
+                </span>
+              </div>
+
+              <h2 className="mt-6 text-2xl font-bold text-gray-900">
+                Sign up / Log in
+              </h2>
+              <p className="mt-2 text-sm text-gray-500">
+                Welcome to DonClaudio&apos;s! Log in or create an account to
+                start ordering.
+              </p>
+
+              <div className="mt-8 space-y-3">
+                <Button
+                  onClick={handleGoToSignUp}
+                  size="lg"
+                  className="w-full bg-[#3c5e45]"
+                >
+                  Sign up
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={handleGoToSignIn}
+                  variant="link"
+                  className="w-full text-sm font-semibold text-[#3c5e45]"
+                >
+                  Log in
+                </Button>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <div className="h-px flex-1 bg-gray-200" />
+                  <span className="text-xs text-gray-400">or</span>
+                  <div className="h-px flex-1 bg-gray-200" />
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={handleContinueAsGuest}
+                  variant="link"
+                  className="w-full text-sm font-semibold text-gray-700"
+                >
+                  Continue as Guest
+                </Button>
+              </div>
+
+              <p className="mt-6 text-xs text-gray-500">
+                By continuing, you agree to our Terms &amp; Conditions and
+                Privacy Notice.
+              </p>
+            </div>
           </div>
         </div>
       )}
