@@ -1,16 +1,11 @@
 'use client';
 
 import LocationPicker from '@/features/order/components/LocationPicker';
-import {useState} from 'react';
+import {useMemo, useState} from 'react';
 import {LocationState} from '@/features/order/components/LocationPicker';
 import Image from 'next/image';
-
-const categories = [
-  {id: 'appetizers', label: 'Appetizers'},
-  {id: 'riceMeals', label: 'Rice Meals'},
-  {id: 'pasta', label: 'Pasta'},
-  {id: 'drinks', label: 'Drinks'}
-];
+import {Input} from '@/components/ui/input';
+import {Search} from 'lucide-react';
 
 const menuSections = [
   {
@@ -98,6 +93,46 @@ function MenuCard({
 }
 
 function ProductsSection() {
+  const tabs = [
+    {id: 'featured', label: 'Featured'},
+    {id: 'appetizers', label: 'Appetizers'},
+    {id: 'riceMeals', label: 'Rice Meals'},
+    {id: 'pasta', label: 'Pasta'},
+    {id: 'drinks', label: 'Drinks'}
+  ] as const;
+
+  const [activeTab, setActiveTab] =
+    useState<(typeof tabs)[number]['id']>('featured');
+  const [query, setQuery] = useState('');
+
+  const featuredItems = useMemo(() => {
+    return [
+      ...menuSections[0].items.slice(0, 2),
+      ...menuSections[1].items.slice(0, 1),
+      ...menuSections[2].items.slice(0, 1),
+      ...menuSections[3].items.slice(0, 1)
+    ].slice(0, 5);
+  }, []);
+
+  const activeSection = useMemo(() => {
+    if (activeTab === 'featured') return null;
+    return menuSections.find(s => s.id === activeTab) ?? null;
+  }, [activeTab]);
+
+  const visibleItems = useMemo(() => {
+    const sourceItems =
+      activeTab === 'featured' ? featuredItems : (activeSection?.items ?? []);
+
+    const normalizedQuery = query.trim().toLowerCase();
+    const filtered = normalizedQuery
+      ? sourceItems.filter(item =>
+          item.name.toLowerCase().includes(normalizedQuery)
+        )
+      : sourceItems;
+
+    return filtered.slice(0, 5);
+  }, [activeSection?.items, activeTab, featuredItems, query]);
+
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-8">
       <div
@@ -128,64 +163,60 @@ function ProductsSection() {
           </div>
         </div>
       </div>
+      <h1 className="text-2xl font-bold mb-2">DonClaudios Menu</h1>
 
       <section className="mb-10">
-        <h2 className="text-[22px] font-bold text-gray-900">Good Morning!</h2>
-        <p className="text-sm text-gray-500 mt-0.5 mb-4">
-          Enjoy your meal with our best picks!
-        </p>
-
-        <div className="flex gap-4 overflow-x-auto scrollbar-none -mx-4 px-4 pb-2">
-          {[
-            ...menuSections[0].items.slice(0, 1),
-            ...menuSections[1].items.slice(0, 1),
-            ...menuSections[2].items.slice(0, 1),
-            ...menuSections[3].items.slice(0, 1)
-          ].map(item => (
-            <MenuCard key={item.name} {...item} />
-          ))}
-        </div>
-      </section>
-
-      <section className="mb-10">
-        <h2 className="text-[22px] font-bold text-gray-900">Menu</h2>
-        <p className="text-sm text-gray-500 mt-0.5 mb-4">
-          What are you craving for today?
-        </p>
-
-        <div className="flex gap-6 overflow-x-auto scrollbar-none -mx-4 px-4 pb-2">
-          {categories.map(cat => (
-            <div
-              key={cat.id}
-              className="flex flex-col items-center gap-2 shrink-0 cursor-pointer group"
-            >
-              <div className="w-28 h-28 rounded-full bg-[#3c5e45] flex items-center justify-center shadow-sm">
-                <Image
-                  src="/assets/sample_menu.png"
-                  alt={cat.label}
-                  width={200}
-                  height={200}
-                  className="object-contain"
-                />
-              </div>
-              <span className="text-xs text-gray-700 font-medium text-center">
-                {cat.label}
-              </span>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="w-full md:w-64">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Search menu"
+                aria-label="Search menu"
+                className="pl-9"
+              />
             </div>
-          ))}
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-4 px-4 pb-2">
+            {tabs.map(tab => {
+              const isActive = tab.id === activeTab;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={
+                    'shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ' +
+                    (isActive
+                      ? 'bg-[#c30010] text-white'
+                      : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50')
+                  }
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </section>
 
-      <section className="mb-10">
-        <h2 className="text-[22px] font-bold text-gray-900">Featured</h2>
-        <p className="text-sm text-gray-500 mt-0.5 mb-4">
-          Discover your favorites!
-        </p>
+        <div className="mt-8">
+          <h2 className="text-[22px] font-bold text-gray-900">
+            {activeTab === 'featured' ? 'Featured' : activeSection?.title}
+          </h2>
+          <p className="text-sm text-gray-500 mt-0.5 mb-4">
+            {activeTab === 'featured'
+              ? 'Discover your favorites!'
+              : activeSection?.subtitle}
+          </p>
 
-        <div className="flex gap-4 overflow-x-auto scrollbar-none -mx-4 px-4 pb-2">
-          {menuSections[0].items.slice(0, 4).map(item => (
-            <MenuCard key={item.name} {...item} />
-          ))}
+          <div className="flex gap-4 overflow-x-auto scrollbar-none -mx-4 px-4 pb-2">
+            {visibleItems.map(item => (
+              <MenuCard key={item.name} {...item} />
+            ))}
+          </div>
         </div>
       </section>
     </div>
