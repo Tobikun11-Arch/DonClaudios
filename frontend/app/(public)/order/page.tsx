@@ -5,8 +5,6 @@ import {useState} from 'react';
 import {LocationState} from '@/features/order/components/LocationPicker';
 import Image from 'next/image';
 
-// ─── Categories ──────────────────────────────────────────────────────────────
-
 const categories = [
   {id: 'appetizers', label: 'Appetizers'},
   {id: 'riceMeals', label: 'Rice Meals'},
@@ -84,8 +82,7 @@ function MenuCard({
         />
       </div>
 
-      {/* Content */}
-      <div className="px-4 py-3"> 
+      <div className="px-4 py-3">
         <p className="text-[14px] text-gray-800 font-medium leading-snug line-clamp-2 min-h-10">
           {name}
         </p>
@@ -103,7 +100,6 @@ function MenuCard({
 function ProductsSection() {
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-8">
-      {/* ─── HERO ───────────────────────── */}
       <div
         className="w-full rounded-2xl overflow-hidden mb-10 mt-12"
         style={{background: '#3c5e45'}}
@@ -151,7 +147,6 @@ function ProductsSection() {
         </div>
       </section>
 
-      {/* ─── MENU (CIRCLE CATEGORIES) ───────────────────────── */}
       <section className="mb-10">
         <h2 className="text-[22px] font-bold text-gray-900">Menu</h2>
         <p className="text-sm text-gray-500 mt-0.5 mb-4">
@@ -181,7 +176,6 @@ function ProductsSection() {
         </div>
       </section>
 
-      {/* ─── FEATURED ───────────────────────── */}
       <section className="mb-10">
         <h2 className="text-[22px] font-bold text-gray-900">Featured</h2>
         <p className="text-sm text-gray-500 mt-0.5 mb-4">
@@ -197,8 +191,6 @@ function ProductsSection() {
     </div>
   );
 }
-
-// ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function OrderPage() {
   const [isProductsVisible, setIsProductsVisible] = useState(false);
