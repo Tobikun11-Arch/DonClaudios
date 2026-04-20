@@ -30,11 +30,11 @@ export default function SignInPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">Email or Phone Number</Label>
           <Input
             id="email"
-            type="email"
-            placeholder="you@example.com"
+            type="text"
+            placeholder="you@example.com or 09xxxxxxxxx"
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
