@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.ts",
   "scripts": {
+    "build": "tsc",
     "dev": "tsx watch index.ts",
-    "dev:ts-node": "nodemon --watch \"api/**/*.ts\" --exec \"node --loader ts-node/esm\" index.ts"
+    "start": "node dist/index.js"
   },
   "keywords": [],
   "author": "",
