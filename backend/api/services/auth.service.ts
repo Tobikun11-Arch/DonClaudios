@@ -1,7 +1,9 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import {env} from '../config/env';
-import {userRepository} from '../repositories/user.repository';
+import {customerRepository} from '../repositories/customer.repository';
+import {cashierRepository} from '../repositories/cashier.repository';
+import {adminRepository} from '../repositories/admin.repository';
 import {ApiError} from '../utils/error';
 import {emailService} from './email.service';
 import {verificationCodeEmailTemplate} from '../templates/verificationCodeEmail';
@@ -21,10 +23,10 @@ export const authService = {
     lastName: string;
     email: string;
     password: string;
-    phoneNumber?: string;
-    address?: string;
+    phoneNumber: string;
+    address: string;
   }) {
-    const existing = await userRepository.findByEmail(data.email);
+    const existing = await customerRepository.findByEmail(data.email);
     if (existing) {
       throw new ApiError(409, 'EMAIL_EXISTS', 'Email already exists');
     }
@@ -33,7 +35,7 @@ export const authService = {
     const verificationCode = generateVerificationCode();
     const verificationExpiry = getVerificationExpiry(10);
 
-    const customer = await userRepository.create({
+    const customer = await customerRepository.create({
       firstName: data.firstName,
       lastName: data.lastName,
       email: data.email,
@@ -42,8 +44,7 @@ export const authService = {
       address: data.address,
       verificationCode,
       verificationExpiry,
-      isVerified: false,
-      type: 'customer'
+      isVerified: false
     });
 
     const emailTpl = verificationCodeEmailTemplate({
@@ -63,7 +64,7 @@ export const authService = {
   },
 
   async verify(email: string, code: string) {
-    const customer = await userRepository.findByEmail(email);
+    const customer = await customerRepository.findByEmail(email);
 
     if (
       !customer ||
@@ -84,11 +85,11 @@ export const authService = {
       );
     }
 
-    await userRepository.markVerified(email);
+    await customerRepository.markVerified(email);
   },
 
   async resendVerification(email: string) {
-    const customer = await userRepository.findByEmail(email);
+    const customer = await customerRepository.findByEmail(email);
     if (!customer) {
       throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
     }
@@ -100,7 +101,7 @@ export const authService = {
     const verificationCode = generateVerificationCode();
     const verificationExpiry = getVerificationExpiry(10);
 
-    await userRepository.setVerificationCode(
+    await customerRepository.setVerificationCode(
       email,
       verificationCode,
       verificationExpiry
@@ -140,14 +141,14 @@ export const authService = {
   },
 
   async forgotPassword(email: string) {
-    const customer = await userRepository.findByEmail(email);
+    const customer = await customerRepository.findByEmail(email);
 
     if (!customer || !customer.isVerified) return;
 
     const resetCode = generateVerificationCode();
     const resetExpiry = getVerificationExpiry(10);
 
-    await userRepository.setVerificationCode(email, resetCode, resetExpiry);
+    await customerRepository.setVerificationCode(email, resetCode, resetExpiry);
 
     await authService.sendResetPasswordCodeEmail({
       email,
@@ -157,7 +158,7 @@ export const authService = {
   },
 
   async resetPassword(email: string, code: string, newPassword: string) {
-    const customer = await userRepository.findByEmail(email);
+    const customer = await customerRepository.findByEmail(email);
 
     if (
       !customer ||
@@ -177,13 +178,28 @@ export const authService = {
     const passwordHash = await bcrypt.hash(newPassword, 10);
 
     // Clear the code then update the password
-    await userRepository.clearVerificationCode(email);
-    await userRepository.updateProfile(customer.id, {passwordHash} as any);
+    await customerRepository.clearVerificationCode(email);
+    await customerRepository.updateProfile(customer.id, {passwordHash} as any);
   },
 
   async login(email: string, password: string) {
-    const customer = await userRepository.findByEmailOrPhoneNumber(email);
-    if (!customer) {
+    const identifier = email;
+    const [customer, cashier, admin] = await Promise.all([
+      customerRepository.findByEmailOrPhoneNumber(identifier),
+      cashierRepository.findByEmailOrPhoneNumber(identifier),
+      adminRepository.findByEmailOrPhoneNumber(identifier)
+    ]);
+
+    const user = customer || cashier || admin;
+    const userType = customer
+      ? 'customer'
+      : cashier
+        ? 'cashier'
+        : admin
+          ? 'admin'
+          : null;
+
+    if (!user || !userType) {
       throw new ApiError(
         401,
         'INVALID_CREDENTIALS',
@@ -191,11 +207,11 @@ export const authService = {
       );
     }
 
-    if (!customer.isVerified) {
+    if (!user.isVerified) {
       throw new ApiError(403, 'NOT_VERIFIED', 'Email not verified');
     }
 
-    const match = await bcrypt.compare(password, customer.passwordHash);
+    const match = await bcrypt.compare(password, user.passwordHash);
     if (!match) {
       throw new ApiError(
         401,
@@ -205,13 +221,13 @@ export const authService = {
     }
 
     const accessToken = jwt.sign(
-      {userId: customer.id, type: customer.type}, // type replaces role
+      {userId: user.id, type: userType},
       env.JWT_SECRET,
       {expiresIn: '15m'}
     );
 
     const refreshToken = jwt.sign(
-      {userId: customer.id},
+      {userId: user.id, type: userType},
       env.JWT_REFRESH_SECRET,
       {expiresIn: '7d'}
     );
@@ -223,19 +239,48 @@ export const authService = {
     try {
       const payload = jwt.verify(refreshToken, env.JWT_REFRESH_SECRET) as {
         userId: string;
+        type?: 'customer' | 'cashier' | 'admin';
       };
 
-      const customer = await userRepository.findById(payload.userId);
-      if (!customer) {
+      const tokenType = payload.type;
+
+      let userType: 'customer' | 'cashier' | 'admin' | null = null;
+      let user: any = null;
+
+      if (tokenType) {
+        userType = tokenType;
+        user = await (tokenType === 'customer'
+          ? customerRepository.findById(payload.userId)
+          : tokenType === 'cashier'
+            ? cashierRepository.findById(payload.userId)
+            : adminRepository.findById(payload.userId));
+      } else {
+        const [customer, cashier, admin] = await Promise.all([
+          customerRepository.findById(payload.userId),
+          cashierRepository.findById(payload.userId),
+          adminRepository.findById(payload.userId)
+        ]);
+
+        user = customer || cashier || admin;
+        userType = customer
+          ? 'customer'
+          : cashier
+            ? 'cashier'
+            : admin
+              ? 'admin'
+              : null;
+      }
+
+      if (!user || !userType) {
         throw new ApiError(401, 'UNAUTHORIZED', 'Invalid token');
       }
 
-      if (!customer.isVerified) {
+      if (!user.isVerified) {
         throw new ApiError(403, 'NOT_VERIFIED', 'Email not verified');
       }
 
       const accessToken = jwt.sign(
-        {userId: customer.id, type: customer.type},
+        {userId: user.id, type: userType},
         env.JWT_SECRET,
         {expiresIn: '15m'}
       );
