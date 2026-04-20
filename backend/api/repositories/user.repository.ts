@@ -4,6 +4,11 @@ export const userRepository = {
   findByEmail: (email: string) =>
     UserModel.findOne({email: email.toLowerCase()}).exec(),
 
+  findByEmailOrPhoneNumber: (identifier: string) =>
+    UserModel.findOne({
+      $or: [{email: identifier.toLowerCase()}, {phoneNumber: identifier}]
+    }).exec(),
+
   findById: (id: string) => UserModel.findById(id).exec(),
 
   listByType: (type: UserType) => UserModel.find({type}).exec(),

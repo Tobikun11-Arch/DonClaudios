@@ -6,13 +6,25 @@ import {Eye, EyeOff, UserPlus} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
+import LocationPicker from '@/features/order/components/LocationPicker';
 
 export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [houseAddress, setHouseAddress] = useState('');
+  const [showAutoLocate, setShowAutoLocate] = useState(false);
+  const [didAskAutoLocate, setDidAskAutoLocate] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  const handleAddressInteract = () => {
+    if (didAskAutoLocate) return;
+    setDidAskAutoLocate(true);
+    const ok = window.confirm('Use automatic locate to fill your address?');
+    if (ok) setShowAutoLocate(true);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +32,13 @@ export default function SignUpPage() {
       alert('Passwords do not match');
       return;
     }
-    console.log('Sign up:', {fullName, email, password});
+    console.log('Sign up:', {
+      fullName,
+      email,
+      phoneNumber,
+      houseAddress,
+      password
+    });
   };
 
   return (
@@ -57,6 +75,43 @@ export default function SignUpPage() {
             onChange={e => setEmail(e.target.value)}
             required
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="phoneNumber">Phone Number</Label>
+          <Input
+            id="phoneNumber"
+            type="tel"
+            placeholder="09xxxxxxxxx"
+            value={phoneNumber}
+            onChange={e => setPhoneNumber(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="houseAddress">Address (House)</Label>
+          <Input
+            id="houseAddress"
+            type="text"
+            placeholder="House no., Street, Barangay"
+            value={houseAddress}
+            onChange={e => setHouseAddress(e.target.value)}
+            onFocus={handleAddressInteract}
+            onClick={handleAddressInteract}
+            required
+          />
+
+          {showAutoLocate && (
+            <div className="pt-3">
+              <LocationPicker
+                onConfirm={location => {
+                  setHouseAddress(location.address);
+                  setShowAutoLocate(false);
+                }}
+              />
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">

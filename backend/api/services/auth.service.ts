@@ -182,7 +182,7 @@ export const authService = {
   },
 
   async login(email: string, password: string) {
-    const customer = await userRepository.findByEmail(email);
+    const customer = await userRepository.findByEmailOrPhoneNumber(email);
     if (!customer) {
       throw new ApiError(
         401,
