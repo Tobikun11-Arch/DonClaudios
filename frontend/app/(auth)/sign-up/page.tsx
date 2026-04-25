@@ -182,8 +182,8 @@ export default function SignUpPage() {
           <Label htmlFor="confirmPassword">Confirm Password</Label>
           <Input
             id="confirmPassword"
-            type={showPassword ? 'text' : 'password'}
             placeholder="••••••••"
+            type='password'
             value={confirmPassword}
             onChange={e => setConfirmPassword(e.target.value)}
             disabled={isSubmitting}
