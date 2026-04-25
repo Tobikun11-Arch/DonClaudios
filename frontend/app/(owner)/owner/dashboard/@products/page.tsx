@@ -99,6 +99,10 @@ export default function ProductsPage() {
     'idle' | 'uploading' | 'submitting'
   >('idle');
 
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingName, setDeletingName] = useState<string>('');
+
   useEffect(() => {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -272,10 +276,18 @@ export default function ProductsPage() {
     }
   };
 
-  const onDelete = async (id: string) => {
-    const ok = window.confirm('Delete this product? This cannot be undone.');
-    if (!ok) return;
-    await deleteMutation.mutateAsync(id);
+  const openDeleteModal = (p: (typeof products)[number]) => {
+    setDeletingId(p._id);
+    setDeletingName(p.name);
+    setDeleteModalOpen(true);
+  };
+
+  const onDelete = async () => {
+    if (!deletingId) return;
+    await deleteMutation.mutateAsync(deletingId);
+    setDeleteModalOpen(false);
+    setDeletingId(null);
+    setDeletingName('');
   };
 
   return (
@@ -451,7 +463,7 @@ export default function ProductsPage() {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => onDelete(p._id)}
+                      onClick={() => openDeleteModal(p)}
                       disabled={deleteMutation.isPending}
                       className="flex-1"
                     >
@@ -464,6 +476,38 @@ export default function ProductsPage() {
             ))}
           </div>
         ))}
+
+      <Modal
+        open={deleteModalOpen}
+        title="Delete Product"
+        onClose={() => !deleteMutation.isPending && setDeleteModalOpen(false)}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Are you sure you want to delete{' '}
+            <span className="font-bold text-gray-900">{deletingName}</span>?
+            This cannot be undone.
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteModalOpen(false)}
+              disabled={deleteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={onDelete}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? 'Deleting…' : 'Delete Product'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         open={modalOpen}
