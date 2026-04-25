@@ -6,16 +6,13 @@ import axios, {
 } from 'axios';
 import type {ApiErrorPayload, NormalizedApiError} from './types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-if (!API_BASE_URL) {
-  throw new Error('Missing env: NEXT_PUBLIC_API_BASE_URL');
-}
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
+const resolvedBaseUrl = API_BASE_URL.length > 0 ? API_BASE_URL : undefined;
 
 let refreshPromise: Promise<void> | null = null;
 
 const refreshClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: resolvedBaseUrl,
   timeout: 20000,
   withCredentials: true,
   headers: {
@@ -70,7 +67,7 @@ async function refreshAccessToken() {
 
 export const httpClient = (() => {
   const client = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL: resolvedBaseUrl,
     timeout: 20000,
     withCredentials: true,
     headers: {
