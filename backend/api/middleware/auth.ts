@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 import {env} from '../config/env';
 import {ApiError} from '../utils/error';
 
+const ACCESS_COOKIE = 'dc_access_token';
+
 export type JwtPayload = {
   userId: string;
   type?: 'customer' | 'cashier' | 'admin';
@@ -18,13 +20,21 @@ declare global {
 
 export function requireAuth(req: Request, _res: Response, next: NextFunction) {
   const header = req.headers.authorization;
-  if (!header) {
-    return next(new ApiError(401, 'UNAUTHORIZED', 'Missing authorization header'));
+  let token: string | undefined;
+
+  if (header) {
+    const [scheme, value] = header.split(' ');
+    if (scheme === 'Bearer' && value) {
+      token = value;
+    }
   }
 
-  const [scheme, token] = header.split(' ');
-  if (scheme !== 'Bearer' || !token) {
-    return next(new ApiError(401, 'UNAUTHORIZED', 'Invalid authorization header'));
+  if (!token) {
+    token = req.cookies?.[ACCESS_COOKIE] as string | undefined;
+  }
+
+  if (!token) {
+    return next(new ApiError(401, 'UNAUTHORIZED', 'Missing access token'));
   }
 
   try {

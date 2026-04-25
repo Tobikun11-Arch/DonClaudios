@@ -37,4 +37,6 @@ router.post(
   authController.refresh
 );
 
+router.post('/logout', authLimiter, authController.logout);
+
 export default router;

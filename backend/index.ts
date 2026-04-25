@@ -1,7 +1,8 @@
-import cors from 'cors'
+import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
-import {connectDb} from './api/config/db';     
+import cookieParser from 'cookie-parser';
+import {connectDb} from './api/config/db';
 import {env} from './api/config/env';
 import routes from './api/routes/index';
 import {errorHandler} from './api/middleware/errorHandler';
@@ -12,13 +13,15 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: ['http://localhost:3000', 'https://don-claudios.vercel.app/'],
+    origin: ['http://localhost:3000', 'https://don-claudios.vercel.app'],
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
   })
 );
 
 app.use(express.json());
+app.use(cookieParser());
 app.use(sanitize);
 
 app.use('/api', routes);

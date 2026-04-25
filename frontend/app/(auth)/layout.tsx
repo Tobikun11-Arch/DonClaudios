@@ -10,6 +10,7 @@ const AuthLayout = ({children}: AuthLayoutProps) => {
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         <Image
           src="/assets/auth_img2.jpg"
+          loading='eager'
           alt="DonClaudio's Lechon"
           className="absolute inset-0 w-full h-full object-cover"
           width={800}

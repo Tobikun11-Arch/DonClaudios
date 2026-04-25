@@ -6,14 +6,36 @@ import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 
+function getErrorMessage(error: unknown): string | null {
+  if (!error || typeof error !== 'object') return null;
+  if (!('message' in error)) return null;
+  const maybeMessage = (error as {message?: unknown}).message;
+  return typeof maybeMessage === 'string' ? maybeMessage : null;
+}
+
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    console.log('Reset password for:', email);
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      throw new Error(
+        'This feature is not available yet. Please contact support or try again later.'
+      );
+    } catch (error) {
+      setErrorMessage(
+        getErrorMessage(error) ?? 'Unable to send reset link. Please try again.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -47,14 +69,26 @@ export default function ForgotPasswordPage() {
                 placeholder="you@example.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
+                disabled={isSubmitting}
                 required
               />
             </div>
 
-            <Button type="submit" className="w-full bg-[#3c5e45]" size="lg">
+            <Button
+              type="submit"
+              className="w-full bg-[#3c5e45]"
+              size="lg"
+              disabled={isSubmitting}
+            >
               <Send size={18} />
-              Send Reset Link
+              {isSubmitting ? 'Sending...' : 'Send Reset Link'}
             </Button>
+
+            {errorMessage && (
+              <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {errorMessage}
+              </div>
+            )}
           </form>
         </>
       ) : (
