@@ -4,6 +4,9 @@ export const customerRepository = {
   findByEmail: (email: string) =>
     CustomerModel.findOne({email: email.toLowerCase()}).exec(),
 
+  findByPhoneNumber: (phoneNumber: string) =>
+    CustomerModel.findOne({phoneNumber}).exec(),
+
   findByEmailOrPhoneNumber: (identifier: string) =>
     CustomerModel.findOne({
       $or: [{email: identifier.toLowerCase()}, {phoneNumber: identifier}]
@@ -18,7 +21,10 @@ export const customerRepository = {
   updateProfile: (
     customerId: string,
     data: Partial<
-      Pick<CustomerDocument, 'firstName' | 'lastName' | 'phoneNumber' | 'address'>
+      Pick<
+        CustomerDocument,
+        'firstName' | 'lastName' | 'phoneNumber' | 'address'
+      >
     >
   ) => CustomerModel.updateOne({_id: customerId}, data).exec(),
 

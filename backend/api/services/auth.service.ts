@@ -26,41 +26,88 @@ export const authService = {
     phoneNumber: string;
     address: string;
   }) {
-    const existing = await customerRepository.findByEmail(data.email);
-    if (existing) {
+    const [existingEmail, existingPhone] = await Promise.all([
+      customerRepository.findByEmail(data.email),
+      customerRepository.findByPhoneNumber(data.phoneNumber)
+    ]);
+
+    if (existingEmail) {
       throw new ApiError(409, 'EMAIL_EXISTS', 'Email already exists');
     }
 
-    const passwordHash = await bcrypt.hash(data.password, 10);
-    const verificationCode = generateVerificationCode();
-    const verificationExpiry = getVerificationExpiry(10);
+    if (existingPhone) {
+      throw new ApiError(409, 'PHONE_EXISTS', 'Phone number already exists');
+    }
 
-    const customer = await customerRepository.create({
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      passwordHash,
-      phoneNumber: data.phoneNumber,
-      address: data.address,
-      verificationCode,
-      verificationExpiry,
-      isVerified: false
-    });
+    try {
+      const passwordHash = await bcrypt.hash(data.password, 10);
+      const verificationCode = generateVerificationCode();
+      const verificationExpiry = getVerificationExpiry(10);
 
-    const emailTpl = verificationCodeEmailTemplate({
-      code: verificationCode,
-      expiresMinutes: 10,
-      recipientName: data.firstName
-    });
+      const customer = await customerRepository.create({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        passwordHash,
+        phoneNumber: data.phoneNumber,
+        address: data.address,
+        verificationCode,
+        verificationExpiry,
+        isVerified: false
+      });
 
-    await emailService.sendEmail({
-      to: data.email,
-      subject: emailTpl.subject,
-      text: emailTpl.text,
-      html: emailTpl.html
-    });
+      const emailTpl = verificationCodeEmailTemplate({
+        code: verificationCode,
+        expiresMinutes: 10,
+        recipientName: data.firstName
+      });
 
-    return {id: customer.id, email: customer.email};
+      await emailService.sendEmail({
+        to: data.email,
+        subject: emailTpl.subject,
+        text: emailTpl.text,
+        html: emailTpl.html
+      });
+
+      return {id: customer.id, email: customer.email};
+    } catch (err: any) {
+      const code = err?.code;
+      const rawMessage = String(err?.message ?? '');
+      const keyPattern = err?.keyPattern;
+
+      if (
+        code === 11000 ||
+        rawMessage.toLowerCase().includes('e11000') ||
+        rawMessage.toLowerCase().includes('duplicate key')
+      ) {
+        const isPhone = !!(
+          keyPattern &&
+          typeof keyPattern === 'object' &&
+          'phoneNumber' in keyPattern
+        );
+        const isEmail = !!(
+          keyPattern &&
+          typeof keyPattern === 'object' &&
+          'email' in keyPattern
+        );
+
+        if (isPhone || rawMessage.toLowerCase().includes('phonenumber')) {
+          throw new ApiError(
+            409,
+            'PHONE_EXISTS',
+            'Phone number already exists'
+          );
+        }
+
+        if (isEmail || rawMessage.toLowerCase().includes('email')) {
+          throw new ApiError(409, 'EMAIL_EXISTS', 'Email already exists');
+        }
+
+        throw new ApiError(409, 'ACCOUNT_EXISTS', 'Account already exists');
+      }
+
+      throw err;
+    }
   },
 
   async verify(email: string, code: string) {
