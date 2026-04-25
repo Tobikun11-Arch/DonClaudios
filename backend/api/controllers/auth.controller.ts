@@ -12,8 +12,8 @@ function getCookieOptions(): CookieOptions {
 
   return {
     httpOnly: true,
-    secure: isProd, // true only in prod
-    sameSite: isProd ? 'none' : 'strict', // union type matches
+    secure: isProd, // true only in prod - false for development
+    sameSite: isProd ? 'none' : 'strict', // union type matches - none for prod
     path: '/'
   };
 }

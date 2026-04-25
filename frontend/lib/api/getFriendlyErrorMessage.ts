@@ -20,6 +20,25 @@ function hasStringMessage(error: unknown): error is {message: string} {
   );
 }
 
+function getDuplicateKeyFriendlyMessage(rawMessage: string): string | null {
+  const msg = rawMessage.toLowerCase();
+
+  if (!msg.includes('e11000') && !msg.includes('duplicate key')) return null;
+
+  if (
+    msg.includes('phonenumber') ||
+    msg.includes('phoneNumber_1'.toLowerCase())
+  ) {
+    return 'Phone number already exists.';
+  }
+
+  if (msg.includes('email') || msg.includes('email_1')) {
+    return 'Email already exists.';
+  }
+
+  return 'Account already exists.';
+}
+
 export function getFriendlyErrorMessage(
   error: unknown,
   fallback: string
@@ -30,6 +49,8 @@ export function getFriendlyErrorMessage(
     switch (error.code) {
       case 'EMAIL_EXISTS':
         return 'Email already exists.';
+      case 'PHONE_EXISTS':
+        return 'Phone number already exists.';
       case 'INVALID_CREDENTIALS':
         return 'Invalid email/phone number or password.';
       case 'NOT_VERIFIED':
@@ -46,6 +67,9 @@ export function getFriendlyErrorMessage(
         break;
     }
 
+    const duplicateKeyMessage = getDuplicateKeyFriendlyMessage(error.message);
+    if (duplicateKeyMessage) return duplicateKeyMessage;
+
     if (error.message.includes('at least 8 character')) {
       return 'Password must be at least 8 characters.';
     }
@@ -59,6 +83,10 @@ export function getFriendlyErrorMessage(
 
   if (hasStringMessage(error)) {
     const msg = error.message;
+
+    const duplicateKeyMessage = getDuplicateKeyFriendlyMessage(msg);
+    if (duplicateKeyMessage) return duplicateKeyMessage;
+
     if (msg.includes('at least 8 character')) {
       return 'Password must be at least 8 characters.';
     }
