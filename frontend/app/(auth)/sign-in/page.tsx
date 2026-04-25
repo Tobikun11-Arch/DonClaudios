@@ -6,15 +6,43 @@ import {Eye, EyeOff, LogIn} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
+import {useRouter} from 'next/navigation';
+import {login} from '@/lib/api/authApi';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Sign in:', {email, password});
+    if (isSubmitting) return;
+
+    if (password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const user = await login({email, password});
+      if (user.user.type === 'admin') {
+        router.push('/owner/dashboard');
+      } else if (user.user.type === 'cashier') {
+        router.push('/cashier/dashboard');
+      } else {
+        router.push('/customer/dashboard');
+      }
+    } catch (error) {
+      setErrorMessage(getFriendlyErrorMessage(error, 'Failed to sign in'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -37,6 +65,7 @@ export default function SignInPage() {
             placeholder="you@example.com or 09xxxxxxxxx"
             value={email}
             onChange={e => setEmail(e.target.value)}
+            disabled={isSubmitting}
             required
           />
         </div>
@@ -58,11 +87,13 @@ export default function SignInPage() {
               placeholder="••••••••"
               value={password}
               onChange={e => setPassword(e.target.value)}
+              disabled={isSubmitting}
               required
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
+              disabled={isSubmitting}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -70,10 +101,21 @@ export default function SignInPage() {
           </div>
         </div>
 
-        <Button type="submit" className="w-full bg-[#3c5e45]" size="lg">
+        <Button
+          type="submit"
+          className="w-full bg-[#3c5e45]"
+          size="lg"
+          disabled={isSubmitting}
+        >
           <LogIn size={18} />
-          Sign In
+          {isSubmitting ? 'Signing in...' : 'Sign In'}
         </Button>
+
+        {errorMessage && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {errorMessage}
+          </div>
+        )}
       </form>
 
       <p className="text-center text-sm text-muted-foreground">

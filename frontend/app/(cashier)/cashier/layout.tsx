@@ -4,17 +4,11 @@ import {useEffect} from 'react';
 import {useRouter} from 'next/navigation';
 import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
 import {getDashboardPath} from '@/lib/auth/redirects';
-import Loading from '../loading';
+import Loading from '@/app/loading';
 
-export default function CustomerLayout({
-  children
-}: {
-  children: React.ReactNode;
-}) {
+export default function CashierLayout({children}: {children: React.ReactNode}) {
   const router = useRouter();
   const {data, isLoading, isFetching, isError, isSuccess} = useMeQuery();
-
-  const isRedirecting = isError || (isSuccess && data.user.type !== 'customer');
 
   useEffect(() => {
     if (isError) {
@@ -24,12 +18,12 @@ export default function CustomerLayout({
 
     if (!isSuccess) return;
 
-    if (data.user.type !== 'customer') {
+    if (data.user.type !== 'cashier') {
       router.replace(getDashboardPath(data.user.type));
     }
   }, [data, isError, isSuccess, router]);
 
-  if (isLoading || isFetching || isRedirecting) return <Loading />;
+  if (isLoading || isFetching) return <Loading/>;
 
   return <>{children}</>;
 }

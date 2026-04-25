@@ -1,15 +1,33 @@
+'use client';
+
+import {useEffect} from 'react';
 import Image from 'next/image';
+import {useRouter} from 'next/navigation';
+import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
+import {getDashboardPath} from '@/lib/auth/redirects';
+import Loading from '../loading';
 
 interface AuthLayoutProps {
   children: React.ReactNode;
 }
 
 const AuthLayout = ({children}: AuthLayoutProps) => {
+  const router = useRouter();
+  const {data, isLoading, isFetching, isSuccess} = useMeQuery();
+
+  useEffect(() => {
+    if (!isSuccess) return;
+    router.replace(getDashboardPath(data.user.type));
+  }, [data, isSuccess, router]);
+
+  if (isLoading || isFetching) return <Loading/>;
+
   return (
     <div className="flex min-h-screen">
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         <Image
           src="/assets/auth_img2.jpg"
+          loading="eager"
           alt="DonClaudio's Lechon"
           className="absolute inset-0 w-full h-full object-cover"
           width={800}

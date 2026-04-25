@@ -232,7 +232,7 @@ export const authService = {
       {expiresIn: '7d'}
     );
 
-    return {accessToken, refreshToken};
+    return {accessToken, refreshToken, user, userType};
   },
 
   async refreshAccessToken(refreshToken: string) {

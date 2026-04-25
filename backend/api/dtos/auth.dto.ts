@@ -19,12 +19,12 @@ export const resendVerificationDto = z.object({
 });
 
 export const loginDto = z.object({
-  email: z.string().email(),
+  email: z.string().min(1),
   password: z.string().min(8)
 });
 
 export const refreshDto = z.object({
-  refreshToken: z.string().min(1)
+  refreshToken: z.string().min(1).optional()
 });
 
 export const forgotPasswordDto = z.object({

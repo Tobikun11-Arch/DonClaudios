@@ -3,7 +3,7 @@
 import {useRouter} from 'next/navigation';
 import {useLogout} from '@/lib/hooks/auth/useLogout';
 
-export default function OwnerDashboard() {
+export default function CashierDashboard() {
   const router = useRouter();
   const logoutMutation = useLogout();
 
@@ -14,7 +14,7 @@ export default function OwnerDashboard() {
 
   return (
     <div>
-      <div>OwnerDashboard</div>
+      <div>CashierDashboard</div>
       <button onClick={handleLogout} disabled={logoutMutation.isPending}>
         {logoutMutation.isPending ? 'Logging out...' : 'Logout'}
       </button>
