@@ -8,13 +8,7 @@ import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {useRouter} from 'next/navigation';
 import {login} from '@/lib/api/authApi';
-
-function getErrorMessage(error: unknown): string | null {
-  if (!error || typeof error !== 'object') return null;
-  if (!('message' in error)) return null;
-  const maybeMessage = (error as {message?: unknown}).message;
-  return typeof maybeMessage === 'string' ? maybeMessage : null;
-}
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -28,6 +22,11 @@ export default function SignInPage() {
     e.preventDefault();
     if (isSubmitting) return;
 
+    if (password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters.');
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
@@ -40,7 +39,7 @@ export default function SignInPage() {
         router.push('/customer/dashboard');
       }
     } catch (error) {
-      setErrorMessage(getErrorMessage(error) ?? 'Failed to sign in');
+      setErrorMessage(getFriendlyErrorMessage(error, 'Failed to sign in'));
     } finally {
       setIsSubmitting(false);
     }

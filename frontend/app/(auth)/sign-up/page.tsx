@@ -9,13 +9,7 @@ import {Label} from '@/components/ui/label';
 import LocationPicker from '@/features/order/components/LocationPicker';
 import {useRouter} from 'next/navigation';
 import {registerCustomer} from '@/lib/api/authApi';
-
-function getErrorMessage(error: unknown): string | null {
-  if (!error || typeof error !== 'object') return null;
-  if (!('message' in error)) return null;
-  const maybeMessage = (error as {message?: unknown}).message;
-  return typeof maybeMessage === 'string' ? maybeMessage : null;
-}
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 function splitFullName(fullName: string) {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
@@ -49,6 +43,11 @@ export default function SignUpPage() {
     e.preventDefault();
     if (isSubmitting) return;
 
+    if (password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters.');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setErrorMessage('Passwords do not match. Please try again.');
       return;
@@ -66,11 +65,13 @@ export default function SignUpPage() {
         phoneNumber,
         address: houseAddress
       });
-      router.push('/sign-in');
+      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
     } catch (error) {
       setErrorMessage(
-        getErrorMessage(error) ??
+        getFriendlyErrorMessage(
+          error,
           'Unable to create your account. Please try again.'
+        )
       );
     } finally {
       setIsSubmitting(false);

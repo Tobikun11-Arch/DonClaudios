@@ -5,13 +5,7 @@ import {ArrowLeft, Send} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
-
-function getErrorMessage(error: unknown): string | null {
-  if (!error || typeof error !== 'object') return null;
-  if (!('message' in error)) return null;
-  const maybeMessage = (error as {message?: unknown}).message;
-  return typeof maybeMessage === 'string' ? maybeMessage : null;
-}
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -31,7 +25,10 @@ export default function ForgotPasswordPage() {
       );
     } catch (error) {
       setErrorMessage(
-        getErrorMessage(error) ?? 'Unable to send reset link. Please try again.'
+        getFriendlyErrorMessage(
+          error,
+          'Unable to send reset link. Please try again.'
+        )
       );
     } finally {
       setIsSubmitting(false);
