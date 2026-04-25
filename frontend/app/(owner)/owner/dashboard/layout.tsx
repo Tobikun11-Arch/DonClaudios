@@ -65,18 +65,36 @@ const DRAWER_ITEMS = [
 
 const ALL_SIDEBAR_ITEMS = [...PRIMARY_TABS, ...DRAWER_ITEMS];
 
+type DashboardLayoutProps = {
+  children: React.ReactNode;
+  products?: React.ReactNode;
+  inventory?: React.ReactNode;
+  promos?: React.ReactNode;
+  cashiers?: React.ReactNode;
+  appearance?: React.ReactNode;
+};
+
 export default function DashboardLayout({
   children,
-  ...slots
-}: {
-  children: React.ReactNode;
-  [key: string]: React.ReactNode;
-}) {
+  products,
+  inventory,
+  promos,
+  cashiers,
+  appearance
+}: DashboardLayoutProps) {
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab');
   const router = useRouter();
   const logoutMutation = useLogout();
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const slotByTab: Record<string, React.ReactNode | undefined> = {
+    products,
+    inventory,
+    promos,
+    cashiers,
+    appearance
+  };
 
   const handleLogout = async () => {
     setDrawerOpen(false);
@@ -152,7 +170,7 @@ export default function DashboardLayout({
 
       <main className="flex-1 overflow-y-auto bg-gray-50 pb-24 md:pb-0">
         <div className="p-4 md:p-6">
-          {tab && slots[tab] ? slots[tab] : children}
+          {tab && slotByTab[tab] ? slotByTab[tab] : children}
         </div>
       </main>
 
