@@ -19,6 +19,27 @@ function getCookieOptions(): CookieOptions {
 }
 
 export const authController = {
+  async me(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+      }
+
+      if (!req.auth.type) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Invalid token');
+      }
+
+      res.status(200).json({
+        user: {
+          id: req.auth.userId,
+          type: req.auth.type
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async register(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await authService.register(req.body);

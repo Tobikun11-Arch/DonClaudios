@@ -23,6 +23,13 @@ type LoginResponse = {
 };
 type LogoutResponse = {message: string};
 
+type MeResponse = {
+  user: {
+    id: string;
+    type: 'admin' | 'cashier' | 'customer';
+  };
+};
+
 export async function registerCustomer(data: RegisterRequest) {
   const res = await httpClient.post<RegisterResponse>('/auth/register', data);
   return res.data;
@@ -51,5 +58,10 @@ export async function login(params: {email: string; password: string}) {
 
 export async function logout() {
   const res = await httpClient.post<LogoutResponse>('/auth/logout');
+  return res.data;
+}
+
+export async function getMe() {
+  const res = await httpClient.get<MeResponse>('/auth/me');
   return res.data;
 }

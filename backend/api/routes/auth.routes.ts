@@ -9,6 +9,7 @@ import {
   refreshDto
 } from '../dtos/auth.dto';
 import {authLimiter} from '../middleware/rateLimit';
+import {requireAuth} from '../middleware/auth';
 
 const router = Router();
 
@@ -38,5 +39,7 @@ router.post(
 );
 
 router.post('/logout', authLimiter, authController.logout);
+
+router.get('/me', authLimiter, requireAuth, authController.me);
 
 export default router;

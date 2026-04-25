@@ -1,7 +1,29 @@
-//customer auth guard before redirecting to the page
+'use client';
 
-export default function CashierLayout() {
-  return (
-    <div>CashierLayout</div>
-  )
+import {useEffect} from 'react';
+import {useRouter} from 'next/navigation';
+import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
+import {getDashboardPath} from '@/lib/auth/redirects';
+import Loading from '@/app/loading';
+
+export default function CashierLayout({children}: {children: React.ReactNode}) {
+  const router = useRouter();
+  const {data, isLoading, isFetching, isError, isSuccess} = useMeQuery();
+
+  useEffect(() => {
+    if (isError) {
+      router.replace('/sign-in');
+      return;
+    }
+
+    if (!isSuccess) return;
+
+    if (data.user.type !== 'cashier') {
+      router.replace(getDashboardPath(data.user.type));
+    }
+  }, [data, isError, isSuccess, router]);
+
+  if (isLoading || isFetching) return <Loading/>;
+
+  return <>{children}</>;
 }

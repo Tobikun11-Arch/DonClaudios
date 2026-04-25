@@ -1,9 +1,29 @@
-// Owner auth guard before redirecting to the page
+'use client';
 
-import React from 'react'
+import {useEffect} from 'react';
+import {useRouter} from 'next/navigation';
+import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
+import {getDashboardPath} from '@/lib/auth/redirects';
+import Loading from '../loading';
 
-export default function OwnerLayout() {
-  return (
-    <div>OwnerLayout</div>
-  )
+export default function OwnerLayout({children}: {children: React.ReactNode}) {
+  const router = useRouter();
+  const {data, isLoading, isFetching, isError, isSuccess} = useMeQuery();
+
+  useEffect(() => {
+    if (isError) {
+      router.replace('/sign-in');
+      return;
+    }
+
+    if (!isSuccess) return;
+
+    if (data.user.type !== 'admin') {
+      router.replace(getDashboardPath(data.user.type));
+    }
+  }, [data, isError, isSuccess, router]);
+
+  if (isLoading || isFetching) return <Loading/>;
+
+  return <>{children}</>;
 }
