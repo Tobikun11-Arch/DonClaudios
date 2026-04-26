@@ -15,14 +15,14 @@ interface Props {
 
 export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
   return (
-    <Card className="overflow-hidden border-gray-100">
-      <div className="relative h-40 bg-gray-50">
+    <Card className="overflow-hidden border-gray-100 p-0">
+      <div className="relative aspect-[4/3] bg-gray-50">
         {p.imageUrl ? (
           <Image
             src={p.imageUrl}
             alt={p.name}
             fill
-            className="object-cover"
+            className="object-cover object-center"
             sizes="(max-width: 640px) 100vw, 25vw"
           />
         ) : (
@@ -81,11 +81,37 @@ export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
             size="sm"
             onClick={() => onDelete(p)}
             disabled={isDeleting}
-            className="flex-1"
+            className="flex-1 bg-red-600 text-white hover:bg-red-700"
           >
             <Trash2 className="h-4 w-4" />
             Delete
           </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function ProductCardSkeleton() {
+  return (
+    <Card className="overflow-hidden border-gray-100">
+      <div className="aspect-[4/3] bg-gray-100 animate-pulse" />
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-2 flex-1">
+            <div className="h-4 w-3/4 bg-gray-100 rounded-full animate-pulse" />
+            <div className="h-3 w-1/2 bg-gray-100 rounded-full animate-pulse" />
+          </div>
+          <div className="space-y-2 items-end flex flex-col shrink-0">
+            <div className="h-4 w-14 bg-gray-100 rounded-full animate-pulse" />
+            <div className="h-3 w-10 bg-gray-100 rounded-full animate-pulse" />
+          </div>
+        </div>
+        <div className="h-3 w-full bg-gray-100 rounded-full animate-pulse" />
+        <div className="h-3 w-2/3 bg-gray-100 rounded-full animate-pulse" />
+        <div className="flex gap-2 pt-1">
+          <div className="h-8 flex-1 bg-gray-100 rounded-lg animate-pulse" />
+          <div className="h-8 flex-1 bg-gray-100 rounded-lg animate-pulse" />
         </div>
       </CardContent>
     </Card>

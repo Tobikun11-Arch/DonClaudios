@@ -13,7 +13,7 @@ import {Button} from '@/components/ui/button';
 import {useProductForm} from '../hooks/useProductForm';
 import {ProductsHeader} from './ProductsHeader';
 import {ProductsFilters} from './ProductsFilters';
-import {ProductCard} from './ProductCard';
+import {ProductCard, ProductCardSkeleton} from './ProductCard';
 import {ProductFormModal} from './ProductFormModal';
 import {DeleteProductModal} from './DeleteProductModal';
 
@@ -33,12 +33,21 @@ export default function ProductsPage() {
   const [deletingName, setDeletingName] = useState('');
 
   const {
-    form, setForm, formError, setFormError,
-    previewUrl, isDragging, setIsDragging,
-    submitStatus, setSubmitStatus,
-    resetForm, loadForm,
-    onFileChange, onDrop,
-    validateAndGetPayload, uploadImageIfNeeded
+    form,
+    setForm,
+    formError,
+    setFormError,
+    previewUrl,
+    isDragging,
+    setIsDragging,
+    submitStatus,
+    setSubmitStatus,
+    resetForm,
+    loadForm,
+    onFileChange,
+    onDrop,
+    validateAndGetPayload,
+    uploadImageIfNeeded
   } = useProductForm();
 
   const products = useMemo(
@@ -48,14 +57,18 @@ export default function ProductsPage() {
 
   const categories = useMemo(() => {
     const set = new Set(products.map(p => p.category).filter(Boolean));
-    return ['All Products', ...Array.from(set).sort((a, b) => a.localeCompare(b))];
+    return [
+      'All Products',
+      ...Array.from(set).sort((a, b) => a.localeCompare(b))
+    ];
   }, [products]);
 
   const visibleProducts = useMemo(() => {
     const q = query.trim().toLowerCase();
     return products
       .filter(p => {
-        if (activeCategory !== 'All Products' && p.category !== activeCategory) return false;
+        if (activeCategory !== 'All Products' && p.category !== activeCategory)
+          return false;
         if (!q) return true;
         return (
           p.name.toLowerCase().includes(q) ||
@@ -111,7 +124,8 @@ export default function ProductsPage() {
         await createMutation.mutateAsync({
           name: form.name.trim(),
           category: form.category.trim(),
-          price, stock,
+          price,
+          stock,
           description: form.description.trim() || undefined,
           imageUrl,
           isAvailable: form.isAvailable
@@ -123,7 +137,8 @@ export default function ProductsPage() {
           body: {
             name: form.name.trim(),
             category: form.category.trim(),
-            price, stock,
+            price,
+            stock,
             description: form.description.trim() || undefined,
             imageUrl,
             isAvailable: form.isAvailable
@@ -148,7 +163,10 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-5">
-      <ProductsHeader showButton={visibleProducts.length > 0} onAdd={openCreate} />
+      <ProductsHeader
+        showButton={visibleProducts.length > 0}
+        onAdd={openCreate}
+      />
 
       <ProductsFilters
         query={query}
@@ -156,32 +174,47 @@ export default function ProductsPage() {
         categories={categories}
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
-        productCount={cat => cat === 'All Products' ? products.length : products.filter(p => p.category === cat).length}
+        productCount={cat =>
+          cat === 'All Products'
+            ? products.length
+            : products.filter(p => p.category === cat).length
+        }
       />
 
       {productsQuery.isLoading && (
-        <div className="bg-white border border-gray-100 rounded-2xl p-6 text-sm text-gray-600">
-          Loading products…
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {Array.from({length: 3}).map((_, i) => (
+            <ProductCardSkeleton key={i} />
+          ))}
         </div>
       )}
 
       {productsQuery.isError && (
         <div className="bg-white border border-red-200 rounded-2xl p-6 text-sm text-red-700">
-          {getFriendlyErrorMessage(productsQuery.error, 'Failed to load products')}
+          {getFriendlyErrorMessage(
+            productsQuery.error,
+            'Failed to load products'
+          )}
         </div>
       )}
 
-      {!productsQuery.isLoading && !productsQuery.isError && (
-        visibleProducts.length === 0 ? (
+      {!productsQuery.isLoading &&
+        !productsQuery.isError &&
+        (visibleProducts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="w-14 h-14 rounded-2xl bg-[#e9f5ee] flex items-center justify-center mb-4">
               <Package className="h-6 w-6 text-[#2d4a35]" />
             </div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-1">No products yet</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">
+              No products yet
+            </h3>
             <p className="text-sm text-gray-400 max-w-xs mb-6">
               Add your first product so it shows up on your menu.
             </p>
-            <Button onClick={openCreate} className="bg-[#2d4a35] hover:bg-[#24402c] text-white text-sm">
+            <Button
+              onClick={openCreate}
+              className="bg-[#2d4a35] hover:bg-[#24402c] text-white text-sm"
+            >
               <Plus className="h-4 w-4" />
               Add Product
             </Button>
@@ -198,8 +231,7 @@ export default function ProductsPage() {
               />
             ))}
           </div>
-        )
-      )}
+        ))}
 
       <ProductFormModal
         open={modalOpen}

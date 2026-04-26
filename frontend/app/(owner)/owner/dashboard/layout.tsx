@@ -221,13 +221,6 @@ export default function DashboardLayout({
           onClick={() => setDrawerOpen(true)}
           className="relative flex flex-col items-center gap-1 px-3 py-1 min-w-15 transition-all duration-200"
         >
-          <span
-            className={`
-              absolute -top-1 w-1.5 h-1.5 rounded-full bg-[#7ed4a0]
-              transition-all duration-300 ease-out
-              ${drawerTabActive ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}
-            `}
-          />
           <MoreHorizontal
             size={22}
             className={`transition-colors duration-200 ${
@@ -241,29 +234,41 @@ export default function DashboardLayout({
           >
             More
           </span>
+
+          <span
+            className={`
+              mt-1 h-0.5 w-6 rounded-full bg-[#7ed4a0]
+              transition-all duration-300 ease-out
+              ${drawerTabActive ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}
+            `}
+          />
         </button>
       </nav>
 
       <div
         onClick={() => setDrawerOpen(false)}
         className={`
-          md:hidden fixed inset-0 z-60 bg-black/50
+          md:hidden fixed inset-0 bg-black/50
           transition-opacity duration-300
           ${
             drawerOpen
-              ? 'opacity-100 pointer-events-auto'
-              : 'opacity-0 pointer-events-none'
+              ? 'z-60 opacity-100 pointer-events-auto'
+              : '-z-10 opacity-0 pointer-events-none'
           }
         `}
       />
 
       <div
         className={`
-          md:hidden fixed bottom-0 left-0 right-0 z-70
+          md:hidden fixed bottom-0 left-0 right-0
           bg-[#2d4a35] rounded-t-3xl
           transition-transform duration-300 ease-out
           pb-[env(safe-area-inset-bottom,16px)]
-          ${drawerOpen ? 'translate-y-0' : 'translate-y-full'}
+          ${
+            drawerOpen
+              ? 'z-70 translate-y-0 pointer-events-auto'
+              : '-z-10 translate-y-full pointer-events-none'
+          }
         `}
       >
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
