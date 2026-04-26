@@ -8,12 +8,10 @@ const ACCESS_COOKIE = 'dc_access_token';
 const REFRESH_COOKIE = 'dc_refresh_token';
 
 function getCookieOptions(): CookieOptions {
-  const isProd = env.NODE_ENV === 'production';
-
   return {
     httpOnly: true,
-    secure: isProd, // true only in prod - false for development
-    sameSite: isProd ? 'none' : 'strict', // union type matches - none for prod
+    secure: process.env.COOKIE_SECURE === 'true',
+    sameSite: process.env.COOKIE_SAMESITE as 'strict' | 'lax' | 'none',
     path: '/'
   };
 }
@@ -115,16 +113,18 @@ export const authController = {
 
       res.status(200).json({message: 'Refreshed'});
     } catch (error) {
-      res.clearCookie(ACCESS_COOKIE, {path: '/'});
-      res.clearCookie(REFRESH_COOKIE, {path: '/'});
+      const opts = getCookieOptions();
+      res.clearCookie(ACCESS_COOKIE, opts);
+      res.clearCookie(REFRESH_COOKIE, opts);
       next(error);
     }
   },
 
   async logout(_req: Request, res: Response, next: NextFunction) {
     try {
-      res.clearCookie(ACCESS_COOKIE, {path: '/'});
-      res.clearCookie(REFRESH_COOKIE, {path: '/'});
+      const opts = getCookieOptions();
+      res.clearCookie(ACCESS_COOKIE, opts);
+      res.clearCookie(REFRESH_COOKIE, opts);
       res.status(200).json({message: 'Logged out'});
     } catch (error) {
       next(error);
