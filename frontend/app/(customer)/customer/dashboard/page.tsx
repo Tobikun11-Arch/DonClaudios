@@ -1,23 +1,7 @@
-'use client';
-
-import {useRouter} from 'next/navigation';
-import {useLogout} from '@/lib/hooks/auth/useLogout';
-
 export default function CustomerDashboard() {
-  const router = useRouter();
-  const logoutMutation = useLogout();
-
-  const handleLogout = async () => {
-    await logoutMutation.mutateAsync();
-    router.replace('/sign-in');
-  };
-
   return (
-    <div>
-      <div>CustomerDashboard</div>
-      <button onClick={handleLogout} disabled={logoutMutation.isPending}>
-        {logoutMutation.isPending ? 'Logging out...' : 'Logout'}
-      </button>
-    </div>
+    <main>
+      <div>customer order</div>
+    </main>
   );
 }

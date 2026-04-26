@@ -1,6 +1,5 @@
 'use client';
 
-import LocationPicker from '@/features/order/components/LocationPicker';
 import {useMemo, useState} from 'react';
 import Image from 'next/image';
 import {Input} from '@/components/ui/input';
@@ -8,7 +7,6 @@ import {Search} from 'lucide-react';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import type {Product} from '@/lib/types/product';
 import Link from 'next/link';
-import {useLocationStore} from '@/app/store/locationStore';
 
 function MenuCard({
   id,
@@ -24,9 +22,9 @@ function MenuCard({
   note?: string;
 }) {
   return (
-    <Link href={`/order/${encodeURIComponent(id)}`} className="shrink-0">
+    <Link href={`/customer/dashboard/${encodeURIComponent(id)}`} className="shrink-0">
       <div className="w-64 bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden hover:shadow-sm transition-shadow">
-        <div className="w-full h-64 flex items-center justify-center ">
+        <div className="w-full h-64 flex items-center justify-center">
           <Image
             src={
               imageUrl && imageUrl.length > 0
@@ -60,7 +58,7 @@ function MenuCard({
   );
 }
 
-function ProductsSection() {
+export default function OrderSlot() {
   const {data, isLoading, isError} = useProductsQuery();
   const products = useMemo(() => data?.products ?? [], [data?.products]);
 
@@ -118,8 +116,8 @@ function ProductsSection() {
   }, [activeCategory, activeTab, availableProducts, featuredItems, query]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-8">
-      <div className="w-full rounded-2xl overflow-hidden mb-10 mt-12 bg-[#3c5e45]">
+    <div className="w-full max-w-6xl mx-auto">
+      <div className="w-full rounded-2xl overflow-hidden mb-10 bg-[#3c5e45]">
         <div className="flex items-center justify-between px-8 py-8">
           <div>
             <p className="text-[#fbd897] text-[11px] uppercase mb-2">
@@ -144,6 +142,7 @@ function ProductsSection() {
           </div>
         </div>
       </div>
+
       <h1 className="text-2xl font-bold mb-2">DonClaudios Menu</h1>
 
       <section className="mb-10">
@@ -187,7 +186,7 @@ function ProductsSection() {
           <h2 className="text-[22px] font-bold text-gray-900">
             {activeTab === 'featured'
               ? 'Featured'
-              : (tabs.find(t => t.id === activeTab)?.label ?? 'Products')}
+              : tabs.find(t => t.id === activeTab)?.label ?? 'Products'}
           </h2>
           <p className="text-sm text-gray-500 mt-0.5 mb-4">
             {activeTab === 'featured'
@@ -215,29 +214,6 @@ function ProductsSection() {
           </div>
         </div>
       </section>
-    </div>
-  );
-}
-
-export default function OrderPage() {
-  const savedLocation = useLocationStore(s => s.location);
-  const setSavedLocation = useLocationStore(s => s.setLocation);
-
-  const shouldShowLocationPicker = !savedLocation;
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {shouldShowLocationPicker && (
-        <div className="flex items-center justify-center min-h-screen p-4">
-          <LocationPicker
-            onConfirm={loc => {
-              setSavedLocation(loc);
-            }}
-          />
-        </div>
-      )}
-
-      {!shouldShowLocationPicker && <ProductsSection />}
     </div>
   );
 }

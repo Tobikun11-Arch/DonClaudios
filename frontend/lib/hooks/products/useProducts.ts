@@ -3,17 +3,31 @@
 import {
   createProduct,
   deleteProduct,
+  getProduct,
   listProducts,
   updateProduct
 } from '@/lib/api/productsApi';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 
 export const productsQueryKey = ['products'] as const;
+export const productQueryKey = (id: string) => ['products', id] as const;
 
 export function useProductsQuery() {
   return useQuery({
     queryKey: productsQueryKey,
     queryFn: listProducts,
+    refetchOnWindowFocus: false,
+    staleTime: 15_000
+  });
+}
+
+export function useProductQuery(id?: string) {
+  const safeId = id ?? '';
+
+  return useQuery({
+    queryKey: productQueryKey(safeId),
+    queryFn: () => getProduct(safeId),
+    enabled: safeId.length > 0,
     refetchOnWindowFocus: false,
     staleTime: 15_000
   });
