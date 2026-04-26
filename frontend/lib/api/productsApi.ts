@@ -3,6 +3,7 @@ import type {
   CreateProductBody,
   CreateProductResponse,
   DeleteProductResponse,
+  GetProductResponse,
   ListProductsResponse,
   UpdateProductBody,
   UpdateProductResponse
@@ -10,6 +11,11 @@ import type {
 
 export async function listProducts() {
   const res = await httpClient.get<ListProductsResponse>('/products');
+  return res.data;
+}
+
+export async function getProduct(id: string) {
+  const res = await httpClient.get<GetProductResponse>(`/products/${id}`);
   return res.data;
 }
 
