@@ -267,7 +267,7 @@ export const authService = {
       );
     }
 
-    const accessToken = jwt.sign(
+    const accessToken: string = jwt.sign(
       {userId: user.id, type: userType},
       env.JWT_SECRET,
       {expiresIn: '15m'}

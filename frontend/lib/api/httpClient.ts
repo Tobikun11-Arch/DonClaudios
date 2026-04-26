@@ -56,7 +56,7 @@ async function refreshAccessToken() {
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = refreshClient
-    .post('/auth/refresh')
+    .post('/auth/refresh', {})
     .then(() => undefined)
     .finally(() => {
       refreshPromise = null;
@@ -93,13 +93,19 @@ export const httpClient = (() => {
       const status = axiosError.response?.status;
 
       const url = originalConfig?.url ?? '';
-      const isAuthEndpoint = url.startsWith('/auth/');
+      const isRefreshOrLoginEndpoint =
+        url === '/auth/refresh' ||
+        url === '/auth/login' ||
+        url === '/auth/logout' ||
+        url === '/auth/register' ||
+        url === '/auth/verify' ||
+        url === '/auth/resend-verification';
 
       if (
         status === 401 &&
         originalConfig &&
         !originalConfig._retry &&
-        !isAuthEndpoint
+        !isRefreshOrLoginEndpoint
       ) {
         originalConfig._retry = true;
         try {

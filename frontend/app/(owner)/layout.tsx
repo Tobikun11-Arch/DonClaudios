@@ -4,11 +4,10 @@ import {useEffect} from 'react';
 import {useRouter} from 'next/navigation';
 import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
 import {getDashboardPath} from '@/lib/auth/redirects';
-import Loading from '../loading';
 
 export default function OwnerLayout({children}: {children: React.ReactNode}) {
   const router = useRouter();
-  const {data, isLoading, isFetching, isError, isSuccess} = useMeQuery();
+  const {data,isError, isSuccess} = useMeQuery();
 
   useEffect(() => {
     if (isError) {
@@ -22,8 +21,6 @@ export default function OwnerLayout({children}: {children: React.ReactNode}) {
       router.replace(getDashboardPath(data.user.type));
     }
   }, [data, isError, isSuccess, router]);
-
-  if (isLoading || isFetching) return <Loading/>;
 
   return <>{children}</>;
 }
