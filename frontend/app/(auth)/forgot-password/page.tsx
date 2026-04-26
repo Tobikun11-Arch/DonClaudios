@@ -82,7 +82,7 @@ export default function ForgotPasswordPage() {
             </Button>
 
             {errorMessage && (
-              <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <div className="rounded-md border border-destructive/30 px-3 py-2 text-sm text-destructive">
                 {errorMessage}
               </div>
             )}

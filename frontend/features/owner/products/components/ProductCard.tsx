@@ -94,7 +94,7 @@ export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
 
 export function ProductCardSkeleton() {
   return (
-    <Card className="overflow-hidden border-gray-100">
+    <Card className="overflow-hidden border-gray-100 p-0">
       <div className="aspect-[4/3] bg-gray-100 animate-pulse" />
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
