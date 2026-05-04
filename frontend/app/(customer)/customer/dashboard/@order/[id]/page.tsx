@@ -1,4 +1,4 @@
-import OrderProductDetailsPage from './OrderProductDetailsPage';
+import OrderProductDetailsPage from "@/shared/components/OrderProductDetailsPage";
 
 export default async function Page({params}: {params: Promise<{id: string}>}) {
   const {id} = await params;

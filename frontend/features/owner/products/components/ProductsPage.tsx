@@ -16,6 +16,7 @@ import {ProductsFilters} from './ProductsFilters';
 import {ProductCard, ProductCardSkeleton} from './ProductCard';
 import {ProductFormModal} from './ProductFormModal';
 import {DeleteProductModal} from './DeleteProductModal';
+import {ImageCropModal} from './ImageCropModal';
 
 export default function ProductsPage() {
   const productsQuery = useProductsQuery();
@@ -31,6 +32,8 @@ export default function ProductsPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deletingName, setDeletingName] = useState('');
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [cropOpen, setCropOpen] = useState(false);
 
   const {
     form,
@@ -107,6 +110,39 @@ export default function ProductsPage() {
   const onCloseModal = () => {
     if (createMutation.isPending || updateMutation.isPending) return;
     setModalOpen(false);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const objectUrl = URL.createObjectURL(file);
+    setCropSrc(objectUrl);
+    setCropOpen(true);
+    e.target.value = '';
+  };
+
+  const handleCropDone = (blob: Blob) => {
+    setCropOpen(false);
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
+
+    const croppedFile = new File([blob], 'product-image.jpg', {
+      type: 'image/jpeg'
+    });
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(croppedFile);
+
+    const fakeEvent = {
+      target: {files: dataTransfer.files, value: ''}
+    } as unknown as React.ChangeEvent<HTMLInputElement>;
+
+    onFileChange(fakeEvent);
+  };
+
+  const handleCropCancel = () => {
+    setCropOpen(false);
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
   };
 
   const onSubmit = async (e: FormEvent) => {
@@ -245,7 +281,7 @@ export default function ProductsPage() {
         onClose={onCloseModal}
         onSubmit={onSubmit}
         onFormChange={(field, value) => setForm(v => ({...v, [field]: value}))}
-        onFileChange={onFileChange}
+        onFileChange={handleFileChange}
         onDrop={onDrop}
         onDragEnter={() => setIsDragging(true)}
         onDragLeave={() => setIsDragging(false)}
@@ -258,6 +294,16 @@ export default function ProductsPage() {
         onConfirm={onDelete}
         onClose={() => !deleteMutation.isPending && setDeleteModalOpen(false)}
       />
+
+      {cropSrc && (
+        <ImageCropModal
+          open={cropOpen}
+          src={cropSrc}
+          aspect={16 / 9}
+          onCropDone={handleCropDone}
+          onCancel={handleCropCancel}
+        />
+      )}
     </div>
   );
 }

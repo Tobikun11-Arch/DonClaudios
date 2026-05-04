@@ -7,58 +7,9 @@ import {Input} from '@/components/ui/input';
 import {Search} from 'lucide-react';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import type {Product} from '@/lib/types/product';
-import Link from 'next/link';
+import MenuCard from '@/shared/components/MenuCard';
 import {useLocationStore} from '@/app/store/locationStore';
 
-function MenuCard({
-  id,
-  name,
-  price,
-  imageUrl,
-  note
-}: {
-  id: string;
-  name: string;
-  price: number;
-  imageUrl?: string;
-  note?: string;
-}) {
-  return (
-    <Link href={`/order/${encodeURIComponent(id)}`} className="shrink-0">
-      <div className="w-64 bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden hover:shadow-sm transition-shadow">
-        <div className="w-full h-64 flex items-center justify-center ">
-          <Image
-            src={
-              imageUrl && imageUrl.length > 0
-                ? imageUrl
-                : '/assets/sample_menu.png'
-            }
-            alt={name}
-            width={320}
-            height={320}
-            className="object-contain"
-          />
-        </div>
-
-        <div className="px-4 py-3">
-          <p className="text-[14px] text-gray-800 font-medium leading-snug line-clamp-2 min-h-10">
-            {name}
-          </p>
-
-          {note && (
-            <p className="text-[11px] text-gray-400 mt-1 line-clamp-2">
-              {note}
-            </p>
-          )}
-
-          <p className="text-[15px] font-bold text-gray-900 mt-3">
-            ₱{price}.00
-          </p>
-        </div>
-      </div>
-    </Link>
-  );
-}
 
 function ProductsSection() {
   const {data, isLoading, isError} = useProductsQuery();
@@ -187,7 +138,7 @@ function ProductsSection() {
           <h2 className="text-[22px] font-bold text-gray-900">
             {activeTab === 'featured'
               ? 'Featured'
-              : (tabs.find(t => t.id === activeTab)?.label ?? 'Products')}
+              : tabs.find(t => t.id === activeTab)?.label ?? 'Products'}
           </h2>
           <p className="text-sm text-gray-500 mt-0.5 mb-4">
             {activeTab === 'featured'
@@ -210,6 +161,7 @@ function ProductsSection() {
                 price={item.price}
                 imageUrl={item.imageUrl}
                 note={item.description}
+                basePath='order'
               />
             ))}
           </div>

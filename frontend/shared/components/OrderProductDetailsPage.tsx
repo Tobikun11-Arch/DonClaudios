@@ -5,12 +5,13 @@ import {Label} from '@/components/ui/label';
 import {useProductQuery} from '@/lib/hooks/products/useProducts';
 import {ArrowLeft, Minus, Plus} from 'lucide-react';
 import Image from 'next/image';
-import Link from 'next/link';
+import {useRouter} from 'next/navigation';
 import {useMemo, useState} from 'react';
 
 export default function OrderProductDetailsPage({id}: {id: string}) {
   const productQuery = useProductQuery(id);
   const product = productQuery.data?.product;
+  const router = useRouter();
 
   const [qty, setQty] = useState(1);
   const [instructions, setInstructions] = useState('');
@@ -24,13 +25,13 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
     <div className="min-h-screen bg-gray-50 flex justify-center items-center">
       <div className="w-full max-w-6xl mx-auto px-4 py-6">
         <div className="flex items-center gap-3">
-          <Link
-            href="/customer/dashboard"
+          <button
+            onClick={() => router.back()}
             className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white hover:bg-gray-50"
             aria-label="Back"
           >
             <ArrowLeft className="h-5 w-5" />
-          </Link>
+          </button>
           <h1 className="text-lg font-bold text-gray-900">Product details</h1>
         </div>
 
@@ -47,7 +48,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
         {product && (
           <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
             <div className="w-full">
-              <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-white border border-gray-100">
+              <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-white border border-gray-100">
                 <Image
                   src={
                     product.imageUrl && product.imageUrl.length > 0
@@ -56,7 +57,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                   }
                   alt={product.name}
                   fill
-                  className="object-contain"
+                  className="object-cover"
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
               </div>
