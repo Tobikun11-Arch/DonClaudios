@@ -1,3 +1,5 @@
+'use client';
+
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
@@ -63,7 +65,8 @@ export function ProductFormModal({
           className="hidden"
           disabled={isDisabled}
         />
-        <div className="w-full h-full flex i justify-center items-center">
+
+        <div className="w-full flex justify-center items-center">
           <button
             type="button"
             onClick={() => {
@@ -76,8 +79,8 @@ export function ProductFormModal({
             onDrop={onDrop}
             disabled={isDisabled}
             className={cn(
-              'relative mt-1 w-full sm:w-3/4 rounded-2xl border-2 border-dashed transition-colors overflow-hidden bg-white',
-              'aspect-[16/9] sm:aspect-[2/1]',
+              'relative mt-1 w-full rounded-2xl border-2 border-dashed transition-colors overflow-hidden bg-white',
+              'aspect-[16/9]',
               isDragging
                 ? 'border-[#2d4a35] bg-[#e9f5ee]'
                 : 'border-[#c9e7d4] hover:border-[#2d4a35]'
@@ -106,6 +109,9 @@ export function ProductFormModal({
                   <p className="text-sm font-extrabold">Upload product image</p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     Click to choose or drag and drop here
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Image will be auto-cropped to 16:9
                   </p>
                 </div>
               </div>
@@ -185,12 +191,12 @@ export function ProductFormModal({
             disabled={isDisabled}
           >
             {submitStatus === 'uploading'
-              ? 'Uploading image…'
+              ? 'Uploading...'
               : submitStatus === 'submitting'
-                ? 'Saving…'
-                : mode === 'create'
-                  ? 'Save Product'
-                  : 'Save Changes'}
+              ? 'Uploading...'
+              : mode === 'create'
+              ? 'Save Product'
+              : 'Save Changes'}
           </Button>
         </div>
       </form>
