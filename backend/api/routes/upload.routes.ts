@@ -20,4 +20,12 @@ router.post(
   uploadController.uploadProductImage
 );
 
+router.post(
+  '/promo-image',
+  requireAuth,
+  requireAdmin,
+  upload.single('file'),
+  uploadController.uploadPromoImage
+);
+
 export default router;

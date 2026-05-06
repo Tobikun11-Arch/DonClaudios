@@ -12,6 +12,15 @@ export const promoController = {
     }
   },
 
+  async listAll(_req: Request, res: Response, next: NextFunction) {
+    try {
+      const promos = await promoService.listAll();
+      res.status(200).json({promos});
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const promo = await promoService.getById(req.params.id);

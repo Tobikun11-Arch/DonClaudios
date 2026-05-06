@@ -3,7 +3,11 @@ import mongoose, {Schema} from 'mongoose';
 export interface PromoDocument extends mongoose.Document {
   title: string;
   description?: string;
-  discountRate: number;
+  imageUrl?: string;
+  promoType: 'percentage' | 'fixed_amount' | 'bundle';
+  discountRate?: number;
+  discountAmount?: number;
+  productIds?: mongoose.Types.ObjectId[];
   startDate: Date;
   endDate: Date;
   isActive: boolean;
@@ -14,7 +18,15 @@ const PromoSchema = new Schema<PromoDocument>(
   {
     title: {type: String, required: true, trim: true},
     description: {type: String},
-    discountRate: {type: Number, required: true, min: 0},
+    imageUrl: {type: String},
+    promoType: {
+      type: String,
+      enum: ['percentage', 'fixed_amount', 'bundle'],
+      required: true
+    },
+    discountRate: {type: Number, min: 0},
+    discountAmount: {type: Number, min: 0},
+    productIds: [{type: Schema.Types.ObjectId, ref: 'Product'}],
     startDate: {type: Date, required: true},
     endDate: {type: Date, required: true},
     isActive: {type: Boolean, default: true},
@@ -25,5 +37,10 @@ const PromoSchema = new Schema<PromoDocument>(
 
 PromoSchema.index({isActive: 1});
 PromoSchema.index({startDate: 1, endDate: 1});
+PromoSchema.index({promoType: 1});
 
-export const PromoModel = mongoose.model<PromoDocument>('Promo', PromoSchema, 'promos');
+export const PromoModel = mongoose.model<PromoDocument>(
+  'Promo',
+  PromoSchema,
+  'promos'
+);
