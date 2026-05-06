@@ -8,7 +8,11 @@ import {
   loginDto,
   refreshDto
 } from '../dtos/auth.dto';
-import {authLimiter} from '../middleware/rateLimit';
+import {
+  authLimiter,
+  loginLimiter,
+  sessionLimiter
+} from '../middleware/rateLimit';
 import {requireAuth} from '../middleware/auth';
 
 const router = Router();
@@ -19,9 +23,7 @@ router.post(
   validate(registerDto),
   authController.register
 );
-
 router.post('/verify', authLimiter, validate(verifyDto), authController.verify);
-
 router.post(
   '/resend-verification',
   authLimiter,
@@ -29,17 +31,14 @@ router.post(
   authController.resendVerification
 );
 
-router.post('/login', authLimiter, validate(loginDto), authController.login);
+router.post('/login', loginLimiter, validate(loginDto), authController.login);
 
 router.post(
   '/refresh',
-  authLimiter,
+  sessionLimiter,
   validate(refreshDto),
   authController.refresh
 );
-
-router.post('/logout', authLimiter, authController.logout);
-
-router.get('/me', authLimiter, requireAuth, authController.me);
-
+router.post('/logout', sessionLimiter, authController.logout);
+router.get('/me', sessionLimiter, requireAuth, authController.me);
 export default router;
