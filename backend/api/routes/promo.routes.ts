@@ -7,9 +7,17 @@ import {createPromoDto, updatePromoDto} from '../dtos/promo.dto';
 const router = Router();
 
 router.get('/', promoController.list);
+
+router.get('/admin', requireAuth, requireAdmin, promoController.listAll);
 router.get('/:id', promoController.getById);
 
-router.post('/', requireAuth, requireAdmin, validate(createPromoDto), promoController.create);
+router.post(
+  '/',
+  requireAuth,
+  requireAdmin,
+  validate(createPromoDto),
+  promoController.create
+);
 
 router.patch(
   '/:id',

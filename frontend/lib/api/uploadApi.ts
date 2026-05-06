@@ -13,12 +13,28 @@ export type UploadProductImageResponse = {
   imageUrl: string;
 };
 
+export type UploadPromoImageResponse = {
+  imageUrl: string;
+};
+
 export async function uploadProductImage(file: File) {
   const data = new FormData();
   data.append('file', file);
 
   const res = await uploadClient.post<UploadProductImageResponse>(
     '/upload/product-image',
+    data
+  );
+
+  return res.data;
+}
+
+export async function uploadPromoImage(file: File) {
+  const data = new FormData();
+  data.append('file', file);
+
+  const res = await uploadClient.post<UploadPromoImageResponse>(
+    '/upload/promo-image',
     data
   );
 

@@ -3,7 +3,17 @@ import {PromoDocument, PromoModel} from '../models/Promo.model';
 export const promoRepository = {
   findById: (id: string) => PromoModel.findById(id).exec(),
 
-  listPublic: () => PromoModel.find({}).sort({createdAt: -1}).exec(),
+  listPublic: () => {
+    const now = new Date();
+    return PromoModel.find({
+      isActive: true,
+      endDate: {$gte: now}
+    })
+      .sort({createdAt: -1})
+      .exec();
+  },
+
+  listAll: () => PromoModel.find({}).sort({createdAt: -1}).exec(),
 
   create: (data: Partial<PromoDocument>) => PromoModel.create(data),
 
