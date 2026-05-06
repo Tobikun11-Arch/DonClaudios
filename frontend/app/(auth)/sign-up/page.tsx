@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import Link from 'next/link';
-import {Eye, EyeOff, UserPlus} from 'lucide-react';
+import {Eye, EyeOff, UserPlus, MapPin} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
@@ -11,21 +11,15 @@ import {useRouter} from 'next/navigation';
 import {registerCustomer} from '@/lib/api/authApi';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
-function splitFullName(fullName: string) {
-  const parts = fullName.trim().split(/\s+/).filter(Boolean);
-  const firstName = parts[0] ?? '';
-  const lastName = parts.slice(1).join(' ') || firstName;
-  return {firstName, lastName};
-}
-
 export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [fullName, setFullName] = useState('');
+  const [firstName, setfirstname] = useState('');
+  const [lastName, setlastname] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [houseAddress, setHouseAddress] = useState('');
   const [showAutoLocate, setShowAutoLocate] = useState(false);
-  const [didAskAutoLocate, setDidAskAutoLocate] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,15 +27,40 @@ export default function SignUpPage() {
   const router = useRouter();
 
   const handleAddressInteract = () => {
-    if (didAskAutoLocate) return;
-    setDidAskAutoLocate(true);
-    const ok = window.confirm('Use automatic locate to fill your address?');
-    if (ok) setShowAutoLocate(true);
+    setLocationError(null);
+
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by your browser.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      () => {
+        setShowAutoLocate(true);
+      },
+      error => {
+        setShowAutoLocate(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationError(
+            'Location access was denied. Click the address field to try again.'
+          );
+        } else {
+          setLocationError(
+            'Unable to retrieve your location. Please try again.'
+          );
+        }
+      }
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
+
+    if (!houseAddress) {
+      setErrorMessage('Please allow location access to fill your address.');
+      return;
+    }
 
     if (password.length < 8) {
       setErrorMessage('Password must be at least 8 characters.');
@@ -56,7 +75,6 @@ export default function SignUpPage() {
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
-      const {firstName, lastName} = splitFullName(fullName);
       await registerCustomer({
         firstName,
         lastName,
@@ -91,13 +109,26 @@ export default function SignUpPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="fullName">Full Name</Label>
+          <Label htmlFor="firstName">First Name</Label>
           <Input
-            id="fullName"
+            id="firstName"
             type="text"
-            placeholder="Juan Dela Cruz"
-            value={fullName}
-            onChange={e => setFullName(e.target.value)}
+            placeholder="Juan"
+            value={firstName}
+            onChange={e => setfirstname(e.target.value)}
+            disabled={isSubmitting}
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="lastName">Last Name</Label>
+          <Input
+            id="lastName"
+            type="text"
+            placeholder="Dela Cruz"
+            value={lastName}
+            onChange={e => setlastname(e.target.value)}
             disabled={isSubmitting}
             required
           />
@@ -130,18 +161,30 @@ export default function SignUpPage() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="houseAddress">Address (House)</Label>
-          <Input
-            id="houseAddress"
-            type="text"
-            placeholder="House no., Street, Barangay"
-            value={houseAddress}
-            onChange={e => setHouseAddress(e.target.value)}
-            onFocus={handleAddressInteract}
-            onClick={handleAddressInteract}
-            disabled={isSubmitting}
-            required
-          />
+          <Label htmlFor="houseAddress">
+            Address (House){' '}
+            <span className="text-xs font-normal text-muted-foreground">
+              — Location access required
+            </span>
+          </Label>
+
+          <div
+            className="flex items-center gap-2 cursor-pointer rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring"
+            onClick={!isSubmitting ? handleAddressInteract : undefined}
+          >
+            <MapPin size={16} className="shrink-0 text-muted-foreground" />
+            <span
+              className={
+                houseAddress ? 'text-foreground' : 'text-muted-foreground'
+              }
+            >
+              {houseAddress || 'Click to use your current location'}
+            </span>
+          </div>
+
+          {locationError && (
+            <p className="text-xs text-destructive">{locationError}</p>
+          )}
 
           {showAutoLocate && (
             <div className="pt-3">
