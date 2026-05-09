@@ -7,11 +7,22 @@ import {ArrowLeft, Minus, Plus} from 'lucide-react';
 import Image from 'next/image';
 import {useRouter} from 'next/navigation';
 import {useMemo, useState} from 'react';
+import {useCartStore} from '@/app/store/cartStore';
+import {usePathname} from 'next/navigation';
+import {useAddCustomerCartItemMutation} from '@/lib/hooks/cart/useCustomerCart';
+import {useCartUiStore} from '@/app/store/cartUiStore';
 
 export default function OrderProductDetailsPage({id}: {id: string}) {
   const productQuery = useProductQuery(id);
   const product = productQuery.data?.product;
   const router = useRouter();
+  const pathname = usePathname();
+  const isCustomerRoute = pathname.startsWith('/customer');
+
+  const addItem = useCartStore(s => s.addItem);
+  const openCart = useCartUiStore(s => s.open);
+
+  const addCustomerCartItemMutation = useAddCustomerCartItemMutation();
 
   const [qty, setQty] = useState(1);
   const [instructions, setInstructions] = useState('');
@@ -102,30 +113,56 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
               </div>
 
               <div className="mt-8 flex items-center gap-4">
-                <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-2 py-1">
+                <div className="inline-flex items-center gap-3">
                   <button
                     type="button"
                     onClick={() => setQty(q => Math.max(1, q - 1))}
-                    className="h-10 w-10 inline-flex items-center justify-center rounded-full hover:bg-gray-50"
+                    className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
                     aria-label="Decrease quantity"
                   >
-                    <Minus className="h-4 w-4" />
+                    <Minus className="h-3.5 w-3.5 text-gray-600" />
                   </button>
-                  <div className="min-w-8 text-center font-semibold text-gray-900">
+
+                  <span className="min-w-6 text-center text-base font-semibold text-gray-900">
                     {qty}
-                  </div>
+                  </span>
+
                   <button
                     type="button"
                     onClick={() => setQty(q => q + 1)}
-                    className="h-10 w-10 inline-flex items-center justify-center rounded-full hover:bg-gray-50"
+                    className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
                     aria-label="Increase quantity"
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-3.5 w-3.5 text-gray-600" />
                   </button>
                 </div>
-
                 <Button
                   type="button"
+                  disabled={!product}
+                  onClick={() => {
+                    if (!product) return;
+                    if (isCustomerRoute) {
+                      addCustomerCartItemMutation.mutate({
+                        productId: product._id,
+                        name: product.name,
+                        price: product.price,
+                        quantity: qty,
+                        imageUrl: product.imageUrl
+                      });
+                    } else {
+                      addItem({
+                        productId: product._id,
+                        name: product.name,
+                        price: product.price,
+                        imageUrl: product.imageUrl,
+                        qty,
+                        instructions: instructions.trim().length
+                          ? instructions.trim()
+                          : undefined
+                      });
+                    }
+                    openCart();
+                  }}
                   className="flex-1 h-12 rounded-full bg-[#c30010] text-white hover:bg-[#a6000d]"
                 >
                   Add to Cart - <span className="font-bold">₱{total}.00</span>

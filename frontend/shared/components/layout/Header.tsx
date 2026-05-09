@@ -5,15 +5,31 @@ import {Button} from '@/components/ui/button';
 import {ShoppingCart, Menu, X} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import {useRouter} from 'next/navigation';
+import {usePathname} from 'next/navigation';
 import Link from 'next/link';
 import {navItems} from '@/shared/constants/navigation';
 import {scrollToSection} from '@/shared/utils/scroll';
+import {
+  getCartSubtotal,
+  getCartUniqueCount,
+  useCartStore
+} from '@/app/store/cartStore';
+import {useCartUiStore} from '@/app/store/cartUiStore';
 
 export default function Header() {
   const [activeSection, setActiveSection] = useState('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [orderModalOpen, setOrderModalOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
+
+  const isOrderRoute = pathname === '/order' || pathname.startsWith('/order/');
+
+  const cartItems = useCartStore(s => s.items);
+  const openCart = useCartUiStore(s => s.open);
+
+  const cartUniqueCount = getCartUniqueCount(cartItems);
+  const cartSubtotal = getCartSubtotal(cartItems);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -55,7 +71,19 @@ export default function Header() {
     setMobileMenuOpen(false);
   };
 
-  const handleOrderNowClick = () => {
+  const handleCartClick = () => {
+    if (!isOrderRoute) {
+      setOrderModalOpen(true);
+      setMobileMenuOpen(false);
+      return;
+    }
+
+    if (cartUniqueCount > 0) {
+      openCart();
+      setMobileMenuOpen(false);
+      return;
+    }
+
     setOrderModalOpen(true);
     setMobileMenuOpen(false);
   };
@@ -123,11 +151,26 @@ export default function Header() {
         <div className="hidden lg:flex gap-4 items-center">
           <Link href="/sign-in">Login</Link>
           <Button
-            onClick={handleOrderNowClick}
+            onClick={handleCartClick}
             className="flex items-center gap-2 bg-[#3c5e45]"
           >
-            <ShoppingCart className="w-4 h-4" />
-            Order Now
+            <span className="relative">
+              <ShoppingCart className="w-4 h-4" />
+              {isOrderRoute && cartUniqueCount > 0 && (
+                <span className="absolute -right-2 -top-2 h-5 min-w-5 px-1 rounded-full bg-[#c30010] text-white text-[10px] font-bold grid place-items-center">
+                  {cartUniqueCount}
+                </span>
+              )}
+            </span>
+            {isOrderRoute ? (
+              cartUniqueCount > 0 ? (
+                <span className="text-sm font-semibold">
+                  ₱{cartSubtotal}.00
+                </span>
+              ) : null
+            ) : (
+              <span className="text-sm font-semibold">Order Now</span>
+            )}
           </Button>
         </div>
 
@@ -178,11 +221,22 @@ export default function Header() {
               Login
             </Link>
             <Button
-              onClick={handleOrderNowClick}
+              onClick={handleCartClick}
               className="flex items-center justify-center gap-2 bg-[#3c5e45] text-sm px-3 py-2"
             >
-              <ShoppingCart className="w-4 h-4" />
-              Order Now
+              <span className="relative">
+                <ShoppingCart className="w-4 h-4" />
+                {isOrderRoute && cartUniqueCount > 0 && (
+                  <span className="absolute -right-2 -top-2 h-5 min-w-5 px-1 rounded-full bg-[#c30010] text-white text-[10px] font-bold grid place-items-center">
+                    {cartUniqueCount}
+                  </span>
+                )}
+              </span>
+              {isOrderRoute
+                ? cartUniqueCount > 0
+                  ? `₱${cartSubtotal}.00`
+                  : 'Order'
+                : 'Order Now'}
             </Button>
           </div>
         </div>
