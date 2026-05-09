@@ -5,6 +5,10 @@ import Image from 'next/image';
 import {useRouter} from 'next/navigation';
 import {useLogout} from '@/lib/hooks/auth/useLogout';
 import {ShoppingCart, Tag, Bell, User, LogOut} from 'lucide-react';
+import CustomerCartDrawer from '@/shared/components/cart/CustomerCartDrawer';
+import {useCartUiStore} from '@/app/store/cartUiStore';
+import {Button} from '@/components/ui/button';
+import {useCustomerCartQuery} from '@/lib/hooks/cart/useCustomerCart';
 
 const TABS = [
   {
@@ -54,6 +58,16 @@ export default function DashboardLayout({
   const router = useRouter();
   const logoutMutation = useLogout();
 
+  const openCart = useCartUiStore(s => s.open);
+
+  const cartQuery = useCustomerCartQuery(true);
+  const cartItems = cartQuery.data?.cart?.items ?? [];
+  const cartUniqueCount = cartItems.length;
+  const cartSubtotal = cartItems.reduce(
+    (sum, i) => sum + i.price * i.quantity,
+    0
+  );
+
   const slotByTab: Record<string, React.ReactNode | undefined> = {
     promos,
     notification,
@@ -68,7 +82,7 @@ export default function DashboardLayout({
   const isActive = (itemTab: string | null) =>
     itemTab === null ? !tab : tab === itemTab;
 
-  const content = tab && slotByTab[tab] ? slotByTab[tab] : order ?? children;
+  const content = tab && slotByTab[tab] ? slotByTab[tab] : (order ?? children);
 
   return (
     <div className="flex h-screen cursor-default bg-gray-50">
@@ -131,8 +145,33 @@ export default function DashboardLayout({
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto bg-gray-50 pb-24 md:pb-0">
-        <div className="p-4 md:p-6">{content}</div>
+      <main className="relative flex-1 overflow-y-auto bg-gray-50 pb-24 md:pb-0">
+        <div className="p-4 md:p-6">
+          <div className="flex justify-end mb-4">
+            <Button
+              type="button"
+              onClick={() => openCart()}
+              variant="ghost"
+              className="relative rounded-full"
+              aria-label="Open cart"
+            >
+              <span className="relative">
+                <ShoppingCart className="h-5 w-5 text-[#2d4a35]" />
+                {cartUniqueCount > 0 && (
+                  <span className="absolute -right-2 -top-2 h-5 min-w-5 px-1 rounded-full bg-[#c30010] text-white text-[10px] font-bold grid place-items-center">
+                    {cartUniqueCount}
+                  </span>
+                )}
+              </span>
+              {cartUniqueCount > 0 && (
+                <span className="ml-2 text-sm font-semibold text-[#2d4a35]">
+                  ₱{cartSubtotal}.00
+                </span>
+              )}
+            </Button>
+          </div>
+          {content}
+        </div>
       </main>
 
       <nav
@@ -180,6 +219,8 @@ export default function DashboardLayout({
           );
         })}
       </nav>
+
+      <CustomerCartDrawer />
     </div>
   );
 }
