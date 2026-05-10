@@ -2,7 +2,7 @@
 
 import {useMemo} from 'react';
 import Image from 'next/image';
-import {X, Minus, Plus} from 'lucide-react';
+import {X, Minus, Plus, ChevronDown} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {useCartUiStore} from '@/app/store/cartUiStore';
 import {
@@ -10,16 +10,24 @@ import {
   useRemoveCustomerCartItemMutation,
   useSetCustomerCartItemQuantityMutation
 } from '@/lib/hooks/cart/useCustomerCart';
+import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
+import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
 
 type CustomerCartDrawerProps = {
   deliveryFee?: number;
 };
 
 export default function CustomerCartDrawer({
-  deliveryFee = 49
+  deliveryFee: _deliveryFee = 49
 }: CustomerCartDrawerProps) {
   const isOpen = useCartUiStore(s => s.isOpen);
   const close = useCartUiStore(s => s.close);
+
+  const promosQuery = usePublicPromosQuery();
+  const promos = useMemo(
+    () => promosQuery.data?.promos ?? [],
+    [promosQuery.data?.promos]
+  );
 
   const cartQuery = useCustomerCartQuery(isOpen);
 
@@ -32,10 +40,22 @@ export default function CustomerCartDrawer({
   );
 
   const subtotal = useMemo(() => {
-    return items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  }, [items]);
+    if (promos.length === 0) {
+      return items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    }
 
-  const total = subtotal + (items.length > 0 ? deliveryFee : 0);
+    return items.reduce((sum, i) => {
+      const {unitPrice} = getDiscountedUnitPrice({
+        promos,
+        productId: i.productId,
+        basePrice: i.price
+      });
+      return sum + unitPrice * i.quantity;
+    }, 0);
+  }, [items, promos]);
+
+  const effectiveDeliveryFee = items.length > 0 ? 0 * _deliveryFee : 0;
+  const total = subtotal + effectiveDeliveryFee;
 
   if (!isOpen) return null;
 
@@ -64,9 +84,13 @@ export default function CustomerCartDrawer({
             <p className="text-lg font-bold text-gray-900">
               My Cart ({items.length} {items.length === 1 ? 'item' : 'items'})
             </p>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Delivery, Today, ASAP
-            </p>
+            <button
+              type="button"
+              className="mt-0.5 w-full inline-flex items-center justify-between gap-2 text-left text-xs font-semibold text-[#c30010]"
+            >
+              <span className="min-w-0 truncate">Delivery</span>
+              <ChevronDown className="h-4 w-4 shrink-0" />
+            </button>
           </div>
 
           <Button
@@ -138,9 +162,28 @@ export default function CustomerCartDrawer({
                         </button>
                       </div>
 
-                      <p className="text-sm font-bold text-gray-900 shrink-0">
-                        ₱{item.price}.00
-                      </p>
+                      {(() => {
+                        const {unitPrice} = getDiscountedUnitPrice({
+                          promos,
+                          productId: item.productId,
+                          basePrice: item.price
+                        });
+
+                        const isDiscounted = unitPrice < item.price;
+
+                        return (
+                          <div className="shrink-0 text-right">
+                            <p className="text-sm font-bold text-gray-900">
+                              ₱{unitPrice}.00
+                            </p>
+                            {isDiscounted ? (
+                              <p className="text-[11px] text-gray-400 line-through">
+                                ₱{item.price}.00
+                              </p>
+                            ) : null}
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="mt-3 flex items-center justify-end">
@@ -189,7 +232,9 @@ export default function CustomerCartDrawer({
                 </div>
                 <div className="flex items-center justify-between text-sm text-gray-700">
                   <span>Delivery fee</span>
-                  <span className="font-semibold">₱{deliveryFee}.00</span>
+                  <span className="font-semibold">
+                    ₱{effectiveDeliveryFee}.00
+                  </span>
                 </div>
               </div>
             </div>
@@ -206,7 +251,7 @@ export default function CustomerCartDrawer({
 
           <Button
             type="button"
-            className="mt-4 w-full h-12 rounded-full bg-[#c30010] text-white hover:bg-[#a6000d]"
+            className="mt-4 w-full h-12 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
             disabled={items.length === 0}
           >
             Go To Checkout

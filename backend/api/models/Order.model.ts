@@ -1,7 +1,24 @@
 import mongoose, {Schema} from 'mongoose';
 
-export type OrderType = 'pickup' | 'delivery' | 'dine_in';
-export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+export type OrderType = 'pickup' | 'delivery' | 'reservation';
+export type OrderStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'preparing'
+  | 'ready'
+  | 'on_the_way'
+  | 'completed'
+  | 'cancelled';
+
+/**
+   pending → order placed
+   confirmed → accepted
+   preparing → being made
+   ready → finished, waiting for pickup
+   on_the_way → courier picked it up
+   completed → delivered 
+   cancelled → stopped
+     */
 
 export interface GuestInfo {
   firstName: string;
@@ -16,6 +33,7 @@ export interface OrderDocument extends mongoose.Document {
   guestInfo?: GuestInfo;
   orderType: OrderType;
   totalAmount: number;
+  riderNotes?: string;
   orderStatus: OrderStatus;
   isOnline: boolean;
 }
@@ -37,13 +55,22 @@ const OrderSchema = new Schema<OrderDocument>(
     guestInfo: {type: GuestInfoSchema},
     orderType: {
       type: String,
-      enum: ['pickup', 'delivery', 'dine_in'],
+      enum: ['pickup', 'delivery', 'reservation'],
       required: true
     },
     totalAmount: {type: Number, required: true},
+    riderNotes: {type: String},
     orderStatus: {
       type: String,
-      enum: ['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'],
+      enum: [
+        'pending',
+        'confirmed',
+        'preparing',
+        'ready',
+        'on_the_way',
+        'completed',
+        'cancelled'
+      ],
       default: 'pending'
     },
     isOnline: {type: Boolean, default: true}
@@ -54,4 +81,8 @@ const OrderSchema = new Schema<OrderDocument>(
 OrderSchema.index({customerId: 1, createdAt: -1});
 OrderSchema.index({orderStatus: 1, createdAt: -1});
 
-export const OrderModel = mongoose.model<OrderDocument>('Order', OrderSchema, 'orders');
+export const OrderModel = mongoose.model<OrderDocument>(
+  'Order',
+  OrderSchema,
+  'orders'
+);

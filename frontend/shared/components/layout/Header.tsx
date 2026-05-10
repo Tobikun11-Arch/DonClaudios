@@ -15,6 +15,8 @@ import {
   useCartStore
 } from '@/app/store/cartStore';
 import {useCartUiStore} from '@/app/store/cartUiStore';
+import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
+import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
 
 export default function Header() {
   const [activeSection, setActiveSection] = useState('home');
@@ -28,8 +30,21 @@ export default function Header() {
   const cartItems = useCartStore(s => s.items);
   const openCart = useCartUiStore(s => s.open);
 
+  const promosQuery = usePublicPromosQuery();
+  const promos = promosQuery.data?.promos ?? [];
+
   const cartUniqueCount = getCartUniqueCount(cartItems);
-  const cartSubtotal = getCartSubtotal(cartItems);
+  const cartSubtotal =
+    promos.length === 0
+      ? getCartSubtotal(cartItems)
+      : cartItems.reduce((sum, i) => {
+          const {unitPrice} = getDiscountedUnitPrice({
+            promos,
+            productId: i.productId,
+            basePrice: i.price
+          });
+          return sum + unitPrice * i.qty;
+        }, 0);
 
   useEffect(() => {
     const handleScroll = () => {

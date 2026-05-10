@@ -5,6 +5,7 @@ const promoBaseDto = z.object({
   description: z.string().optional(),
   imageUrl: z.string().url().optional(),
   promoType: z.enum(['percentage', 'fixed_amount', 'bundle']),
+  price: z.coerce.number().min(0).optional(),
   discountRate: z.coerce.number().min(0).optional(),
   discountAmount: z.coerce.number().min(0).optional(),
   productIds: z.array(z.string().min(1)).optional(),
@@ -18,6 +19,7 @@ export const createPromoDto = promoBaseDto
     message: 'endDate must be after startDate'
   })
   .superRefine((data, ctx) => {
+    const hasPrice = typeof data.price === 'number';
     const hasRate = typeof data.discountRate === 'number';
     const hasAmount = typeof data.discountAmount === 'number';
     const productCount = data.productIds?.length ?? 0;
@@ -53,13 +55,21 @@ export const createPromoDto = promoBaseDto
     }
 
     if (data.promoType === 'bundle') {
-      if (hasRate && hasAmount) {
-        return;
+      if (!hasPrice) {
+        ctx.addIssue({code: 'custom', message: 'price is required'});
       }
-      if (hasRate || hasAmount) {
-        return;
+      if (hasRate) {
+        ctx.addIssue({code: 'custom', message: 'discountRate must be blank'});
       }
-      return;
+      if (hasAmount) {
+        ctx.addIssue({code: 'custom', message: 'discountAmount must be blank'});
+      }
+      if (productCount < 1) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'At least 1 product is required'
+        });
+      }
     }
   });
 

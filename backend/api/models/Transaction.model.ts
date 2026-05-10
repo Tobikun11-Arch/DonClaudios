@@ -3,7 +3,7 @@ import mongoose, {Schema} from 'mongoose';
 export type PaymentMethod = 'cash' | 'card' | 'gcash' | 'other';
 
 export interface TransactionDocument extends mongoose.Document {
-  cashierId: mongoose.Types.ObjectId;
+  cashierId?: mongoose.Types.ObjectId | null;
   orderId: mongoose.Types.ObjectId;
   timestamp: Date;
   paymentMethod: PaymentMethod;
@@ -13,7 +13,7 @@ export interface TransactionDocument extends mongoose.Document {
 
 const TransactionSchema = new Schema<TransactionDocument>(
   {
-    cashierId: {type: Schema.Types.ObjectId, ref: 'Cashier', required: true},
+    cashierId: {type: Schema.Types.ObjectId, ref: 'Cashier', default: null},
     orderId: {type: Schema.Types.ObjectId, ref: 'Order', required: true},
     timestamp: {type: Date, default: Date.now},
     paymentMethod: {

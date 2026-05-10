@@ -4,6 +4,7 @@ export type Promo = {
   description?: string;
   imageUrl?: string;
   promoType: 'percentage' | 'fixed_amount' | 'bundle';
+  price?: number;
   discountRate?: number;
   discountAmount?: number;
   productIds?: string[];
@@ -28,6 +29,7 @@ export type CreatePromoBody = {
   description?: string;
   imageUrl?: string;
   promoType: 'percentage' | 'fixed_amount' | 'bundle';
+  price?: number;
   discountRate?: number;
   discountAmount?: number;
   productIds?: string[];

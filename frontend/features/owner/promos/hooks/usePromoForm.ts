@@ -32,6 +32,7 @@ export function usePromoForm() {
     description?: string;
     imageUrl?: string;
     promoType: 'percentage' | 'fixed_amount' | 'bundle';
+    price?: number;
     discountRate?: number;
     discountAmount?: number;
     productIds?: string[];
@@ -44,6 +45,7 @@ export function usePromoForm() {
       description: p.description ?? '',
       imageUrl: p.imageUrl ?? '',
       promoType: p.promoType ?? 'percentage',
+      price: String(p.price ?? ''),
       discountRate: String(p.discountRate ?? ''),
       discountAmount: String(p.discountAmount ?? ''),
       productIds: p.productIds ?? [],
@@ -83,6 +85,7 @@ export function usePromoForm() {
   };
 
   const validateAndGetPayload = (mode: 'create' | 'edit') => {
+    const price = form.price.trim().length ? Number(form.price) : undefined;
     const discountRate = form.discountRate.trim().length
       ? Number(form.discountRate)
       : undefined;
@@ -108,6 +111,11 @@ export function usePromoForm() {
       (Number.isNaN(discountAmount) || discountAmount < 0)
     ) {
       setFormError('Discount amount is invalid');
+      return null;
+    }
+
+    if (typeof price === 'number' && (Number.isNaN(price) || price < 0)) {
+      setFormError('Price is invalid');
       return null;
     }
 
@@ -145,6 +153,25 @@ export function usePromoForm() {
       }
     }
 
+    if (form.promoType === 'bundle') {
+      if (typeof price !== 'number') {
+        setFormError('Price is required');
+        return null;
+      }
+      if (typeof discountRate === 'number') {
+        setFormError('Discount rate must be blank');
+        return null;
+      }
+      if (typeof discountAmount === 'number') {
+        setFormError('Discount amount must be blank');
+        return null;
+      }
+      if (productCount < 1) {
+        setFormError('Please select at least 1 product');
+        return null;
+      }
+    }
+
     if (form.promoType === 'fixed_amount') {
       if (typeof discountAmount !== 'number') {
         setFormError('Discount amount is required');
@@ -165,7 +192,7 @@ export function usePromoForm() {
       return null;
     }
 
-    return {discountRate, discountAmount};
+    return {price, discountRate, discountAmount};
   };
 
   const uploadImageIfNeeded = async (): Promise<string | undefined> => {

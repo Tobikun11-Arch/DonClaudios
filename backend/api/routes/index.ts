@@ -5,6 +5,7 @@ import productRoutes from './product.routes';
 import promoRoutes from './promo.routes';
 import uploadRoutes from './upload.routes';
 import cartRoutes from './cart.routes';
+import orderRoutes from './order.routes';
 
 const router = Router();
 
@@ -14,5 +15,6 @@ router.use('/products', productRoutes);
 router.use('/promos', promoRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/cart', cartRoutes);
+router.use('/orders', orderRoutes);
 
 export default router;

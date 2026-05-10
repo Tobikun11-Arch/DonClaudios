@@ -5,6 +5,7 @@ export interface PromoDocument extends mongoose.Document {
   description?: string;
   imageUrl?: string;
   promoType: 'percentage' | 'fixed_amount' | 'bundle';
+  price?: number;
   discountRate?: number;
   discountAmount?: number;
   productIds?: mongoose.Types.ObjectId[];
@@ -24,6 +25,7 @@ const PromoSchema = new Schema<PromoDocument>(
       enum: ['percentage', 'fixed_amount', 'bundle'],
       required: true
     },
+    price: {type: Number, min: 0},
     discountRate: {type: Number, min: 0},
     discountAmount: {type: Number, min: 0},
     productIds: [{type: Schema.Types.ObjectId, ref: 'Product'}],
