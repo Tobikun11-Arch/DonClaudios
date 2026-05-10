@@ -11,7 +11,11 @@ import {sanitize} from './api/middleware/sanitize';
 const app = express();
 
 const corsOptions = {
-  origin: ['http://localhost:3000', 'https://don-claudios.vercel.app'],
+  origin: [
+    'http://localhost:3000',
+    'https://don-claudios.vercel.app',
+    'https://don-claudios-9826.vercel.app'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
