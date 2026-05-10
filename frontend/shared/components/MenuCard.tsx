@@ -1,5 +1,5 @@
-import Link from "next/link";
-import Image from "next/image";
+import Link from 'next/link';
+import Image from 'next/image';
 
 function MenuCard({
   id,
@@ -7,7 +7,9 @@ function MenuCard({
   price,
   imageUrl,
   note,
-  basePath = ""
+  basePath = '',
+  href,
+  badge
 }: {
   id: string;
   name: string;
@@ -15,9 +17,16 @@ function MenuCard({
   imageUrl?: string;
   note?: string;
   basePath?: string;
+  href?: string;
+  badge?: {
+    label: string;
+    variant?: 'promo' | 'bundle';
+  };
 }) {
+  const linkHref = href ?? `/${basePath}/${encodeURIComponent(id)}`;
+
   return (
-    <Link href={`/${basePath}/${encodeURIComponent(id)}`} className="shrink-0">
+    <Link href={linkHref} className="shrink-0">
       <div className="w-64 bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden hover:shadow-sm transition-shadow">
         <div className="relative w-full h-48 overflow-hidden">
           <Image
@@ -30,6 +39,17 @@ function MenuCard({
             fill
             className="object-cover"
           />
+
+          {badge ? (
+            <div
+              className={
+                'absolute top-2 right-2 z-10 rounded-full px-2.5 py-1 text-[10px] font-extrabold tracking-wide text-white ' +
+                (badge.variant === 'bundle' ? 'bg-[#2d4a35]' : 'bg-[#c30010]')
+              }
+            >
+              {badge.label}
+            </div>
+          ) : null}
         </div>
 
         <div className="px-4 py-3">

@@ -52,12 +52,9 @@ export function PromoFormModal({
 }: Props) {
   const isDisabled = submitStatus !== 'idle' || isPending;
   const showProducts =
-    form.promoType === 'percentage' || form.promoType === 'fixed_amount';
-
-  const bundleRateFilled =
-    form.promoType === 'bundle' && form.discountRate.trim().length > 0;
-  const bundleAmountFilled =
-    form.promoType === 'bundle' && form.discountAmount.trim().length > 0;
+    form.promoType === 'percentage' ||
+    form.promoType === 'fixed_amount' ||
+    form.promoType === 'bundle';
 
   const toggleProductId = (id: string) => {
     const exists = form.productIds.includes(id);
@@ -162,7 +159,21 @@ export function PromoFormModal({
               <option value="bundle">Bundle</option>
             </select>
           </div>
-          {(form.promoType === 'percentage' || form.promoType === 'bundle') && (
+          {form.promoType === 'bundle' && (
+            <div className="space-y-1.5">
+              <Label htmlFor="price">Price (₱)</Label>
+              <Input
+                id="price"
+                inputMode="decimal"
+                value={form.price}
+                onChange={e => onFormChange('price', e.target.value)}
+                placeholder="e.g. 499"
+                disabled={isDisabled}
+              />
+            </div>
+          )}
+
+          {form.promoType === 'percentage' && (
             <div className="space-y-1.5">
               <Label htmlFor="discountRate">Discount Rate (%)</Label>
               <Input
@@ -171,12 +182,12 @@ export function PromoFormModal({
                 value={form.discountRate}
                 onChange={e => onFormChange('discountRate', e.target.value)}
                 placeholder="e.g. 20"
-                disabled={isDisabled || bundleAmountFilled}
+                disabled={isDisabled}
               />
             </div>
           )}
-          {(form.promoType === 'fixed_amount' ||
-            form.promoType === 'bundle') && (
+
+          {form.promoType === 'fixed_amount' && (
             <div className="space-y-1.5">
               <Label htmlFor="discountAmount">Discount Amount (₱)</Label>
               <Input
@@ -185,14 +196,16 @@ export function PromoFormModal({
                 value={form.discountAmount}
                 onChange={e => onFormChange('discountAmount', e.target.value)}
                 placeholder="e.g. 50"
-                disabled={isDisabled || bundleRateFilled}
+                disabled={isDisabled}
               />
             </div>
           )}
 
           {showProducts && (
             <div className="space-y-1.5">
-              <Label>Products</Label>
+              <Label>
+                {form.promoType === 'bundle' ? 'Included Products' : 'Products'}
+              </Label>
               <details className="relative">
                 <summary
                   className={cn(

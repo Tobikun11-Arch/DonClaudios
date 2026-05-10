@@ -93,6 +93,7 @@ export default function PromosPage() {
       description: p.description,
       imageUrl: p.imageUrl,
       promoType: p.promoType,
+      price: p.price,
       discountRate: p.discountRate,
       discountAmount: p.discountAmount,
       productIds: p.productIds,
@@ -131,15 +132,18 @@ export default function PromosPage() {
         };
 
         if (value === 'percentage') {
+          next.price = '';
           next.discountAmount = '';
         }
 
         if (value === 'fixed_amount') {
+          next.price = '';
           next.discountRate = '';
         }
 
         if (value === 'bundle') {
-          next.productIds = [];
+          next.discountRate = '';
+          next.discountAmount = '';
         }
 
         return next;
@@ -166,6 +170,7 @@ export default function PromosPage() {
         description: form.description.trim() || undefined,
         imageUrl,
         promoType: form.promoType,
+        price: validated.price,
         discountRate: validated.discountRate,
         discountAmount: validated.discountAmount,
         productIds: form.productIds,

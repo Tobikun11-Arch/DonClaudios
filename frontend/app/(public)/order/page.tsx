@@ -9,15 +9,32 @@ import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import type {Product} from '@/lib/types/product';
 import MenuCard from '@/shared/components/MenuCard';
 import {useLocationStore} from '@/app/store/locationStore';
-
+import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
+import type {Promo} from '@/lib/types/promo';
+import {
+  getBundleBadge,
+  getPromoBadgeForProduct
+} from '@/lib/utils/promoPricing';
 
 function ProductsSection() {
   const {data, isLoading, isError} = useProductsQuery();
+  const promosQuery = usePublicPromosQuery();
   const products = useMemo(() => data?.products ?? [], [data?.products]);
+  const promos = useMemo(
+    () => promosQuery.data?.promos ?? [],
+    [promosQuery.data?.promos]
+  );
 
   const availableProducts = useMemo(() => {
     return products.filter(p => p.isAvailable && p.stock > 0);
   }, [products]);
+
+  const promoBundles = useMemo(() => {
+    return promos.filter(
+      (p): p is Promo & {price: number} =>
+        p.promoType === 'bundle' && typeof p.price === 'number'
+    );
+  }, [promos]);
 
   const tabs = useMemo(() => {
     const categories = Array.from(
@@ -32,13 +49,16 @@ function ProductsSection() {
 
     return [
       {id: 'featured', label: 'Featured', category: null as string | null},
+      ...(promoBundles.length > 0
+        ? [{id: 'promoBundles', label: 'Promo Bundles', category: null}]
+        : []),
       ...categories.map(category => ({
         id: category.toLowerCase().replace(/\s+/g, ''),
         label: category,
         category
       }))
     ];
-  }, [availableProducts]);
+  }, [availableProducts, promoBundles.length]);
 
   const [activeTab, setActiveTab] = useState('featured');
   const [query, setQuery] = useState('');
@@ -49,10 +69,28 @@ function ProductsSection() {
 
   const activeCategory = useMemo(() => {
     if (activeTab === 'featured') return null;
+    if (activeTab === 'promoBundles') return null;
     return tabs.find(t => t.id === activeTab)?.category ?? null;
   }, [activeTab, tabs]);
 
   const visibleItems = useMemo(() => {
+    if (activeTab === 'promoBundles') {
+      const normalizedQuery = query.trim().toLowerCase();
+      const filtered = normalizedQuery
+        ? promoBundles.filter(p =>
+            p.title.toLowerCase().includes(normalizedQuery)
+          )
+        : promoBundles;
+      return filtered.slice(0, 5).map(p => ({
+        id: p._id,
+        name: p.title,
+        price: p.price,
+        imageUrl: p.imageUrl,
+        note: p.description,
+        href: `/order/promo/${encodeURIComponent(p._id)}`
+      }));
+    }
+
     const sourceItems: Product[] =
       activeTab === 'featured'
         ? featuredItems
@@ -65,8 +103,22 @@ function ProductsSection() {
         )
       : sourceItems;
 
-    return filtered.slice(0, 5);
-  }, [activeCategory, activeTab, availableProducts, featuredItems, query]);
+    return filtered.slice(0, 5).map(item => ({
+      id: item._id,
+      name: item.name,
+      price: item.price,
+      imageUrl: item.imageUrl,
+      note: item.description,
+      href: undefined as string | undefined
+    }));
+  }, [
+    activeCategory,
+    activeTab,
+    availableProducts,
+    featuredItems,
+    promoBundles,
+    query
+  ]);
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4">
@@ -138,7 +190,7 @@ function ProductsSection() {
           <h2 className="text-[22px] font-bold text-gray-900">
             {activeTab === 'featured'
               ? 'Featured'
-              : tabs.find(t => t.id === activeTab)?.label ?? 'Products'}
+              : (tabs.find(t => t.id === activeTab)?.label ?? 'Products')}
           </h2>
           <p className="text-sm text-gray-500 mt-0.5 mb-4">
             {activeTab === 'featured'
@@ -155,13 +207,30 @@ function ProductsSection() {
           <div className="flex gap-4 overflow-x-auto scrollbar-none -mx-4 px-4 pb-2">
             {visibleItems.map(item => (
               <MenuCard
-                key={item._id}
-                id={item._id}
+                key={item.id}
+                id={item.id}
                 name={item.name}
                 price={item.price}
                 imageUrl={item.imageUrl}
-                note={item.description}
-                basePath='order'
+                note={item.note}
+                basePath="order"
+                href={item.href}
+                badge={
+                  activeTab === 'promoBundles'
+                    ? {
+                        label: getBundleBadge()?.label ?? 'BUNDLE',
+                        variant: 'bundle'
+                      }
+                    : (() => {
+                        const b = getPromoBadgeForProduct({
+                          promos,
+                          productId: item.id
+                        });
+                        return b
+                          ? {label: b.label, variant: 'promo'}
+                          : undefined;
+                      })()
+                }
               />
             ))}
           </div>

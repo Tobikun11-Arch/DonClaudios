@@ -7,6 +7,7 @@ export const promoRepository = {
     const now = new Date();
     return PromoModel.find({
       isActive: true,
+      startDate: {$lte: now},
       endDate: {$gte: now}
     })
       .sort({createdAt: -1})

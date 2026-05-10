@@ -1,27 +1,126 @@
 'use client';
 
-import {useMemo} from 'react';
+import {useMemo, useState} from 'react';
 import Image from 'next/image';
-import {X, Minus, Plus} from 'lucide-react';
+import {
+  X,
+  Minus,
+  Plus,
+  Bike,
+  ShoppingBag,
+  CalendarClock,
+  ChevronDown
+} from 'lucide-react';
+import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
 import {getCartSubtotal, useCartStore} from '@/app/store/cartStore';
 import {useCartUiStore} from '@/app/store/cartUiStore';
+import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
+import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
+import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
 
 type CartDrawerProps = {
   deliveryFee?: number;
 };
 
 export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
+  const router = useRouter();
   const isOpen = useCartUiStore(s => s.isOpen);
   const close = useCartUiStore(s => s.close);
   const items = useCartStore(s => s.items);
   const setQty = useCartStore(s => s.setQty);
   const removeItem = useCartStore(s => s.removeItem);
 
-  const subtotal = useMemo(() => getCartSubtotal(items), [items]);
-  const total = subtotal + (items.length > 0 ? deliveryFee : 0);
+  const orderType = useOrderDetailsStore(s => s.orderType);
+  const timing = useOrderDetailsStore(s => s.timing);
+  const reservationGuests = useOrderDetailsStore(s => s.reservationGuests);
+  const reservationDate = useOrderDetailsStore(s => s.reservationDate);
+  const reservationTime = useOrderDetailsStore(s => s.reservationTime);
+  const setOrderType = useOrderDetailsStore(s => s.setOrderType);
+  const setTiming = useOrderDetailsStore(s => s.setTiming);
+  const setReservationGuests = useOrderDetailsStore(
+    s => s.setReservationGuests
+  );
+  const setReservationDate = useOrderDetailsStore(s => s.setReservationDate);
+  const setReservationTime = useOrderDetailsStore(s => s.setReservationTime);
+
+  const defaultScheduleDate = useMemo(() => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }, []);
+
+  const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
+
+  const [draftOrderType, setDraftOrderType] = useState<
+    'Delivery' | 'Pick-up' | 'Reservation'
+  >('Delivery');
+  const [draftTiming, setDraftTiming] = useState<'ASAP'>('ASAP');
+  const [draftReservationGuests, setDraftReservationGuests] = useState(1);
+  const [draftReservationDate, setDraftReservationDate] =
+    useState(defaultScheduleDate);
+  const [draftReservationTime, setDraftReservationTime] = useState('18:00');
+
+  const promosQuery = usePublicPromosQuery();
+  const promos = useMemo(
+    () => promosQuery.data?.promos ?? [],
+    [promosQuery.data?.promos]
+  );
+
+  const subtotal = useMemo(() => {
+    if (promos.length === 0) return getCartSubtotal(items);
+    return items.reduce((sum, i) => {
+      const {unitPrice} = getDiscountedUnitPrice({
+        promos,
+        productId: i.productId,
+        basePrice: i.price
+      });
+      return sum + unitPrice * i.qty;
+    }, 0);
+  }, [items, promos]);
+  const effectiveDeliveryFee =
+    items.length > 0 && orderType === 'Delivery' ? deliveryFee : 0;
+  const total = subtotal + effectiveDeliveryFee;
 
   if (!isOpen) return null;
+
+  const openOrderDetails = () => {
+    setDraftOrderType(orderType);
+    setDraftTiming(timing);
+    setDraftReservationGuests(reservationGuests);
+    setDraftReservationDate(reservationDate || defaultScheduleDate);
+    setDraftReservationTime(reservationTime || '18:00');
+    setOrderDetailsOpen(true);
+  };
+
+  const cancelOrderDetails = () => {
+    setOrderDetailsOpen(false);
+  };
+
+  const confirmOrderDetails = () => {
+    setOrderType(draftOrderType);
+    setTiming(draftTiming);
+    setReservationGuests(Math.max(1, draftReservationGuests));
+    setReservationDate(draftReservationDate);
+    setReservationTime(draftReservationTime);
+    setOrderDetailsOpen(false);
+  };
+
+  const goToCheckout = () => {
+    const id =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : String(Date.now());
+    close();
+    router.push(`/checkout/${id}`);
+  };
+
+  const summaryText =
+    orderType === 'Reservation'
+      ? `${orderType}, ${reservationDate}, ${reservationTime}`
+      : `${orderType}, Today, ${timing}`;
 
   return (
     <div
@@ -45,9 +144,14 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
             <p className="text-lg font-bold text-gray-900">
               My Cart ({items.length} {items.length === 1 ? 'item' : 'items'})
             </p>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Delivery, Today, ASAP
-            </p>
+            <button
+              type="button"
+              className="mt-0.5 w-full inline-flex items-center justify-between gap-2 text-left text-xs font-semibold text-[#c30010]"
+              onClick={openOrderDetails}
+            >
+              <span className="min-w-0 truncate">{summaryText}</span>
+              <ChevronDown className="h-4 w-4 shrink-0" />
+            </button>
           </div>
 
           <Button
@@ -102,9 +206,28 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
                         </button>
                       </div>
 
-                      <p className="text-sm font-bold text-gray-900 shrink-0">
-                        ₱{item.price}.00
-                      </p>
+                      {(() => {
+                        const {unitPrice} = getDiscountedUnitPrice({
+                          promos,
+                          productId: item.productId,
+                          basePrice: item.price
+                        });
+
+                        const isDiscounted = unitPrice < item.price;
+
+                        return (
+                          <div className="shrink-0 text-right">
+                            <p className="text-sm font-bold text-gray-900">
+                              ₱{unitPrice}.00
+                            </p>
+                            {isDiscounted ? (
+                              <p className="text-[11px] text-gray-400 line-through">
+                                ₱{item.price}.00
+                              </p>
+                            ) : null}
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="mt-3 flex items-center justify-end">
@@ -143,7 +266,9 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
                 </div>
                 <div className="flex items-center justify-between text-sm text-gray-700">
                   <span>Delivery fee</span>
-                  <span className="font-semibold">₱{deliveryFee}.00</span>
+                  <span className="font-semibold">
+                    ₱{effectiveDeliveryFee}.00
+                  </span>
                 </div>
               </div>
             </div>
@@ -160,13 +285,157 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
 
           <Button
             type="button"
-            className="mt-4 w-full h-12 rounded-full bg-[#c30010] text-white hover:bg-[#a6000d]"
+            className="mt-4 w-full h-12 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
             disabled={items.length === 0}
+            onClick={goToCheckout}
           >
             Go To Checkout
           </Button>
         </div>
       </div>
+
+      {orderDetailsOpen ? (
+        <div
+          className="fixed inset-0 z-[90] bg-black/40 flex items-center justify-center p-4"
+          onClick={cancelOrderDetails}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-5 border-b">
+              <p className="text-xl font-bold text-gray-900">Order details</p>
+              <Button
+                type="button"
+                onClick={cancelOrderDetails}
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="px-6 py-6">
+              <p className="text-sm font-semibold text-gray-900">
+                Select order type
+              </p>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDraftOrderType('Delivery')}
+                  className={
+                    'h-12 rounded-xl border px-4 inline-flex items-center justify-center gap-2 font-semibold ' +
+                    (draftOrderType === 'Delivery'
+                      ? 'bg-[#3c5e45] text-white'
+                      : 'bg-white text-gray-900 border-gray-200 hover:bg-gray-50')
+                  }
+                >
+                  <Bike className="h-5 w-5" />
+                  Delivery
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDraftOrderType('Pick-up')}
+                  className={
+                    'h-12 rounded-xl border px-4 inline-flex items-center justify-center gap-2 font-semibold ' +
+                    (draftOrderType === 'Pick-up'
+                      ? 'bg-[#3c5e45] text-white'
+                      : 'bg-white text-gray-900 border-gray-200 hover:bg-gray-50')
+                  }
+                >
+                  <ShoppingBag className="h-5 w-5" />
+                  Pick-up
+                </button>
+              </div>
+
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => setDraftOrderType('Reservation')}
+                  className={
+                    'h-12 w-full rounded-xl border px-4 inline-flex items-center justify-center gap-2 font-semibold ' +
+                    (draftOrderType === 'Reservation'
+                      ? 'bg-[#3c5e45] text-white'
+                      : 'bg-white text-gray-900 border-gray-200 hover:bg-gray-50')
+                  }
+                >
+                  <CalendarClock className="h-5 w-5" />
+                  Reservation
+                </button>
+              </div>
+
+              {draftOrderType === 'Reservation' ? (
+                <div className="mt-6 space-y-6">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      Schedule
+                    </p>
+                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                      <input
+                        type="date"
+                        value={draftReservationDate}
+                        onChange={e => setDraftReservationDate(e.target.value)}
+                        className="h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
+                      />
+                      <input
+                        type="time"
+                        value={draftReservationTime}
+                        onChange={e => setDraftReservationTime(e.target.value)}
+                        className="h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      Number of Guests
+                    </p>
+                    <div className="mt-3 flex items-center gap-3">
+                      <input
+                        type="number"
+                        min={1}
+                        value={draftReservationGuests}
+                        onChange={e =>
+                          setDraftReservationGuests(
+                            Number.isFinite(Number(e.target.value))
+                              ? Number(e.target.value)
+                              : 1
+                          )
+                        }
+                        className="h-10 w-28 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
+                      />
+                      <p className="text-sm text-gray-500">guest(s)</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 px-6 py-5 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={cancelOrderDetails}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="bg-[#c30010] text-white hover:bg-[#a6000d]"
+                onClick={confirmOrderDetails}
+              >
+                Confirm
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

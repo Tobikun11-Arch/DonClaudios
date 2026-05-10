@@ -26,6 +26,7 @@ export const promoService = {
       description?: string;
       imageUrl?: string;
       promoType: 'percentage' | 'fixed_amount' | 'bundle';
+      price?: number;
       discountRate?: number;
       discountAmount?: number;
       productIds?: string[];
@@ -48,6 +49,7 @@ export const promoService = {
 
     const hasRate = typeof data.discountRate === 'number';
     const hasAmount = typeof data.discountAmount === 'number';
+    const hasPrice = typeof data.price === 'number';
     const productCount = data.productIds?.length ?? 0;
 
     if (data.promoType === 'percentage') {
@@ -86,6 +88,29 @@ export const promoService = {
       }
     }
 
+    if (data.promoType === 'bundle') {
+      if (!hasPrice) {
+        throw new ApiError(400, 'INVALID_PROMO', 'price is required');
+      }
+      if (hasRate) {
+        throw new ApiError(400, 'INVALID_PROMO', 'discountRate must be blank');
+      }
+      if (hasAmount) {
+        throw new ApiError(
+          400,
+          'INVALID_PROMO',
+          'discountAmount must be blank'
+        );
+      }
+      if (productCount < 1) {
+        throw new ApiError(
+          400,
+          'INVALID_PROMO',
+          'At least 1 product is required'
+        );
+      }
+    }
+
     const productObjectIds = (data.productIds ?? []).map(id => {
       if (!mongoose.Types.ObjectId.isValid(id)) {
         throw new ApiError(400, 'INVALID_PRODUCT_ID', 'Invalid product id');
@@ -108,6 +133,7 @@ export const promoService = {
       description?: string;
       imageUrl?: string;
       promoType?: 'percentage' | 'fixed_amount' | 'bundle';
+      price?: number;
       discountRate?: number;
       discountAmount?: number;
       productIds?: string[];
@@ -118,6 +144,7 @@ export const promoService = {
   ) {
     const promoFieldsChanged =
       typeof data.promoType === 'string' ||
+      typeof data.price === 'number' ||
       typeof data.discountRate === 'number' ||
       typeof data.discountAmount === 'number' ||
       Array.isArray(data.productIds);
@@ -132,6 +159,8 @@ export const promoService = {
       const nextEndDate = data.endDate ?? existing.endDate;
 
       const nextPromoType = data.promoType ?? existing.promoType;
+      const nextPrice =
+        typeof data.price === 'number' ? data.price : existing.price;
       const nextDiscountRate =
         typeof data.discountRate === 'number'
           ? data.discountRate
@@ -154,6 +183,7 @@ export const promoService = {
 
       const hasRate = typeof nextDiscountRate === 'number';
       const hasAmount = typeof nextDiscountAmount === 'number';
+      const hasPrice = typeof nextPrice === 'number';
       const productCount = nextProductIds.length;
 
       if (nextPromoType === 'percentage') {
@@ -189,6 +219,33 @@ export const promoService = {
             400,
             'INVALID_PROMO',
             'discountRate must be blank'
+          );
+        }
+        if (productCount < 1) {
+          throw new ApiError(
+            400,
+            'INVALID_PROMO',
+            'At least 1 product is required'
+          );
+        }
+      }
+
+      if (nextPromoType === 'bundle') {
+        if (!hasPrice) {
+          throw new ApiError(400, 'INVALID_PROMO', 'price is required');
+        }
+        if (hasRate) {
+          throw new ApiError(
+            400,
+            'INVALID_PROMO',
+            'discountRate must be blank'
+          );
+        }
+        if (hasAmount) {
+          throw new ApiError(
+            400,
+            'INVALID_PROMO',
+            'discountAmount must be blank'
           );
         }
         if (productCount < 1) {

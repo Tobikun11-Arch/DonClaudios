@@ -3,6 +3,7 @@ export type PromoFormState = {
   description: string;
   imageUrl: string;
   promoType: 'percentage' | 'fixed_amount' | 'bundle';
+  price: string;
   discountRate: string;
   discountAmount: string;
   productIds: string[];
@@ -16,6 +17,7 @@ export const emptyPromoForm: PromoFormState = {
   description: '',
   imageUrl: '',
   promoType: 'percentage',
+  price: '',
   discountRate: '',
   discountAmount: '',
   productIds: [],

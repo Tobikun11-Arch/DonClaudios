@@ -3,7 +3,7 @@
 import {Button} from '@/components/ui/button';
 import {Label} from '@/components/ui/label';
 import {useProductQuery} from '@/lib/hooks/products/useProducts';
-import {ArrowLeft, Minus, Plus} from 'lucide-react';
+import {ArrowLeft, Minus, Plus, ShoppingCart} from 'lucide-react';
 import Image from 'next/image';
 import {useRouter} from 'next/navigation';
 import {useMemo, useState} from 'react';
@@ -11,16 +11,48 @@ import {useCartStore} from '@/app/store/cartStore';
 import {usePathname} from 'next/navigation';
 import {useAddCustomerCartItemMutation} from '@/lib/hooks/cart/useCustomerCart';
 import {useCartUiStore} from '@/app/store/cartUiStore';
+import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
+import {
+  getDiscountedUnitPrice,
+  getPromoBadgeForProduct
+} from '@/lib/utils/promoPricing';
+import {useCustomerCartQuery} from '@/lib/hooks/cart/useCustomerCart';
 
 export default function OrderProductDetailsPage({id}: {id: string}) {
   const productQuery = useProductQuery(id);
   const product = productQuery.data?.product;
+  const promosQuery = usePublicPromosQuery();
+  const promos = useMemo(
+    () => promosQuery.data?.promos ?? [],
+    [promosQuery.data?.promos]
+  );
   const router = useRouter();
   const pathname = usePathname();
   const isCustomerRoute = pathname.startsWith('/customer');
 
-  const addItem = useCartStore(s => s.addItem);
   const openCart = useCartUiStore(s => s.open);
+  const cartQuery = useCustomerCartQuery(isCustomerRoute);
+  const cartItems = useMemo(
+    () => cartQuery.data?.cart?.items ?? [],
+    [cartQuery.data]
+  );
+  const cartUniqueCount = cartItems.length;
+  const cartSubtotal = useMemo(() => {
+    if (promos.length === 0) {
+      return cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    }
+
+    return cartItems.reduce((sum, i) => {
+      const {unitPrice} = getDiscountedUnitPrice({
+        promos,
+        productId: i.productId,
+        basePrice: i.price
+      });
+      return sum + unitPrice * i.quantity;
+    }, 0);
+  }, [cartItems, promos]);
+
+  const addItem = useCartStore(s => s.addItem);
 
   const addCustomerCartItemMutation = useAddCustomerCartItemMutation();
 
@@ -29,12 +61,59 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
 
   const total = useMemo(() => {
     if (!product) return 0;
-    return product.price * qty;
-  }, [product, qty]);
+    const {unitPrice} = getDiscountedUnitPrice({
+      promos,
+      productId: product._id,
+      basePrice: product.price
+    });
+    return unitPrice * qty;
+  }, [product, promos, qty]);
+
+  const badge = useMemo(() => {
+    if (!product) return null;
+    return getPromoBadgeForProduct({promos, productId: product._id});
+  }, [product, promos]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center items-center">
-      <div className="w-full max-w-6xl mx-auto px-4 py-6">
+    <div
+      className={
+        isCustomerRoute
+          ? 'min-h-screen bg-gray-50'
+          : 'min-h-screen bg-gray-50 flex justify-center items-center'
+      }
+    >
+      <div
+        className={
+          'w-full max-w-6xl mx-auto px-4 py-6' +
+          (isCustomerRoute ? ' pb-28' : '')
+        }
+      >
+        {isCustomerRoute ? (
+          <div className="flex justify-end mb-4">
+            <Button
+              type="button"
+              onClick={() => openCart()}
+              variant="ghost"
+              className="relative rounded-full"
+              aria-label="Open cart"
+            >
+              <span className="relative">
+                <ShoppingCart className="h-5 w-5 text-[#2d4a35]" />
+                {cartUniqueCount > 0 && (
+                  <span className="absolute -right-2 -top-2 h-5 min-w-5 px-1 rounded-full bg-[#c30010] text-white text-[10px] font-bold grid place-items-center">
+                    {cartUniqueCount}
+                  </span>
+                )}
+              </span>
+              {cartUniqueCount > 0 && (
+                <span className="ml-2 text-sm font-semibold text-[#2d4a35]">
+                  ₱{cartSubtotal}.00
+                </span>
+              )}
+            </Button>
+          </div>
+        ) : null}
+
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
@@ -85,11 +164,34 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="text-sm font-bold text-gray-900">
-                    ₱{product.price}.00
-                  </p>
+                  {(() => {
+                    const {unitPrice} = getDiscountedUnitPrice({
+                      promos,
+                      productId: product._id,
+                      basePrice: product.price
+                    });
+                    const isDiscounted = unitPrice < product.price;
+                    return (
+                      <>
+                        <p className="text-sm font-bold text-gray-900">
+                          ₱{unitPrice}.00
+                        </p>
+                        {isDiscounted ? (
+                          <p className="text-[11px] text-gray-400 line-through">
+                            ₱{product.price}.00
+                          </p>
+                        ) : null}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
+
+              {badge ? (
+                <div className="mt-3 inline-flex items-center rounded-full bg-[#c30010] text-white px-3 py-1 text-xs font-extrabold">
+                  {badge.label}
+                </div>
+              ) : null}
 
               {product.description && (
                 <p className="mt-4 text-sm text-gray-600 leading-relaxed">
@@ -112,8 +214,8 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                 />
               </div>
 
-              <div className="mt-8 flex items-center gap-4">
-                <div className="inline-flex items-center gap-3">
+              <div className="mt-8 flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="inline-flex items-center justify-center sm:justify-start gap-3">
                   <button
                     type="button"
                     onClick={() => setQty(q => Math.max(1, q - 1))}
@@ -163,7 +265,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                     }
                     openCart();
                   }}
-                  className="flex-1 h-12 rounded-full bg-[#c30010] text-white hover:bg-[#a6000d]"
+                  className="w-full sm:flex-1 h-12 rounded-full bg-[#3c5e45] text-white"
                 >
                   Add to Cart - <span className="font-bold">₱{total}.00</span>
                 </Button>
