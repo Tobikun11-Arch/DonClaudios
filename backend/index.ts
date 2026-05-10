@@ -10,15 +10,17 @@ import {sanitize} from './api/middleware/sanitize';
 
 const app = express();
 
+const corsOptions = {
+  origin: ['http://localhost:3000', 'https://don-claudios.vercel.app'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
 app.use(helmet());
-app.use(
-  cors({
-    origin: ['http://localhost:3000', 'https://don-claudios.vercel.app'],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
-  })
-);
 
 app.use(express.json());
 app.use(cookieParser());
