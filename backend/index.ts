@@ -10,12 +10,28 @@ import {sanitize} from './api/middleware/sanitize';
 
 const app = express();
 
-const corsOptions = {
-  origin: [
-    'http://localhost:3000',
-    'https://don-claudios.vercel.app',
-    'https://don-claudios-9826.vercel.app'
-  ],
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    const allowedExact = new Set(['http://localhost:3000']);
+
+    let originUrl: URL | null = null;
+    try {
+      originUrl = new URL(origin);
+    } catch {
+      originUrl = null;
+    }
+
+    const isAllowed =
+      allowedExact.has(origin) ||
+      (originUrl?.protocol === 'https:' &&
+        originUrl.hostname.toLowerCase().endsWith('.vercel.app'));
+
+    return callback(null, isAllowed);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
