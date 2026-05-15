@@ -8,10 +8,18 @@ const ACCESS_COOKIE = 'dc_access_token';
 const REFRESH_COOKIE = 'dc_refresh_token';
 
 function getCookieOptions(): CookieOptions {
+  const isProduction =
+    env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+  const sameSite =
+    process.env.COOKIE_SAMESITE ?? (isProduction ? 'none' : 'lax');
+  const secure =
+    process.env.COOKIE_SECURE === 'true' ||
+    (process.env.COOKIE_SECURE !== 'false' && sameSite === 'none');
+
   return {
     httpOnly: true,
-    secure: process.env.COOKIE_SECURE === 'true',
-    sameSite: process.env.COOKIE_SAMESITE as 'strict' | 'lax' | 'none',
+    secure,
+    sameSite: sameSite as 'strict' | 'lax' | 'none',
     path: '/'
   };
 }

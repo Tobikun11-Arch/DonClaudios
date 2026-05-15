@@ -4,6 +4,7 @@ import {Button} from '@/components/ui/button';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import type {Promo} from '@/lib/types/promo';
 import Image from 'next/image';
+import NoPromosEmptyState from './NoPromosEmptyState';
 import {useMemo, useRef, useState} from 'react';
 
 function PromoCardImage({promo}: {promo: Promo}) {
@@ -92,11 +93,10 @@ export default function PromoSection() {
     scrollRef.current!.scrollLeft = scrollLeft.current - walk;
   };
 
-  const onOrderClick = () => {
-    // handle order click
-  };
+  const onOrderClick = () => {};
 
   const items = promos;
+  const hasNoPromos = !promosQuery.isLoading && items.length === 0;
 
   return (
     <section
@@ -112,55 +112,67 @@ export default function PromoSection() {
         </div>
 
         <div className="relative max-w-7xl mx-auto">
-          <div className="overflow-x-auto pb-8 scrollbar-hide">
-            <div
-              ref={scrollRef}
-              className="overflow-x-auto pb-8 scrollbar-hide cursor-grab active:cursor-grabbing select-none"
-              onMouseDown={onMouseDown}
-              onMouseLeave={onMouseLeave}
-              onMouseUp={onMouseUp}
-              onMouseMove={onMouseMove}
-            >
-              <div className="flex gap-6 w-max">
-                {promosQuery.isLoading
-                  ? Array.from({length: 4}).map((_, idx) => (
-                      <PromoCardSkeleton key={idx} />
-                    ))
-                  : null}
+          {hasNoPromos ? (
+            <div className="flex w-full justify-center pb-8">
+              <NoPromosEmptyState />
+            </div>
+          ) : null}
 
-                {!promosQuery.isLoading
-                  ? items.map((promo: Promo) => (
-                      <div
-                        key={promo._id}
-                        className="relative bg-white rounded-3xl border overflow-hidden shrink-0 w-95"
-                      >
-                        <PromoCardImage promo={promo} />
-                        <div className="p-6 flex flex-col h-60">
-                          <h3 className="text-xl font-bold mb-2 text-3c5e45">
-                            {promo.title}
-                          </h3>
-                          {promo.description ? (
-                            <p className="text-base mb-4 grow text-a4bbab">
-                              {promo.description}
-                            </p>
-                          ) : null}
-                          <Button
-                            onClick={onOrderClick}
-                            className="w-full py-3 mt-auto bg-[#3c5e45] text-white"
-                          >
-                            Claim This Offer
-                          </Button>
+          {!hasNoPromos ? (
+            <div className="overflow-x-auto pb-8 scrollbar-hide">
+              <div
+                ref={scrollRef}
+                className="overflow-x-auto pb-8 scrollbar-hide cursor-grab active:cursor-grabbing select-none"
+                onMouseDown={onMouseDown}
+                onMouseLeave={onMouseLeave}
+                onMouseUp={onMouseUp}
+                onMouseMove={onMouseMove}
+              >
+                <div className="flex gap-6 w-max">
+                  {promosQuery.isLoading
+                    ? Array.from({length: 4}).map((_, idx) => (
+                        <PromoCardSkeleton key={idx} />
+                      ))
+                    : null}
+
+                  {!promosQuery.isLoading
+                    ? items.map((promo: Promo) => (
+                        <div
+                          key={promo._id}
+                          className="relative bg-white rounded-3xl border overflow-hidden shrink-0 w-95"
+                        >
+                          <PromoCardImage promo={promo} />
+                          <div className="p-6 flex flex-col h-60">
+                            <h3 className="text-xl font-bold mb-2 text-3c5e45">
+                              {promo.title}
+                            </h3>
+                            {promo.description ? (
+                              <p className="text-base mb-4 grow text-a4bbab">
+                                {promo.description}
+                              </p>
+                            ) : null}
+                            <Button
+                              onClick={onOrderClick}
+                              className="w-full py-3 mt-auto bg-[#3c5e45] text-white"
+                            >
+                              Claim This Offer
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    ))
-                  : null}
+                      ))
+                    : null}
+                </div>
               </div>
             </div>
-          </div>
+          ) : null}
 
-          <div className="text-center mt-4">
-            <p className="text-sm text-3c5e45">← Scroll to see more offers →</p>
-          </div>
+          {!hasNoPromos ? (
+            <div className="text-center mt-4">
+              <p className="text-sm text-3c5e45">
+                ← Scroll to see more offers →
+              </p>
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

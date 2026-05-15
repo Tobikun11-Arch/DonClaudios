@@ -13,8 +13,8 @@ export default function AboutSection() {
             <h2 className="text-5xl font-bold text-[#3c5e45]">Our Story</h2>
             <div className="space-y-4 text-lg text-[#3c5e45]">
               <p>
-                <strong>DonClaudio&apos;s Lechon House </strong> has been serving
-                Tanza, Cavite with authentic Filipino lechon for years.
+                <strong>DonClaudio&apos;s Lechon House </strong> has been
+                serving Tanza, Cavite with authentic Filipino lechon for years.
                 We&apos;re passionate about bringing families together with food
                 that celebrates our rich culinary heritage.
               </p>
@@ -45,7 +45,7 @@ export default function AboutSection() {
           </div>
 
           <div className="relative">
-            <div className="absolute -inset-4 rounded-3xl"/>
+            <div className="absolute -inset-4 rounded-3xl" />
             <div className="relative w-full h-150 rounded-3xl overflow-hidden">
               <Image
                 src="/assets/ourstory.JPG"
