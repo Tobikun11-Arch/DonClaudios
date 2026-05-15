@@ -1,5 +1,5 @@
 'use client';
-import {useSearchParams} from 'next/navigation';
+import {usePathname, useSearchParams} from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {useRouter} from 'next/navigation';
@@ -51,6 +51,7 @@ export default function DashboardLayout({
   profile
 }: DashboardLayoutProps) {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const tab = searchParams.get('tab');
   const router = useRouter();
   const logoutMutation = useLogout();
@@ -69,7 +70,12 @@ export default function DashboardLayout({
   const isActive = (itemTab: string | null) =>
     itemTab === null ? !tab : tab === itemTab;
 
-  const content = tab && slotByTab[tab] ? slotByTab[tab] : (order ?? children);
+  const isCheckoutPage = pathname.startsWith('/customer/dashboard/checkout');
+  const content = isCheckoutPage
+    ? children
+    : tab && slotByTab[tab]
+      ? slotByTab[tab]
+      : (order ?? children);
 
   return (
     <div className="flex h-screen cursor-default bg-gray-50">

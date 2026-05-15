@@ -27,6 +27,11 @@ type MeResponse = {
   user: {
     id: string;
     type: 'admin' | 'cashier' | 'customer';
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phoneNumber?: string;
+    address?: string;
   };
 };
 

@@ -14,20 +14,41 @@ import {
 } from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
-import {useCartStore, getCartSubtotal} from '@/app/store/cartStore';
 import {useLocationStore} from '@/app/store/locationStore';
 import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
-import {useCreateGuestOrderMutation} from '@/lib/hooks/orders/useGuestOrder';
+import {
+  useClearCustomerCartMutation,
+  useCustomerCartQuery,
+  useSetCustomerCartItemQuantityMutation
+} from '@/lib/hooks/cart/useCustomerCart';
+import {useCreateCustomerOrderMutation} from '@/lib/hooks/orders/useCustomerOrder';
+import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
 
-export default function CheckoutGuestPage() {
+function getProductId(value: unknown) {
+  if (typeof value === 'string') return value;
+  if (value && typeof value === 'object' && '_id' in value) {
+    return String((value as {_id: unknown})._id);
+  }
+  return String(value);
+}
+
+export default function CustomerCheckoutPage() {
   const params = useParams<{id: string}>();
   const router = useRouter();
 
-  const items = useCartStore(s => s.items);
-  const setQty = useCartStore(s => s.setQty);
-  const clearCart = useCartStore(s => s.clear);
+  const cartQuery = useCustomerCartQuery(true);
+  const meQuery = useMeQuery();
+  const customer = meQuery.data?.user;
+  const items = useMemo(
+    () => cartQuery.data?.cart?.items ?? [],
+    [cartQuery.data]
+  );
+
+  const setQtyMutation = useSetCustomerCartItemQuantityMutation();
+  const clearCartMutation = useClearCustomerCartMutation();
+  const createOrderMutation = useCreateCustomerOrderMutation();
 
   const promosQuery = usePublicPromosQuery();
   const promos = useMemo(
@@ -43,38 +64,31 @@ export default function CheckoutGuestPage() {
   const reservationTime = useOrderDetailsStore(s => s.reservationTime);
 
   const [notesToRider, setNotesToRider] = useState('');
-
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [mobileNumber, setMobileNumber] = useState('');
-  const [errors, setErrors] = useState<{
-    firstName?: string;
-    lastName?: string;
-    mobileNumber?: string;
-    paymentMethod?: string;
-  }>({});
-
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'GCash' | ''>('');
   const [draftPaymentMethod, setDraftPaymentMethod] = useState<
     'Cash' | 'GCash' | ''
   >('');
+  const [paymentError, setPaymentError] = useState('');
+  const [checkoutError, setCheckoutError] = useState('');
 
   const subtotal = useMemo(() => {
-    if (promos.length === 0) return getCartSubtotal(items);
+    if (promos.length === 0) {
+      return items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    }
+
     return items.reduce((sum, i) => {
       const {unitPrice} = getDiscountedUnitPrice({
         promos,
-        productId: i.productId,
+        productId: getProductId(i.productId),
         basePrice: i.price
       });
-      return sum + unitPrice * i.qty;
+      return sum + unitPrice * i.quantity;
     }, 0);
   }, [items, promos]);
+
   const deliveryFee = orderType === 'Delivery' && items.length > 0 ? 49 : 0;
   const total = subtotal + deliveryFee;
-
-  const createOrderMutation = useCreateGuestOrderMutation();
 
   const receiveByText =
     orderType === 'Reservation'
@@ -92,66 +106,57 @@ export default function CheckoutGuestPage() {
 
   const confirmPaymentModal = () => {
     setPaymentMethod(draftPaymentMethod);
-    setErrors(current => ({...current, paymentMethod: undefined}));
+    setPaymentError('');
     setPaymentModalOpen(false);
   };
 
   const handleCheckout = async () => {
     if (items.length === 0) return;
-
-    const nextErrors: typeof errors = {};
-    if (!firstName.trim()) nextErrors.firstName = 'First name is required.';
-    if (!lastName.trim()) nextErrors.lastName = 'Last name is required.';
-    if (!mobileNumber.trim()) {
-      nextErrors.mobileNumber = 'Mobile number is required.';
-    }
     if (!paymentMethod) {
-      nextErrors.paymentMethod = 'Please select a payment method.';
+      setPaymentError('Please select a payment method.');
+      return;
     }
 
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
+    setCheckoutError('');
 
-    const created = await createOrderMutation.mutateAsync({
-      guestInfo: {
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        phoneNumber: mobileNumber.trim(),
-        address: location?.address ?? undefined
-      },
-      orderType:
-        orderType === 'Delivery'
-          ? 'delivery'
-          : orderType === 'Pick-up'
-            ? 'pickup'
-            : 'reservation',
-      items: items.map(i => {
-        const {unitPrice} = getDiscountedUnitPrice({
-          promos,
-          productId: i.productId,
-          basePrice: i.price
-        });
-        return {
-          productId: i.productId,
-          quantity: i.qty,
-          price: unitPrice,
-          specialRequest: i.instructions
-        };
-      }),
-      totalAmount: total,
-      riderNotes: notesToRider.trim().length ? notesToRider.trim() : undefined,
-      paymentMethod:
-        paymentMethod === 'GCash'
-          ? 'gcash'
-          : paymentMethod === 'Cash'
-            ? 'cash'
-            : undefined
-    });
+    try {
+      const created = await createOrderMutation.mutateAsync({
+        orderType:
+          orderType === 'Delivery'
+            ? 'delivery'
+            : orderType === 'Pick-up'
+              ? 'pickup'
+              : 'reservation',
+        items: items.map(i => {
+          const {unitPrice} = getDiscountedUnitPrice({
+            promos,
+            productId: getProductId(i.productId),
+            basePrice: i.price
+          });
+          return {
+            productId: getProductId(i.productId),
+            quantity: i.quantity,
+            price: unitPrice
+          };
+        }),
+        totalAmount: total,
+        riderNotes: notesToRider.trim().length
+          ? notesToRider.trim()
+          : undefined,
+        paymentMethod: paymentMethod === 'GCash' ? 'gcash' : 'cash'
+      });
 
-    const orderId = created?.order?._id;
-    clearCart();
-    if (orderId) {
-      router.push(`/order-confirmation/${orderId}`);
+      const orderId = created?.order?._id;
+      await clearCartMutation.mutateAsync();
+      if (orderId) {
+        router.push(`/order-confirmation/${orderId}`);
+      }
+    } catch (error) {
+      const message =
+        error && typeof error === 'object' && 'message' in error
+          ? String((error as {message?: unknown}).message)
+          : 'Failed to place order. Please try again.';
+      setCheckoutError(message);
     }
   };
 
@@ -176,6 +181,38 @@ export default function CheckoutGuestPage() {
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
           <div className="lg:col-span-2 space-y-5">
+            <div className="rounded-2xl bg-white p-5 shadow">
+              <p className="text-lg font-bold text-gray-900">Account Details</p>
+              <p className="text-xs text-gray-500 mt-1">
+                We will use your saved account information for this order.
+              </p>
+
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">Name</p>
+                  <p className="mt-1 font-semibold text-gray-900">
+                    {[customer?.firstName, customer?.lastName]
+                      .filter(Boolean)
+                      .join(' ') || 'No name saved'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">
+                    Mobile Number
+                  </p>
+                  <p className="mt-1 font-semibold text-gray-900">
+                    {customer?.phoneNumber || 'No mobile number saved'}
+                  </p>
+                </div>
+                <div className="md:col-span-2">
+                  <p className="text-xs font-semibold text-gray-700">Email</p>
+                  <p className="mt-1 font-semibold text-gray-900">
+                    {customer?.email || 'No email saved'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="rounded-2xl bg-white p-5 shadow">
               <p className="text-lg font-bold text-gray-900">
                 Delivery Details
@@ -223,92 +260,7 @@ export default function CheckoutGuestPage() {
                     placeholder="Notes to rider"
                     className="mt-3"
                   />
-
-                  <Button
-                    type="button"
-                    className="mt-4 bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
-                  >
-                    Save Details
-                  </Button>
                 </div>
-              </div>
-            </div>
-
-            <div className="rounded-2xl bg-white p-5 shadow">
-              <p className="text-lg font-bold text-gray-900">
-                Checkout As Guest
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Providing this information allows us to contact and update you
-                about your order.
-              </p>
-
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs font-semibold text-gray-700">
-                    First Name
-                  </p>
-                  <Input
-                    value={firstName}
-                    onChange={e => {
-                      setFirstName(e.target.value);
-                      setErrors(current => ({
-                        ...current,
-                        firstName: undefined
-                      }));
-                    }}
-                    placeholder="Your First Name"
-                    className="mt-2"
-                  />
-                  {errors.firstName ? (
-                    <p className="mt-1 text-xs font-medium text-red-600">
-                      {errors.firstName}
-                    </p>
-                  ) : null}
-                </div>
-
-                <div>
-                  <p className="text-xs font-semibold text-gray-700">
-                    Last Name
-                  </p>
-                  <Input
-                    value={lastName}
-                    onChange={e => {
-                      setLastName(e.target.value);
-                      setErrors(current => ({...current, lastName: undefined}));
-                    }}
-                    placeholder="Your Last Name"
-                    className="mt-2"
-                  />
-                  {errors.lastName ? (
-                    <p className="mt-1 text-xs font-medium text-red-600">
-                      {errors.lastName}
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <p className="text-xs font-semibold text-gray-700">
-                  Mobile Number
-                </p>
-                <Input
-                  value={mobileNumber}
-                  onChange={e => {
-                    setMobileNumber(e.target.value);
-                    setErrors(current => ({
-                      ...current,
-                      mobileNumber: undefined
-                    }));
-                  }}
-                  placeholder="+63"
-                  className="mt-2"
-                />
-                {errors.mobileNumber ? (
-                  <p className="mt-1 text-xs font-medium text-red-600">
-                    {errors.mobileNumber}
-                  </p>
-                ) : null}
               </div>
             </div>
 
@@ -336,9 +288,9 @@ export default function CheckoutGuestPage() {
                   <p className="text-xs font-semibold text-[#3c5e45]">Select</p>
                 </div>
               </button>
-              {errors.paymentMethod ? (
+              {paymentError ? (
                 <p className="mt-2 text-xs font-medium text-red-600">
-                  {errors.paymentMethod}
+                  {paymentError}
                 </p>
               ) : null}
             </div>
@@ -351,27 +303,29 @@ export default function CheckoutGuestPage() {
                 <button
                   type="button"
                   className="text-xs font-semibold text-[#3c5e45]"
-                  onClick={() => router.push('/order')}
+                  onClick={() => router.push('/customer/dashboard')}
                 >
                   Add items
                 </button>
               </div>
 
               <div className="mt-4 space-y-4">
-                {items.length === 0 ? (
+                {cartQuery.isLoading ? (
+                  <p className="text-sm text-gray-500">Loading cart...</p>
+                ) : items.length === 0 ? (
                   <p className="text-sm text-gray-500">Your cart is empty.</p>
                 ) : (
                   items.map(item => {
                     const {unitPrice} = getDiscountedUnitPrice({
                       promos,
-                      productId: item.productId,
+                      productId: getProductId(item.productId),
                       basePrice: item.price
                     });
                     const isDiscounted = unitPrice < item.price;
 
                     return (
                       <div
-                        key={item.productId}
+                        key={getProductId(item.productId)}
                         className="flex items-start gap-3"
                       >
                         <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-gray-50">
@@ -383,6 +337,7 @@ export default function CheckoutGuestPage() {
                             }
                             alt={item.name}
                             fill
+                            sizes="48px"
                             className="object-cover"
                           />
                         </div>
@@ -409,32 +364,37 @@ export default function CheckoutGuestPage() {
                                 type="button"
                                 className="h-7 w-9 inline-flex items-center justify-center hover:bg-gray-50"
                                 onClick={() =>
-                                  setQty(
-                                    item.productId,
-                                    Math.max(1, item.qty - 1)
-                                  )
+                                  setQtyMutation.mutate({
+                                    productId: getProductId(item.productId),
+                                    quantity: Math.max(1, item.quantity - 1)
+                                  })
                                 }
                                 aria-label="Decrease"
+                                disabled={setQtyMutation.isPending}
                               >
                                 <Minus className="h-4 w-4" />
                               </button>
                               <div className="min-w-9 text-center text-sm font-semibold text-gray-900">
-                                {item.qty}
+                                {item.quantity}
                               </div>
                               <button
                                 type="button"
                                 className="h-7 w-9 inline-flex items-center justify-center hover:bg-gray-50"
                                 onClick={() =>
-                                  setQty(item.productId, item.qty + 1)
+                                  setQtyMutation.mutate({
+                                    productId: getProductId(item.productId),
+                                    quantity: item.quantity + 1
+                                  })
                                 }
                                 aria-label="Increase"
+                                disabled={setQtyMutation.isPending}
                               >
                                 <Plus className="h-4 w-4" />
                               </button>
                             </div>
 
                             <p className="text-sm font-bold text-gray-900">
-                              ₱{unitPrice * item.qty}.00
+                              ₱{unitPrice * item.quantity}.00
                             </p>
                           </div>
                         </div>
@@ -468,13 +428,22 @@ export default function CheckoutGuestPage() {
                 <Button
                   type="button"
                   className="w-full h-12 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
-                  disabled={items.length === 0 || createOrderMutation.isPending}
+                  disabled={
+                    items.length === 0 ||
+                    createOrderMutation.isPending ||
+                    clearCartMutation.isPending
+                  }
                   onClick={handleCheckout}
                 >
                   {createOrderMutation.isPending
                     ? 'Placing order...'
                     : 'Checkout'}
                 </Button>
+                {checkoutError ? (
+                  <p className="text-center text-xs font-medium text-red-600">
+                    {checkoutError}
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>

@@ -53,9 +53,29 @@ export default function NoPromosEmptyState() {
             <ellipse cx="60" cy="71" rx="10" ry="7" fill="#d45a35" />
             <circle cx="56" cy="70" r="2.5" fill="#2a1a0e" />
             <circle cx="64" cy="70" r="2.5" fill="#2a1a0e" />
-            <path d="M50 82 Q60 90 70 82" stroke="#d45a35" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-            <ellipse cx="26" cy="66" rx="8" ry="5" fill="#e8734a" transform="rotate(-20 26 66)" />
-            <ellipse cx="94" cy="66" rx="8" ry="5" fill="#e8734a" transform="rotate(20 94 66)" />
+            <path
+              d="M50 82 Q60 90 70 82"
+              stroke="#d45a35"
+              strokeWidth="2.5"
+              fill="none"
+              strokeLinecap="round"
+            />
+            <ellipse
+              cx="26"
+              cy="66"
+              rx="8"
+              ry="5"
+              fill="#e8734a"
+              transform="rotate(-20 26 66)"
+            />
+            <ellipse
+              cx="94"
+              cy="66"
+              rx="8"
+              ry="5"
+              fill="#e8734a"
+              transform="rotate(20 94 66)"
+            />
             <path d="M55 38 Q52 26 46 24 Q50 30 48 36" fill="#f08060" />
             <path d="M65 38 Q68 26 74 24 Q70 30 72 36" fill="#f08060" />
             <path d="M80 88 Q78 98 72 100 Q76 96 75 90" fill="#e8734a" />
