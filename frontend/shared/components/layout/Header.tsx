@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import {Button} from '@/components/ui/button';
-import {ShoppingCart, Menu, X} from 'lucide-react';
+import {ShoppingCart, Menu, X, History} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {usePathname} from 'next/navigation';
@@ -165,6 +165,13 @@ export default function Header() {
 
         <div className="hidden lg:flex gap-4 items-center">
           <Link href="/sign-in">Login</Link>
+          <Link
+            href="/order-history"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full text-[#3c5e45] hover:bg-[#3c5e45]/10"
+            aria-label="Order history"
+          >
+            <History className="h-5 w-5" />
+          </Link>
           <Button
             onClick={handleCartClick}
             className="flex items-center gap-2 bg-[#3c5e45]"
@@ -234,6 +241,14 @@ export default function Header() {
               className="text-sm font-medium text-gray-700 hover:opacity-80"
             >
               Login
+            </Link>
+            <Link
+              href="/order-history"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:opacity-80"
+            >
+              <History className="h-4 w-4" />
+              Order History
             </Link>
             <Button
               onClick={handleCartClick}

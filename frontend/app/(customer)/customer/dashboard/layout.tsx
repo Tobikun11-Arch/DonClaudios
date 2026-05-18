@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {useRouter} from 'next/navigation';
 import {useLogout} from '@/lib/hooks/auth/useLogout';
-import {ShoppingCart, Tag, Bell, User, LogOut} from 'lucide-react';
+import {ShoppingCart, Tag, Bell, User, LogOut, History} from 'lucide-react';
 import CustomerCartDrawer from '@/shared/components/cart/CustomerCartDrawer';
 
 const TABS = [
@@ -28,6 +28,12 @@ const TABS = [
     href: '/customer/dashboard?tab=notification'
   },
   {
+    label: 'History',
+    tab: 'history',
+    icon: History,
+    href: '/customer/dashboard?tab=history'
+  },
+  {
     label: 'Profile',
     tab: 'profile',
     icon: User,
@@ -40,6 +46,7 @@ type DashboardLayoutProps = {
   order?: React.ReactNode;
   promos?: React.ReactNode;
   notification?: React.ReactNode;
+  history?: React.ReactNode;
   profile?: React.ReactNode;
 };
 
@@ -48,6 +55,7 @@ export default function DashboardLayout({
   order,
   promos: promosSlot,
   notification,
+  history,
   profile
 }: DashboardLayoutProps) {
   const searchParams = useSearchParams();
@@ -59,6 +67,7 @@ export default function DashboardLayout({
   const slotByTab: Record<string, React.ReactNode | undefined> = {
     promos: promosSlot,
     notification,
+    history,
     profile
   };
 

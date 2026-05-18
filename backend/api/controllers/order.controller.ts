@@ -10,6 +10,36 @@ function isNonEmptyString(value: unknown): value is string {
 }
 
 export const orderController = {
+  async listMyOrders(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+      }
+
+      const orders = await orderRepository.listByCustomerId(req.auth.userId);
+      const orderIds = orders.map(order => String(order._id));
+      const items = await orderItemRepository.listByOrderIds(orderIds);
+      const itemsByOrderId = items.reduce<Record<string, typeof items>>(
+        (acc, item) => {
+          const orderId = String(item.orderId);
+          acc[orderId] = acc[orderId] ?? [];
+          acc[orderId].push(item);
+          return acc;
+        },
+        {}
+      );
+
+      res.json({
+        orders: orders.map(order => ({
+          ...order.toObject(),
+          items: itemsByOrderId[String(order._id)] ?? []
+        }))
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async createCustomerOrder(req: Request, res: Response, next: NextFunction) {
     try {
       if (!req.auth) {
