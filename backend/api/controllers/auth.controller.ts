@@ -3,15 +3,24 @@ import {CookieOptions} from 'express';
 import {authService} from '../services/auth.service';
 import {env} from '../config/env';
 import {ApiError} from '../utils/error';
+import {customerRepository} from '../repositories/customer.repository';
 
 const ACCESS_COOKIE = 'dc_access_token';
 const REFRESH_COOKIE = 'dc_refresh_token';
 
 function getCookieOptions(): CookieOptions {
+  const isProduction =
+    env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+  const sameSite =
+    process.env.COOKIE_SAMESITE ?? (isProduction ? 'none' : 'lax');
+  const secure =
+    process.env.COOKIE_SECURE === 'true' ||
+    (process.env.COOKIE_SECURE !== 'false' && sameSite === 'none');
+
   return {
     httpOnly: true,
-    secure: process.env.COOKIE_SECURE === 'true',
-    sameSite: process.env.COOKIE_SAMESITE as 'strict' | 'lax' | 'none',
+    secure,
+    sameSite: sameSite as 'strict' | 'lax' | 'none',
     path: '/'
   };
 }
@@ -27,10 +36,20 @@ export const authController = {
         throw new ApiError(401, 'UNAUTHORIZED', 'Invalid token');
       }
 
+      const customer =
+        req.auth.type === 'customer'
+          ? await customerRepository.findById(req.auth.userId)
+          : null;
+
       res.status(200).json({
         user: {
           id: req.auth.userId,
-          type: req.auth.type
+          type: req.auth.type,
+          firstName: customer?.firstName,
+          lastName: customer?.lastName,
+          email: customer?.email,
+          phoneNumber: customer?.phoneNumber,
+          address: customer?.address
         }
       });
     } catch (error) {
@@ -85,7 +104,11 @@ export const authController = {
         user: {
           id: user._id.toString(),
           email: user.email,
-          type: userType
+          type: userType,
+          firstName: 'firstName' in user ? user.firstName : undefined,
+          lastName: 'lastName' in user ? user.lastName : undefined,
+          phoneNumber: 'phoneNumber' in user ? user.phoneNumber : undefined,
+          address: 'address' in user ? user.address : undefined
         }
       });
     } catch (error) {

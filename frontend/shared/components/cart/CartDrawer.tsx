@@ -18,6 +18,7 @@ import {useCartUiStore} from '@/app/store/cartUiStore';
 import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
+import CartRemoveConfirmModal from './CartRemoveConfirmModal';
 
 type CartDrawerProps = {
   deliveryFee?: number;
@@ -62,6 +63,10 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
   const [draftReservationDate, setDraftReservationDate] =
     useState(defaultScheduleDate);
   const [draftReservationTime, setDraftReservationTime] = useState('18:00');
+  const [removeTarget, setRemoveTarget] = useState<{
+    productId: string;
+    name: string;
+  } | null>(null);
 
   const promosQuery = usePublicPromosQuery();
   const promos = useMemo(
@@ -115,6 +120,16 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
         : String(Date.now());
     close();
     router.push(`/checkout/${id}`);
+  };
+
+  const requestRemoveItem = (item: {productId: string; name: string}) => {
+    setRemoveTarget({productId: item.productId, name: item.name});
+  };
+
+  const confirmRemoveItem = () => {
+    if (!removeTarget) return;
+    removeItem(removeTarget.productId);
+    setRemoveTarget(null);
   };
 
   const summaryText =
@@ -200,7 +215,7 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
                         <button
                           type="button"
                           className="mt-1 text-xs font-semibold text-[#c30010]"
-                          onClick={() => removeItem(item.productId)}
+                          onClick={() => requestRemoveItem(item)}
                         >
                           Remove
                         </button>
@@ -235,9 +250,13 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
                         <button
                           type="button"
                           className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50"
-                          onClick={() =>
-                            setQty(item.productId, Math.max(1, item.qty - 1))
-                          }
+                          onClick={() => {
+                            if (item.qty <= 1) {
+                              requestRemoveItem(item);
+                              return;
+                            }
+                            setQty(item.productId, item.qty - 1);
+                          }}
                           aria-label="Decrease"
                         >
                           <Minus className="h-4 w-4" />
@@ -436,6 +455,13 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
           </div>
         </div>
       ) : null}
+
+      <CartRemoveConfirmModal
+        isOpen={removeTarget !== null}
+        itemName={removeTarget?.name ?? ''}
+        onCancel={() => setRemoveTarget(null)}
+        onConfirm={confirmRemoveItem}
+      />
     </div>
   );
 }

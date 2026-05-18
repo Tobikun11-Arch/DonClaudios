@@ -1,8 +1,17 @@
 'use client';
 
-import {useMemo} from 'react';
+import {useMemo, useState} from 'react';
 import Image from 'next/image';
-import {X, Minus, Plus, ChevronDown} from 'lucide-react';
+import {
+  X,
+  Minus,
+  Plus,
+  ChevronDown,
+  Bike,
+  ShoppingBag,
+  CalendarClock
+} from 'lucide-react';
+import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
 import {useCartUiStore} from '@/app/store/cartUiStore';
 import {
@@ -12,6 +21,8 @@ import {
 } from '@/lib/hooks/cart/useCustomerCart';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
+import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
+import CartRemoveConfirmModal from './CartRemoveConfirmModal';
 
 type CustomerCartDrawerProps = {
   deliveryFee?: number;
@@ -20,8 +31,22 @@ type CustomerCartDrawerProps = {
 export default function CustomerCartDrawer({
   deliveryFee: _deliveryFee = 49
 }: CustomerCartDrawerProps) {
+  const router = useRouter();
   const isOpen = useCartUiStore(s => s.isOpen);
   const close = useCartUiStore(s => s.close);
+
+  const orderType = useOrderDetailsStore(s => s.orderType);
+  const timing = useOrderDetailsStore(s => s.timing);
+  const reservationGuests = useOrderDetailsStore(s => s.reservationGuests);
+  const reservationDate = useOrderDetailsStore(s => s.reservationDate);
+  const reservationTime = useOrderDetailsStore(s => s.reservationTime);
+  const setOrderType = useOrderDetailsStore(s => s.setOrderType);
+  const setTiming = useOrderDetailsStore(s => s.setTiming);
+  const setReservationGuests = useOrderDetailsStore(
+    s => s.setReservationGuests
+  );
+  const setReservationDate = useOrderDetailsStore(s => s.setReservationDate);
+  const setReservationTime = useOrderDetailsStore(s => s.setReservationTime);
 
   const promosQuery = usePublicPromosQuery();
   const promos = useMemo(
@@ -54,10 +79,80 @@ export default function CustomerCartDrawer({
     }, 0);
   }, [items, promos]);
 
-  const effectiveDeliveryFee = items.length > 0 ? 0 * _deliveryFee : 0;
+  const effectiveDeliveryFee =
+    items.length > 0 && orderType === 'Delivery' ? _deliveryFee : 0;
   const total = subtotal + effectiveDeliveryFee;
 
+  const defaultScheduleDate = useMemo(() => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }, []);
+
+  const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
+  const [draftOrderType, setDraftOrderType] = useState<
+    'Delivery' | 'Pick-up' | 'Reservation'
+  >('Delivery');
+  const [draftTiming, setDraftTiming] = useState<'ASAP'>('ASAP');
+  const [draftReservationGuests, setDraftReservationGuests] = useState(1);
+  const [draftReservationDate, setDraftReservationDate] =
+    useState(defaultScheduleDate);
+  const [draftReservationTime, setDraftReservationTime] = useState('18:00');
+  const [removeTarget, setRemoveTarget] = useState<{
+    productId: string;
+    name: string;
+  } | null>(null);
+
   if (!isOpen) return null;
+
+  const openOrderDetails = () => {
+    setDraftOrderType(orderType);
+    setDraftTiming(timing);
+    setDraftReservationGuests(reservationGuests);
+    setDraftReservationDate(reservationDate || defaultScheduleDate);
+    setDraftReservationTime(reservationTime || '18:00');
+    setOrderDetailsOpen(true);
+  };
+
+  const cancelOrderDetails = () => {
+    setOrderDetailsOpen(false);
+  };
+
+  const confirmOrderDetails = () => {
+    setOrderType(draftOrderType);
+    setTiming(draftTiming);
+    setReservationGuests(Math.max(1, draftReservationGuests));
+    setReservationDate(draftReservationDate);
+    setReservationTime(draftReservationTime);
+    setOrderDetailsOpen(false);
+  };
+
+  const goToCheckout = () => {
+    const id =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : String(Date.now());
+    close();
+    router.push(`/customer/dashboard/checkout/${id}`);
+  };
+
+  const requestRemoveItem = (item: {productId: string; name: string}) => {
+    setRemoveTarget({productId: item.productId, name: item.name});
+  };
+
+  const confirmRemoveItem = () => {
+    if (!removeTarget) return;
+    removeItemMutation.mutate(removeTarget.productId, {
+      onSuccess: () => setRemoveTarget(null)
+    });
+  };
+
+  const summaryText =
+    orderType === 'Reservation'
+      ? `${orderType}, ${reservationDate}, ${reservationTime}`
+      : `${orderType}, Today, ${timing}`;
 
   return (
     <div className="fixed inset-0 z-80">
@@ -87,8 +182,9 @@ export default function CustomerCartDrawer({
             <button
               type="button"
               className="mt-0.5 w-full inline-flex items-center justify-between gap-2 text-left text-xs font-semibold text-[#c30010]"
+              onClick={openOrderDetails}
             >
-              <span className="min-w-0 truncate">Delivery</span>
+              <span className="min-w-0 truncate">{summaryText}</span>
               <ChevronDown className="h-4 w-4 shrink-0" />
             </button>
           </div>
@@ -140,6 +236,7 @@ export default function CustomerCartDrawer({
                       }
                       alt={item.name}
                       fill
+                      sizes="64px"
                       className="object-cover"
                     />
                   </div>
@@ -153,9 +250,7 @@ export default function CustomerCartDrawer({
                         <button
                           type="button"
                           className="mt-1 text-xs font-semibold text-[#c30010]"
-                          onClick={() =>
-                            removeItemMutation.mutate(item.productId)
-                          }
+                          onClick={() => requestRemoveItem(item)}
                           disabled={removeItemMutation.isPending}
                         >
                           Remove
@@ -191,12 +286,16 @@ export default function CustomerCartDrawer({
                         <button
                           type="button"
                           className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50"
-                          onClick={() =>
+                          onClick={() => {
+                            if (item.quantity <= 1) {
+                              requestRemoveItem(item);
+                              return;
+                            }
                             setQtyMutation.mutate({
                               productId: item.productId,
-                              quantity: Math.max(1, item.quantity - 1)
-                            })
-                          }
+                              quantity: item.quantity - 1
+                            });
+                          }}
                           aria-label="Decrease"
                           disabled={setQtyMutation.isPending}
                         >
@@ -253,11 +352,163 @@ export default function CustomerCartDrawer({
             type="button"
             className="mt-4 w-full h-12 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
             disabled={items.length === 0}
+            onClick={goToCheckout}
           >
             Go To Checkout
           </Button>
         </div>
       </div>
+
+      {orderDetailsOpen ? (
+        <div
+          className="fixed inset-0 z-[90] bg-black/40 flex items-center justify-center p-4"
+          onClick={cancelOrderDetails}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-5 border-b">
+              <p className="text-xl font-bold text-gray-900">Order details</p>
+              <Button
+                type="button"
+                onClick={cancelOrderDetails}
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="px-6 py-6">
+              <p className="text-sm font-semibold text-gray-900">
+                Select order type
+              </p>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDraftOrderType('Delivery')}
+                  className={
+                    'h-12 rounded-xl border px-4 inline-flex items-center justify-center gap-2 font-semibold ' +
+                    (draftOrderType === 'Delivery'
+                      ? 'bg-[#3c5e45] text-white'
+                      : 'bg-white text-gray-900 border-gray-200 hover:bg-gray-50')
+                  }
+                >
+                  <Bike className="h-5 w-5" />
+                  Delivery
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDraftOrderType('Pick-up')}
+                  className={
+                    'h-12 rounded-xl border px-4 inline-flex items-center justify-center gap-2 font-semibold ' +
+                    (draftOrderType === 'Pick-up'
+                      ? 'bg-[#3c5e45] text-white'
+                      : 'bg-white text-gray-900 border-gray-200 hover:bg-gray-50')
+                  }
+                >
+                  <ShoppingBag className="h-5 w-5" />
+                  Pick-up
+                </button>
+              </div>
+
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => setDraftOrderType('Reservation')}
+                  className={
+                    'h-12 w-full rounded-xl border px-4 inline-flex items-center justify-center gap-2 font-semibold ' +
+                    (draftOrderType === 'Reservation'
+                      ? 'bg-[#3c5e45] text-white'
+                      : 'bg-white text-gray-900 border-gray-200 hover:bg-gray-50')
+                  }
+                >
+                  <CalendarClock className="h-5 w-5" />
+                  Reservation
+                </button>
+              </div>
+
+              {draftOrderType === 'Reservation' ? (
+                <div className="mt-6 space-y-6">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      Schedule
+                    </p>
+                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                      <input
+                        type="date"
+                        value={draftReservationDate}
+                        onChange={e => setDraftReservationDate(e.target.value)}
+                        className="h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
+                      />
+                      <input
+                        type="time"
+                        value={draftReservationTime}
+                        onChange={e => setDraftReservationTime(e.target.value)}
+                        className="h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      Number of Guests
+                    </p>
+                    <div className="mt-3 flex items-center gap-3">
+                      <input
+                        type="number"
+                        min={1}
+                        value={draftReservationGuests}
+                        onChange={e =>
+                          setDraftReservationGuests(
+                            Number.isFinite(Number(e.target.value))
+                              ? Number(e.target.value)
+                              : 1
+                          )
+                        }
+                        className="h-10 w-28 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
+                      />
+                      <p className="text-sm text-gray-500">guest(s)</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 px-6 py-5 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={cancelOrderDetails}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="bg-[#c30010] text-white hover:bg-[#a6000d]"
+                onClick={confirmOrderDetails}
+              >
+                Confirm
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <CartRemoveConfirmModal
+        isOpen={removeTarget !== null}
+        itemName={removeTarget?.name ?? ''}
+        isRemoving={removeItemMutation.isPending}
+        onCancel={() => setRemoveTarget(null)}
+        onConfirm={confirmRemoveItem}
+      />
     </div>
   );
 }
