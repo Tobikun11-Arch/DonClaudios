@@ -149,7 +149,7 @@ export default function CustomerCheckoutPage() {
       const orderId = created?.order?._id;
       await clearCartMutation.mutateAsync();
       if (orderId) {
-        router.push(`/order-confirmation/${orderId}`);
+        router.push(`/customer/dashboard/order-confirmation/${orderId}`);
       }
     } catch (error) {
       const message =

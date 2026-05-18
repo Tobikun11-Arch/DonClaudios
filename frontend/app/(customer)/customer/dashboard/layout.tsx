@@ -70,8 +70,10 @@ export default function DashboardLayout({
   const isActive = (itemTab: string | null) =>
     itemTab === null ? !tab : tab === itemTab;
 
-  const isCheckoutPage = pathname.startsWith('/customer/dashboard/checkout');
-  const content = isCheckoutPage
+  const isStandalonePage =
+    pathname.startsWith('/customer/dashboard/checkout') ||
+    pathname.startsWith('/customer/dashboard/order-confirmation');
+  const content = isStandalonePage
     ? children
     : tab && slotByTab[tab]
       ? slotByTab[tab]
