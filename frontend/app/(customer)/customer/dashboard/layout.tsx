@@ -40,6 +40,7 @@ type DashboardLayoutProps = {
   order?: React.ReactNode;
   promos?: React.ReactNode;
   notification?: React.ReactNode;
+  history?: React.ReactNode;
   profile?: React.ReactNode;
 };
 
@@ -48,6 +49,7 @@ export default function DashboardLayout({
   order,
   promos: promosSlot,
   notification,
+  history,
   profile
 }: DashboardLayoutProps) {
   const searchParams = useSearchParams();
@@ -59,6 +61,7 @@ export default function DashboardLayout({
   const slotByTab: Record<string, React.ReactNode | undefined> = {
     promos: promosSlot,
     notification,
+    history,
     profile
   };
 
@@ -70,8 +73,10 @@ export default function DashboardLayout({
   const isActive = (itemTab: string | null) =>
     itemTab === null ? !tab : tab === itemTab;
 
-  const isCheckoutPage = pathname.startsWith('/customer/dashboard/checkout');
-  const content = isCheckoutPage
+  const isStandalonePage =
+    pathname.startsWith('/customer/dashboard/checkout') ||
+    pathname.startsWith('/customer/dashboard/order-confirmation');
+  const content = isStandalonePage
     ? children
     : tab && slotByTab[tab]
       ? slotByTab[tab]

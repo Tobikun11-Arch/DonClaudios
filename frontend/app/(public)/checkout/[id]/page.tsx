@@ -20,6 +20,7 @@ import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
 import {useCreateGuestOrderMutation} from '@/lib/hooks/orders/useGuestOrder';
+import {saveGuestOrderHistoryEntry} from '@/lib/orders/orderHistoryStorage';
 
 export default function CheckoutGuestPage() {
   const params = useParams<{id: string}>();
@@ -112,6 +113,22 @@ export default function CheckoutGuestPage() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
+    const orderItems = items.map(i => {
+      const {unitPrice} = getDiscountedUnitPrice({
+        promos,
+        productId: i.productId,
+        basePrice: i.price
+      });
+      return {
+        productId: i.productId,
+        quantity: i.qty,
+        price: unitPrice,
+        specialRequest: i.instructions,
+        name: i.name,
+        imageUrl: i.imageUrl
+      };
+    });
+
     const created = await createOrderMutation.mutateAsync({
       guestInfo: {
         firstName: firstName.trim(),
@@ -125,19 +142,7 @@ export default function CheckoutGuestPage() {
           : orderType === 'Pick-up'
             ? 'pickup'
             : 'reservation',
-      items: items.map(i => {
-        const {unitPrice} = getDiscountedUnitPrice({
-          promos,
-          productId: i.productId,
-          basePrice: i.price
-        });
-        return {
-          productId: i.productId,
-          quantity: i.qty,
-          price: unitPrice,
-          specialRequest: i.instructions
-        };
-      }),
+      items: orderItems,
       totalAmount: total,
       riderNotes: notesToRider.trim().length ? notesToRider.trim() : undefined,
       paymentMethod:
@@ -149,6 +154,31 @@ export default function CheckoutGuestPage() {
     });
 
     const orderId = created?.order?._id;
+    if (orderId) {
+      saveGuestOrderHistoryEntry({
+        _id: orderId,
+        orderType:
+          orderType === 'Delivery'
+            ? 'delivery'
+            : orderType === 'Pick-up'
+              ? 'pickup'
+              : 'reservation',
+        totalAmount: total,
+        riderNotes: notesToRider.trim().length
+          ? notesToRider.trim()
+          : undefined,
+        orderStatus: created.order.orderStatus,
+        isGuest: true,
+        guestInfo: {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          phoneNumber: mobileNumber.trim(),
+          address: location?.address ?? undefined
+        },
+        items: orderItems,
+        createdAt: new Date().toISOString()
+      });
+    }
     clearCart();
     if (orderId) {
       router.push(`/order-confirmation/${orderId}`);

@@ -40,6 +40,45 @@ export type CreatedGuestOrderResponse = {
   };
 };
 
+export type OrderHistoryItem = {
+  _id?: string;
+  productId:
+    | string
+    | {
+        _id: string;
+        name?: string;
+        imageUrl?: string;
+        category?: string;
+      };
+  quantity: number;
+  price: number;
+  specialRequest?: string;
+  name?: string;
+  imageUrl?: string;
+};
+
+export type OrderHistoryEntry = {
+  _id: string;
+  orderType: 'pickup' | 'delivery' | 'reservation';
+  totalAmount: number;
+  riderNotes?: string;
+  orderStatus: string;
+  isGuest: boolean;
+  guestInfo?: {
+    firstName: string;
+    lastName: string;
+    phoneNumber: string;
+    address?: string;
+  };
+  items: OrderHistoryItem[];
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type ListOrdersResponse = {
+  orders: OrderHistoryEntry[];
+};
+
 export async function createGuestOrder(body: CreateGuestOrderInput) {
   const res = await httpClient.post<CreatedGuestOrderResponse>(
     '/orders/guest',
@@ -53,5 +92,10 @@ export async function createCustomerOrder(body: CreateCustomerOrderInput) {
     '/orders/me',
     body
   );
+  return res.data;
+}
+
+export async function listMyOrders() {
+  const res = await httpClient.get<ListOrdersResponse>('/orders/me');
   return res.data;
 }
