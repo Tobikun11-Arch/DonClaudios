@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {useRouter} from 'next/navigation';
 import {useLogout} from '@/lib/hooks/auth/useLogout';
-import {ShoppingCart, Tag, Bell, User, LogOut, History} from 'lucide-react';
+import {ShoppingCart, Tag, Bell, User, LogOut} from 'lucide-react';
 import CustomerCartDrawer from '@/shared/components/cart/CustomerCartDrawer';
 
 const TABS = [
@@ -26,12 +26,6 @@ const TABS = [
     tab: 'notification',
     icon: Bell,
     href: '/customer/dashboard?tab=notification'
-  },
-  {
-    label: 'History',
-    tab: 'history',
-    icon: History,
-    href: '/customer/dashboard?tab=history'
   },
   {
     label: 'Profile',

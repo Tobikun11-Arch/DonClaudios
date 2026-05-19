@@ -4,13 +4,16 @@ import LocationPicker from '@/features/order/components/LocationPicker';
 import {useMemo, useState} from 'react';
 import Image from 'next/image';
 import {Input} from '@/components/ui/input';
-import {Search} from 'lucide-react';
+import {Search, History} from 'lucide-react';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import type {Product} from '@/lib/types/product';
 import MenuCard from '@/shared/components/MenuCard';
 import {useLocationStore} from '@/app/store/locationStore';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import type {Promo} from '@/lib/types/promo';
+import Link from 'next/link';
+import {Button} from '@/components/ui/button';
+
 import {
   getBundleBadge,
   getPromoBadgeForProduct
@@ -20,6 +23,7 @@ function ProductsSection() {
   const {data, isLoading, isError} = useProductsQuery();
   const promosQuery = usePublicPromosQuery();
   const products = useMemo(() => data?.products ?? [], [data?.products]);
+
   const promos = useMemo(
     () => promosQuery.data?.promos ?? [],
     [promosQuery.data?.promos]
@@ -76,17 +80,24 @@ function ProductsSection() {
   const visibleItems = useMemo(() => {
     if (activeTab === 'promoBundles') {
       const normalizedQuery = query.trim().toLowerCase();
+
       const filtered = normalizedQuery
         ? promoBundles.filter(p =>
             p.title.toLowerCase().includes(normalizedQuery)
           )
         : promoBundles;
+
       return filtered.slice(0, 5).map(p => ({
         id: p._id,
+
         name: p.title,
+
         price: p.price,
+
         imageUrl: p.imageUrl,
+
         note: p.description,
+
         href: `/order/promo/${encodeURIComponent(p._id)}`
       }));
     }
@@ -97,6 +108,7 @@ function ProductsSection() {
         : availableProducts.filter(p => p.category === activeCategory);
 
     const normalizedQuery = query.trim().toLowerCase();
+
     const filtered = normalizedQuery
       ? sourceItems.filter(item =>
           item.name.toLowerCase().includes(normalizedQuery)
@@ -105,18 +117,28 @@ function ProductsSection() {
 
     return filtered.slice(0, 5).map(item => ({
       id: item._id,
+
       name: item.name,
+
       price: item.price,
+
       imageUrl: item.imageUrl,
+
       note: item.description,
+
       href: undefined as string | undefined
     }));
   }, [
     activeCategory,
+
     activeTab,
+
     availableProducts,
+
     featuredItems,
+
     promoBundles,
+
     query
   ]);
 
@@ -128,14 +150,17 @@ function ProductsSection() {
             <p className="text-[#fbd897] text-[11px] uppercase mb-2">
               Now Serving
             </p>
+
             <h1 className="text-white text-3xl font-bold">
               DonClaudio&apos;s
               <span className="block text-[#fbd897]">Lechon House</span>
             </h1>
+
             <p className="text-white/60 text-sm mt-2">
               Enjoy your meal with a smile!
             </p>
           </div>
+
           <div className="hidden sm:block w-40 h-40">
             <Image
               src="/assets/logo.png"
@@ -147,13 +172,28 @@ function ProductsSection() {
           </div>
         </div>
       </div>
-      <h1 className="text-2xl font-bold mb-2">DonClaudios Menu</h1>
+
+      <div className='flex justify-between'>
+        <h1 className="text-2xl font-bold mb-2">DonClaudios Menu</h1>
+      <Button
+        asChild
+        type="button"
+        variant="ghost"
+        className="relative rounded-full"
+        aria-label="Order history"
+      >
+        <Link href="/order-history">
+          <History className="h-12 w-12 text-[#2d4a35]" />
+        </Link>
+      </Button>
+      </div>
 
       <section className="mb-10">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="w-full md:w-64">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
               <Input
                 value={query}
                 onChange={e => setQuery(e.target.value)}
@@ -167,6 +207,7 @@ function ProductsSection() {
           <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-4 px-4 pb-2">
             {tabs.map(tab => {
               const isActive = tab.id === activeTab;
+
               return (
                 <button
                   key={tab.id}
@@ -192,6 +233,7 @@ function ProductsSection() {
               ? 'Featured'
               : (tabs.find(t => t.id === activeTab)?.label ?? 'Products')}
           </h2>
+
           <p className="text-sm text-gray-500 mt-0.5 mb-4">
             {activeTab === 'featured'
               ? 'Discover your favorites!'
@@ -219,13 +261,16 @@ function ProductsSection() {
                   activeTab === 'promoBundles'
                     ? {
                         label: getBundleBadge()?.label ?? 'BUNDLE',
+
                         variant: 'bundle'
                       }
                     : (() => {
                         const b = getPromoBadgeForProduct({
                           promos,
+
                           productId: item.id
                         });
+
                         return b
                           ? {label: b.label, variant: 'promo'}
                           : undefined;
@@ -242,6 +287,7 @@ function ProductsSection() {
 
 export default function OrderPage() {
   const savedLocation = useLocationStore(s => s.location);
+
   const setSavedLocation = useLocationStore(s => s.setLocation);
 
   const shouldShowLocationPicker = !savedLocation;
