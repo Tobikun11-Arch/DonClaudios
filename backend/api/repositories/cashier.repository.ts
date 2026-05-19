@@ -14,5 +14,23 @@ export const cashierRepository = {
 
   findById: (id: string) => CashierModel.findById(id).exec(),
 
-  create: (data: Partial<CashierDocument>) => CashierModel.create(data)
+  findSafeById: (id: string) =>
+    CashierModel.findById(id)
+      .select('-passwordHash -verificationCode -verificationExpiry')
+      .exec(),
+
+  list: () =>
+    CashierModel.find({})
+      .select('-passwordHash -verificationCode -verificationExpiry')
+      .sort({createdAt: -1})
+      .exec(),
+
+  create: (data: Partial<CashierDocument>) => CashierModel.create(data),
+
+  updateById: (id: string, data: Partial<CashierDocument>) =>
+    CashierModel.findByIdAndUpdate(id, data, {new: true})
+      .select('-passwordHash -verificationCode -verificationExpiry')
+      .exec(),
+
+  deleteById: (id: string) => CashierModel.findByIdAndDelete(id).exec()
 };
