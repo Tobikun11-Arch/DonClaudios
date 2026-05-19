@@ -11,7 +11,7 @@ export default function HistorySlot() {
       <OrderHistorySection
         orders={ordersQuery.data?.orders ?? []}
         title="Order History"
-        description="Your previous account orders from the database."
+        description="Your previous account orders."
         isLoading={ordersQuery.isLoading}
         isError={ordersQuery.isError}
       />
