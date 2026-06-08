@@ -1,3 +1,6 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.sanitize = sanitize;
 function sanitizeObject(obj) {
     if (!obj || typeof obj !== 'object') {
         return;
@@ -11,7 +14,7 @@ function sanitizeObject(obj) {
     }
 }
 // I sanitize request payloads to reduce injection risks
-export function sanitize(req, _res, next) {
+function sanitize(req, _res, next) {
     sanitizeObject(req.body);
     sanitizeObject(req.query);
     sanitizeObject(req.params);

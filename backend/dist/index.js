@@ -1,34 +1,60 @@
-import cors from 'cors';
-import express from 'express';
-import helmet from 'helmet';
-import { connectDb } from './api/config/db';
-import { env } from './api/config/env';
-import routes from './api/routes/index';
-import { errorHandler } from './api/middleware/errorHandler';
-import { sanitize } from './api/middleware/sanitize';
-const app = express();
-app.use(helmet());
-app.use(cors({
-    origin: ['http://localhost:3000', 'https://don-claudios.vercel.app/'],
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = handler;
+const cors_1 = __importDefault(require("cors"));
+const express_1 = __importDefault(require("express"));
+const helmet_1 = __importDefault(require("helmet"));
+const cookie_parser_1 = __importDefault(require("cookie-parser"));
+const db_1 = require("./api/config/db");
+const env_1 = require("./api/config/env");
+const index_1 = __importDefault(require("./api/routes/index"));
+const errorHandler_1 = require("./api/middleware/errorHandler");
+const sanitize_1 = require("./api/middleware/sanitize");
+const app = (0, express_1.default)();
+const corsOptions = {
+    origin: (origin, callback) => {
+        if (!origin) {
+            return callback(null, true);
+        }
+        const allowedExact = new Set(['http://localhost:3000']);
+        let originUrl = null;
+        try {
+            originUrl = new URL(origin);
+        }
+        catch {
+            originUrl = null;
+        }
+        const isAllowed = allowedExact.has(origin) ||
+            (originUrl?.protocol === 'https:' &&
+                originUrl.hostname.toLowerCase().endsWith('.vercel.app'));
+        return callback(null, isAllowed);
+    },
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
-app.use(express.json());
-app.use(sanitize);
-app.use('/api', routes);
-//Delete after all prod finished-
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+};
+app.use((0, cors_1.default)(corsOptions));
+app.options('*', (0, cors_1.default)(corsOptions));
+app.use((0, helmet_1.default)());
+app.use(express_1.default.json());
+app.use((0, cookie_parser_1.default)());
+app.use(sanitize_1.sanitize);
+app.use('/api', index_1.default);
 app.get('/', async (req, res) => {
-    res.send('Hello production!');
+    res.send('test production!');
 });
-app.use(errorHandler);
+app.use(errorHandler_1.errorHandler);
 let dbInitPromise = null;
 const ensureDb = () => {
     if (!dbInitPromise) {
-        dbInitPromise = connectDb();
+        dbInitPromise = (0, db_1.connectDb)();
     }
     return dbInitPromise;
 };
-export default async function handler(req, res) {
+async function handler(req, res) {
     try {
         await ensureDb();
         return app(req, res);
@@ -41,8 +67,8 @@ export default async function handler(req, res) {
 if (process.env.VERCEL !== '1') {
     ensureDb()
         .then(() => {
-        app.listen(env.PORT, () => {
-            console.log(`Server listening on port ${env.PORT}`);
+        app.listen(env_1.env.PORT, () => {
+            console.log(`Server listening on port ${env_1.env.PORT}`);
         });
     })
         .catch(error => {

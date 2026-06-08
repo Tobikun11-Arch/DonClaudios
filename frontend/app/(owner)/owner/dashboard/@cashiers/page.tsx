@@ -1,7 +1,5 @@
-import React from 'react'
+import CashiersPageContent from '@/features/owner/cashiers/components/CashiersPage';
 
 export default function CashiersPage() {
-  return (
-    <div>CashiersPage - crud and cashier transactions</div>
-  )
+  return <CashiersPageContent />;
 }

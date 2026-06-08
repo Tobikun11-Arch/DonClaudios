@@ -1,4 +1,7 @@
-export function verificationCodeEmailTemplate({ appName = 'DonClaudios', code, expiresMinutes, recipientName }) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.verificationCodeEmailTemplate = verificationCodeEmailTemplate;
+function verificationCodeEmailTemplate({ appName = 'DonClaudios', code, expiresMinutes, recipientName }) {
     const safeRecipient = recipientName?.trim();
     const title = `Verify your ${appName} account`;
     const text = `${safeRecipient ? `Hi ${safeRecipient},` : 'Hi,'}\n\n` +
