@@ -1,5 +1,5 @@
 import {Button} from '@/components/ui/button';
-import {Plus, Users} from 'lucide-react';
+import {Plus} from 'lucide-react';
 
 interface Props {
   showButton: boolean;

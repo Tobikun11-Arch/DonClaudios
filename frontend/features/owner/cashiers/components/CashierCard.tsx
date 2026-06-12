@@ -1,7 +1,7 @@
 import {Button} from '@/components/ui/button';
 import {Card, CardContent} from '@/components/ui/card';
 import {cn} from '@/lib/utils';
-import {User, Pencil, Trash2, Mail, AtSign, Phone, MapPin} from 'lucide-react';
+import {User, Pencil, Trash2, Mail, Phone, MapPin} from 'lucide-react';
 import type {Cashier} from '@/lib/types/cashier';
 
 interface Props {

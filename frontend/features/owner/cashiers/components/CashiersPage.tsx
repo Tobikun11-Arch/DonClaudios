@@ -118,15 +118,17 @@ export default function CashiersPage() {
       };
 
       if (mode === 'create') {
-        await createMutation.mutateAsync(body as {
-          firstName: string;
-          lastName: string;
-          email: string;
-          password: string;
-          username: string;
-          phoneNumber?: string;
-          address?: string;
-        });
+        await createMutation.mutateAsync(
+          body as {
+            firstName: string;
+            lastName: string;
+            email: string;
+            password: string;
+            username: string;
+            phoneNumber?: string;
+            address?: string;
+          }
+        );
       } else {
         if (!editingId) return;
         await updateMutation.mutateAsync({id: editingId, body});
@@ -154,10 +156,7 @@ export default function CashiersPage() {
         onAdd={openCreate}
       />
 
-      <CashiersFilters
-        query={query}
-        onQueryChange={setQuery}
-      />
+      <CashiersFilters query={query} onQueryChange={setQuery} />
 
       {cashiersQuery.isLoading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
