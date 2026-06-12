@@ -1,7 +1,5 @@
-import React from 'react'
+import InventoryPage from '@/features/owner/inventory/components/InventoryPage';
 
-export default function InventoryPage() {
-  return (
-    <div>InventoryPage</div>
-  )
+export default function InventoryPageSlot() {
+  return <InventoryPage />;
 }

@@ -15,5 +15,8 @@ export const orderRepository = {
   create: (data: Partial<OrderDocument>) => OrderModel.create(data),
 
   updateStatus: (orderId: string, orderStatus: string) =>
-    OrderModel.updateOne({_id: orderId}, {orderStatus}).exec()
+    OrderModel.updateOne({_id: orderId}, {orderStatus}).exec(),
+
+  updateStockDeducted: (orderId: string, stockDeducted: boolean) =>
+    OrderModel.updateOne({_id: orderId}, {stockDeducted}).exec()
 };
