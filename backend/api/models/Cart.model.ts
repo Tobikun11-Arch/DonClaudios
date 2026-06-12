@@ -38,8 +38,6 @@ const CartSchema = new Schema<CartDocument>(
   {timestamps: true}
 );
 
-CartSchema.index({customerId: 1});
-
 export const CartModel = mongoose.model<CartDocument>(
   'Cart',
   CartSchema,

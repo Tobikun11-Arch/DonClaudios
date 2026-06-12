@@ -1,23 +1,29 @@
-import dotenv from 'dotenv';
-import { z } from 'zod';
-dotenv.config();
-const envSchema = z.object({
-    NODE_ENV: z.string().optional(),
-    PORT: z.string().optional(),
-    MONGO_URI: z.string().min(1),
-    JWT_SECRET: z.string().min(1),
-    JWT_REFRESH_SECRET: z.string().min(1),
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.env = void 0;
+const dotenv_1 = __importDefault(require("dotenv"));
+const zod_1 = require("zod");
+dotenv_1.default.config();
+const envSchema = zod_1.z.object({
+    NODE_ENV: zod_1.z.string().optional(),
+    PORT: zod_1.z.string().optional(),
+    MONGO_URI: zod_1.z.string().min(1),
+    JWT_SECRET: zod_1.z.string().min(1),
+    JWT_REFRESH_SECRET: zod_1.z.string().min(1),
     // APPWRITE_ENDPOINT: z.string().min(1), - to be followed
     // APPWRITE_PROJECT_ID: z.string().min(1),
     // APPWRITE_API_KEY: z.string().min(1),
     // APPWRITE_BUCKET_ID: z.string().min(1),
     // REDIS_URL: z.string().min(1),
-    // FCM_KEY: z.string().min(1),
-    SMTP_HOST: z.string().optional(),
-    SMTP_PORT: z.string().optional(),
-    SMTP_USER: z.string().optional(),
-    SMTP_PASS: z.string().optional(),
-    SMTP_FROM: z.string().optional()
+    // FCM_KEY: z.string().min(1), if needed
+    SMTP_HOST: zod_1.z.string().optional(),
+    SMTP_PORT: zod_1.z.string().optional(),
+    SMTP_USER: zod_1.z.string().optional(),
+    SMTP_PASS: zod_1.z.string().optional(),
+    SMTP_FROM: zod_1.z.string().optional()
 });
 const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {
@@ -26,7 +32,7 @@ if (!parsed.success) {
         .join(', ');
     throw new Error(`Invalid environment configuration: ${message}`);
 }
-export const env = {
+exports.env = {
     ...parsed.data,
     PORT: parsed.data.PORT ? Number(parsed.data.PORT) : 5000
 };

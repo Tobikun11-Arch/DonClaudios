@@ -1,7 +1,10 @@
-import { ApiError } from '../utils/error';
-import { logger } from '../logging/logger';
-export function errorHandler(err, _req, res, _next) {
-    if (err instanceof ApiError) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.errorHandler = errorHandler;
+const error_1 = require("../utils/error");
+const logger_1 = require("../logging/logger");
+function errorHandler(err, _req, res, _next) {
+    if (err instanceof error_1.ApiError) {
         return res.status(err.statusCode).json({
             success: false,
             code: err.code,
@@ -9,7 +12,7 @@ export function errorHandler(err, _req, res, _next) {
             details: err.details
         });
     }
-    logger.error({ err }, 'Unhandled error');
+    logger_1.logger.error({ err }, 'Unhandled error');
     res.status(500).json({
         success: false,
         code: 'INTERNAL_ERROR',

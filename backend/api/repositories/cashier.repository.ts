@@ -14,5 +14,12 @@ export const cashierRepository = {
 
   findById: (id: string) => CashierModel.findById(id).exec(),
 
-  create: (data: Partial<CashierDocument>) => CashierModel.create(data)
+  listAll: () => CashierModel.find({}).sort({createdAt: -1}).exec(),
+
+  create: (data: Partial<CashierDocument>) => CashierModel.create(data),
+
+  updateById: (id: string, data: Partial<CashierDocument>) =>
+    CashierModel.findByIdAndUpdate(id, data, {new: true}).exec(),
+
+  deleteById: (id: string) => CashierModel.findByIdAndDelete(id).exec()
 };

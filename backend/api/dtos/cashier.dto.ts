@@ -11,3 +11,7 @@ export const createCashierDto = z.object({
 });
 
 export type CreateCashierDto = z.infer<typeof createCashierDto>;
+
+export const updateCashierDto = createCashierDto.partial();
+
+export type UpdateCashierDto = z.infer<typeof updateCashierDto>;
