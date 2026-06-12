@@ -4,6 +4,7 @@ import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {getStockStatus, stockStatusConfig} from '../utils/stockStatus';
 import {Package, Search, Plus, Minus, History, Loader2} from 'lucide-react';
+import Image from 'next/image';
 import type {Product} from '@/lib/types/product';
 
 interface Props {
@@ -133,9 +134,11 @@ export function InventoryTable({
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
                             {p.imageUrl ? (
-                              <img
+                              <Image
                                 src={p.imageUrl}
                                 alt={p.name}
+                                width={32}
+                                height={32}
                                 className="w-full h-full object-cover"
                               />
                             ) : (

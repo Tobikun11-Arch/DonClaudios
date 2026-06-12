@@ -1,8 +1,6 @@
 'use client';
 
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -19,7 +17,13 @@ interface Props {
   isError: boolean;
 }
 
-function CustomTooltip({active, payload, label}: any) {
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{value: number}>;
+  label?: string;
+}
+
+function CustomTooltip({active, payload, label}: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-[#1A1A1A] text-white text-xs rounded-lg px-3 py-2 shadow-lg">
