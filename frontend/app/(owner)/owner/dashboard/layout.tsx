@@ -169,7 +169,7 @@ export default function DashboardLayout({
       </aside>
 
       <main className="flex-1 overflow-y-auto bg-gray-50 pb-24 md:pb-0">
-        <div className="p-4 md:p-6">
+        <div className="px-6 py-6">
           {tab && slotByTab[tab] ? slotByTab[tab] : children}
         </div>
       </main>

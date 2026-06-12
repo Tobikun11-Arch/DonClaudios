@@ -1,7 +1,5 @@
+import DashboardPage from '@/features/owner/dashboard/components/DashboardPage';
+
 export default function OwnerDashboard() {
-  return (
-    <main>
-      <div>OwnerDashboard</div>
-    </main>
-  );
+  return <DashboardPage />;
 }

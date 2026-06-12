@@ -2,7 +2,7 @@
 
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
-import {Package, Minus} from 'lucide-react';
+import {Minus} from 'lucide-react';
 import type {FormEvent} from 'react';
 import {useState} from 'react';
 
