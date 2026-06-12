@@ -3,7 +3,9 @@ import {ApiError} from '../utils/error';
 import {orderRepository} from '../repositories/order.repository';
 import {orderItemRepository} from '../repositories/orderItem.repository';
 import {transactionRepository} from '../repositories/transaction.repository';
+import {stockMovementService} from '../services/stockMovement.service';
 import type {PaymentMethod} from '../models/Transaction.model';
+import type {OrderStatus} from '../models/Order.model';
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -225,6 +227,58 @@ export const orderController = {
       });
 
       res.status(201).json({order, transaction});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+      }
+
+      const {status} = req.body;
+      const validStatuses: OrderStatus[] = [
+        'pending',
+        'confirmed',
+        'preparing',
+        'ready',
+        'on_the_way',
+        'completed',
+        'cancelled'
+      ];
+
+      if (!validStatuses.includes(status)) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'Invalid order status');
+      }
+
+      const order = await orderRepository.findById(req.params.id);
+      if (!order) {
+        throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+      }
+
+      if (status === 'confirmed' && !order.stockDeducted) {
+        await stockMovementService.deductOrderStock(String(order._id));
+        await orderRepository.updateStockDeducted(String(order._id), true);
+      }
+
+      if (
+        status === 'cancelled' &&
+        order.stockDeducted &&
+        order.orderStatus !== 'pending'
+      ) {
+        await stockMovementService.restoreOrderStock(
+          String(order._id),
+          req.auth.userId
+        );
+        await orderRepository.updateStockDeducted(String(order._id), false);
+      }
+
+      await orderRepository.updateStatus(req.params.id, status);
+
+      const updated = await orderRepository.findById(req.params.id);
+      res.status(200).json({order: updated});
     } catch (error) {
       next(error);
     }

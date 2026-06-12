@@ -36,6 +36,7 @@ export interface OrderDocument extends mongoose.Document {
   riderNotes?: string;
   orderStatus: OrderStatus;
   isOnline: boolean;
+  stockDeducted: boolean;
 }
 
 const GuestInfoSchema = new Schema<GuestInfo>(
@@ -73,6 +74,7 @@ const OrderSchema = new Schema<OrderDocument>(
       ],
       default: 'pending'
     },
+    stockDeducted: {type: Boolean, default: false},
     isOnline: {type: Boolean, default: true}
   },
   {timestamps: true}

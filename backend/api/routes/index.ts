@@ -6,6 +6,7 @@ import promoRoutes from './promo.routes';
 import uploadRoutes from './upload.routes';
 import cartRoutes from './cart.routes';
 import orderRoutes from './order.routes';
+import stockMovementRoutes from './stockMovement.routes';
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use('/promos', promoRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/cart', cartRoutes);
 router.use('/orders', orderRoutes);
+router.use('/inventory', stockMovementRoutes);
 
 export default router;
