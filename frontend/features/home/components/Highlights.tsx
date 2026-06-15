@@ -1,8 +1,41 @@
 'use client';
 
 import Image from 'next/image';
+import type {HighlightImage} from '@/lib/types/settings';
 
-export default function HighlightsSection() {
+type HighlightsSectionProps = {
+  title?: string;
+  images?: HighlightImage[];
+  isLoading?: boolean;
+};
+
+function HighlightsSectionSkeleton() {
+  return (
+    <section className="min-h-screen flex items-center py-20 px-4 bg-[#ffffff]">
+      <div className="container mx-auto">
+        <div className="max-w-2xl mb-12 space-y-4">
+          <div className="h-12 w-96 bg-gray-200 animate-pulse rounded-lg" />
+          <div className="h-6 w-80 bg-gray-200 animate-pulse rounded" />
+        </div>
+        <div className="grid md:grid-cols-3 gap-6">
+          <div className="md:col-span-2 h-125 bg-gray-200 animate-pulse rounded-2xl" />
+          <div className="space-y-6">
+            <div className="h-60 bg-gray-200 animate-pulse rounded-2xl" />
+            <div className="h-60 bg-gray-200 animate-pulse rounded-2xl" />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function HighlightsSection({
+  title = 'Visit Our DonClaudio\'s Lechon House',
+  images = [],
+  isLoading = false
+}: HighlightsSectionProps) {
+  if (isLoading) return <HighlightsSectionSkeleton />;
+
   return (
     <section
       id="highlights"
@@ -10,9 +43,7 @@ export default function HighlightsSection() {
     >
       <div className="container mx-auto">
         <div className="max-w-2xl mb-12">
-          <h2 className="text-5xl font-bold mb-4 text-[#3c5e45]">
-            Visit Our DonClaudio&apos;s Lechon House
-          </h2>
+          <h2 className="text-5xl font-bold mb-4 text-[#3c5e45]">{title}</h2>
           <p className="text-xl text-[#a4bbab]">
             Located in the heart of Tanza, Cavite. Come experience our warm
             hospitality and taste the tradition.
@@ -21,10 +52,10 @@ export default function HighlightsSection() {
 
         <div className="grid md:grid-cols-3 gap-6">
           <div className="md:col-span-2 relative overflow-hidden rounded-2xl h-125">
-            <div className="absolute inset-0 transition-transform duration-700 scale-105 group-hover:scale-210">
+            <div className="absolute inset-0 transition-transform duration-700 scale-105">
               <Image
-                src="/assets/highlights1.JPG"
-                alt="Restaurant Interior"
+                src={images[0]?.url ?? '/assets/highlights1.JPG'}
+                alt={images[0]?.alt ?? 'Restaurant Interior'}
                 fill
                 className="object-cover"
                 priority
@@ -44,8 +75,8 @@ export default function HighlightsSection() {
             <div className="relative overflow-hidden rounded-2xl h-60 group">
               <div className="absolute inset-0 transition-transform duration-700 scale-105">
                 <Image
-                  src="/assets/Highlight2.png"
-                  alt="Dining Area"
+                  src={images[1]?.url ?? '/assets/Highlight2.png'}
+                  alt={images[1]?.alt ?? 'Dining Area'}
                   fill
                   className="object-cover"
                 />
@@ -60,8 +91,8 @@ export default function HighlightsSection() {
             <div className="relative overflow-hidden rounded-2xl h-60 group">
               <div className="absolute inset-0 transition-transform duration-700 scale-105">
                 <Image
-                  src="/assets/Highlights3.png"
-                  alt="Our Specialty"
+                  src={images[2]?.url ?? '/assets/Highlights3.png'}
+                  alt={images[2]?.alt ?? 'Our Specialty'}
                   fill
                   className="object-cover"
                 />

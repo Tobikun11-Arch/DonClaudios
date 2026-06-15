@@ -3,7 +3,59 @@
 import {Phone, MapPin, Mail, Clock} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 
-export default function ContactSection() {
+type ContactSectionProps = {
+  address?: string;
+  phone?: string;
+  email?: string;
+  hours?: string;
+  isLoading?: boolean;
+};
+
+function ContactSectionSkeleton() {
+  return (
+    <section className="min-h-screen flex items-center py-20 px-4 bg-[#e8dcc4]">
+      <div className="container mx-auto max-w-6xl">
+        <div className="text-center mb-16 space-y-4">
+          <div className="h-12 w-48 bg-[#d4c8b0] animate-pulse rounded-lg mx-auto" />
+          <div className="h-6 w-72 bg-[#d4c8b0] animate-pulse rounded mx-auto" />
+        </div>
+        <div className="grid md:grid-cols-2 gap-12">
+          <div className="space-y-8">
+            <div className="grid grid-cols-2 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex gap-3">
+                  <div className="w-10 h-10 bg-[#d4c8b0] animate-pulse rounded-xl shrink-0" />
+                  <div className="space-y-2">
+                    <div className="h-4 w-16 bg-[#d4c8b0] animate-pulse rounded" />
+                    <div className="h-3 w-24 bg-[#d4c8b0] animate-pulse rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="h-100 bg-[#d4c8b0] animate-pulse rounded-3xl" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function ContactSection({
+  address = '',
+  phone = '',
+  email = '',
+  hours = '',
+  isLoading = false
+}: ContactSectionProps) {
+  if (isLoading) return <ContactSectionSkeleton />;
+
+  const phoneParts = phone.split('\n').filter(Boolean);
+  const addressParts = address.split('\n').filter(Boolean);
+
+  const hoursParts = hours.split('\n').filter(Boolean);
+  const hoursDays = hoursParts[0] ?? 'Tue - Sun';
+  const hoursTime = hoursParts[1] ?? '10:00 AM - 10:00 PM';
+
   return (
     <section
       id="contact"
@@ -39,12 +91,17 @@ export default function ContactSection() {
                   <h4 className="font-bold text-[#3c5e45] mb-1 text-sm sm:text-base">
                     Call
                   </h4>
-                  <p className="text-xs sm:text-sm text-[#3c5e45]">
-                    +63 915 5321 169
-                  </p>
-                  <p className="text-xs sm:text-sm text-[#3c5e45]">
-                    +63 939 2587 229
-                  </p>
+                  {phoneParts.length > 0 ? (
+                    phoneParts.map((p, i) => (
+                      <p key={i} className="text-xs sm:text-sm text-[#3c5e45]">
+                        {p}
+                      </p>
+                    ))
+                  ) : (
+                    <p className="text-xs sm:text-sm text-[#3c5e45]">
+                      {phone || '+63 915 5321 169'}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -57,7 +114,7 @@ export default function ContactSection() {
                     Email
                   </h4>
                   <p className="text-xs sm:text-sm text-[#3c5e45] break-all">
-                    support@donclaudio.com
+                    {email || 'support@donclaudio.com'}
                   </p>
                 </div>
               </div>
@@ -70,9 +127,11 @@ export default function ContactSection() {
                   <h4 className="font-bold text-[#3c5e45] mb-1 text-sm sm:text-base">
                     Hours
                   </h4>
-                  <p className="text-xs sm:text-sm text-[#3c5e45]">Tue - Sun</p>
                   <p className="text-xs sm:text-sm text-[#3c5e45]">
-                    10:00 AM - 10:00 PM
+                    {hoursDays}
+                  </p>
+                  <p className="text-xs sm:text-sm text-[#3c5e45]">
+                    {hoursTime}
                   </p>
                 </div>
               </div>
@@ -85,13 +144,17 @@ export default function ContactSection() {
                   <h4 className="font-bold text-[#3c5e45] mb-1 text-sm sm:text-base">
                     Address
                   </h4>
-                  <p className="text-xs sm:text-sm text-[#3c5e45]">
-                    Jasmine St. De Roman
-                    <br />
-                    Brgy.Daang Amaya 1,
-                    <br />
-                    Tanza, Philippines, 4108
-                  </p>
+                  {addressParts.length > 0 ? (
+                    addressParts.map((p, i) => (
+                      <p key={i} className="text-xs sm:text-sm text-[#3c5e45]">
+                        {p}
+                      </p>
+                    ))
+                  ) : (
+                    <p className="text-xs sm:text-sm text-[#3c5e45]">
+                      {address || 'Jasmine St. De Roman\nBrgy.Daang Amaya 1'}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
