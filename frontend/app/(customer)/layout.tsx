@@ -22,7 +22,6 @@ export default function CustomerLayout({
       return;
     }
     
-
     if (!isSuccess) return;
 
     if (data.user.type !== 'customer') {
