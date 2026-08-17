@@ -2,23 +2,31 @@
 
 import Image from 'next/image';
 import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
-import type {HighlightsSection} from '@/lib/types/settings';
+import type {HighlightsSection, Colors} from '@/lib/types/settings';
 
 interface Props {
   highlights?: HighlightsSection;
+  colors?: Colors;
 }
 
 export default function HighlightsSection({
-  highlights = DEFAULT_SETTINGS.highlights
+  highlights = DEFAULT_SETTINGS.highlights,
+  colors
 }: Props) {
+  const c = colors ?? DEFAULT_SETTINGS.colors;
+
   return (
     <section
       id="highlights"
-      className="min-h-screen flex items-center py-20 px-4 bg-[#ffffff]"
+      className="min-h-screen flex items-center py-20 px-4"
+      style={{backgroundColor: c.backgroundColor}}
     >
       <div className="container mx-auto">
         <div className="max-w-2xl mb-12">
-          <h2 className="text-5xl font-bold mb-4 text-[#3c5e45]">
+          <h2
+            className="text-5xl font-bold mb-4"
+            style={{color: c.primary}}
+          >
             {highlights.title}
           </h2>
           <p className="text-xl text-[#a4bbab]">

@@ -73,9 +73,27 @@ export default function AppearancePreview() {
     [data, save]
   );
 
+  const saveContactPhone = useCallback(
+    async (index: number, value: string) => {
+      const phones = [...data!.contact.phones];
+      phones[index] = value;
+      await save({contact: {...data!.contact, phones}});
+    },
+    [data, save]
+  );
+
   const saveFooter = useCallback(
     async (field: string, value: string) => {
       await save({footer: {...data!.footer, [field]: value}});
+    },
+    [data, save]
+  );
+
+  const saveFooterPhone = useCallback(
+    async (index: number, value: string) => {
+      const phones = [...data!.footer.phones];
+      phones[index] = value;
+      await save({footer: {...data!.footer, phones}});
     },
     [data, save]
   );
@@ -349,7 +367,7 @@ export default function AppearancePreview() {
                     <h4 className="font-bold mb-1 text-sm sm:text-base" style={{color: data.colors.primary}}>Call</h4>
                     {data.contact.phones.map((phone, i) => (
                       <p key={i} className="text-xs sm:text-sm" style={{color: data.colors.primary}}>
-                        <EditableText value={phone} onSave={async () => {}} tag="span" />
+                        <EditableText value={phone} onSave={v => saveContactPhone(i, v)} tag="span" />
                       </p>
                     ))}
                   </div>
@@ -460,7 +478,9 @@ export default function AppearancePreview() {
                   <Phone className="w-4 h-4 mt-1 shrink-0" />
                   <div>
                     {data.footer.phones.map((phone, i) => (
-                      <p key={i}>{phone}</p>
+                      <p key={i}>
+                        <EditableText value={phone} onSave={v => saveFooterPhone(i, v)} tag="span" />
+                      </p>
                     ))}
                   </div>
                 </div>

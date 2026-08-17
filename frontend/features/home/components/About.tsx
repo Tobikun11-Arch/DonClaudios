@@ -1,13 +1,19 @@
 import React from 'react';
 import Image from 'next/image';
 import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
-import type {AboutSection} from '@/lib/types/settings';
+import type {AboutSection, Colors} from '@/lib/types/settings';
 
 interface Props {
   about?: AboutSection;
+  colors?: Colors;
 }
 
-export default function AboutSection({about = DEFAULT_SETTINGS.about}: Props) {
+export default function AboutSection({
+  about = DEFAULT_SETTINGS.about,
+  colors
+}: Props) {
+  const c = colors ?? DEFAULT_SETTINGS.colors;
+
   return (
     <section
       id="about"
@@ -16,10 +22,16 @@ export default function AboutSection({about = DEFAULT_SETTINGS.about}: Props) {
       <div className="container mx-auto max-w-6xl">
         <div className="grid md:grid-cols-2 gap-16 items-center">
           <div className="space-y-6">
-            <h2 className="text-5xl font-bold text-[#3c5e45]">
+            <h2
+              className="text-5xl font-bold"
+              style={{color: c.primary}}
+            >
               {about.title}
             </h2>
-            <div className="space-y-4 text-lg text-[#3c5e45]">
+            <div
+              className="space-y-4 text-lg"
+              style={{color: c.primary}}
+            >
               <p>
                 <strong>DonClaudio&apos;s Lechon House </strong>
                 {about.description}
@@ -30,21 +42,20 @@ export default function AboutSection({about = DEFAULT_SETTINGS.about}: Props) {
               {about.stats.map((stat, i) => (
                 <div
                   key={i}
-                  className={`p-6 rounded-2xl ${
-                    i === 0 ? 'bg-[#fbd897]' : 'bg-[#a4bbab]'
-                  }`}
+                  className="p-6 rounded-2xl"
+                  style={{
+                    backgroundColor: i === 0 ? c.accent : '#a4bbab'
+                  }}
                 >
                   <p
-                    className={`text-3xl font-bold mb-1 ${
-                      i === 0 ? 'text-[#3c5e45]' : 'text-white'
-                    }`}
+                    className="text-3xl font-bold mb-1"
+                    style={{color: i === 0 ? c.primary : 'white'}}
                   >
                     {stat.value}
                   </p>
                   <p
-                    className={`text-sm ${
-                      i === 0 ? 'text-[#3c5e45]' : 'text-white'
-                    }`}
+                    className="text-sm"
+                    style={{color: i === 0 ? c.primary : 'white'}}
                   >
                     {stat.label}
                   </p>

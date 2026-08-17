@@ -2,15 +2,19 @@
 
 import {Phone, MapPin, Mail, Clock} from 'lucide-react';
 import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
-import type {ContactSection} from '@/lib/types/settings';
+import type {ContactSection, Colors} from '@/lib/types/settings';
 
 interface Props {
   contact?: ContactSection;
+  colors?: Colors;
 }
 
 export default function ContactSection({
-  contact = DEFAULT_SETTINGS.contact
+  contact = DEFAULT_SETTINGS.contact,
+  colors
 }: Props) {
+  const c = colors ?? DEFAULT_SETTINGS.colors;
+
   return (
     <section
       id="contact"
@@ -18,10 +22,16 @@ export default function ContactSection({
     >
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-10 sm:mb-16">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 text-[#3c5e45]">
+          <h2
+            className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4"
+            style={{color: c.primary}}
+          >
             Get In Touch
           </h2>
-          <p className="text-base sm:text-xl text-[#3c5e45]">
+          <p
+            className="text-base sm:text-xl"
+            style={{color: c.primary}}
+          >
             Ready to order? Have questions? We&apos;re here to help!
           </p>
         </div>
@@ -29,25 +39,44 @@ export default function ContactSection({
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-start">
           <div className="space-y-6 sm:space-y-8">
             <div>
-              <h3 className="text-xl sm:text-2xl font-bold text-[#3c5e45] mb-1">
+              <h3
+                className="text-xl sm:text-2xl font-bold mb-1"
+                style={{color: c.primary}}
+              >
                 Talk to us
               </h3>
-              <p className="text-[#3c5e45]/70 text-xs sm:text-sm">
+              <p
+                className="text-xs sm:text-sm"
+                style={{color: `${c.primary}99`}}
+              >
                 Orders, inquiries, or bulk catering - we respond fast.
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4 sm:gap-6">
               <div className="flex items-start gap-2 sm:gap-3">
-                <div className="bg-[#fbd897] p-2 sm:p-2.5 rounded-xl shrink-0">
-                  <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-[#3c5e45]" />
+                <div
+                  className="p-2 sm:p-2.5 rounded-xl shrink-0"
+                  style={{backgroundColor: c.accent}}
+                >
+                  <Phone
+                    className="w-4 h-4 sm:w-5 sm:h-5"
+                    style={{color: c.primary}}
+                  />
                 </div>
                 <div>
-                  <h4 className="font-bold text-[#3c5e45] mb-1 text-sm sm:text-base">
+                  <h4
+                    className="font-bold mb-1 text-sm sm:text-base"
+                    style={{color: c.primary}}
+                  >
                     Call
                   </h4>
                   {contact.phones.map((phone, i) => (
-                    <p key={i} className="text-xs sm:text-sm text-[#3c5e45]">
+                    <p
+                      key={i}
+                      className="text-xs sm:text-sm"
+                      style={{color: c.primary}}
+                    >
                       {phone}
                     </p>
                   ))}
@@ -55,42 +84,72 @@ export default function ContactSection({
               </div>
 
               <div className="flex items-start gap-2 sm:gap-3">
-                <div className="bg-[#3c5e45] p-2 sm:p-2.5 rounded-xl shrink-0">
+                <div
+                  className="p-2 sm:p-2.5 rounded-xl shrink-0"
+                  style={{backgroundColor: c.primary}}
+                >
                   <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-[#3c5e45] mb-1 text-sm sm:text-base">
+                  <h4
+                    className="font-bold mb-1 text-sm sm:text-base"
+                    style={{color: c.primary}}
+                  >
                     Email
                   </h4>
-                  <p className="text-xs sm:text-sm text-[#3c5e45] break-all">
+                  <p
+                    className="text-xs sm:text-sm break-all"
+                    style={{color: c.primary}}
+                  >
                     {contact.email}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-2 sm:gap-3">
-                <div className="bg-[#3c5e45] p-2 sm:p-2.5 rounded-xl shrink-0">
+                <div
+                  className="p-2 sm:p-2.5 rounded-xl shrink-0"
+                  style={{backgroundColor: c.primary}}
+                >
                   <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-[#3c5e45] mb-1 text-sm sm:text-base">
+                  <h4
+                    className="font-bold mb-1 text-sm sm:text-base"
+                    style={{color: c.primary}}
+                  >
                     Hours
                   </h4>
-                  <p className="text-xs sm:text-sm text-[#3c5e45]">
+                  <p
+                    className="text-xs sm:text-sm"
+                    style={{color: c.primary}}
+                  >
                     {contact.hours}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-2 sm:gap-3">
-                <div className="bg-[#fbd897] p-2 sm:p-2.5 rounded-xl shrink-0">
-                  <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-[#3c5e45]" />
+                <div
+                  className="p-2 sm:p-2.5 rounded-xl shrink-0"
+                  style={{backgroundColor: c.accent}}
+                >
+                  <MapPin
+                    className="w-4 h-4 sm:w-5 sm:h-5"
+                    style={{color: c.primary}}
+                  />
                 </div>
                 <div>
-                  <h4 className="font-bold text-[#3c5e45] mb-1 text-sm sm:text-base">
+                  <h4
+                    className="font-bold mb-1 text-sm sm:text-base"
+                    style={{color: c.primary}}
+                  >
                     Address
                   </h4>
-                  <p className="text-xs sm:text-sm text-[#3c5e45]">
+                  <p
+                    className="text-xs sm:text-sm"
+                    style={{color: c.primary}}
+                  >
                     {contact.address}
                   </p>
                 </div>

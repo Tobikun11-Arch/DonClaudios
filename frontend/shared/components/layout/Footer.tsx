@@ -1,19 +1,28 @@
 import React from 'react';
 import {MapPin, Phone, Mail, MessageCircle, Clock} from 'lucide-react';
 import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
-import type {FooterSection} from '@/lib/types/settings';
+import type {FooterSection, Colors} from '@/lib/types/settings';
 
 interface Props {
   footer?: FooterSection;
+  colors?: Colors;
 }
 
-export default function Footer({footer = DEFAULT_SETTINGS.footer}: Props) {
+export default function Footer({
+  footer = DEFAULT_SETTINGS.footer,
+  colors
+}: Props) {
+  const c = colors ?? DEFAULT_SETTINGS.colors;
+
   return (
-    <footer className="mt-auto py-12 text-white bg-[#3c5e45]">
+    <footer className="mt-auto py-12 text-white" style={{backgroundColor: c.primary}}>
       <div className="container mx-auto px-4">
         <div className="grid md:grid-cols-3 gap-8 mb-8">
           <div>
-            <h3 className="font-bold text-xl mb-4 text-[#fbd897]">
+            <h3
+              className="font-bold text-xl mb-4"
+              style={{color: c.accent}}
+            >
               {footer.brandName}
             </h3>
             <p className="text-sm opacity-90 mb-4">{footer.description}</p>
@@ -24,7 +33,12 @@ export default function Footer({footer = DEFAULT_SETTINGS.footer}: Props) {
           </div>
 
           <div>
-            <h4 className="font-bold mb-4 text-[#fbd897]">Contact Us</h4>
+            <h4
+              className="font-bold mb-4"
+              style={{color: c.accent}}
+            >
+              Contact Us
+            </h4>
             <div className="space-y-3 text-sm">
               <div className="flex items-start gap-2">
                 <Phone className="w-4 h-4 mt-1 shrink-0" />
@@ -53,7 +67,12 @@ export default function Footer({footer = DEFAULT_SETTINGS.footer}: Props) {
           </div>
 
           <div>
-            <h4 className="font-bold mb-4 text-[#fbd897]">Location</h4>
+            <h4
+              className="font-bold mb-4"
+              style={{color: c.accent}}
+            >
+              Location
+            </h4>
             <div className="flex items-start gap-2 text-sm mb-4">
               <MapPin className="w-4 h-4 mt-1 shrink-0" />
               <p>{footer.address}</p>

@@ -5,5 +5,5 @@ import {useSettingsQuery} from '@/lib/hooks/useSettings';
 
 export default function ConnectedFooter() {
   const {data: settings} = useSettingsQuery();
-  return <Footer footer={settings?.footer} />;
+  return <Footer footer={settings?.footer} colors={settings?.colors} />;
 }

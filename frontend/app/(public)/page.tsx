@@ -8,11 +8,11 @@ export default function HomePage() {
 
   return (
     <>
-      <HeroSection hero={settings?.hero} />
-      <Highlights highlights={settings?.highlights} />
+      <HeroSection hero={settings?.hero} colors={settings?.colors} />
+      <Highlights highlights={settings?.highlights} colors={settings?.colors} />
       <Promo />
-      <About about={settings?.about} />
-      <Contact contact={settings?.contact} />
+      <About about={settings?.about} colors={settings?.colors} />
+      <Contact contact={settings?.contact} colors={settings?.colors} />
     </>
   );
 }
