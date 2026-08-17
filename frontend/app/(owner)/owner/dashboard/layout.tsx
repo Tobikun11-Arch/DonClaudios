@@ -17,6 +17,7 @@ import {
   X,
   ChevronRight
 } from 'lucide-react';
+import {Toaster} from 'sonner';
 
 const PRIMARY_TABS = [
   {
@@ -438,6 +439,8 @@ export default function DashboardLayout({
           </button>
         </div>
       </div>
+
+      <Toaster position="top-right" richColors closeButton />
     </div>
   );
 }

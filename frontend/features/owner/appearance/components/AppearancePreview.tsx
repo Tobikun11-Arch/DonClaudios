@@ -1,8 +1,9 @@
 'use client';
 
-import {useState, useCallback, useEffect} from 'react';
+import {useState, useCallback} from 'react';
 import Image from 'next/image';
-import {Star, Phone, MapPin, Mail, Clock, AlertTriangle, Check} from 'lucide-react';
+import {Star, Phone, MapPin, Mail, Clock} from 'lucide-react';
+import {toast} from 'sonner';
 import EditableText from './EditableText';
 import ColorPickerPanel from './ColorPickerPanel';
 import {useSettingsQuery, useUpdateSettingsMutation} from '@/lib/hooks/useSettings';
@@ -12,34 +13,21 @@ export default function AppearancePreview() {
   const {data: settings} = useSettingsQuery();
   const updateMutation = useUpdateSettingsMutation();
   const [local, setLocal] = useState<SiteSetting | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [backendDown, setBackendDown] = useState(false);
 
   const data = local ?? settings;
 
-  useEffect(() => {
-    if (saveSuccess) {
-      const t = setTimeout(() => setSaveSuccess(false), 2000);
-      return () => clearTimeout(t);
-    }
-  }, [saveSuccess]);
-
   const save = useCallback(
     async (patch: Partial<SiteSetting>) => {
-      setSaveError(null);
       setLocal(prev => ({...(prev ?? settings!), ...patch}));
       try {
         await updateMutation.mutateAsync(patch);
         setLocal(null);
-        setSaveSuccess(true);
-        setBackendDown(false);
+        toast.success('Saved');
       } catch (err: unknown) {
         console.error('Save failed:', err);
         setLocal(null);
-        setBackendDown(true);
         const msg = err instanceof Error ? err.message : 'Save failed — backend may be offline';
-        setSaveError(msg);
+        toast.error(msg);
       }
     },
     [settings, updateMutation]
@@ -148,27 +136,6 @@ export default function AppearancePreview() {
         '--color-bg': data.colors.backgroundColor
       } as React.CSSProperties}
     >
-      {/* ── Status Banner ── */}
-      {backendDown && !saveError && (
-        <div className="sticky top-0 z-50 bg-amber-50 border border-amber-200 px-4 py-3 flex items-center gap-2 text-sm text-amber-700">
-          <AlertTriangle size={16} />
-          <span>Backend unavailable — edits won&apos;t persist. Start the backend server to enable saving.</span>
-          <button onClick={() => setBackendDown(false)} className="ml-auto text-amber-500 hover:text-amber-700">✕</button>
-        </div>
-      )}
-      {saveError && (
-        <div className="sticky top-0 z-50 bg-red-50 border border-red-200 px-4 py-3 flex items-center gap-2 text-sm text-red-700">
-          <AlertTriangle size={16} />
-          <span>{saveError}</span>
-          <button onClick={() => setSaveError(null)} className="ml-auto text-red-500 hover:text-red-700">✕</button>
-        </div>
-      )}
-      {saveSuccess && (
-        <div className="sticky top-0 z-50 bg-green-50 border border-green-200 px-4 py-3 flex items-center gap-2 text-sm text-green-700">
-          <Check size={16} />
-          <span>Saved</span>
-        </div>
-      )}
       {/* ── Hero ── */}
       <section
         className="min-h-screen flex items-center px-4 pt-20 pb-10 relative overflow-hidden"
