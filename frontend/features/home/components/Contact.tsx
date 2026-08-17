@@ -1,9 +1,16 @@
 'use client';
 
 import {Phone, MapPin, Mail, Clock} from 'lucide-react';
-import {Button} from '@/components/ui/button';
+import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
+import type {ContactSection} from '@/lib/types/settings';
 
-export default function ContactSection() {
+interface Props {
+  contact?: ContactSection;
+}
+
+export default function ContactSection({
+  contact = DEFAULT_SETTINGS.contact
+}: Props) {
   return (
     <section
       id="contact"
@@ -39,12 +46,11 @@ export default function ContactSection() {
                   <h4 className="font-bold text-[#3c5e45] mb-1 text-sm sm:text-base">
                     Call
                   </h4>
-                  <p className="text-xs sm:text-sm text-[#3c5e45]">
-                    +63 915 5321 169
-                  </p>
-                  <p className="text-xs sm:text-sm text-[#3c5e45]">
-                    +63 939 2587 229
-                  </p>
+                  {contact.phones.map((phone, i) => (
+                    <p key={i} className="text-xs sm:text-sm text-[#3c5e45]">
+                      {phone}
+                    </p>
+                  ))}
                 </div>
               </div>
 
@@ -57,7 +63,7 @@ export default function ContactSection() {
                     Email
                   </h4>
                   <p className="text-xs sm:text-sm text-[#3c5e45] break-all">
-                    support@donclaudio.com
+                    {contact.email}
                   </p>
                 </div>
               </div>
@@ -70,9 +76,8 @@ export default function ContactSection() {
                   <h4 className="font-bold text-[#3c5e45] mb-1 text-sm sm:text-base">
                     Hours
                   </h4>
-                  <p className="text-xs sm:text-sm text-[#3c5e45]">Tue - Sun</p>
                   <p className="text-xs sm:text-sm text-[#3c5e45]">
-                    10:00 AM - 10:00 PM
+                    {contact.hours}
                   </p>
                 </div>
               </div>
@@ -86,45 +91,10 @@ export default function ContactSection() {
                     Address
                   </h4>
                   <p className="text-xs sm:text-sm text-[#3c5e45]">
-                    Jasmine St. De Roman
-                    <br />
-                    Brgy.Daang Amaya 1,
-                    <br />
-                    Tanza, Philippines, 4108
+                    {contact.address}
                   </p>
                 </div>
               </div>
-            </div>
-
-            <div className="space-y-3">
-              <h4 className="font-semibold text-[#3c5e45] text-sm sm:text-base">
-                Send a quick message
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  placeholder="Full name"
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-[#3c5e45]/20 bg-transparent text-[#3c5e45] placeholder:text-[#3c5e45]/40 focus:outline-none focus:border-[#3c5e45]/50 text-sm"
-                />
-                <input
-                  type="email"
-                  placeholder="Email address"
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-[#3c5e45]/20 bg-transparent text-[#3c5e45] placeholder:text-[#3c5e45]/40 focus:outline-none focus:border-[#3c5e45]/50 text-sm"
-                />
-              </div>
-              <input
-                type="tel"
-                placeholder="Phone number"
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-[#3c5e45]/20 bg-transparent text-[#3c5e45] placeholder:text-[#3c5e45]/40 focus:outline-none focus:border-[#3c5e45]/50 text-sm"
-              />
-              <textarea
-                placeholder="Tell us about your concern"
-                rows={4}
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-[#3c5e45]/20 bg-transparent text-[#3c5e45] placeholder:text-[#3c5e45]/40 focus:outline-none focus:border-[#3c5e45]/50 text-sm resize-none"
-              />
-              <Button className="w-full sm:w-auto bg-transparent border border-[#3c5e45] text-[#3c5e45] hover:bg-[#3c5e45] hover:text-white px-8 py-3 rounded-xl font-semibold text-sm sm:text-base">
-                Send Message
-              </Button>
             </div>
           </div>
 

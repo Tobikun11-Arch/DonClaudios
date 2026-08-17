@@ -1,8 +1,16 @@
 'use client';
 
 import Image from 'next/image';
+import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
+import type {HighlightsSection} from '@/lib/types/settings';
 
-export default function HighlightsSection() {
+interface Props {
+  highlights?: HighlightsSection;
+}
+
+export default function HighlightsSection({
+  highlights = DEFAULT_SETTINGS.highlights
+}: Props) {
   return (
     <section
       id="highlights"
@@ -11,11 +19,10 @@ export default function HighlightsSection() {
       <div className="container mx-auto">
         <div className="max-w-2xl mb-12">
           <h2 className="text-5xl font-bold mb-4 text-[#3c5e45]">
-            Visit Our DonClaudio&apos;s Lechon House
+            {highlights.title}
           </h2>
           <p className="text-xl text-[#a4bbab]">
-            Located in the heart of Tanza, Cavite. Come experience our warm
-            hospitality and taste the tradition.
+            {highlights.subtitle}
           </p>
         </div>
 

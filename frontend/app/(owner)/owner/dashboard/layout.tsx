@@ -266,9 +266,13 @@ export default function DashboardLayout({
 
       {/* ── Main Content ── */}
       <main className="flex-1 overflow-y-auto bg-gray-50 pb-24 md:pb-0">
-        <div className="px-6 py-6">
-          {tab && slotByTab[tab] ? slotByTab[tab] : children}
-        </div>
+        {tab === 'appearance' ? (
+          <>{appearance}</>
+        ) : (
+          <div className="px-6 py-6">
+            {tab && slotByTab[tab] ? slotByTab[tab] : children}
+          </div>
+        )}
       </main>
 
       {/* ── Mobile Bottom Nav ── */}

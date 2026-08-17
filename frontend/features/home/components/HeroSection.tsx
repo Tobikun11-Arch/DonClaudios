@@ -5,8 +5,14 @@ import {Button} from '@/components/ui/button';
 import {scrollToSection} from '@/shared/utils/scroll';
 import {useRouter} from 'next/navigation';
 import Image from 'next/image';
+import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
+import type {HeroSection as HeroSectionType} from '@/lib/types/settings';
 
-export default function HeroSection() {
+interface Props {
+  hero?: HeroSectionType;
+}
+
+export default function HeroSection({hero = DEFAULT_SETTINGS.hero}: Props) {
   const router = useRouter();
 
   return (
@@ -35,25 +41,20 @@ export default function HeroSection() {
             </div>
 
             <h2 className="text-5xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
-              Authentic
-              <br />
-              Filipino
-              <br />
-              <span className="text-[#fbd897]">Lechon</span>
+              {hero.title}
             </h2>
 
             <p className="text-base sm:text-xl text-white/90 max-w-lg">
-              Slow-roasted to perfection with crispy golden skin and juicy,
-              tender meat. Every celebration deserves the best.
+              {hero.subtitle}
             </p>
 
             <div className="flex flex-wrap items-center gap-4">
               <Button
-                onClick={() => router.push('/order')}
+                onClick={() => router.push(hero.ctaLink)}
                 size="lg"
                 className="px-6 sm:px-8 py-5 sm:py-6 text-base sm:text-lg bg-[#fbd897] text-[#3c5e45]"
               >
-                Place Your Order
+                {hero.ctaText}
               </Button>
               <button
                 onClick={() => scrollToSection('highlights')}
@@ -64,26 +65,16 @@ export default function HeroSection() {
             </div>
 
             <div className="flex items-center gap-6 sm:gap-12 pt-6 border-t border-white/20">
-              <div>
-                <p className="text-2xl sm:text-3xl font-bold text-[#fbd897]">
-                  1000+
-                </p>
-                <p className="text-xs sm:text-sm text-white/70">
-                  Happy Customers
-                </p>
-              </div>
-              <div>
-                <p className="text-2xl sm:text-3xl font-bold text-[#fbd897]">
-                  Daily
-                </p>
-                <p className="text-xs sm:text-sm text-white/70">Fresh Lechon</p>
-              </div>
-              <div>
-                <p className="text-2xl sm:text-3xl font-bold text-[#fbd897]">
-                  10 Yrs
-                </p>
-                <p className="text-xs sm:text-sm text-white/70">Experience</p>
-              </div>
+              {hero.stats.map((stat, i) => (
+                <div key={i}>
+                  <p className="text-2xl sm:text-3xl font-bold text-[#fbd897]">
+                    {stat.value}
+                  </p>
+                  <p className="text-xs sm:text-sm text-white/70">
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
 

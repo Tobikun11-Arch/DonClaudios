@@ -1,7 +1,13 @@
 import React from 'react';
 import Image from 'next/image';
+import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
+import type {AboutSection} from '@/lib/types/settings';
 
-export default function AboutSection() {
+interface Props {
+  about?: AboutSection;
+}
+
+export default function AboutSection({about = DEFAULT_SETTINGS.about}: Props) {
   return (
     <section
       id="about"
@@ -10,37 +16,40 @@ export default function AboutSection() {
       <div className="container mx-auto max-w-6xl">
         <div className="grid md:grid-cols-2 gap-16 items-center">
           <div className="space-y-6">
-            <h2 className="text-5xl font-bold text-[#3c5e45]">Our Story</h2>
+            <h2 className="text-5xl font-bold text-[#3c5e45]">
+              {about.title}
+            </h2>
             <div className="space-y-4 text-lg text-[#3c5e45]">
               <p>
-                <strong>DonClaudio&apos;s Lechon House </strong> has been
-                serving Tanza, Cavite with authentic Filipino lechon for years.
-                We&apos;re passionate about bringing families together with food
-                that celebrates our rich culinary heritage.
-              </p>
-              <p>
-                Every lechon is carefully prepared using time-honored recipes
-                and slow-roasted over open flames to achieve that perfect
-                balance of crispy skin and succulent meat. We source only the
-                finest ingredients because your celebrations deserve nothing
-                less.
-              </p>
-              <p>
-                From intimate family dinners to grand fiestas, DonClaudio&apos;s
-                has been part of countless memorable moments. Let us be part of
-                yours.
+                <strong>DonClaudio&apos;s Lechon House </strong>
+                {about.description}
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4 pt-4">
-              <div className="p-6 rounded-2xl bg-[#fbd897]">
-                <p className="text-3xl font-bold mb-1 text-[#3c5e45]">100%</p>
-                <p className="text-sm text-[#3c5e45]">Fresh & Quality</p>
-              </div>
-              <div className="p-6 rounded-2xl bg-[#a4bbab]">
-                <p className="text-3xl font-bold mb-1 text-white">Daily</p>
-                <p className="text-sm text-white">Roasted Fresh</p>
-              </div>
+              {about.stats.map((stat, i) => (
+                <div
+                  key={i}
+                  className={`p-6 rounded-2xl ${
+                    i === 0 ? 'bg-[#fbd897]' : 'bg-[#a4bbab]'
+                  }`}
+                >
+                  <p
+                    className={`text-3xl font-bold mb-1 ${
+                      i === 0 ? 'text-[#3c5e45]' : 'text-white'
+                    }`}
+                  >
+                    {stat.value}
+                  </p>
+                  <p
+                    className={`text-sm ${
+                      i === 0 ? 'text-[#3c5e45]' : 'text-white'
+                    }`}
+                  >
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
 
