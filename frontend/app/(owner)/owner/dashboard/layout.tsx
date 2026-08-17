@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {useRouter} from 'next/navigation';
 import {useLogout} from '@/lib/hooks/auth/useLogout';
-import {useState} from 'react';
+import {useState, useRef, useCallback, useEffect} from 'react';
 import {
   LayoutDashboard,
   Package,
@@ -87,6 +87,36 @@ export default function DashboardLayout({
   const router = useRouter();
   const logoutMutation = useLogout();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const expandTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const collapseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (expandTimeoutRef.current) clearTimeout(expandTimeoutRef.current);
+      if (collapseTimeoutRef.current) clearTimeout(collapseTimeoutRef.current);
+    };
+  }, []);
+
+  const handleSidebarEnter = useCallback(() => {
+    if (collapseTimeoutRef.current) {
+      clearTimeout(collapseTimeoutRef.current);
+      collapseTimeoutRef.current = null;
+    }
+    expandTimeoutRef.current = setTimeout(() => {
+      setSidebarExpanded(true);
+    }, 200);
+  }, []);
+
+  const handleSidebarLeave = useCallback(() => {
+    if (expandTimeoutRef.current) {
+      clearTimeout(expandTimeoutRef.current);
+      expandTimeoutRef.current = null;
+    }
+    collapseTimeoutRef.current = setTimeout(() => {
+      setSidebarExpanded(false);
+    }, 400);
+  }, []);
 
   const slotByTab: Record<string, React.ReactNode | undefined> = {
     products,
@@ -109,71 +139,139 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen cursor-default bg-gray-50">
-      <aside className="hidden md:flex flex-col w-64 min-h-screen bg-[#2d4a35] shadow-xl z-40">
-        <div className="flex items-center justify-center py-6 px-4 border-b border-[#3a5c44]">
-          <Image
-            src="/assets/logo.png"
-            alt="Don Claudio's Lechon House"
-            width={130}
-            height={130}
-            className="object-contain drop-shadow-lg"
-            priority
-          />
+      {/* ── Desktop Sidebar ── */}
+      <aside
+        onMouseEnter={handleSidebarEnter}
+        onMouseLeave={handleSidebarLeave}
+        className={`
+          hidden md:flex flex-col flex-shrink-0 overflow-hidden
+          min-h-screen bg-[#2d4a35] z-40
+          transition-all duration-300 ease-in-out
+          ${sidebarExpanded ? 'w-64 shadow-2xl' : 'w-[72px] shadow-xl'}
+        `}
+      >
+        {/* Logo Area */}
+        <div className={`relative flex items-center justify-center px-4 border-b border-[#3a5c44] ${sidebarExpanded ? 'h-[178px] py-6' : 'h-24 py-2'}`}>
+          <div
+            className={`absolute transition-all duration-300 ${
+              sidebarExpanded
+                ? 'opacity-0 scale-90 pointer-events-none'
+                : 'opacity-100 scale-100'
+            }`}
+          >
+            <Image
+              src="/assets/logo.png"
+              alt="DC"
+              width={36}
+              height={36}
+              className="object-contain"
+              priority
+            />
+          </div>
+          <div
+            className={`transition-all duration-300 ${
+              sidebarExpanded
+                ? 'opacity-100 scale-100'
+                : 'opacity-0 scale-90 pointer-events-none'
+            }`}
+          >
+            <Image
+              src="/assets/logo.png"
+              alt="Don Claudio's Lechon House"
+              width={130}
+              height={130}
+              className="object-contain drop-shadow-lg"
+              priority
+            />
+          </div>
         </div>
 
-        <nav className="flex-1 flex flex-col gap-1 px-3 py-4 overflow-y-auto">
+        {/* Nav Items */}
+        <nav className={`flex-1 flex flex-col gap-1 ${sidebarExpanded ? 'px-2' : 'px-0'} py-4 overflow-y-auto overflow-x-hidden`}>
           {ALL_SIDEBAR_ITEMS.map(item => {
             const Icon = item.icon;
             const active = isActive(item.tab);
             return (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={`
-                  flex items-center gap-3 px-4 py-3 rounded-xl
-                  text-sm font-semibold tracking-wide
-                  transition-all duration-200
-                  ${
-                    active
-                      ? 'bg-[#4a7c59] text-white'
-                      : 'text-[#b8d4c0] hover:bg-[#3a5c44] hover:text-white'
-                  }
-                `}
-              >
-                <Icon size={20} className="shrink-0" />
-                <span>{item.label}</span>
-                {active && (
-                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/80" />
-                )}
-              </Link>
+              <div key={item.label} className="relative group/nav">
+                <Link
+                  href={item.href}
+                  className={`
+                    relative flex items-center py-3 rounded-xl
+                    ${sidebarExpanded ? 'gap-3 px-3' : 'gap-0 px-0 justify-center'}
+                    text-sm font-semibold tracking-wide
+                    transition-all duration-200
+                    ${sidebarExpanded
+                      ? (active ? 'bg-[#4a7c59] text-white shadow-md shadow-[#2d4a35]/50' : 'text-[#b8d4c0] hover:bg-[#3a5c44] hover:text-white')
+                      : (active ? 'text-white' : 'text-[#b8d4c0] hover:bg-[#3a5c44] hover:text-white')
+                    }
+                  `}
+                >
+                  {active && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-white/80 rounded-r-full" />
+                  )}
+                  <Icon
+                    size={20}
+                    className={`
+                      shrink-0 transition-transform duration-200
+                      ${!active ? 'group-hover/nav:scale-110' : ''}
+                    `}
+                  />
+                  <span
+                    className={`
+                      whitespace-nowrap overflow-hidden
+                      transition-all duration-300
+                      ${sidebarExpanded ? 'opacity-100 w-auto' : 'opacity-0 w-0'}
+                    `}
+                  >
+                    {item.label}
+                  </span>
+                </Link>
+              </div>
             );
           })}
         </nav>
 
-        <div className="px-3 pb-5 pt-2 border-t border-[#3a5c44]">
-          <button
-            onClick={handleLogout}
-            disabled={logoutMutation.isPending}
-            className="
-              w-full flex items-center gap-3 px-4 py-3 rounded-xl
-              text-sm font-semibold tracking-wide
-              text-[#f08080] hover:bg-[#3a1a1a] hover:text-red-300
-              transition-all duration-200
-              disabled:opacity-50 disabled:cursor-not-allowed
-            "
-          >
-            <LogOut size={20} className="shrink-0" />
-            <span>{logoutMutation.isPending ? 'Logging out…' : 'Logout'}</span>
-          </button>
+        {/* Logout */}
+        <div className={`${sidebarExpanded ? 'px-2' : 'px-0'} pb-5 pt-2 border-t border-[#3a5c44]`}>
+          <div className="relative group/nav">
+            <button
+              onClick={handleLogout}
+              disabled={logoutMutation.isPending}
+              className={`
+                w-full flex items-center py-3 rounded-xl
+                ${sidebarExpanded ? 'gap-3 px-3' : 'gap-0 px-0 justify-center'}
+                text-sm font-semibold tracking-wide
+                text-[#f08080] hover:bg-[#3a1a1a] hover:text-red-300
+                transition-all duration-200
+                disabled:opacity-50 disabled:cursor-not-allowed
+              `}
+            >
+              <LogOut
+                size={20}
+                className="shrink-0 transition-transform duration-200 group-hover/nav:scale-110"
+              />
+              <span
+                className={`
+                  whitespace-nowrap overflow-hidden
+                  transition-all duration-300
+                  ${sidebarExpanded ? 'opacity-100 w-auto' : 'opacity-0 w-0'}
+                `}
+              >
+                {logoutMutation.isPending ? 'Logging out…' : 'Logout'}
+              </span>
+            </button>
+          </div>
         </div>
       </aside>
 
+      {/* ── Main Content ── */}
       <main className="flex-1 overflow-y-auto bg-gray-50 pb-24 md:pb-0">
         <div className="px-6 py-6">
           {tab && slotByTab[tab] ? slotByTab[tab] : children}
         </div>
       </main>
 
+      {/* ── Mobile Bottom Nav ── */}
       <nav
         className="
           md:hidden fixed bottom-0 left-0 right-0 z-50
@@ -205,7 +303,6 @@ export default function DashboardLayout({
                 {item.mobileLabel}
               </span>
 
-              {/* Active underline indicator BELOW the label */}
               <span
                 className={`
           mt-1 h-0.5 w-6 rounded-full bg-[#7ed4a0]
@@ -245,6 +342,7 @@ export default function DashboardLayout({
         </button>
       </nav>
 
+      {/* ── Mobile Drawer Overlay ── */}
       <div
         onClick={() => setDrawerOpen(false)}
         className={`
@@ -258,6 +356,7 @@ export default function DashboardLayout({
         `}
       />
 
+      {/* ── Mobile Drawer ── */}
       <div
         className={`
           md:hidden fixed bottom-0 left-0 right-0
