@@ -14,6 +14,7 @@ export default function HighlightsSection({
   colors
 }: Props) {
   const c = colors ?? DEFAULT_SETTINGS.colors;
+  const images = highlights.images ?? [];
 
   return (
     <section
@@ -38,8 +39,8 @@ export default function HighlightsSection({
           <div className="md:col-span-2 relative overflow-hidden rounded-2xl h-125">
             <div className="absolute inset-0 transition-transform duration-700 scale-105">
               <Image
-                src={highlights.images[0]?.url ?? '/assets/highlights1.JPG'}
-                alt={highlights.images[0]?.alt ?? 'Restaurant Interior'}
+                src={images[0]?.url ?? '/assets/highlights1.JPG'}
+                alt={images[0]?.alt ?? 'Restaurant Interior'}
                 fill
                 className="object-cover"
                 priority
@@ -59,8 +60,8 @@ export default function HighlightsSection({
             <div className="relative overflow-hidden rounded-2xl h-60 group">
               <div className="absolute inset-0 transition-transform duration-700 scale-105">
                 <Image
-                  src={highlights.images[1]?.url ?? '/assets/Highlight2.png'}
-                  alt={highlights.images[1]?.alt ?? 'Dining Area'}
+                  src={images[1]?.url ?? '/assets/Highlight2.png'}
+                  alt={images[1]?.alt ?? 'Dining Area'}
                   fill
                   className="object-cover"
                 />
@@ -75,8 +76,8 @@ export default function HighlightsSection({
             <div className="relative overflow-hidden rounded-2xl h-60 group">
               <div className="absolute inset-0 transition-transform duration-700 scale-105">
                 <Image
-                  src={highlights.images[2]?.url ?? '/assets/Highlights3.png'}
-                  alt={highlights.images[2]?.alt ?? 'Our Specialty'}
+                  src={images[2]?.url ?? '/assets/Highlights3.png'}
+                  alt={images[2]?.alt ?? 'Our Specialty'}
                   fill
                   className="object-cover"
                 />

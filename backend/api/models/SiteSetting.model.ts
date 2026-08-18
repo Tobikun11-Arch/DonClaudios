@@ -16,6 +16,7 @@ export interface SiteSettingDocument extends mongoose.Document {
   highlights: {
     title: string;
     subtitle: string;
+    images: {url: string; alt: string}[];
   };
   about: {
     title: string;
@@ -52,6 +53,14 @@ const StatItemSchema = new Schema<StatItem>(
   {_id: false}
 );
 
+const HighlightImageSchema = new Schema(
+  {
+    url: {type: String, default: ''},
+    alt: {type: String, default: ''}
+  },
+  {_id: false}
+);
+
 const SiteSettingSchema = new Schema<SiteSettingDocument>(
   {
     hero: {
@@ -63,7 +72,8 @@ const SiteSettingSchema = new Schema<SiteSettingDocument>(
     },
     highlights: {
       title: {type: String, default: ''},
-      subtitle: {type: String, default: ''}
+      subtitle: {type: String, default: ''},
+      images: {type: [HighlightImageSchema], default: []}
     },
     about: {
       title: {type: String, default: ''},
