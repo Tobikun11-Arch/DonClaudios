@@ -36,10 +36,10 @@ export default function HighlightsSection({
 
         <div className="grid md:grid-cols-3 gap-6">
           <div className="md:col-span-2 relative overflow-hidden rounded-2xl h-125">
-            <div className="absolute inset-0 transition-transform duration-700 scale-105 group-hover:scale-210">
+            <div className="absolute inset-0 transition-transform duration-700 scale-105">
               <Image
-                src="/assets/highlights1.JPG"
-                alt="Restaurant Interior"
+                src={images[0]?.url ?? '/assets/highlights1.JPG'}
+                alt={images[0]?.alt ?? 'Restaurant Interior'}
                 fill
                 className="object-cover"
                 priority
@@ -59,8 +59,8 @@ export default function HighlightsSection({
             <div className="relative overflow-hidden rounded-2xl h-60 group">
               <div className="absolute inset-0 transition-transform duration-700 scale-105">
                 <Image
-                  src="/assets/Highlight2.png"
-                  alt="Dining Area"
+                  src={images[1]?.url ?? '/assets/Highlight2.png'}
+                  alt={images[1]?.alt ?? 'Dining Area'}
                   fill
                   className="object-cover"
                 />
@@ -75,8 +75,8 @@ export default function HighlightsSection({
             <div className="relative overflow-hidden rounded-2xl h-60 group">
               <div className="absolute inset-0 transition-transform duration-700 scale-105">
                 <Image
-                  src="/assets/Highlights3.png"
-                  alt="Our Specialty"
+                  src={images[2]?.url ?? '/assets/Highlights3.png'}
+                  alt={images[2]?.alt ?? 'Our Specialty'}
                   fill
                   className="object-cover"
                 />

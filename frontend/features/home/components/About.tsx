@@ -1,4 +1,5 @@
-import React from 'react';
+'use client';
+
 import Image from 'next/image';
 import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
 import type {AboutSection, Colors} from '@/lib/types/settings';
