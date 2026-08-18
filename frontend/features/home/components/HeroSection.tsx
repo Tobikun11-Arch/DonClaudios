@@ -20,10 +20,6 @@ export default function HeroSection({
   const router = useRouter();
   const c = colors ?? DEFAULT_SETTINGS.colors;
 
-  if (isLoading) return <HeroSectionSkeleton />;
-
-  const titleParts = title.split('\n');
-
   return (
     <section
       id="home"
@@ -98,7 +94,7 @@ export default function HeroSection({
           <div className="relative">
             <div className="relative w-full h-75 sm:h-100 lg:h-150 rounded-3xl overflow-hidden">
               <Image
-                src={backgroundImage}
+                src="/assets/hero_image.JPG"
                 alt="Delicious Lechon"
                 fill
                 className="object-cover"
