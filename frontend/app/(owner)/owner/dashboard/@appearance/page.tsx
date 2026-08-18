@@ -1,6 +1,6 @@
 'use client';
 
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useState} from 'react';
 import {useSettingsQuery, useUpdateSettingsMutation} from '@/lib/hooks/useSettings';
 import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
 import SectionCard from '@/features/owner/appearance/components/SectionCard';
@@ -10,7 +10,7 @@ import AboutEditor from '@/features/owner/appearance/components/AboutEditor';
 import ContactEditor from '@/features/owner/appearance/components/ContactEditor';
 import ColorsEditor from '@/features/owner/appearance/components/ColorsEditor';
 import {Button} from '@/components/ui/button';
-import type {Colors, HeroStat, HighlightImage, AboutStat} from '@/lib/types/settings';
+import type {Colors} from '@/lib/types/settings';
 
 function PageSkeleton() {
   return (
@@ -50,50 +50,49 @@ export default function AppearancePage() {
   const updateMutation = useUpdateSettingsMutation();
 
   const [form, setForm] = useState(DEFAULT_SETTINGS);
-  const [loaded, setLoaded] = useState(false);
+  const settingsData = settingsQuery.data?.settings;
+  const [prevSettingsData, setPrevSettingsData] = useState(settingsData);
 
-  useEffect(() => {
-    if (settingsQuery.data?.settings && !loaded) {
-      const s = settingsQuery.data.settings;
-      setForm({
-        hero: {
-          title: s.hero?.title ?? DEFAULT_SETTINGS.hero.title,
-          highlightedWord: s.hero?.highlightedWord ?? DEFAULT_SETTINGS.hero.highlightedWord,
-          subtitle: s.hero?.subtitle ?? DEFAULT_SETTINGS.hero.subtitle,
-          ctaText: s.hero?.ctaText ?? DEFAULT_SETTINGS.hero.ctaText,
-          ctaLink: s.hero?.ctaLink ?? DEFAULT_SETTINGS.hero.ctaLink,
-          backgroundImage: s.hero?.backgroundImage ?? DEFAULT_SETTINGS.hero.backgroundImage,
-          stats: s.hero?.stats ?? DEFAULT_SETTINGS.hero.stats
-        },
-        highlights: {
-          title: s.highlights?.title ?? DEFAULT_SETTINGS.highlights.title,
-          images: s.highlights?.images ?? DEFAULT_SETTINGS.highlights.images
-        },
-        about: {
-          title: s.about?.title ?? DEFAULT_SETTINGS.about.title,
-          description: s.about?.description ?? DEFAULT_SETTINGS.about.description,
-          stats: s.about?.stats ?? DEFAULT_SETTINGS.about.stats
-        },
-        contact: {
-          address: s.contact?.address ?? DEFAULT_SETTINGS.contact.address,
-          phone: s.contact?.phone ?? DEFAULT_SETTINGS.contact.phone,
-          email: s.contact?.email ?? DEFAULT_SETTINGS.contact.email,
-          hours: s.contact?.hours ?? DEFAULT_SETTINGS.contact.hours
-        },
-        colors: {
-          primary: s.colors?.primary ?? DEFAULT_SETTINGS.colors.primary,
-          accent: s.colors?.accent ?? DEFAULT_SETTINGS.colors.accent,
-          muted: s.colors?.muted ?? DEFAULT_SETTINGS.colors.muted,
-          darkGreen: s.colors?.darkGreen ?? DEFAULT_SETTINGS.colors.darkGreen,
-          mediumGreen: s.colors?.mediumGreen ?? DEFAULT_SETTINGS.colors.mediumGreen,
-          lightGreen: s.colors?.lightGreen ?? DEFAULT_SETTINGS.colors.lightGreen,
-          beige: s.colors?.beige ?? DEFAULT_SETTINGS.colors.beige,
-          red: s.colors?.red ?? DEFAULT_SETTINGS.colors.red
-        }
-      });
-      setLoaded(true);
-    }
-  }, [settingsQuery.data, loaded]);
+  if (settingsData && settingsData !== prevSettingsData) {
+    setPrevSettingsData(settingsData);
+    const s = settingsData;
+    setForm({
+      hero: {
+        title: s.hero?.title ?? DEFAULT_SETTINGS.hero.title,
+        highlightedWord: s.hero?.highlightedWord ?? DEFAULT_SETTINGS.hero.highlightedWord,
+        subtitle: s.hero?.subtitle ?? DEFAULT_SETTINGS.hero.subtitle,
+        ctaText: s.hero?.ctaText ?? DEFAULT_SETTINGS.hero.ctaText,
+        ctaLink: s.hero?.ctaLink ?? DEFAULT_SETTINGS.hero.ctaLink,
+        backgroundImage: s.hero?.backgroundImage ?? DEFAULT_SETTINGS.hero.backgroundImage,
+        stats: s.hero?.stats ?? DEFAULT_SETTINGS.hero.stats
+      },
+      highlights: {
+        title: s.highlights?.title ?? DEFAULT_SETTINGS.highlights.title,
+        images: s.highlights?.images ?? DEFAULT_SETTINGS.highlights.images
+      },
+      about: {
+        title: s.about?.title ?? DEFAULT_SETTINGS.about.title,
+        description: s.about?.description ?? DEFAULT_SETTINGS.about.description,
+        stats: s.about?.stats ?? DEFAULT_SETTINGS.about.stats
+      },
+      contact: {
+        address: s.contact?.address ?? DEFAULT_SETTINGS.contact.address,
+        phone: s.contact?.phone ?? DEFAULT_SETTINGS.contact.phone,
+        email: s.contact?.email ?? DEFAULT_SETTINGS.contact.email,
+        hours: s.contact?.hours ?? DEFAULT_SETTINGS.contact.hours
+      },
+      colors: {
+        primary: s.colors?.primary ?? DEFAULT_SETTINGS.colors.primary,
+        accent: s.colors?.accent ?? DEFAULT_SETTINGS.colors.accent,
+        muted: s.colors?.muted ?? DEFAULT_SETTINGS.colors.muted,
+        darkGreen: s.colors?.darkGreen ?? DEFAULT_SETTINGS.colors.darkGreen,
+        mediumGreen: s.colors?.mediumGreen ?? DEFAULT_SETTINGS.colors.mediumGreen,
+        lightGreen: s.colors?.lightGreen ?? DEFAULT_SETTINGS.colors.lightGreen,
+        beige: s.colors?.beige ?? DEFAULT_SETTINGS.colors.beige,
+        red: s.colors?.red ?? DEFAULT_SETTINGS.colors.red
+      }
+    });
+  }
 
   const handleHeroChange = useCallback((field: string, value: unknown) => {
     setForm(prev => ({
