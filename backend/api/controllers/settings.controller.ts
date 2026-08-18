@@ -1,6 +1,7 @@
 import {Request, Response, NextFunction} from 'express';
 import {settingsService} from '../services/settings.service';
 
+
 export const settingsController = {
   async get(_req: Request, res: Response, next: NextFunction) {
     try {
