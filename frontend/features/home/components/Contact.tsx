@@ -1,60 +1,19 @@
 'use client';
 
 import {Phone, MapPin, Mail, Clock} from 'lucide-react';
-import {Button} from '@/components/ui/button';
+import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
+import type {ContactSection, Colors} from '@/lib/types/settings';
 
-type ContactSectionProps = {
-  address?: string;
-  phone?: string;
-  email?: string;
-  hours?: string;
-  isLoading?: boolean;
-};
-
-function ContactSectionSkeleton() {
-  return (
-    <section className="min-h-screen flex items-center py-20 px-4 bg-[#e8dcc4]">
-      <div className="container mx-auto max-w-6xl">
-        <div className="text-center mb-16 space-y-4">
-          <div className="h-12 w-48 bg-[#d4c8b0] animate-pulse rounded-lg mx-auto" />
-          <div className="h-6 w-72 bg-[#d4c8b0] animate-pulse rounded mx-auto" />
-        </div>
-        <div className="grid md:grid-cols-2 gap-12">
-          <div className="space-y-8">
-            <div className="grid grid-cols-2 gap-6">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="flex gap-3">
-                  <div className="w-10 h-10 bg-[#d4c8b0] animate-pulse rounded-xl shrink-0" />
-                  <div className="space-y-2">
-                    <div className="h-4 w-16 bg-[#d4c8b0] animate-pulse rounded" />
-                    <div className="h-3 w-24 bg-[#d4c8b0] animate-pulse rounded" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="h-100 bg-[#d4c8b0] animate-pulse rounded-3xl" />
-        </div>
-      </div>
-    </section>
-  );
+interface Props {
+  contact?: ContactSection;
+  colors?: Colors;
 }
 
 export default function ContactSection({
-  address = '',
-  phone = '',
-  email = '',
-  hours = '',
-  isLoading = false
-}: ContactSectionProps) {
-  if (isLoading) return <ContactSectionSkeleton />;
-
-  const phoneParts = phone.split('\n').filter(Boolean);
-  const addressParts = address.split('\n').filter(Boolean);
-
-  const hoursParts = hours.split('\n').filter(Boolean);
-  const hoursDays = hoursParts[0] ?? 'Tue - Sun';
-  const hoursTime = hoursParts[1] ?? '10:00 AM - 10:00 PM';
+  contact = DEFAULT_SETTINGS.contact,
+  colors
+}: Props) {
+  const c = colors ?? DEFAULT_SETTINGS.colors;
 
   return (
     <section
@@ -63,10 +22,16 @@ export default function ContactSection({
     >
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-10 sm:mb-16">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 text-[#3c5e45]">
+          <h2
+            className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4"
+            style={{color: c.primary}}
+          >
             Get In Touch
           </h2>
-          <p className="text-base sm:text-xl text-[#3c5e45]">
+          <p
+            className="text-base sm:text-xl"
+            style={{color: c.primary}}
+          >
             Ready to order? Have questions? We&apos;re here to help!
           </p>
         </div>
@@ -74,120 +39,121 @@ export default function ContactSection({
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-start">
           <div className="space-y-6 sm:space-y-8">
             <div>
-              <h3 className="text-xl sm:text-2xl font-bold text-[#3c5e45] mb-1">
+              <h3
+                className="text-xl sm:text-2xl font-bold mb-1"
+                style={{color: c.primary}}
+              >
                 Talk to us
               </h3>
-              <p className="text-[#3c5e45]/70 text-xs sm:text-sm">
+              <p
+                className="text-xs sm:text-sm"
+                style={{color: `${c.primary}99`}}
+              >
                 Orders, inquiries, or bulk catering - we respond fast.
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4 sm:gap-6">
               <div className="flex items-start gap-2 sm:gap-3">
-                <div className="bg-[#fbd897] p-2 sm:p-2.5 rounded-xl shrink-0">
-                  <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-[#3c5e45]" />
+                <div
+                  className="p-2 sm:p-2.5 rounded-xl shrink-0"
+                  style={{backgroundColor: c.accent}}
+                >
+                  <Phone
+                    className="w-4 h-4 sm:w-5 sm:h-5"
+                    style={{color: c.primary}}
+                  />
                 </div>
                 <div>
-                  <h4 className="font-bold text-[#3c5e45] mb-1 text-sm sm:text-base">
+                  <h4
+                    className="font-bold mb-1 text-sm sm:text-base"
+                    style={{color: c.primary}}
+                  >
                     Call
                   </h4>
-                  {phoneParts.length > 0 ? (
-                    phoneParts.map((p, i) => (
-                      <p key={i} className="text-xs sm:text-sm text-[#3c5e45]">
-                        {p}
-                      </p>
-                    ))
-                  ) : (
-                    <p className="text-xs sm:text-sm text-[#3c5e45]">
-                      {phone || '+63 915 5321 169'}
+                  {contact.phones.map((phone, i) => (
+                    <p
+                      key={i}
+                      className="text-xs sm:text-sm"
+                      style={{color: c.primary}}
+                    >
+                      {phone}
                     </p>
-                  )}
+                  ))}
                 </div>
               </div>
 
               <div className="flex items-start gap-2 sm:gap-3">
-                <div className="bg-[#3c5e45] p-2 sm:p-2.5 rounded-xl shrink-0">
+                <div
+                  className="p-2 sm:p-2.5 rounded-xl shrink-0"
+                  style={{backgroundColor: c.primary}}
+                >
                   <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-[#3c5e45] mb-1 text-sm sm:text-base">
+                  <h4
+                    className="font-bold mb-1 text-sm sm:text-base"
+                    style={{color: c.primary}}
+                  >
                     Email
                   </h4>
-                  <p className="text-xs sm:text-sm text-[#3c5e45] break-all">
-                    {email || 'support@donclaudio.com'}
+                  <p
+                    className="text-xs sm:text-sm break-all"
+                    style={{color: c.primary}}
+                  >
+                    {contact.email}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-2 sm:gap-3">
-                <div className="bg-[#3c5e45] p-2 sm:p-2.5 rounded-xl shrink-0">
+                <div
+                  className="p-2 sm:p-2.5 rounded-xl shrink-0"
+                  style={{backgroundColor: c.primary}}
+                >
                   <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-[#3c5e45] mb-1 text-sm sm:text-base">
+                  <h4
+                    className="font-bold mb-1 text-sm sm:text-base"
+                    style={{color: c.primary}}
+                  >
                     Hours
                   </h4>
-                  <p className="text-xs sm:text-sm text-[#3c5e45]">
-                    {hoursDays}
-                  </p>
-                  <p className="text-xs sm:text-sm text-[#3c5e45]">
-                    {hoursTime}
+                  <p
+                    className="text-xs sm:text-sm"
+                    style={{color: c.primary}}
+                  >
+                    {contact.hours}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-2 sm:gap-3">
-                <div className="bg-[#fbd897] p-2 sm:p-2.5 rounded-xl shrink-0">
-                  <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-[#3c5e45]" />
+                <div
+                  className="p-2 sm:p-2.5 rounded-xl shrink-0"
+                  style={{backgroundColor: c.accent}}
+                >
+                  <MapPin
+                    className="w-4 h-4 sm:w-5 sm:h-5"
+                    style={{color: c.primary}}
+                  />
                 </div>
                 <div>
-                  <h4 className="font-bold text-[#3c5e45] mb-1 text-sm sm:text-base">
+                  <h4
+                    className="font-bold mb-1 text-sm sm:text-base"
+                    style={{color: c.primary}}
+                  >
                     Address
                   </h4>
-                  {addressParts.length > 0 ? (
-                    addressParts.map((p, i) => (
-                      <p key={i} className="text-xs sm:text-sm text-[#3c5e45]">
-                        {p}
-                      </p>
-                    ))
-                  ) : (
-                    <p className="text-xs sm:text-sm text-[#3c5e45]">
-                      {address || 'Jasmine St. De Roman\nBrgy.Daang Amaya 1'}
-                    </p>
-                  )}
+                  <p
+                    className="text-xs sm:text-sm"
+                    style={{color: c.primary}}
+                  >
+                    {contact.address}
+                  </p>
                 </div>
               </div>
-            </div>
-
-            <div className="space-y-3">
-              <h4 className="font-semibold text-[#3c5e45] text-sm sm:text-base">
-                Send a quick message
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  placeholder="Full name"
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-[#3c5e45]/20 bg-transparent text-[#3c5e45] placeholder:text-[#3c5e45]/40 focus:outline-none focus:border-[#3c5e45]/50 text-sm"
-                />
-                <input
-                  type="email"
-                  placeholder="Email address"
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-[#3c5e45]/20 bg-transparent text-[#3c5e45] placeholder:text-[#3c5e45]/40 focus:outline-none focus:border-[#3c5e45]/50 text-sm"
-                />
-              </div>
-              <input
-                type="tel"
-                placeholder="Phone number"
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-[#3c5e45]/20 bg-transparent text-[#3c5e45] placeholder:text-[#3c5e45]/40 focus:outline-none focus:border-[#3c5e45]/50 text-sm"
-              />
-              <textarea
-                placeholder="Tell us about your concern"
-                rows={4}
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-[#3c5e45]/20 bg-transparent text-[#3c5e45] placeholder:text-[#3c5e45]/40 focus:outline-none focus:border-[#3c5e45]/50 text-sm resize-none"
-              />
-              <Button className="w-full sm:w-auto bg-transparent border border-[#3c5e45] text-[#3c5e45] hover:bg-[#3c5e45] hover:text-white px-8 py-3 rounded-xl font-semibold text-sm sm:text-base">
-                Send Message
-              </Button>
             </div>
           </div>
 

@@ -3,7 +3,7 @@ import {settingsService} from '../services/settings.service';
 
 
 export const settingsController = {
-  async get(_req: Request, res: Response, next: NextFunction) {
+  async getSettings(_req: Request, res: Response, next: NextFunction) {
     try {
       const settings = await settingsService.get();
       res.status(200).json({settings});
@@ -12,10 +12,10 @@ export const settingsController = {
     }
   },
 
-  async update(req: Request, res: Response, next: NextFunction) {
+  async updateSettings(req: Request, res: Response, next: NextFunction) {
     try {
-      const updated = await settingsService.update(req.body);
-      res.status(200).json({settings: updated});
+      const settings = await settingsService.update(req.body);
+      res.status(200).json({settings});
     } catch (error) {
       next(error);
     }

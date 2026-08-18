@@ -21,7 +21,7 @@ export default function CustomerLayout({
       router.replace('/sign-in');
       return;
     }
-
+    
     if (!isSuccess) return;
 
     if (data.user.type !== 'customer') {

@@ -1,10 +1,14 @@
 import {SiteSettingDocument, SiteSettingModel} from '../models/SiteSetting.model';
 
 export const settingsRepository = {
+  findOne: () => SiteSettingModel.findOne().exec(),
+
   findOrCreate: async () => {
-    const existing = await SiteSettingModel.findOne().exec();
-    if (existing) return existing;
-    return SiteSettingModel.create({});
+    let doc = await SiteSettingModel.findOne().exec();
+    if (!doc) {
+      doc = await SiteSettingModel.create({});
+    }
+    return doc;
   },
 
   update: (data: Partial<SiteSettingDocument>) =>

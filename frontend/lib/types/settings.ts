@@ -1,19 +1,55 @@
-export type HeroStat = {
+export interface StatItem {
   value: string;
   label: string;
-};
+}
 
-export type HighlightImage = {
+export type HeroStat = StatItem;
+export type AboutStat = StatItem;
+
+export interface HighlightImage {
   url: string;
   alt: string;
-};
+}
 
-export type AboutStat = {
-  value: string;
-  label: string;
-};
+export interface HeroSection {
+  title: string;
+  highlightedWord: string;
+  subtitle: string;
+  ctaText: string;
+  ctaLink: string;
+  backgroundImage: string;
+  stats: StatItem[];
+}
 
-export type Colors = {
+export interface HighlightsSection {
+  title: string;
+  subtitle: string;
+  images: HighlightImage[];
+}
+
+export interface AboutSection {
+  title: string;
+  description: string;
+  stats: StatItem[];
+}
+
+export interface ContactSection {
+  address: string;
+  phones: string[];
+  email: string;
+  hours: string;
+}
+
+export interface FooterSection {
+  brandName: string;
+  description: string;
+  phones: string[];
+  email: string;
+  address: string;
+  hours: string;
+}
+
+export interface Colors {
   primary: string;
   accent: string;
   muted: string;
@@ -22,43 +58,21 @@ export type Colors = {
   lightGreen: string;
   beige: string;
   red: string;
-};
+}
 
-export type SiteSetting = {
-  _id: string;
-  hero: {
-    title: string;
-    highlightedWord: string;
-    subtitle: string;
-    ctaText: string;
-    ctaLink: string;
-    backgroundImage: string;
-    stats: HeroStat[];
-  };
-  highlights: {
-    title: string;
-    images: HighlightImage[];
-  };
-  about: {
-    title: string;
-    description: string;
-    stats: AboutStat[];
-  };
-  contact: {
-    address: string;
-    phone: string;
-    email: string;
-    hours: string;
-  };
+export interface SiteSetting {
+  hero: HeroSection;
+  highlights: HighlightsSection;
+  about: AboutSection;
+  contact: ContactSection;
+  footer: FooterSection;
   colors: Colors;
-  createdAt?: string;
-  updatedAt?: string;
-};
+}
 
-export type GetSettingsResponse = {
+export interface GetSettingsResponse {
   settings: SiteSetting;
-};
+}
 
-export type UpdateSettingsResponse = {
+export interface UpdateSettingsResponse {
   settings: SiteSetting;
-};
+}
