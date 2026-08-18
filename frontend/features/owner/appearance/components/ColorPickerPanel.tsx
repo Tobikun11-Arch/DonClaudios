@@ -12,8 +12,12 @@ interface Props {
 const COLOR_FIELDS: {key: keyof Colors; label: string}[] = [
   {key: 'primary', label: 'Primary'},
   {key: 'accent', label: 'Accent'},
-  {key: 'textColor', label: 'Text Color'},
-  {key: 'backgroundColor', label: 'Background'}
+  {key: 'muted', label: 'Muted'},
+  {key: 'darkGreen', label: 'Dark Green'},
+  {key: 'mediumGreen', label: 'Medium Green'},
+  {key: 'lightGreen', label: 'Light Green'},
+  {key: 'beige', label: 'Beige'},
+  {key: 'red', label: 'Red'}
 ];
 
 export default function ColorPickerPanel({colors, onChange}: Props) {

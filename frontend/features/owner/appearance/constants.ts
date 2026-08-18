@@ -2,11 +2,13 @@ import type {SiteSetting} from '@/lib/types/settings';
 
 export const DEFAULT_SETTINGS: SiteSetting = {
   hero: {
-    title: 'Authentic Filipino Lechon',
+    title: 'Authentic\nFilipino',
+    highlightedWord: 'Lechon',
     subtitle:
       'Slow-roasted to perfection with crispy golden skin and juicy, tender meat. Every celebration deserves the best.',
     ctaText: 'Place Your Order',
     ctaLink: '/order',
+    backgroundImage: '/assets/hero_image.JPG',
     stats: [
       {value: '1000+', label: 'Happy Customers'},
       {value: 'Daily', label: 'Fresh Lechon'},
@@ -16,7 +18,8 @@ export const DEFAULT_SETTINGS: SiteSetting = {
   highlights: {
     title: "Visit Our DonClaudio's Lechon House",
     subtitle:
-      'Located in the heart of Tanza, Cavite. Come experience our warm hospitality and taste the tradition.'
+      'Located in the heart of Tanza, Cavite. Come experience our warm hospitality and taste the tradition.',
+    images: []
   },
   about: {
     title: 'Our Story',
@@ -47,7 +50,11 @@ export const DEFAULT_SETTINGS: SiteSetting = {
   colors: {
     primary: '#3c5e45',
     accent: '#fbd897',
-    textColor: '#3c5e45',
-    backgroundColor: '#ffffff'
+    muted: '#a4bbab',
+    darkGreen: '#2d4a35',
+    mediumGreen: '#3c5e45',
+    lightGreen: '#a4bbab',
+    beige: '#f5f0e8',
+    red: '#c0392b'
   }
 };

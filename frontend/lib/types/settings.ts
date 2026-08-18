@@ -3,17 +3,28 @@ export interface StatItem {
   label: string;
 }
 
+export type HeroStat = StatItem;
+export type AboutStat = StatItem;
+
+export interface HighlightImage {
+  url: string;
+  alt: string;
+}
+
 export interface HeroSection {
   title: string;
+  highlightedWord: string;
   subtitle: string;
   ctaText: string;
   ctaLink: string;
+  backgroundImage: string;
   stats: StatItem[];
 }
 
 export interface HighlightsSection {
   title: string;
   subtitle: string;
+  images: HighlightImage[];
 }
 
 export interface AboutSection {
@@ -41,8 +52,12 @@ export interface FooterSection {
 export interface Colors {
   primary: string;
   accent: string;
-  textColor: string;
-  backgroundColor: string;
+  muted: string;
+  darkGreen: string;
+  mediumGreen: string;
+  lightGreen: string;
+  beige: string;
+  red: string;
 }
 
 export interface SiteSetting {

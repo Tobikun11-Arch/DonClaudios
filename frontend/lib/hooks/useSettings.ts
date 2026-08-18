@@ -12,14 +12,17 @@ function mergeWithDefaults(raw: Partial<SiteSetting>): SiteSetting {
   return {
     hero: {
       title: raw.hero?.title || d.hero.title,
+      highlightedWord: raw.hero?.highlightedWord || d.hero.highlightedWord,
       subtitle: raw.hero?.subtitle || d.hero.subtitle,
       ctaText: raw.hero?.ctaText || d.hero.ctaText,
       ctaLink: raw.hero?.ctaLink || d.hero.ctaLink,
+      backgroundImage: raw.hero?.backgroundImage || d.hero.backgroundImage,
       stats: raw.hero?.stats?.length ? raw.hero.stats : d.hero.stats
     },
     highlights: {
       title: raw.highlights?.title || d.highlights.title,
-      subtitle: raw.highlights?.subtitle || d.highlights.subtitle
+      subtitle: raw.highlights?.subtitle || d.highlights.subtitle,
+      images: raw.highlights?.images?.length ? raw.highlights.images : d.highlights.images
     },
     about: {
       title: raw.about?.title || d.about.title,
@@ -43,8 +46,12 @@ function mergeWithDefaults(raw: Partial<SiteSetting>): SiteSetting {
     colors: {
       primary: raw.colors?.primary || d.colors.primary,
       accent: raw.colors?.accent || d.colors.accent,
-      textColor: raw.colors?.textColor || d.colors.textColor,
-      backgroundColor: raw.colors?.backgroundColor || d.colors.backgroundColor
+      muted: raw.colors?.muted || d.colors.muted,
+      darkGreen: raw.colors?.darkGreen || d.colors.darkGreen,
+      mediumGreen: raw.colors?.mediumGreen || d.colors.mediumGreen,
+      lightGreen: raw.colors?.lightGreen || d.colors.lightGreen,
+      beige: raw.colors?.beige || d.colors.beige,
+      red: raw.colors?.red || d.colors.red
     }
   };
 }

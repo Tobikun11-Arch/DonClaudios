@@ -132,8 +132,8 @@ export default function AppearancePreview() {
       style={{
         '--color-primary': data.colors.primary,
         '--color-accent': data.colors.accent,
-        '--color-text': data.colors.textColor,
-        '--color-bg': data.colors.backgroundColor
+        '--color-muted': data.colors.muted,
+        '--color-bg': data.colors.lightGreen
       } as React.CSSProperties}
     >
       {/* ── Hero ── */}
@@ -237,7 +237,7 @@ export default function AppearancePreview() {
       </section>
 
       {/* ── Highlights ── */}
-      <section className="min-h-screen flex items-center py-20 px-4" style={{backgroundColor: data.colors.backgroundColor}}>
+      <section className="min-h-screen flex items-center py-20 px-4" style={{backgroundColor: data.colors.lightGreen}}>
         <div className="container mx-auto">
           <div className="max-w-2xl mb-12">
             <h2 className="text-5xl font-bold mb-4" style={{color: data.colors.primary}}>
