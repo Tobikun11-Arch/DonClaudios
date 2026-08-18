@@ -104,9 +104,7 @@ export default function DashboardLayout({
       clearTimeout(collapseTimeoutRef.current);
       collapseTimeoutRef.current = null;
     }
-    expandTimeoutRef.current = setTimeout(() => {
-      setSidebarExpanded(true);
-    }, 200);
+    setSidebarExpanded(true);
   }, []);
 
   const handleSidebarLeave = useCallback(() => {
@@ -116,7 +114,7 @@ export default function DashboardLayout({
     }
     collapseTimeoutRef.current = setTimeout(() => {
       setSidebarExpanded(false);
-    }, 400);
+    }, 100);
   }, []);
 
   const slotByTab: Record<string, React.ReactNode | undefined> = {
@@ -147,14 +145,14 @@ export default function DashboardLayout({
         className={`
           hidden md:flex flex-col flex-shrink-0 overflow-hidden
           min-h-screen bg-[#2d4a35] z-40
-          transition-all duration-300 ease-in-out
+          transition-[width,box-shadow] duration-200 ease-out
           ${sidebarExpanded ? 'w-64 shadow-2xl' : 'w-[72px] shadow-xl'}
         `}
       >
         {/* Logo Area */}
-        <div className={`relative flex items-center justify-center px-4 border-b border-[#3a5c44] ${sidebarExpanded ? 'h-[178px] py-6' : 'h-24 py-2'}`}>
+        <div className={`relative flex items-center justify-center px-4 border-b border-[#3a5c44] transition-[height,padding] duration-200 ease-out ${sidebarExpanded ? 'h-[178px] py-6' : 'h-24 py-2'}`}>
           <div
-            className={`absolute transition-all duration-300 ${
+            className={`absolute transition-[opacity,transform] duration-150 ease-out ${
               sidebarExpanded
                 ? 'opacity-0 scale-90 pointer-events-none'
                 : 'opacity-100 scale-100'
@@ -170,7 +168,7 @@ export default function DashboardLayout({
             />
           </div>
           <div
-            className={`transition-all duration-300 ${
+            className={`transition-[opacity,transform] duration-150 ease-out ${
               sidebarExpanded
                 ? 'opacity-100 scale-100'
                 : 'opacity-0 scale-90 pointer-events-none'
@@ -200,7 +198,7 @@ export default function DashboardLayout({
                     relative flex items-center py-3 rounded-xl
                     ${sidebarExpanded ? 'gap-3 px-3' : 'gap-0 px-0 justify-center'}
                     text-sm font-semibold tracking-wide
-                    transition-all duration-200
+                    transition-[padding,gap] duration-200 ease-out
                     ${sidebarExpanded
                       ? (active ? 'bg-[#4a7c59] text-white shadow-md shadow-[#2d4a35]/50' : 'text-[#b8d4c0] hover:bg-[#3a5c44] hover:text-white')
                       : (active ? 'text-white' : 'text-[#b8d4c0] hover:bg-[#3a5c44] hover:text-white')
@@ -220,7 +218,7 @@ export default function DashboardLayout({
                   <span
                     className={`
                       whitespace-nowrap overflow-hidden
-                      transition-all duration-300
+                      transition-[opacity,width] duration-200 ease-out
                       ${sidebarExpanded ? 'opacity-100 w-auto' : 'opacity-0 w-0'}
                     `}
                   >
@@ -243,7 +241,7 @@ export default function DashboardLayout({
                 ${sidebarExpanded ? 'gap-3 px-3' : 'gap-0 px-0 justify-center'}
                 text-sm font-semibold tracking-wide
                 text-[#f08080] hover:bg-[#3a1a1a] hover:text-red-300
-                transition-all duration-200
+                transition-[padding,gap] duration-200 ease-out
                 disabled:opacity-50 disabled:cursor-not-allowed
               `}
             >
@@ -254,7 +252,7 @@ export default function DashboardLayout({
               <span
                 className={`
                   whitespace-nowrap overflow-hidden
-                  transition-all duration-300
+                  transition-[opacity,width] duration-200 ease-out
                   ${sidebarExpanded ? 'opacity-100 w-auto' : 'opacity-0 w-0'}
                 `}
               >
