@@ -150,7 +150,9 @@ export default function DashboardLayout({
         `}
       >
         {/* Logo Area */}
-        <div className={`relative flex items-center justify-center px-4 border-b border-[#3a5c44] transition-[height,padding] duration-200 ease-out ${sidebarExpanded ? 'h-[178px] py-6' : 'h-24 py-2'}`}>
+        <div
+          className={`relative flex items-center justify-center px-4 border-b border-[#3a5c44] transition-[height,padding] duration-200 ease-out ${sidebarExpanded ? 'h-[178px] py-6' : 'h-24 py-2'}`}
+        >
           <div
             className={`absolute transition-[opacity,transform] duration-150 ease-out ${
               sidebarExpanded
@@ -186,7 +188,9 @@ export default function DashboardLayout({
         </div>
 
         {/* Nav Items */}
-        <nav className={`flex-1 flex flex-col gap-1 ${sidebarExpanded ? 'px-2' : 'px-0'} py-4 overflow-y-auto overflow-x-hidden`}>
+        <nav
+          className={`flex-1 flex flex-col gap-1 ${sidebarExpanded ? 'px-2' : 'px-0'} py-4 overflow-y-auto overflow-x-hidden`}
+        >
           {ALL_SIDEBAR_ITEMS.map(item => {
             const Icon = item.icon;
             const active = isActive(item.tab);
@@ -199,9 +203,14 @@ export default function DashboardLayout({
                     ${sidebarExpanded ? 'gap-3 px-3' : 'gap-0 px-0 justify-center'}
                     text-sm font-semibold tracking-wide
                     transition-[padding,gap] duration-200 ease-out
-                    ${sidebarExpanded
-                      ? (active ? 'bg-[#4a7c59] text-white shadow-md shadow-[#2d4a35]/50' : 'text-[#b8d4c0] hover:bg-[#3a5c44] hover:text-white')
-                      : (active ? 'text-white' : 'text-[#b8d4c0] hover:bg-[#3a5c44] hover:text-white')
+                    ${
+                      sidebarExpanded
+                        ? active
+                          ? 'bg-[#4a7c59] text-white shadow-md shadow-[#2d4a35]/50'
+                          : 'text-[#b8d4c0] hover:bg-[#3a5c44] hover:text-white'
+                        : active
+                          ? 'text-white'
+                          : 'text-[#b8d4c0] hover:bg-[#3a5c44] hover:text-white'
                     }
                   `}
                 >
@@ -231,7 +240,9 @@ export default function DashboardLayout({
         </nav>
 
         {/* Logout */}
-        <div className={`${sidebarExpanded ? 'px-2' : 'px-0'} pb-5 pt-2 border-t border-[#3a5c44]`}>
+        <div
+          className={`${sidebarExpanded ? 'px-2' : 'px-0'} pb-5 pt-2 border-t border-[#3a5c44]`}
+        >
           <div className="relative group/nav">
             <button
               onClick={handleLogout}
