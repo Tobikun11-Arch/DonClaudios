@@ -20,7 +20,6 @@ export default function HighlightsSection({
     <section
       id="highlights"
       className="min-h-screen flex items-center py-20 px-4"
-      style={{backgroundColor: c.primary}}
     >
       <div className="container mx-auto">
         <div className="max-w-2xl mb-12">
