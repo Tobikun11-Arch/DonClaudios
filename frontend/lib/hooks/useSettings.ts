@@ -2,7 +2,7 @@
 
 import {getSettings, updateSettings} from '@/lib/api/settingsApi';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
-import type {SiteSetting} from '@/lib/types/settings';
+import type {SiteSetting, SectionId, SectionStyle} from '@/lib/types/settings';
 import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
 
 export const settingsQueryKey = ['settings'] as const;
@@ -62,7 +62,20 @@ function mergeWithDefaults(raw: Partial<SiteSetting>): SiteSetting {
       lightGreen: raw.colors?.lightGreen || d.colors.lightGreen,
       beige: raw.colors?.beige || d.colors.beige,
       red: raw.colors?.red || d.colors.red
-    }
+    },
+    sectionStyles: (['hero', 'highlights', 'promo', 'about', 'reviews', 'contact'] as SectionId[]).reduce(
+      (acc, id) => {
+        const rawStyle = raw.sectionStyles?.[id] as SectionStyle | undefined;
+        const defaultStyle = d.sectionStyles[id];
+        acc[id] = {
+          backgroundColor: rawStyle?.backgroundColor || defaultStyle.backgroundColor,
+          textColor: rawStyle?.textColor || defaultStyle.textColor,
+          fontFamily: rawStyle?.fontFamily || defaultStyle.fontFamily
+        };
+        return acc;
+      },
+      {} as Record<SectionId, SectionStyle>
+    )
   };
 }
 

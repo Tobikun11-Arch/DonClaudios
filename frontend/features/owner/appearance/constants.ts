@@ -101,5 +101,13 @@ export const DEFAULT_SETTINGS: SiteSetting = {
     lightGreen: '#a4bbab',
     beige: '#f5f0e8',
     red: '#c0392b'
+  },
+  sectionStyles: {
+    hero: {backgroundColor: '', textColor: '', fontFamily: ''},
+    highlights: {backgroundColor: '', textColor: '', fontFamily: ''},
+    promo: {backgroundColor: '', textColor: '', fontFamily: ''},
+    about: {backgroundColor: '', textColor: '', fontFamily: ''},
+    reviews: {backgroundColor: '', textColor: '', fontFamily: ''},
+    contact: {backgroundColor: '', textColor: '', fontFamily: ''}
   }
 };

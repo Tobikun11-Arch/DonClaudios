@@ -1,18 +1,23 @@
 'use client';
 
-import {useState, useCallback} from 'react';
+import {useState, useCallback, useRef} from 'react';
 import Image from 'next/image';
 import {Star, Phone, MapPin, Mail, Clock} from 'lucide-react';
 import {toast} from 'sonner';
 import EditableText from './EditableText';
-import ColorPickerPanel from './ColorPickerPanel';
+import SectionToolbar from './SectionToolbar';
 import {useSettingsQuery, useUpdateSettingsMutation} from '@/lib/hooks/useSettings';
-import type {SiteSetting, Colors} from '@/lib/types/settings';
+import type {SiteSetting, SectionId, SectionStyle} from '@/lib/types/settings';
 
 export default function AppearancePreview() {
   const {data: settings} = useSettingsQuery();
   const updateMutation = useUpdateSettingsMutation();
   const [local, setLocal] = useState<SiteSetting | null>(null);
+
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+  const mutationRef = useRef(updateMutation);
+  mutationRef.current = updateMutation;
 
   const data = local ?? settings;
 
@@ -111,17 +116,39 @@ export default function AppearancePreview() {
     [data, save]
   );
 
-  const handleColorsChange = useCallback(
-    async (colors: Colors) => {
-      setLocal(prev => ({...(prev ?? settings!), colors}));
+  const saveSectionStyle = useCallback(
+    async (sectionId: SectionId, style: SectionStyle) => {
+      let snapshot: SiteSetting | null = null;
+      setLocal(prev => {
+        const cur = prev ?? settingsRef.current!;
+        snapshot = cur;
+        return {...cur, sectionStyles: {...cur.sectionStyles, [sectionId]: style}};
+      });
       try {
-        await updateMutation.mutateAsync({colors});
+        await mutationRef.current.mutateAsync({
+          sectionStyles: {...(snapshot ?? settingsRef.current!)!.sectionStyles, [sectionId]: style}
+        });
+        setLocal(null);
+        toast.success('Section style saved');
       } catch {
         setLocal(null);
+        toast.error('Failed to save section style');
       }
     },
-    [settings, updateMutation]
+    []
   );
+
+  const ss = (id: SectionId): SectionStyle =>
+    data?.sectionStyles?.[id] ?? {backgroundColor: '', textColor: '', fontFamily: ''};
+
+  const sectionProps = (id: SectionId) => {
+    const s = ss(id);
+    return {
+      backgroundColor: s.backgroundColor || undefined,
+      color: s.textColor || undefined,
+      fontFamily: s.fontFamily || undefined
+    };
+  };
 
   if (!data) {
     return (
@@ -144,10 +171,15 @@ export default function AppearancePreview() {
       } as React.CSSProperties}
     >
       {/* ── Hero ── */}
-      <section
-        className="min-h-screen flex items-center px-4 pt-20 pb-10 relative overflow-hidden"
-        style={{backgroundColor: data.colors.primary}}
-      >
+      <SectionToolbar sectionId="hero" style={ss('hero')} defaultBgColor={data.colors.primary} defaultTextColor="#ffffff" onStyleChange={saveSectionStyle}>
+        <section
+          className="min-h-screen flex items-center px-4 pt-20 pb-10 relative overflow-hidden"
+          style={{
+            backgroundColor: ss('hero').backgroundColor || data.colors.primary,
+            color: ss('hero').textColor || undefined,
+            fontFamily: ss('hero').fontFamily || undefined
+          } as React.CSSProperties}
+        >
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 right-20 w-96 h-96 rounded-full blur-3xl" style={{backgroundColor: data.colors.accent}} />
           <div className="absolute bottom-20 left-20 w-96 h-96 rounded-full blur-3xl bg-[#a4bbab]" />
@@ -241,10 +273,19 @@ export default function AppearancePreview() {
             </div>
           </div>
         </div>
-      </section>
+        </section>
+      </SectionToolbar>
 
       {/* ── Highlights ── */}
-      <section className="min-h-screen flex items-center py-20 px-4 bg-white">
+      <SectionToolbar sectionId="highlights" style={ss('highlights')} defaultBgColor="#ffffff" defaultTextColor={data.colors.primary} onStyleChange={saveSectionStyle}>
+        <section
+          className="min-h-screen flex items-center py-20 px-4"
+          style={{
+            backgroundColor: sectionProps('highlights').backgroundColor || 'white',
+            color: sectionProps('highlights').color,
+            fontFamily: sectionProps('highlights').fontFamily
+          }}
+        >
         <div className="container mx-auto">
           <div className="max-w-2xl mb-12">
             <h2 className="text-5xl font-bold mb-4" style={{color: data.colors.primary}}>
@@ -290,10 +331,19 @@ export default function AppearancePreview() {
             </div>
           </div>
         </div>
-      </section>
+        </section>
+      </SectionToolbar>
 
       {/* ── Promo ── */}
-      <section className="min-h-screen flex items-center py-20 px-4 bg-[#fbd897]">
+      <SectionToolbar sectionId="promo" style={ss('promo')} defaultBgColor="#fbd897" defaultTextColor={data.colors.primary} onStyleChange={saveSectionStyle}>
+        <section
+          className="min-h-screen flex items-center py-20 px-4"
+          style={{
+            backgroundColor: sectionProps('promo').backgroundColor || '#fbd897',
+            color: sectionProps('promo').color,
+            fontFamily: sectionProps('promo').fontFamily
+          }}
+        >
         <div className="container mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-5xl font-bold mb-4" style={{color: data.colors.primary}}>
@@ -317,9 +367,18 @@ export default function AppearancePreview() {
           </div>
         </div>
       </section>
+      </SectionToolbar>
 
       {/* ── About ── */}
-      <section className="min-h-screen flex items-center py-20 px-4 bg-white">
+      <SectionToolbar sectionId="about" style={ss('about')} defaultBgColor="#ffffff" defaultTextColor={data.colors.primary} onStyleChange={saveSectionStyle}>
+        <section
+          className="min-h-screen flex items-center py-20 px-4"
+          style={{
+            backgroundColor: sectionProps('about').backgroundColor || 'white',
+            color: sectionProps('about').color,
+            fontFamily: sectionProps('about').fontFamily
+          }}
+        >
         <div className="container mx-auto max-w-6xl">
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="space-y-6">
@@ -375,12 +434,18 @@ export default function AppearancePreview() {
           </div>
         </div>
       </section>
+      </SectionToolbar>
 
       {/* ── Reviews ── */}
-      <section
-        className="min-h-screen flex items-center py-20 px-4"
-        style={{backgroundColor: `color-mix(in srgb, ${data.colors.primary} 12%, white)`}}
-      >
+      <SectionToolbar sectionId="reviews" style={ss('reviews')} defaultBgColor="#f0f5f1" defaultTextColor={data.colors.primary} onStyleChange={saveSectionStyle}>
+        <section
+          className="min-h-screen flex items-center py-20 px-4"
+          style={{
+            backgroundColor: sectionProps('reviews').backgroundColor || `color-mix(in srgb, ${data.colors.primary} 12%, white)`,
+            color: sectionProps('reviews').color,
+            fontFamily: sectionProps('reviews').fontFamily
+          }}
+        >
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12">
             <p className="text-sm font-semibold tracking-widest uppercase text-[#6b8a6e] mb-2">
@@ -499,9 +564,18 @@ export default function AppearancePreview() {
           </div>
         </div>
       </section>
+      </SectionToolbar>
 
       {/* ── Contact ── */}
-      <section className="min-h-screen flex items-center py-16 sm:py-20 px-4 bg-[#e8dcc4]">
+      <SectionToolbar sectionId="contact" style={ss('contact')} defaultBgColor="#e8dcc4" defaultTextColor={data.colors.primary} onStyleChange={saveSectionStyle}>
+        <section
+          className="min-h-screen flex items-center py-16 sm:py-20 px-4"
+          style={{
+            backgroundColor: sectionProps('contact').backgroundColor || '#e8dcc4',
+            color: sectionProps('contact').color,
+            fontFamily: sectionProps('contact').fontFamily
+          }}
+        >
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-10 sm:mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4" style={{color: data.colors.primary}}>
@@ -601,6 +675,7 @@ export default function AppearancePreview() {
           </div>
         </div>
       </section>
+      </SectionToolbar>
 
       {/* ── Footer ── */}
       <footer className="mt-auto py-12 text-white" style={{backgroundColor: data.colors.primary}}>
@@ -682,8 +757,6 @@ export default function AppearancePreview() {
           </div>
         </div>
       </footer>
-
-      <ColorPickerPanel colors={data.colors} onChange={handleColorsChange} />
     </div>
   );
 }

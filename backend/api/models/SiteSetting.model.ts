@@ -60,6 +60,11 @@ export interface SiteSettingDocument extends mongoose.Document {
     textColor: string;
     backgroundColor: string;
   };
+  sectionStyles: Record<string, {
+    backgroundColor: string;
+    textColor: string;
+    fontFamily: string;
+  }>;
 }
 
 const StatItemSchema = new Schema<StatItem>(
@@ -84,6 +89,15 @@ const ReviewItemSchema = new Schema<ReviewItem>(
     quote: {type: String, default: ''},
     name: {type: String, default: ''},
     tag: {type: String, default: ''}
+  },
+  {_id: false}
+);
+
+const SectionStyleSchema = new Schema(
+  {
+    backgroundColor: {type: String, default: ''},
+    textColor: {type: String, default: ''},
+    fontFamily: {type: String, default: ''}
   },
   {_id: false}
 );
@@ -136,6 +150,11 @@ const SiteSettingSchema = new Schema<SiteSettingDocument>(
       accent: {type: String, default: '#fbd897'},
       textColor: {type: String, default: '#3c5e45'},
       backgroundColor: {type: String, default: '#ffffff'}
+    },
+    sectionStyles: {
+      type: Map,
+      of: SectionStyleSchema,
+      default: () => ({})
     }
   },
   {timestamps: true}

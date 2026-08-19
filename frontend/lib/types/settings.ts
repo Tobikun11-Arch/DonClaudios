@@ -79,6 +79,16 @@ export interface Colors {
   red: string;
 }
 
+export interface SectionStyle {
+  backgroundColor: string;
+  textColor: string;
+  fontFamily: string;
+}
+
+export type SectionId = 'hero' | 'highlights' | 'promo' | 'about' | 'reviews' | 'contact';
+
+export type SectionStyles = Record<SectionId, SectionStyle>;
+
 export interface SiteSetting {
   hero: HeroSection;
   highlights: HighlightsSection;
@@ -88,6 +98,7 @@ export interface SiteSetting {
   contact: ContactSection;
   footer: FooterSection;
   colors: Colors;
+  sectionStyles: SectionStyles;
 }
 
 export interface GetSettingsResponse {

@@ -62,6 +62,10 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-full flex flex-col overflow-x-hidden">
+        <link
+          href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Roboto:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
         <ReactQueryProvider>{children}</ReactQueryProvider>
       </body>
     </html>
