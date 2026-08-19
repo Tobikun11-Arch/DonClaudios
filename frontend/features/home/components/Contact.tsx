@@ -18,7 +18,8 @@ export default function ContactSection({
   return (
     <section
       id="contact"
-      className="min-h-screen flex items-center py-16 sm:py-20 px-4 bg-[#e8dcc4]"
+      className="min-h-screen flex items-center py-16 sm:py-20 px-4"
+      style={{backgroundColor: 'color-mix(in srgb, #fbd897 12%, white)'}}
     >
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-10 sm:mb-16">

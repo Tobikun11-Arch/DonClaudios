@@ -113,7 +113,8 @@ export default function ReviewsSection({colors}: Props) {
   return (
     <section
       id="reviews"
-      className="min-h-screen flex items-center py-20 px-4 bg-[#dce5d8]"
+      className="min-h-screen flex items-center py-20 px-4"
+      style={{backgroundColor: `color-mix(in srgb, ${c.primary} 12%, white)`}}
     >
       <div className="container mx-auto max-w-6xl">
         {/* Header */}
