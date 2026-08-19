@@ -126,21 +126,20 @@ export default function AppearancePreview() {
 
   const confirmSectionStyle = useCallback(
     async (sectionId: SectionId) => {
-      let style: SectionStyle | undefined;
-      let snapshot: SiteSetting;
-      setLocal(prev => {
-        snapshot = prev ?? settings!;
-        style = localStyles[sectionId];
-        if (!style) return prev;
-        return {
-          ...snapshot,
-          sectionStyles: {...snapshot.sectionStyles, [sectionId]: style}
-        };
+      const draft = localStyles[sectionId];
+      if (!draft) return;
+
+      const currentSettings = local ?? settings!;
+      const newSectionStyles = {...currentSettings.sectionStyles, [sectionId]: draft};
+
+      setLocal({
+        ...currentSettings,
+        sectionStyles: newSectionStyles
       });
-      if (!style) return;
+
       try {
         await updateMutation.mutateAsync({
-          sectionStyles: {...snapshot!.sectionStyles, [sectionId]: style!}
+          sectionStyles: newSectionStyles
         });
         setLocal(null);
         setLocalStyles(prev => {
