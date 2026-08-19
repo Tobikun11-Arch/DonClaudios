@@ -5,6 +5,13 @@ export interface StatItem {
   label: string;
 }
 
+export interface ReviewItem {
+  rating: number;
+  quote: string;
+  name: string;
+  tag: string;
+}
+
 export interface SiteSettingDocument extends mongoose.Document {
   hero: {
     title: string;
@@ -22,6 +29,16 @@ export interface SiteSettingDocument extends mongoose.Document {
     title: string;
     description: string;
     stats: StatItem[];
+  };
+  promo: {
+    title: string;
+    subtitle: string;
+  };
+  reviews: {
+    heading: string;
+    subheading: string;
+    featured: ReviewItem;
+    items: ReviewItem[];
   };
   contact: {
     address: string;
@@ -61,6 +78,16 @@ const HighlightImageSchema = new Schema(
   {_id: false}
 );
 
+const ReviewItemSchema = new Schema<ReviewItem>(
+  {
+    rating: {type: Number, default: 5},
+    quote: {type: String, default: ''},
+    name: {type: String, default: ''},
+    tag: {type: String, default: ''}
+  },
+  {_id: false}
+);
+
 const SiteSettingSchema = new Schema<SiteSettingDocument>(
   {
     hero: {
@@ -79,6 +106,16 @@ const SiteSettingSchema = new Schema<SiteSettingDocument>(
       title: {type: String, default: ''},
       description: {type: String, default: ''},
       stats: {type: [StatItemSchema], default: []}
+    },
+    promo: {
+      title: {type: String, default: 'Special Deals'},
+      subtitle: {type: String, default: 'Check out our latest promos and save on your favorite lechon!'}
+    },
+    reviews: {
+      heading: {type: String, default: 'What Our Customers Say'},
+      subheading: {type: String, default: 'Real stories from families who celebrated with our lechon'},
+      featured: {type: ReviewItemSchema, default: () => ({})},
+      items: {type: [ReviewItemSchema], default: []}
     },
     contact: {
       address: {type: String, default: ''},

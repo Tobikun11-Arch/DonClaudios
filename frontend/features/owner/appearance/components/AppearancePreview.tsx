@@ -72,6 +72,13 @@ export default function AppearancePreview() {
     [data, save]
   );
 
+  const saveReviews = useCallback(
+    async (field: string, value: string) => {
+      await save({reviews: {...data!.reviews, [field]: value}});
+    },
+    [data, save]
+  );
+
   const saveContact = useCallback(
     async (field: string, value: string) => {
       await save({contact: {...data!.contact, [field]: value}});
@@ -237,7 +244,7 @@ export default function AppearancePreview() {
       </section>
 
       {/* ── Highlights ── */}
-      <section className="min-h-screen flex items-center py-20 px-4" style={{backgroundColor: data.colors.lightGreen}}>
+      <section className="min-h-screen flex items-center py-20 px-4 bg-white">
         <div className="container mx-auto">
           <div className="max-w-2xl mb-12">
             <h2 className="text-5xl font-bold mb-4" style={{color: data.colors.primary}}>
@@ -281,6 +288,32 @@ export default function AppearancePreview() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Promo ── */}
+      <section className="min-h-screen flex items-center py-20 px-4 bg-[#fbd897]">
+        <div className="container mx-auto">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <h2 className="text-5xl font-bold mb-4" style={{color: data.colors.primary}}>
+              <EditableText
+                value={data.promo.title}
+                onSave={v => save({promo: {...data!.promo, title: v}})}
+                tag="span"
+              />
+            </h2>
+            <p className="text-xl" style={{color: data.colors.primary}}>
+              <EditableText
+                value={data.promo.subtitle}
+                onSave={v => save({promo: {...data!.promo, subtitle: v}})}
+                tag="span"
+              />
+            </p>
+          </div>
+
+          <div className="text-center py-12 text-gray-500">
+            <p className="text-sm">Promo cards are managed in the Promos tab.</p>
           </div>
         </div>
       </section>
@@ -339,6 +372,130 @@ export default function AppearancePreview() {
                 <Image src="/assets/ourstory.JPG" alt="About DonClaudio's" fill className="object-cover" />
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Reviews ── */}
+      <section
+        className="min-h-screen flex items-center py-20 px-4"
+        style={{backgroundColor: `color-mix(in srgb, ${data.colors.primary} 12%, white)`}}
+      >
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-12">
+            <p className="text-sm font-semibold tracking-widest uppercase text-[#6b8a6e] mb-2">
+              Testimonials
+            </p>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{color: data.colors.primary}}>
+              <EditableText
+                value={data.reviews.heading}
+                onSave={v => saveReviews('heading', v)}
+                tag="span"
+              />
+            </h2>
+            <p className="text-base sm:text-xl" style={{color: data.colors.primary}}>
+              <EditableText
+                value={data.reviews.subheading}
+                onSave={v => saveReviews('subheading', v)}
+                tag="span"
+              />
+            </p>
+          </div>
+
+          {/* Desktop & Tablet: split layout */}
+          <div className="hidden md:grid md:grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8 items-stretch">
+            {/* Left: photo + featured review */}
+            <div className="lg:col-span-2 relative rounded-2xl overflow-hidden min-h-80 bg-[#a4bbab]">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#8aab8e] to-[#6b8a6e]" />
+              <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg">
+                <span className="text-5xl font-serif text-[#6b8a6e]/40 leading-none select-none">&ldquo;</span>
+                <p className="text-sm sm:text-base text-gray-800 italic leading-relaxed -mt-2 mb-3">
+                  {data.reviews.featured.quote}
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#a4bbab] flex items-center justify-center text-white text-sm font-bold shrink-0">
+                    {data.reviews.featured.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900 text-sm">{data.reviews.featured.name}</p>
+                    <p className="text-xs text-gray-500">{data.reviews.featured.tag}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: 2x2 grid */}
+            <div className="lg:col-span-3 grid sm:grid-cols-2 auto-rows-fr gap-4 sm:gap-5">
+              {data.reviews.items.map((review, i) => (
+                <div key={i} className="bg-white/80 rounded-2xl p-6 sm:p-8 lg:p-10 flex flex-col h-full">
+                  <div className="flex gap-0.5">
+                    {Array.from({length: review.rating}).map((_, si) => (
+                      <Star key={si} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
+                  <p className="text-gray-700 text-sm sm:text-base lg:text-lg leading-relaxed flex-1 mt-4 mb-6">
+                    &ldquo;{review.quote}&rdquo;
+                  </p>
+                  <div className="border-t border-gray-200 pt-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#a4bbab] flex items-center justify-center text-white text-sm font-bold shrink-0">
+                        {review.name.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900 text-sm">{review.name}</p>
+                        <p className="text-xs text-gray-500">{review.tag}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Mobile: stacked layout */}
+          <div className="md:hidden space-y-5">
+            <div className="relative rounded-2xl overflow-hidden h-72 bg-[#a4bbab]">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#8aab8e] to-[#6b8a6e]" />
+              <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-lg">
+                <span className="text-4xl font-serif text-[#6b8a6e]/40 leading-none select-none">&ldquo;</span>
+                <p className="text-sm text-gray-800 italic leading-relaxed -mt-1 mb-3">
+                  {data.reviews.featured.quote}
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#a4bbab] flex items-center justify-center text-white text-sm font-bold shrink-0">
+                    {data.reviews.featured.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900 text-sm">{data.reviews.featured.name}</p>
+                    <p className="text-xs text-gray-500">{data.reviews.featured.tag}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {data.reviews.items.map((review, i) => (
+              <div key={i} className="bg-white/80 rounded-2xl p-6 sm:p-8 lg:p-10 flex flex-col h-full">
+                <div className="flex gap-0.5">
+                  {Array.from({length: review.rating}).map((_, si) => (
+                    <Star key={si} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+                <p className="text-gray-700 text-sm sm:text-base lg:text-lg leading-relaxed flex-1 mt-4 mb-6">
+                  &ldquo;{review.quote}&rdquo;
+                </p>
+                <div className="border-t border-gray-200 pt-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#a4bbab] flex items-center justify-center text-white text-sm font-bold shrink-0">
+                      {review.name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-900 text-sm">{review.name}</p>
+                      <p className="text-xs text-gray-500">{review.tag}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>

@@ -21,6 +21,10 @@ export const DEFAULT_SETTINGS: SiteSetting = {
       'Located in the heart of Tanza, Cavite. Come experience our warm hospitality and taste the tradition.',
     images: []
   },
+  promo: {
+    title: 'Special Deals',
+    subtitle: 'Check out our latest promos and save on your favorite lechon!'
+  },
   about: {
     title: 'Our Story',
     description:
@@ -28,6 +32,47 @@ export const DEFAULT_SETTINGS: SiteSetting = {
     stats: [
       {value: '100%', label: 'Fresh & Quality'},
       {value: 'Daily', label: 'Roasted Fresh'}
+    ]
+  },
+  reviews: {
+    heading: 'What Our Customers Say',
+    subheading: 'Real stories from families who celebrated with our lechon',
+    featured: {
+      rating: 5,
+      quote:
+        'Best lechon in Tanza! The skin was perfectly crispy and the meat was so tender. Our whole family loved it.',
+      name: 'Maria S.',
+      tag: 'Tanza, Cavite'
+    },
+    items: [
+      {
+        rating: 5,
+        quote:
+          'Ordered for our fiesta, everyone asked where we got it. Will definitely order again!',
+        name: 'Jun D.',
+        tag: 'Regular Customer'
+      },
+      {
+        rating: 5,
+        quote:
+          "Crispy skin, juicy meat — the best lechon we've ever had. Highly recommended!",
+        name: 'Ana R.',
+        tag: 'Fiesta Order'
+      },
+      {
+        rating: 5,
+        quote:
+          'We order every Christmas. Always consistent quality and the staff are so friendly.',
+        name: 'Carlo M.',
+        tag: 'Christmas Order'
+      },
+      {
+        rating: 5,
+        quote:
+          'First time trying it and I was amazed. The flavor is authentic and the portion was generous.',
+        name: 'Liza P.',
+        tag: 'First-Time Customer'
+      }
     ]
   },
   contact: {

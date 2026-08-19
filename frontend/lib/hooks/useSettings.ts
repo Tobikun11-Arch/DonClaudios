@@ -24,10 +24,20 @@ function mergeWithDefaults(raw: Partial<SiteSetting>): SiteSetting {
       subtitle: raw.highlights?.subtitle || d.highlights.subtitle,
       images: raw.highlights?.images?.length ? raw.highlights.images : d.highlights.images
     },
+    promo: {
+      title: raw.promo?.title || d.promo.title,
+      subtitle: raw.promo?.subtitle || d.promo.subtitle
+    },
     about: {
       title: raw.about?.title || d.about.title,
       description: raw.about?.description || d.about.description,
       stats: raw.about?.stats?.length ? raw.about.stats : d.about.stats
+    },
+    reviews: {
+      heading: raw.reviews?.heading || d.reviews.heading,
+      subheading: raw.reviews?.subheading || d.reviews.subheading,
+      featured: raw.reviews?.featured?.quote ? raw.reviews.featured : d.reviews.featured,
+      items: raw.reviews?.items?.length ? raw.reviews.items : d.reviews.items
     },
     contact: {
       address: raw.contact?.address || d.contact.address,

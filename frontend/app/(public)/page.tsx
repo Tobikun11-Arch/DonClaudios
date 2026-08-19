@@ -10,9 +10,9 @@ export default function HomePage() {
     <>
       <HeroSection hero={settings?.hero} colors={settings?.colors} />
       <Highlights highlights={settings?.highlights} colors={settings?.colors} />
-      <Promo />
+      <Promo promo={settings?.promo} />
       <About about={settings?.about} colors={settings?.colors} />
-      <Reviews colors={settings?.colors} />
+      <Reviews reviews={settings?.reviews} colors={settings?.colors} />
       <Contact contact={settings?.contact} colors={settings?.colors} />
     </>
   );
