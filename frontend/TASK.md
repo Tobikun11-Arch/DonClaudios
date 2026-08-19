@@ -1,7 +1,8 @@
 PRIORITY TASKS:
 1. Appearance - All content in Public should be from the database, so it's CRUD. 
   - cant type in bg color input - DONE
-  - the bg white default from highlights and about section is not changing - 
+  - the bg white default from highlights and about section is not changing - the color picker is not working in white bg in current appearance 
+    but the input form is working now just need to fix the color picker not working 
   - the text color is not changing 
   - the toast loop error when changing
 
