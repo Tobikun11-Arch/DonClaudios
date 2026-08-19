@@ -3,7 +3,7 @@
 import {Button} from '@/components/ui/button';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import type {Promo} from '@/lib/types/promo';
-import type {PromoSection as PromoSectionType} from '@/lib/types/settings';
+import type {PromoSection as PromoSectionType, SectionStyle} from '@/lib/types/settings';
 import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
 import Image from 'next/image';
 import NoPromosEmptyState from './NoPromosEmptyState';
@@ -63,7 +63,7 @@ function PromoCardSkeleton() {
   );
 }
 
-export default function PromoSection({promo}: {promo?: PromoSectionType}) {
+export default function PromoSection({promo, sectionStyle}: {promo?: PromoSectionType; sectionStyle?: SectionStyle}) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isDown = useRef(false);
   const startX = useRef(0);
@@ -105,7 +105,12 @@ export default function PromoSection({promo}: {promo?: PromoSectionType}) {
   return (
     <section
       id="promo"
-      className="min-h-screen flex items-center py-20 px-4 bg-[#fbd897]"
+      className="min-h-screen flex items-center py-20 px-4"
+      style={{
+        backgroundColor: sectionStyle?.backgroundColor || '#fbd897',
+        color: sectionStyle?.textColor || undefined,
+        fontFamily: sectionStyle?.fontFamily || undefined
+      }}
     >
       <div className="container mx-auto">
         <div className="text-center max-w-2xl mx-auto mb-16">

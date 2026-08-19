@@ -13,6 +13,7 @@ export default function AppearancePreview() {
   const {data: settings} = useSettingsQuery();
   const updateMutation = useUpdateSettingsMutation();
   const [local, setLocal] = useState<SiteSetting | null>(null);
+  const [localStyles, setLocalStyles] = useState<Partial<Record<SectionId, SectionStyle>>>({});
 
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
@@ -116,30 +117,51 @@ export default function AppearancePreview() {
     [data, save]
   );
 
-  const saveSectionStyle = useCallback(
-    async (sectionId: SectionId, style: SectionStyle) => {
-      let snapshot: SiteSetting | null = null;
+  const draftSectionStyle = useCallback(
+    (sectionId: SectionId, style: SectionStyle) => {
+      setLocalStyles(prev => ({...prev, [sectionId]: style}));
+    },
+    []
+  );
+
+  const confirmSectionStyle = useCallback(
+    async (sectionId: SectionId) => {
+      let style: SectionStyle | undefined;
+      let snapshot: SiteSetting;
       setLocal(prev => {
-        const cur = prev ?? settingsRef.current!;
-        snapshot = cur;
-        return {...cur, sectionStyles: {...cur.sectionStyles, [sectionId]: style}};
+        snapshot = prev ?? settings!;
+        style = localStyles[sectionId];
+        if (!style) return prev;
+        return {
+          ...snapshot,
+          sectionStyles: {...snapshot.sectionStyles, [sectionId]: style}
+        };
       });
+      if (!style) return;
       try {
-        await mutationRef.current.mutateAsync({
-          sectionStyles: {...(snapshot ?? settingsRef.current!)!.sectionStyles, [sectionId]: style}
+        await updateMutation.mutateAsync({
+          sectionStyles: {...snapshot!.sectionStyles, [sectionId]: style!}
         });
         setLocal(null);
+        setLocalStyles(prev => {
+          const next = {...prev};
+          delete next[sectionId];
+          return next;
+        });
         toast.success('Section style saved');
       } catch {
         setLocal(null);
         toast.error('Failed to save section style');
       }
     },
-    []
+    [localStyles, settings, updateMutation]
   );
 
-  const ss = (id: SectionId): SectionStyle =>
-    data?.sectionStyles?.[id] ?? {backgroundColor: '', textColor: '', fontFamily: ''};
+  const ss = (id: SectionId): SectionStyle => {
+    const saved = data?.sectionStyles?.[id] ?? {backgroundColor: '', textColor: '', fontFamily: ''};
+    const draft = localStyles[id];
+    return draft ? {...saved, ...draft} : saved;
+  };
 
   const sectionProps = (id: SectionId) => {
     const s = ss(id);
@@ -171,7 +193,7 @@ export default function AppearancePreview() {
       } as React.CSSProperties}
     >
       {/* ── Hero ── */}
-      <SectionToolbar sectionId="hero" style={ss('hero')} defaultBgColor={data.colors.primary} defaultTextColor="#ffffff" onStyleChange={saveSectionStyle}>
+      <SectionToolbar sectionId="hero" style={ss('hero')} defaultBgColor={data.colors.primary} defaultTextColor="#ffffff" onDraftChange={draftSectionStyle} onConfirm={confirmSectionStyle}>
         <section
           className="min-h-screen flex items-center px-4 pt-20 pb-10 relative overflow-hidden"
           style={{
@@ -277,7 +299,7 @@ export default function AppearancePreview() {
       </SectionToolbar>
 
       {/* ── Highlights ── */}
-      <SectionToolbar sectionId="highlights" style={ss('highlights')} defaultBgColor="#ffffff" defaultTextColor={data.colors.primary} onStyleChange={saveSectionStyle}>
+      <SectionToolbar sectionId="highlights" style={ss('highlights')} defaultBgColor="#ffffff" defaultTextColor={data.colors.primary} onDraftChange={draftSectionStyle} onConfirm={confirmSectionStyle}>
         <section
           className="min-h-screen flex items-center py-20 px-4"
           style={{
@@ -335,7 +357,7 @@ export default function AppearancePreview() {
       </SectionToolbar>
 
       {/* ── Promo ── */}
-      <SectionToolbar sectionId="promo" style={ss('promo')} defaultBgColor="#fbd897" defaultTextColor={data.colors.primary} onStyleChange={saveSectionStyle}>
+      <SectionToolbar sectionId="promo" style={ss('promo')} defaultBgColor="#fbd897" defaultTextColor={data.colors.primary} onDraftChange={draftSectionStyle} onConfirm={confirmSectionStyle}>
         <section
           className="min-h-screen flex items-center py-20 px-4"
           style={{
@@ -370,7 +392,7 @@ export default function AppearancePreview() {
       </SectionToolbar>
 
       {/* ── About ── */}
-      <SectionToolbar sectionId="about" style={ss('about')} defaultBgColor="#ffffff" defaultTextColor={data.colors.primary} onStyleChange={saveSectionStyle}>
+      <SectionToolbar sectionId="about" style={ss('about')} defaultBgColor="#ffffff" defaultTextColor={data.colors.primary} onDraftChange={draftSectionStyle} onConfirm={confirmSectionStyle}>
         <section
           className="min-h-screen flex items-center py-20 px-4"
           style={{
@@ -437,7 +459,7 @@ export default function AppearancePreview() {
       </SectionToolbar>
 
       {/* ── Reviews ── */}
-      <SectionToolbar sectionId="reviews" style={ss('reviews')} defaultBgColor="#f0f5f1" defaultTextColor={data.colors.primary} onStyleChange={saveSectionStyle}>
+      <SectionToolbar sectionId="reviews" style={ss('reviews')} defaultBgColor="#f0f5f1" defaultTextColor={data.colors.primary} onDraftChange={draftSectionStyle} onConfirm={confirmSectionStyle}>
         <section
           className="min-h-screen flex items-center py-20 px-4"
           style={{
@@ -567,7 +589,7 @@ export default function AppearancePreview() {
       </SectionToolbar>
 
       {/* ── Contact ── */}
-      <SectionToolbar sectionId="contact" style={ss('contact')} defaultBgColor="#e8dcc4" defaultTextColor={data.colors.primary} onStyleChange={saveSectionStyle}>
+      <SectionToolbar sectionId="contact" style={ss('contact')} defaultBgColor="#e8dcc4" defaultTextColor={data.colors.primary} onDraftChange={draftSectionStyle} onConfirm={confirmSectionStyle}>
         <section
           className="min-h-screen flex items-center py-16 sm:py-20 px-4"
           style={{

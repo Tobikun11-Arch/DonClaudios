@@ -2,7 +2,7 @@
 
 import {Star} from 'lucide-react';
 import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
-import type {Colors, ReviewsSection as ReviewsSectionType, ReviewItem} from '@/lib/types/settings';
+import type {Colors, ReviewsSection as ReviewsSectionType, ReviewItem, SectionStyle} from '@/lib/types/settings';
 
 function getInitials(name: string) {
   return name
@@ -57,9 +57,10 @@ function ReviewCard({review}: {review: ReviewItem}) {
 interface Props {
   reviews?: ReviewsSectionType;
   colors?: Colors;
+  sectionStyle?: SectionStyle;
 }
 
-export default function ReviewsSection({reviews, colors}: Props) {
+export default function ReviewsSection({reviews, colors, sectionStyle}: Props) {
   const c = colors ?? DEFAULT_SETTINGS.colors;
   const r = reviews ?? DEFAULT_SETTINGS.reviews;
 
@@ -67,7 +68,11 @@ export default function ReviewsSection({reviews, colors}: Props) {
     <section
       id="reviews"
       className="min-h-screen flex items-center py-20 px-4"
-      style={{backgroundColor: `color-mix(in srgb, ${c.primary} 12%, white)`}}
+      style={{
+        backgroundColor: sectionStyle?.backgroundColor || `color-mix(in srgb, ${c.primary} 12%, white)`,
+        color: sectionStyle?.textColor || undefined,
+        fontFamily: sectionStyle?.fontFamily || undefined
+      }}
     >
       <div className="container mx-auto max-w-6xl">
         {/* Header */}

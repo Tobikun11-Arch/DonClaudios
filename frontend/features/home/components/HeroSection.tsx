@@ -6,16 +6,18 @@ import {scrollToSection} from '@/shared/utils/scroll';
 import {useRouter} from 'next/navigation';
 import Image from 'next/image';
 import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
-import type {HeroSection as HeroSectionType, Colors} from '@/lib/types/settings';
+import type {HeroSection as HeroSectionType, Colors, SectionStyle} from '@/lib/types/settings';
 
 interface Props {
   hero?: HeroSectionType;
   colors?: Colors;
+  sectionStyle?: SectionStyle;
 }
 
 export default function HeroSection({
   hero = DEFAULT_SETTINGS.hero,
-  colors
+  colors,
+  sectionStyle
 }: Props) {
   const router = useRouter();
   const c = colors ?? DEFAULT_SETTINGS.colors;
@@ -24,7 +26,11 @@ export default function HeroSection({
     <section
       id="home"
       className="min-h-screen flex items-center px-4 pt-20 pb-10 relative overflow-hidden"
-      style={{backgroundColor: c.primary}}
+      style={{
+        backgroundColor: sectionStyle?.backgroundColor || c.primary,
+        color: sectionStyle?.textColor || undefined,
+        fontFamily: sectionStyle?.fontFamily || undefined
+      }}
     >
       <div className="absolute inset-0 opacity-10">
         <div

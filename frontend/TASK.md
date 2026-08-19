@@ -1,7 +1,7 @@
 PRIORITY TASKS:
 1. Appearance - All content in Public should be from the database, so it's CRUD. 
-  - cant type in bg color input
-  - the bg white default from highlights and about section is not changing 
+  - cant type in bg color input - DONE
+  - the bg white default from highlights and about section is not changing - 
   - the text color is not changing 
   - the toast loop error when changing
 

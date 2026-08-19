@@ -33,15 +33,34 @@ interface Props {
   style: SectionStyle;
   defaultBgColor?: string;
   defaultTextColor?: string;
-  onStyleChange: (sectionId: SectionId, style: SectionStyle) => void;
+  onDraftChange: (sectionId: SectionId, style: SectionStyle) => void;
+  onConfirm: (sectionId: SectionId) => void;
   children: React.ReactNode;
 }
 
-export default function SectionToolbar({sectionId, style, defaultBgColor = '#ffffff', defaultTextColor = '#3c5e45', onStyleChange, children}: Props) {
+export default function SectionToolbar({sectionId, style, defaultBgColor = '#ffffff', defaultTextColor = '#3c5e45', onDraftChange, onConfirm, children}: Props) {
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const savedRef = useRef({backgroundColor: style.backgroundColor, textColor: style.textColor, fontFamily: style.fontFamily});
+  const capturedRef = useRef(false);
+  const [localBg, setLocalBg] = useState(style.backgroundColor || defaultBgColor);
+  const [localText, setLocalText] = useState(style.textColor || defaultTextColor);
+  const [localFont, setLocalFont] = useState(style.fontFamily);
   const panelRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (open && !capturedRef.current) {
+      savedRef.current = {backgroundColor: style.backgroundColor, textColor: style.textColor, fontFamily: style.fontFamily};
+      capturedRef.current = true;
+      setLocalBg(style.backgroundColor || defaultBgColor);
+      setLocalText(style.textColor || defaultTextColor);
+      setLocalFont(style.fontFamily);
+    }
+    if (!open) {
+      capturedRef.current = false;
+    }
+  }, [open, style.backgroundColor, defaultBgColor, style.textColor, defaultTextColor, style.fontFamily]);
 
   const handleClickOutside = useCallback((e: MouseEvent) => {
     if (
@@ -59,14 +78,17 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
     }
   }, [open, handleClickOutside]);
 
-  const update = (patch: Partial<SectionStyle>) => {
-    onStyleChange(sectionId, {...style, ...patch});
-  };
+  const hasCustom = style.backgroundColor !== '' || style.textColor !== '' || style.fontFamily !== '';
 
-  const hasCustomBg = style.backgroundColor !== '';
-  const hasCustomText = style.textColor !== '';
-  const hasCustomFont = style.fontFamily !== '';
-  const hasAnyCustom = hasCustomBg || hasCustomText || hasCustomFont;
+  const hasChanges =
+    localBg !== (savedRef.current.backgroundColor || defaultBgColor) ||
+    localText !== (savedRef.current.textColor || defaultTextColor) ||
+    localFont !== savedRef.current.fontFamily;
+
+  const save = () => {
+    onConfirm(sectionId);
+    setOpen(false);
+  };
 
   return (
     <div
@@ -90,7 +112,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
           title={`Customize ${SECTION_LABELS[sectionId]} section`}
         >
           <Paintbrush className="w-4 h-4" />
-          {hasAnyCustom && !open && (
+          {hasCustom && !open && (
             <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-white" />
           )}
         </button>
@@ -125,29 +147,37 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                 <label className="relative w-9 h-9 rounded-lg overflow-hidden border border-gray-200 shrink-0 cursor-pointer">
                   <input
                     type="color"
-                    value={style.backgroundColor || defaultBgColor}
-                    onChange={e => update({backgroundColor: e.target.value})}
+                    value={localBg}
+                    onChange={e => {
+                      setLocalBg(e.target.value);
+                      onDraftChange(sectionId, {backgroundColor: e.target.value, textColor: localText, fontFamily: localFont});
+                    }}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
                   <div
                     className="w-full h-full rounded-lg"
-                    style={{backgroundColor: style.backgroundColor || defaultBgColor}}
+                    style={{backgroundColor: localBg}}
                   />
                 </label>
                 <input
                   type="text"
-                  value={style.backgroundColor}
+                  value={localBg}
                   onChange={e => {
-                    if (/^#[0-9a-f]{0,6}$/i.test(e.target.value) || e.target.value === '') {
-                      update({backgroundColor: e.target.value});
+                    const val = e.target.value;
+                    if (/^#[0-9a-f]{0,6}$/i.test(val) || val === '' || val === '#') {
+                      setLocalBg(val);
+                      onDraftChange(sectionId, {backgroundColor: val, textColor: localText, fontFamily: localFont});
                     }
                   }}
                   placeholder={defaultBgColor}
                   className="flex-1 px-2.5 py-1.5 text-xs font-mono border border-gray-200 rounded-md focus:outline-none focus:border-[#3c5e45]"
                 />
-                {hasCustomBg && (
+                {style.backgroundColor !== '' && (
                   <button
-                    onClick={() => update({backgroundColor: ''})}
+                    onClick={() => {
+                      setLocalBg(defaultBgColor);
+                      onDraftChange(sectionId, {backgroundColor: defaultBgColor, textColor: localText, fontFamily: localFont});
+                    }}
                     className="text-xs text-gray-400 hover:text-red-500 shrink-0"
                     title="Reset to default"
                   >
@@ -166,29 +196,37 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                 <label className="relative w-9 h-9 rounded-lg overflow-hidden border border-gray-200 shrink-0 cursor-pointer">
                   <input
                     type="color"
-                    value={style.textColor || defaultTextColor}
-                    onChange={e => update({textColor: e.target.value})}
+                    value={localText}
+                    onChange={e => {
+                      setLocalText(e.target.value);
+                      onDraftChange(sectionId, {backgroundColor: localBg, textColor: e.target.value, fontFamily: localFont});
+                    }}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
                   <div
                     className="w-full h-full rounded-lg"
-                    style={{backgroundColor: style.textColor || defaultTextColor}}
+                    style={{backgroundColor: localText}}
                   />
                 </label>
                 <input
                   type="text"
-                  value={style.textColor}
+                  value={localText}
                   onChange={e => {
-                    if (/^#[0-9a-f]{0,6}$/i.test(e.target.value) || e.target.value === '') {
-                      update({textColor: e.target.value});
+                    const val = e.target.value;
+                    if (/^#[0-9a-f]{0,6}$/i.test(val) || val === '' || val === '#') {
+                      setLocalText(val);
+                      onDraftChange(sectionId, {backgroundColor: localBg, textColor: val, fontFamily: localFont});
                     }
                   }}
                   placeholder={defaultTextColor}
                   className="flex-1 px-2.5 py-1.5 text-xs font-mono border border-gray-200 rounded-md focus:outline-none focus:border-[#3c5e45]"
                 />
-                {hasCustomText && (
+                {style.textColor !== '' && (
                   <button
-                    onClick={() => update({textColor: ''})}
+                    onClick={() => {
+                      setLocalText(defaultTextColor);
+                      onDraftChange(sectionId, {backgroundColor: localBg, textColor: defaultTextColor, fontFamily: localFont});
+                    }}
                     className="text-xs text-gray-400 hover:text-red-500 shrink-0"
                     title="Reset to default"
                   >
@@ -205,8 +243,11 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
               </label>
               <div className="flex items-center gap-2">
                 <select
-                  value={style.fontFamily}
-                  onChange={e => update({fontFamily: e.target.value})}
+                  value={localFont}
+                  onChange={e => {
+                    setLocalFont(e.target.value);
+                    onDraftChange(sectionId, {backgroundColor: localBg, textColor: localText, fontFamily: e.target.value});
+                  }}
                   className="flex-1 px-2.5 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:border-[#3c5e45] bg-white"
                 >
                   {FONT_OPTIONS.map(opt => (
@@ -215,9 +256,12 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                     </option>
                   ))}
                 </select>
-                {hasCustomFont && (
+                {style.fontFamily && (
                   <button
-                    onClick={() => update({fontFamily: ''})}
+                    onClick={() => {
+                      setLocalFont('');
+                      onDraftChange(sectionId, {backgroundColor: localBg, textColor: localText, fontFamily: ''});
+                    }}
                     className="text-xs text-gray-400 hover:text-red-500 shrink-0"
                     title="Reset to default"
                   >
@@ -225,12 +269,26 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                   </button>
                 )}
               </div>
-              {style.fontFamily && (
-                <p className="mt-1.5 text-xs text-gray-400 italic" style={{fontFamily: style.fontFamily}}>
+              {localFont && (
+                <p className="mt-1.5 text-xs text-gray-400 italic" style={{fontFamily: localFont}}>
                   Preview: The quick brown fox jumps over the lazy dog
                 </p>
               )}
             </div>
+
+            {/* Save button */}
+            <button
+              onClick={save}
+              disabled={!hasChanges}
+              className={cn(
+                'w-full py-2 rounded-lg text-sm font-semibold transition-colors',
+                hasChanges
+                  ? 'bg-[#3c5e45] text-white hover:bg-[#2d4a35]'
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              )}
+            >
+              OK
+            </button>
           </div>
         </div>
       )}
