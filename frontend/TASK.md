@@ -15,7 +15,7 @@ PRIORITY TASKS:
 
 
 3. Closed hours - Automatically disable ordering for guest and customer accounts; admin can also manually close hours if there's ever an emergency and they're not available.
-4. Progress order UI - Interactive; admin or cashier can update status, e.g., "on the way" or "already delivered."
+4. Progress order UI - Interactive; admin or cashier can update status, e.g., "on the way" or "already delivered." and borj problem like  cancelling
 5. Delivery fee - Must be displayed in the cart so the customer knows the total amount, and also displayed in the order confirmation.
 6. Payment system - UI and functionality.
 7. Inventory way of deducting - grams, kilograms and per pieces etc,.
@@ -69,7 +69,8 @@ additional if only possible:
 1. customer can leave a feedback thru trustpilot and system fetch data from all review there
 2. in address if user select it, they can add details and save to user address details also, if user add that his house is red etc,.
 3. customer support, floating circle in left bottom and if click it can chat to donclaudios cashier or owner can answer it, it also have faq for customer
-
+4. reservation/event calendar for owner/admin
+5. 
 
 
 
