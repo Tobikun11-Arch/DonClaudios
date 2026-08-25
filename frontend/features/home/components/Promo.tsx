@@ -3,6 +3,8 @@
 import {Button} from '@/components/ui/button';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import type {Promo} from '@/lib/types/promo';
+import type {PromoSection as PromoSectionType, SectionStyle} from '@/lib/types/settings';
+import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
 import Image from 'next/image';
 import NoPromosEmptyState from './NoPromosEmptyState';
 import {useMemo, useRef, useState} from 'react';
@@ -61,11 +63,13 @@ function PromoCardSkeleton() {
   );
 }
 
-export default function PromoSection() {
+export default function PromoSection({promo, sectionStyle}: {promo?: PromoSectionType; sectionStyle?: SectionStyle}) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isDown = useRef(false);
   const startX = useRef(0);
   const scrollLeft = useRef(0);
+
+  const p = promo ?? DEFAULT_SETTINGS.promo;
 
   const promosQuery = usePublicPromosQuery();
   const promos = useMemo(
@@ -101,13 +105,18 @@ export default function PromoSection() {
   return (
     <section
       id="promo"
-      className="min-h-screen flex items-center py-20 px-4 bg-[#fbd897]"
+      className="min-h-screen flex items-center py-20 px-4"
+      style={{
+        backgroundColor: sectionStyle?.backgroundColor || '#fbd897',
+        color: sectionStyle?.textColor || undefined,
+        fontFamily: sectionStyle?.fontFamily || undefined
+      }}
     >
       <div className="container mx-auto">
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-5xl font-bold mb-4 text-3c5e45">Special Deals</h2>
+          <h2 className="text-5xl font-bold mb-4 text-3c5e45">{p.title}</h2>
           <p className="text-xl text-3c5e45">
-            Check out our latest promos and save on your favorite lechon!
+            {p.subtitle}
           </p>
         </div>
 

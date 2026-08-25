@@ -1,18 +1,30 @@
 'use client';
 
-import {useState, useCallback} from 'react';
+import {useState, useCallback, useRef, useEffect} from 'react';
 import Image from 'next/image';
 import {Star, Phone, MapPin, Mail, Clock} from 'lucide-react';
 import {toast} from 'sonner';
 import EditableText from './EditableText';
-import ColorPickerPanel from './ColorPickerPanel';
+import SectionToolbar from './SectionToolbar';
 import {useSettingsQuery, useUpdateSettingsMutation} from '@/lib/hooks/useSettings';
-import type {SiteSetting, Colors} from '@/lib/types/settings';
+import type {SiteSetting, SectionId, SectionStyle} from '@/lib/types/settings';
 
 export default function AppearancePreview() {
   const {data: settings} = useSettingsQuery();
   const updateMutation = useUpdateSettingsMutation();
   const [local, setLocal] = useState<SiteSetting | null>(null);
+  const [localStyles, setLocalStyles] = useState<Partial<Record<SectionId, SectionStyle>>>({});
+
+  const settingsRef = useRef(settings);
+  const mutationRef = useRef(updateMutation);
+
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
+
+  useEffect(() => {
+    mutationRef.current = updateMutation;
+  }, [updateMutation]);
 
   const data = local ?? settings;
 
@@ -72,6 +84,13 @@ export default function AppearancePreview() {
     [data, save]
   );
 
+  const saveReviews = useCallback(
+    async (field: string, value: string) => {
+      await save({reviews: {...data!.reviews, [field]: value}});
+    },
+    [data, save]
+  );
+
   const saveContact = useCallback(
     async (field: string, value: string) => {
       await save({contact: {...data!.contact, [field]: value}});
@@ -104,17 +123,59 @@ export default function AppearancePreview() {
     [data, save]
   );
 
-  const handleColorsChange = useCallback(
-    async (colors: Colors) => {
-      setLocal(prev => ({...(prev ?? settings!), colors}));
+  const draftSectionStyle = useCallback(
+    (sectionId: SectionId, style: SectionStyle) => {
+      setLocalStyles(prev => ({...prev, [sectionId]: style}));
+    },
+    []
+  );
+
+  const confirmSectionStyle = useCallback(
+    async (sectionId: SectionId) => {
+      const draft = localStyles[sectionId];
+      if (!draft) return;
+
+      const currentSettings = local ?? settings!;
+      const newSectionStyles = {...currentSettings.sectionStyles, [sectionId]: draft};
+
+      setLocal({
+        ...currentSettings,
+        sectionStyles: newSectionStyles
+      });
+
       try {
-        await updateMutation.mutateAsync({colors});
+        await updateMutation.mutateAsync({
+          sectionStyles: newSectionStyles
+        });
+        setLocal(null);
+        setLocalStyles(prev => {
+          const next = {...prev};
+          delete next[sectionId];
+          return next;
+        });
+        toast.success('Section style saved');
       } catch {
         setLocal(null);
+        toast.error('Failed to save section style');
       }
     },
-    [settings, updateMutation]
+    [localStyles, local, settings, updateMutation]
   );
+
+  const ss = (id: SectionId): SectionStyle => {
+    const saved = data?.sectionStyles?.[id] ?? {backgroundColor: '', textColor: '', fontFamily: ''};
+    const draft = localStyles[id];
+    return draft ? {...saved, ...draft} : saved;
+  };
+
+  const sectionProps = (id: SectionId) => {
+    const s = ss(id);
+    return {
+      backgroundColor: s.backgroundColor || undefined,
+      color: s.textColor || undefined,
+      fontFamily: s.fontFamily || undefined
+    };
+  };
 
   if (!data) {
     return (
@@ -137,10 +198,15 @@ export default function AppearancePreview() {
       } as React.CSSProperties}
     >
       {/* ── Hero ── */}
-      <section
-        className="min-h-screen flex items-center px-4 pt-20 pb-10 relative overflow-hidden"
-        style={{backgroundColor: data.colors.primary}}
-      >
+      <SectionToolbar sectionId="hero" style={ss('hero')} defaultBgColor={data.colors.primary} defaultTextColor="#ffffff" onDraftChange={draftSectionStyle} onConfirm={confirmSectionStyle}>
+        <section
+          className="min-h-screen flex items-center px-4 pt-20 pb-10 relative overflow-hidden"
+          style={{
+            backgroundColor: ss('hero').backgroundColor || data.colors.primary,
+            color: ss('hero').textColor || undefined,
+            fontFamily: ss('hero').fontFamily || undefined
+          } as React.CSSProperties}
+        >
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 right-20 w-96 h-96 rounded-full blur-3xl" style={{backgroundColor: data.colors.accent}} />
           <div className="absolute bottom-20 left-20 w-96 h-96 rounded-full blur-3xl bg-[#a4bbab]" />
@@ -234,10 +300,19 @@ export default function AppearancePreview() {
             </div>
           </div>
         </div>
-      </section>
+        </section>
+      </SectionToolbar>
 
       {/* ── Highlights ── */}
-      <section className="min-h-screen flex items-center py-20 px-4" style={{backgroundColor: data.colors.lightGreen}}>
+      <SectionToolbar sectionId="highlights" style={ss('highlights')} defaultBgColor="#ffffff" defaultTextColor={data.colors.primary} onDraftChange={draftSectionStyle} onConfirm={confirmSectionStyle}>
+        <section
+          className="min-h-screen flex items-center py-20 px-4"
+          style={{
+            backgroundColor: sectionProps('highlights').backgroundColor || 'white',
+            color: sectionProps('highlights').color,
+            fontFamily: sectionProps('highlights').fontFamily
+          }}
+        >
         <div className="container mx-auto">
           <div className="max-w-2xl mb-12">
             <h2 className="text-5xl font-bold mb-4" style={{color: data.colors.primary}}>
@@ -283,10 +358,54 @@ export default function AppearancePreview() {
             </div>
           </div>
         </div>
+        </section>
+      </SectionToolbar>
+
+      {/* ── Promo ── */}
+      <SectionToolbar sectionId="promo" style={ss('promo')} defaultBgColor="#fbd897" defaultTextColor={data.colors.primary} onDraftChange={draftSectionStyle} onConfirm={confirmSectionStyle}>
+        <section
+          className="min-h-screen flex items-center py-20 px-4"
+          style={{
+            backgroundColor: sectionProps('promo').backgroundColor || '#fbd897',
+            color: sectionProps('promo').color,
+            fontFamily: sectionProps('promo').fontFamily
+          }}
+        >
+        <div className="container mx-auto">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <h2 className="text-5xl font-bold mb-4" style={{color: data.colors.primary}}>
+              <EditableText
+                value={data.promo.title}
+                onSave={v => save({promo: {...data!.promo, title: v}})}
+                tag="span"
+              />
+            </h2>
+            <p className="text-xl" style={{color: data.colors.primary}}>
+              <EditableText
+                value={data.promo.subtitle}
+                onSave={v => save({promo: {...data!.promo, subtitle: v}})}
+                tag="span"
+              />
+            </p>
+          </div>
+
+          <div className="text-center py-12 text-gray-500">
+            <p className="text-sm">Promo cards are managed in the Promos tab.</p>
+          </div>
+        </div>
       </section>
+      </SectionToolbar>
 
       {/* ── About ── */}
-      <section className="min-h-screen flex items-center py-20 px-4 bg-white">
+      <SectionToolbar sectionId="about" style={ss('about')} defaultBgColor="#ffffff" defaultTextColor={data.colors.primary} onDraftChange={draftSectionStyle} onConfirm={confirmSectionStyle}>
+        <section
+          className="min-h-screen flex items-center py-20 px-4"
+          style={{
+            backgroundColor: sectionProps('about').backgroundColor || 'white',
+            color: sectionProps('about').color,
+            fontFamily: sectionProps('about').fontFamily
+          }}
+        >
         <div className="container mx-auto max-w-6xl">
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="space-y-6">
@@ -342,9 +461,148 @@ export default function AppearancePreview() {
           </div>
         </div>
       </section>
+      </SectionToolbar>
+
+      {/* ── Reviews ── */}
+      <SectionToolbar sectionId="reviews" style={ss('reviews')} defaultBgColor="#f0f5f1" defaultTextColor={data.colors.primary} onDraftChange={draftSectionStyle} onConfirm={confirmSectionStyle}>
+        <section
+          className="min-h-screen flex items-center py-20 px-4"
+          style={{
+            backgroundColor: sectionProps('reviews').backgroundColor || `color-mix(in srgb, ${data.colors.primary} 12%, white)`,
+            color: sectionProps('reviews').color,
+            fontFamily: sectionProps('reviews').fontFamily
+          }}
+        >
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-12">
+            <p className="text-sm font-semibold tracking-widest uppercase text-[#6b8a6e] mb-2">
+              Testimonials
+            </p>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{color: data.colors.primary}}>
+              <EditableText
+                value={data.reviews.heading}
+                onSave={v => saveReviews('heading', v)}
+                tag="span"
+              />
+            </h2>
+            <p className="text-base sm:text-xl" style={{color: data.colors.primary}}>
+              <EditableText
+                value={data.reviews.subheading}
+                onSave={v => saveReviews('subheading', v)}
+                tag="span"
+              />
+            </p>
+          </div>
+
+          {/* Desktop & Tablet: split layout */}
+          <div className="hidden md:grid md:grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8 items-stretch">
+            {/* Left: photo + featured review */}
+            <div className="lg:col-span-2 relative rounded-2xl overflow-hidden min-h-80 bg-[#a4bbab]">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#8aab8e] to-[#6b8a6e]" />
+              <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg">
+                <span className="text-5xl font-serif text-[#6b8a6e]/40 leading-none select-none">&ldquo;</span>
+                <p className="text-sm sm:text-base text-gray-800 italic leading-relaxed -mt-2 mb-3">
+                  {data.reviews.featured.quote}
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#a4bbab] flex items-center justify-center text-white text-sm font-bold shrink-0">
+                    {data.reviews.featured.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900 text-sm">{data.reviews.featured.name}</p>
+                    <p className="text-xs text-gray-500">{data.reviews.featured.tag}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: 2x2 grid */}
+            <div className="lg:col-span-3 grid sm:grid-cols-2 auto-rows-fr gap-4 sm:gap-5">
+              {data.reviews.items.map((review, i) => (
+                <div key={i} className="bg-white/80 rounded-2xl p-6 sm:p-8 lg:p-10 flex flex-col h-full">
+                  <div className="flex gap-0.5">
+                    {Array.from({length: review.rating}).map((_, si) => (
+                      <Star key={si} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
+                  <p className="text-gray-700 text-sm sm:text-base lg:text-lg leading-relaxed flex-1 mt-4 mb-6">
+                    &ldquo;{review.quote}&rdquo;
+                  </p>
+                  <div className="border-t border-gray-200 pt-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#a4bbab] flex items-center justify-center text-white text-sm font-bold shrink-0">
+                        {review.name.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900 text-sm">{review.name}</p>
+                        <p className="text-xs text-gray-500">{review.tag}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Mobile: stacked layout */}
+          <div className="md:hidden space-y-5">
+            <div className="relative rounded-2xl overflow-hidden h-72 bg-[#a4bbab]">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#8aab8e] to-[#6b8a6e]" />
+              <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-lg">
+                <span className="text-4xl font-serif text-[#6b8a6e]/40 leading-none select-none">&ldquo;</span>
+                <p className="text-sm text-gray-800 italic leading-relaxed -mt-1 mb-3">
+                  {data.reviews.featured.quote}
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#a4bbab] flex items-center justify-center text-white text-sm font-bold shrink-0">
+                    {data.reviews.featured.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900 text-sm">{data.reviews.featured.name}</p>
+                    <p className="text-xs text-gray-500">{data.reviews.featured.tag}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {data.reviews.items.map((review, i) => (
+              <div key={i} className="bg-white/80 rounded-2xl p-6 sm:p-8 lg:p-10 flex flex-col h-full">
+                <div className="flex gap-0.5">
+                  {Array.from({length: review.rating}).map((_, si) => (
+                    <Star key={si} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+                <p className="text-gray-700 text-sm sm:text-base lg:text-lg leading-relaxed flex-1 mt-4 mb-6">
+                  &ldquo;{review.quote}&rdquo;
+                </p>
+                <div className="border-t border-gray-200 pt-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#a4bbab] flex items-center justify-center text-white text-sm font-bold shrink-0">
+                      {review.name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-900 text-sm">{review.name}</p>
+                      <p className="text-xs text-gray-500">{review.tag}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      </SectionToolbar>
 
       {/* ── Contact ── */}
-      <section className="min-h-screen flex items-center py-16 sm:py-20 px-4 bg-[#e8dcc4]">
+      <SectionToolbar sectionId="contact" style={ss('contact')} defaultBgColor="#e8dcc4" defaultTextColor={data.colors.primary} onDraftChange={draftSectionStyle} onConfirm={confirmSectionStyle}>
+        <section
+          className="min-h-screen flex items-center py-16 sm:py-20 px-4"
+          style={{
+            backgroundColor: sectionProps('contact').backgroundColor || '#e8dcc4',
+            color: sectionProps('contact').color,
+            fontFamily: sectionProps('contact').fontFamily
+          }}
+        >
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-10 sm:mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4" style={{color: data.colors.primary}}>
@@ -444,6 +702,7 @@ export default function AppearancePreview() {
           </div>
         </div>
       </section>
+      </SectionToolbar>
 
       {/* ── Footer ── */}
       <footer className="mt-auto py-12 text-white" style={{backgroundColor: data.colors.primary}}>
@@ -525,8 +784,6 @@ export default function AppearancePreview() {
           </div>
         </div>
       </footer>
-
-      <ColorPickerPanel colors={data.colors} onChange={handleColorsChange} />
     </div>
   );
 }

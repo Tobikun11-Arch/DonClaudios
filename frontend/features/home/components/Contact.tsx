@@ -2,23 +2,30 @@
 
 import {Phone, MapPin, Mail, Clock} from 'lucide-react';
 import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
-import type {ContactSection, Colors} from '@/lib/types/settings';
+import type {ContactSection, Colors, SectionStyle} from '@/lib/types/settings';
 
 interface Props {
   contact?: ContactSection;
   colors?: Colors;
+  sectionStyle?: SectionStyle;
 }
 
 export default function ContactSection({
   contact = DEFAULT_SETTINGS.contact,
-  colors
+  colors,
+  sectionStyle
 }: Props) {
   const c = colors ?? DEFAULT_SETTINGS.colors;
 
   return (
     <section
       id="contact"
-      className="min-h-screen flex items-center py-16 sm:py-20 px-4 bg-[#e8dcc4]"
+      className="min-h-screen flex items-center py-16 sm:py-20 px-4"
+      style={{
+        backgroundColor: sectionStyle?.backgroundColor || 'color-mix(in srgb, #fbd897 12%, white)',
+        color: sectionStyle?.textColor || undefined,
+        fontFamily: sectionStyle?.fontFamily || undefined
+      }}
     >
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-10 sm:mb-16">

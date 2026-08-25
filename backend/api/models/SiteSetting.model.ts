@@ -5,6 +5,13 @@ export interface StatItem {
   label: string;
 }
 
+export interface ReviewItem {
+  rating: number;
+  quote: string;
+  name: string;
+  tag: string;
+}
+
 export interface SiteSettingDocument extends mongoose.Document {
   hero: {
     title: string;
@@ -22,6 +29,16 @@ export interface SiteSettingDocument extends mongoose.Document {
     title: string;
     description: string;
     stats: StatItem[];
+  };
+  promo: {
+    title: string;
+    subtitle: string;
+  };
+  reviews: {
+    heading: string;
+    subheading: string;
+    featured: ReviewItem;
+    items: ReviewItem[];
   };
   contact: {
     address: string;
@@ -43,6 +60,11 @@ export interface SiteSettingDocument extends mongoose.Document {
     textColor: string;
     backgroundColor: string;
   };
+  sectionStyles: Record<string, {
+    backgroundColor: string;
+    textColor: string;
+    fontFamily: string;
+  }>;
 }
 
 const StatItemSchema = new Schema<StatItem>(
@@ -57,6 +79,25 @@ const HighlightImageSchema = new Schema(
   {
     url: {type: String, default: ''},
     alt: {type: String, default: ''}
+  },
+  {_id: false}
+);
+
+const ReviewItemSchema = new Schema<ReviewItem>(
+  {
+    rating: {type: Number, default: 5},
+    quote: {type: String, default: ''},
+    name: {type: String, default: ''},
+    tag: {type: String, default: ''}
+  },
+  {_id: false}
+);
+
+const SectionStyleSchema = new Schema(
+  {
+    backgroundColor: {type: String, default: ''},
+    textColor: {type: String, default: ''},
+    fontFamily: {type: String, default: ''}
   },
   {_id: false}
 );
@@ -80,6 +121,16 @@ const SiteSettingSchema = new Schema<SiteSettingDocument>(
       description: {type: String, default: ''},
       stats: {type: [StatItemSchema], default: []}
     },
+    promo: {
+      title: {type: String, default: 'Special Deals'},
+      subtitle: {type: String, default: 'Check out our latest promos and save on your favorite lechon!'}
+    },
+    reviews: {
+      heading: {type: String, default: 'What Our Customers Say'},
+      subheading: {type: String, default: 'Real stories from families who celebrated with our lechon'},
+      featured: {type: ReviewItemSchema, default: () => ({})},
+      items: {type: [ReviewItemSchema], default: []}
+    },
     contact: {
       address: {type: String, default: ''},
       phones: {type: [String], default: []},
@@ -99,6 +150,11 @@ const SiteSettingSchema = new Schema<SiteSettingDocument>(
       accent: {type: String, default: '#fbd897'},
       textColor: {type: String, default: '#3c5e45'},
       backgroundColor: {type: String, default: '#ffffff'}
+    },
+    sectionStyles: {
+      type: Map,
+      of: SectionStyleSchema,
+      default: () => ({})
     }
   },
   {timestamps: true}

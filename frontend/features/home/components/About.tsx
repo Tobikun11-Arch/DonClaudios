@@ -2,23 +2,30 @@
 
 import Image from 'next/image';
 import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
-import type {AboutSection, Colors} from '@/lib/types/settings';
+import type {AboutSection, Colors, SectionStyle} from '@/lib/types/settings';
 
 interface Props {
   about?: AboutSection;
   colors?: Colors;
+  sectionStyle?: SectionStyle;
 }
 
 export default function AboutSection({
   about = DEFAULT_SETTINGS.about,
-  colors
+  colors,
+  sectionStyle
 }: Props) {
   const c = colors ?? DEFAULT_SETTINGS.colors;
 
   return (
     <section
       id="about"
-      className="min-h-screen flex items-center py-20 px-4 bg-white"
+      className="min-h-screen flex items-center py-20 px-4"
+      style={{
+        backgroundColor: sectionStyle?.backgroundColor || 'white',
+        color: sectionStyle?.textColor || undefined,
+        fontFamily: sectionStyle?.fontFamily || undefined
+      }}
     >
       <div className="container mx-auto max-w-6xl">
         <div className="grid md:grid-cols-2 gap-16 items-center">

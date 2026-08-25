@@ -33,6 +33,25 @@ export interface AboutSection {
   stats: StatItem[];
 }
 
+export interface PromoSection {
+  title: string;
+  subtitle: string;
+}
+
+export interface ReviewItem {
+  rating: number;
+  quote: string;
+  name: string;
+  tag: string;
+}
+
+export interface ReviewsSection {
+  heading: string;
+  subheading: string;
+  featured: ReviewItem;
+  items: ReviewItem[];
+}
+
 export interface ContactSection {
   address: string;
   phones: string[];
@@ -60,13 +79,26 @@ export interface Colors {
   red: string;
 }
 
+export interface SectionStyle {
+  backgroundColor: string;
+  textColor: string;
+  fontFamily: string;
+}
+
+export type SectionId = 'hero' | 'highlights' | 'promo' | 'about' | 'reviews' | 'contact';
+
+export type SectionStyles = Record<SectionId, SectionStyle>;
+
 export interface SiteSetting {
   hero: HeroSection;
   highlights: HighlightsSection;
+  promo: PromoSection;
   about: AboutSection;
+  reviews: ReviewsSection;
   contact: ContactSection;
   footer: FooterSection;
   colors: Colors;
+  sectionStyles: SectionStyles;
 }
 
 export interface GetSettingsResponse {
