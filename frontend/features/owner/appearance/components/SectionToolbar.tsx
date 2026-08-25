@@ -41,26 +41,25 @@ interface Props {
 export default function SectionToolbar({sectionId, style, defaultBgColor = '#ffffff', defaultTextColor = '#3c5e45', onDraftChange, onConfirm, children}: Props) {
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const savedRef = useRef({backgroundColor: style.backgroundColor, textColor: style.textColor, fontFamily: style.fontFamily});
-  const capturedRef = useRef(false);
+  const [saved, setSaved] = useState({backgroundColor: style.backgroundColor, textColor: style.textColor, fontFamily: style.fontFamily});
   const [localBg, setLocalBg] = useState(style.backgroundColor || defaultBgColor);
   const [localText, setLocalText] = useState(style.textColor || defaultTextColor);
   const [localFont, setLocalFont] = useState(style.fontFamily);
   const panelRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    if (open && !capturedRef.current) {
-      savedRef.current = {backgroundColor: style.backgroundColor, textColor: style.textColor, fontFamily: style.fontFamily};
-      capturedRef.current = true;
-      setLocalBg(style.backgroundColor || defaultBgColor);
-      setLocalText(style.textColor || defaultTextColor);
-      setLocalFont(style.fontFamily);
-    }
-    if (!open) {
-      capturedRef.current = false;
-    }
-  }, [open, style.backgroundColor, defaultBgColor, style.textColor, defaultTextColor, style.fontFamily]);
+  const toggle = () => {
+    setOpen(prev => {
+      const next = !prev;
+      if (next) {
+        setSaved({backgroundColor: style.backgroundColor, textColor: style.textColor, fontFamily: style.fontFamily});
+        setLocalBg(style.backgroundColor || defaultBgColor);
+        setLocalText(style.textColor || defaultTextColor);
+        setLocalFont(style.fontFamily);
+      }
+      return next;
+    });
+  };
 
   const handleClickOutside = useCallback((e: MouseEvent) => {
     if (
@@ -81,9 +80,9 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
   const hasCustom = style.backgroundColor !== '' || style.textColor !== '' || style.fontFamily !== '';
 
   const hasChanges =
-    localBg !== (savedRef.current.backgroundColor || defaultBgColor) ||
-    localText !== (savedRef.current.textColor || defaultTextColor) ||
-    localFont !== savedRef.current.fontFamily;
+    localBg !== (saved.backgroundColor || defaultBgColor) ||
+    localText !== (saved.textColor || defaultTextColor) ||
+    localFont !== saved.fontFamily;
 
   const save = () => {
     onConfirm(sectionId);
@@ -102,7 +101,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
       {(hovered || open) && (
         <button
           ref={btnRef}
-          onClick={() => setOpen(prev => !prev)}
+          onClick={toggle}
           className={cn(
             'absolute top-4 right-4 z-40 p-2.5 rounded-full shadow-lg transition-all duration-200',
             open

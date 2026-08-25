@@ -1,6 +1,6 @@
 'use client';
 
-import {useState, useCallback, useRef} from 'react';
+import {useState, useCallback, useRef, useEffect} from 'react';
 import Image from 'next/image';
 import {Star, Phone, MapPin, Mail, Clock} from 'lucide-react';
 import {toast} from 'sonner';
@@ -16,9 +16,15 @@ export default function AppearancePreview() {
   const [localStyles, setLocalStyles] = useState<Partial<Record<SectionId, SectionStyle>>>({});
 
   const settingsRef = useRef(settings);
-  settingsRef.current = settings;
   const mutationRef = useRef(updateMutation);
-  mutationRef.current = updateMutation;
+
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
+
+  useEffect(() => {
+    mutationRef.current = updateMutation;
+  }, [updateMutation]);
 
   const data = local ?? settings;
 
@@ -153,7 +159,7 @@ export default function AppearancePreview() {
         toast.error('Failed to save section style');
       }
     },
-    [localStyles, settings, updateMutation]
+    [localStyles, local, settings, updateMutation]
   );
 
   const ss = (id: SectionId): SectionStyle => {
