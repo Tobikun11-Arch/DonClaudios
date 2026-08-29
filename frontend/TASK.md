@@ -1,10 +1,10 @@
 PRIORITY TASKS:
 1. Appearance - All content in Public should be from the database, so it's CRUD. 
   - cant type in bg color input - DONE
+  - text color changing is not working - 
   - the bg white default from highlights and about section is not changing - the color picker is not working in white bg in current appearance 
-    but the input form is working now just need to fix the color picker not working 
   - the text color is not changing 
-  - the toast loop error when changing
+  - the toast loop error when changing and it must automatic close not the admin need to x it 
 
 2. Feedback - Customer account and guest feedback on the home page; admin can approve and reply to customer concerns. - ...
    - create a crud in customer account for giving a review
@@ -27,9 +27,15 @@ PRIORITY TASKS:
 
 
 
-ERRORS:
+QA:
 1. No lazy loading in all images that showed in screen for better user experience
 2. change the format of hero section and /order/ui layout for much modern ui experience
+3. Notifications
+4. sms
+5. Duplicate err msgs
+6. Appearance still lot of improvements
+7. Promo clickable offers from homepage of users
+
 
 
 

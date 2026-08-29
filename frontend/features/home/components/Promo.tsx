@@ -109,13 +109,14 @@ export default function PromoSection({promo, sectionStyle}: {promo?: PromoSectio
       style={{
         backgroundColor: sectionStyle?.backgroundColor || '#fbd897',
         color: sectionStyle?.textColor || undefined,
-        fontFamily: sectionStyle?.fontFamily || undefined
+        fontFamily: sectionStyle?.fontFamily || undefined,
+        ...(sectionStyle?.textColor ? {'--dc-text': sectionStyle.textColor} : {})
       }}
     >
       <div className="container mx-auto">
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-5xl font-bold mb-4 text-3c5e45">{p.title}</h2>
-          <p className="text-xl text-3c5e45">
+          <h2 className="text-5xl font-bold mb-4" style={{color: 'var(--dc-text, ' + DEFAULT_SETTINGS.colors.primary + ')'}}>{p.title}</h2>
+          <p className="text-xl" style={{color: 'var(--dc-text, ' + DEFAULT_SETTINGS.colors.primary + ')'}}>
             {p.subtitle}
           </p>
         </div>

@@ -24,20 +24,21 @@ export default function ContactSection({
       style={{
         backgroundColor: sectionStyle?.backgroundColor || 'color-mix(in srgb, #fbd897 12%, white)',
         color: sectionStyle?.textColor || undefined,
-        fontFamily: sectionStyle?.fontFamily || undefined
+        fontFamily: sectionStyle?.fontFamily || undefined,
+        ...(sectionStyle?.textColor ? {'--dc-text': sectionStyle.textColor} : {})
       }}
     >
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-10 sm:mb-16">
           <h2
             className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4"
-            style={{color: c.primary}}
+            style={{color: 'var(--dc-text, ' + c.primary + ')'}}
           >
             Get In Touch
           </h2>
           <p
             className="text-base sm:text-xl"
-            style={{color: c.primary}}
+            style={{color: 'var(--dc-text, ' + c.primary + ')'}}
           >
             Ready to order? Have questions? We&apos;re here to help!
           </p>
@@ -48,13 +49,13 @@ export default function ContactSection({
             <div>
               <h3
                 className="text-xl sm:text-2xl font-bold mb-1"
-                style={{color: c.primary}}
+                style={{color: 'var(--dc-text, ' + c.primary + ')'}}
               >
                 Talk to us
               </h3>
               <p
                 className="text-xs sm:text-sm"
-                style={{color: `${c.primary}99`}}
+                style={{color: 'var(--dc-text, ' + c.primary + '99)'}}
               >
                 Orders, inquiries, or bulk catering - we respond fast.
               </p>
@@ -74,7 +75,7 @@ export default function ContactSection({
                 <div>
                   <h4
                     className="font-bold mb-1 text-sm sm:text-base"
-                    style={{color: c.primary}}
+                    style={{color: 'var(--dc-text, ' + c.primary + ')'}}
                   >
                     Call
                   </h4>
@@ -82,7 +83,7 @@ export default function ContactSection({
                     <p
                       key={i}
                       className="text-xs sm:text-sm"
-                      style={{color: c.primary}}
+                      style={{color: 'var(--dc-text, ' + c.primary + ')'}}
                     >
                       {phone}
                     </p>
@@ -100,13 +101,13 @@ export default function ContactSection({
                 <div>
                   <h4
                     className="font-bold mb-1 text-sm sm:text-base"
-                    style={{color: c.primary}}
+                    style={{color: 'var(--dc-text, ' + c.primary + ')'}}
                   >
                     Email
                   </h4>
                   <p
                     className="text-xs sm:text-sm break-all"
-                    style={{color: c.primary}}
+                    style={{color: 'var(--dc-text, ' + c.primary + ')'}}
                   >
                     {contact.email}
                   </p>
@@ -123,13 +124,13 @@ export default function ContactSection({
                 <div>
                   <h4
                     className="font-bold mb-1 text-sm sm:text-base"
-                    style={{color: c.primary}}
+                    style={{color: 'var(--dc-text, ' + c.primary + ')'}}
                   >
                     Hours
                   </h4>
                   <p
                     className="text-xs sm:text-sm"
-                    style={{color: c.primary}}
+                    style={{color: 'var(--dc-text, ' + c.primary + ')'}}
                   >
                     {contact.hours}
                   </p>
@@ -149,13 +150,13 @@ export default function ContactSection({
                 <div>
                   <h4
                     className="font-bold mb-1 text-sm sm:text-base"
-                    style={{color: c.primary}}
+                    style={{color: 'var(--dc-text, ' + c.primary + ')'}}
                   >
                     Address
                   </h4>
                   <p
                     className="text-xs sm:text-sm"
-                    style={{color: c.primary}}
+                    style={{color: 'var(--dc-text, ' + c.primary + ')'}}
                   >
                     {contact.address}
                   </p>

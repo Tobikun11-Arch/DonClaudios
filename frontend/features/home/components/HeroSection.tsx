@@ -28,8 +28,9 @@ export default function HeroSection({
       className="min-h-screen flex items-center px-4 pt-20 pb-10 relative overflow-hidden"
       style={{
         backgroundColor: sectionStyle?.backgroundColor || c.primary,
-        color: sectionStyle?.textColor || undefined,
-        fontFamily: sectionStyle?.fontFamily || undefined
+        color: sectionStyle?.textColor || '#ffffff',
+        fontFamily: sectionStyle?.fontFamily || undefined,
+        ...(sectionStyle?.textColor ? {'--dc-text': sectionStyle.textColor} : {})
       }}
     >
       <div className="absolute inset-0 opacity-10">
@@ -42,7 +43,7 @@ export default function HeroSection({
 
       <div className="container mx-auto relative z-10 pt-4 lg:pt-0">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6 lg:space-y-8 text-white">
+          <div className="space-y-6 lg:space-y-8">
             <div className="flex flex-wrap items-center gap-1.5">
               {[...Array(5)].map((_, i) => (
                 <Star
@@ -59,7 +60,7 @@ export default function HeroSection({
               {hero.title}
             </h2>
 
-            <p className="text-base sm:text-xl text-white/90 max-w-lg">
+            <p className="text-base sm:text-xl max-w-lg">
               {hero.subtitle}
             </p>
 
@@ -85,11 +86,14 @@ export default function HeroSection({
                 <div key={i}>
                   <p
                     className="text-2xl sm:text-3xl font-bold"
-                    style={{color: c.accent}}
+                    style={{color: 'var(--dc-text, ' + c.accent + ')'}}
                   >
                     {stat.value}
                   </p>
-                  <p className="text-xs sm:text-sm text-white/70">
+                  <p
+                    className="text-xs sm:text-sm"
+                    style={{color: 'var(--dc-text, rgba(255,255,255,0.7))'}}
+                  >
                     {stat.label}
                   </p>
                 </div>

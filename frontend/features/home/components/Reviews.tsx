@@ -71,7 +71,8 @@ export default function ReviewsSection({reviews, colors, sectionStyle}: Props) {
       style={{
         backgroundColor: sectionStyle?.backgroundColor || `color-mix(in srgb, ${c.primary} 12%, white)`,
         color: sectionStyle?.textColor || undefined,
-        fontFamily: sectionStyle?.fontFamily || undefined
+        fontFamily: sectionStyle?.fontFamily || undefined,
+        ...(sectionStyle?.textColor ? {'--dc-text': sectionStyle.textColor} : {})
       }}
     >
       <div className="container mx-auto max-w-6xl">
@@ -82,13 +83,13 @@ export default function ReviewsSection({reviews, colors, sectionStyle}: Props) {
           </p>
           <h2
             className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4"
-            style={{color: c.primary}}
+            style={{color: 'var(--dc-text, ' + c.primary + ')'}}
           >
             {r.heading}
           </h2>
           <p
             className="text-base sm:text-xl"
-            style={{color: c.primary}}
+            style={{color: 'var(--dc-text, ' + c.primary + ')'}}
           >
             {r.subheading}
           </p>
