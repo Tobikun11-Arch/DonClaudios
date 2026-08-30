@@ -1,11 +1,4 @@
 PRIORITY TASKS:
-1. Appearance - All content in Public should be from the database, so it's CRUD. 
-  - cant type in bg color input - DONE
-  - the bg white default from highlights and about section is not changing - the color picker is not working in white bg in current appearance 
-    but the input form is working now just need to fix the color picker not working 
-  - the text color is not changing 
-  - the toast loop error when changing
-
 2. Feedback - Customer account and guest feedback on the home page; admin can approve and reply to customer concerns. - ...
    - create a crud in customer account for giving a review
    - create a read reviews for admin and accept review for a good review and can reply to a customer concern
@@ -27,9 +20,15 @@ PRIORITY TASKS:
 
 
 
-ERRORS:
+QA:
 1. No lazy loading in all images that showed in screen for better user experience
 2. change the format of hero section and /order/ui layout for much modern ui experience
+3. Notifications
+4. sms
+5. Duplicate err msgs
+6. Appearance still lot of improvements
+7. Promo clickable offers from homepage of users
+
 
 
 
@@ -62,7 +61,7 @@ fix/development (new branch):
 4. make it no promos if no promo active 
 5. confirmation order ui (must matched to jollibee)
 6. adding new cashier raw error
-
+ 
 
 
 additional if only possible:

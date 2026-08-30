@@ -23,20 +23,21 @@ export default function HighlightsSection({
       id="highlights"
       className="min-h-screen flex items-center py-20 px-4"
       style={{
-        backgroundColor: sectionStyle?.backgroundColor || undefined,
+        backgroundColor: sectionStyle?.backgroundColor || c.backgroundColor,
         color: sectionStyle?.textColor || undefined,
-        fontFamily: sectionStyle?.fontFamily || undefined
+        fontFamily: sectionStyle?.fontFamily || undefined,
+        ...(sectionStyle?.textColor ? {'--dc-text': sectionStyle.textColor} : {})
       }}
     >
       <div className="container mx-auto">
         <div className="max-w-2xl mb-12">
           <h2
             className="text-5xl font-bold mb-4"
-            style={{color: c.primary}}
+            style={{color: 'var(--dc-text, ' + c.primary + ')'}}
           >
             {highlights.title}
           </h2>
-          <p className="text-xl text-[#a4bbab]">
+          <p className="text-xl" style={{color: 'var(--dc-text, #a4bbab)'}}>
             {highlights.subtitle}
           </p>
         </div>

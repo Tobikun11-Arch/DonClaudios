@@ -4,6 +4,7 @@ import {useState, useCallback, useRef, useEffect} from 'react';
 import Image from 'next/image';
 import {Star, Phone, MapPin, Mail, Clock} from 'lucide-react';
 import {toast} from 'sonner';
+import {isCancelledError} from '@tanstack/react-query';
 import EditableText from './EditableText';
 import SectionToolbar from './SectionToolbar';
 import {useSettingsQuery, useUpdateSettingsMutation} from '@/lib/hooks/useSettings';
@@ -13,7 +14,7 @@ export default function AppearancePreview() {
   const {data: settings} = useSettingsQuery();
   const updateMutation = useUpdateSettingsMutation();
   const [local, setLocal] = useState<SiteSetting | null>(null);
-  const [localStyles, setLocalStyles] = useState<Partial<Record<SectionId, SectionStyle>>>({});
+  const [localStyles, setLocalStyles] = useState<Partial<Record<SectionId, Partial<SectionStyle>>>>({});
 
   const settingsRef = useRef(settings);
   const mutationRef = useRef(updateMutation);
@@ -38,6 +39,7 @@ export default function AppearancePreview() {
       } catch (err: unknown) {
         console.error('Save failed:', err);
         setLocal(null);
+        if (isCancelledError(err)) return;
         const msg = err instanceof Error ? err.message : 'Save failed — backend may be offline';
         toast.error(msg);
       }
@@ -124,8 +126,11 @@ export default function AppearancePreview() {
   );
 
   const draftSectionStyle = useCallback(
-    (sectionId: SectionId, style: SectionStyle) => {
-      setLocalStyles(prev => ({...prev, [sectionId]: style}));
+    (sectionId: SectionId, style: Partial<SectionStyle>) => {
+      setLocalStyles(prev => {
+        const existing = prev[sectionId] ?? {};
+        return {...prev, [sectionId]: {...existing, ...style}};
+      });
     },
     []
   );
@@ -136,7 +141,10 @@ export default function AppearancePreview() {
       if (!draft) return;
 
       const currentSettings = local ?? settings!;
-      const newSectionStyles = {...currentSettings.sectionStyles, [sectionId]: draft};
+      const existing =
+        currentSettings.sectionStyles?.[sectionId] ?? {backgroundColor: '', textColor: '', fontFamily: ''};
+      const mergedStyle = {...existing, ...draft};
+      const newSectionStyles = {...currentSettings.sectionStyles, [sectionId]: mergedStyle};
 
       setLocal({
         ...currentSettings,
@@ -154,8 +162,9 @@ export default function AppearancePreview() {
           return next;
         });
         toast.success('Section style saved');
-      } catch {
+      } catch (err: unknown) {
         setLocal(null);
+        if (isCancelledError(err)) return;
         toast.error('Failed to save section style');
       }
     },
@@ -203,8 +212,9 @@ export default function AppearancePreview() {
           className="min-h-screen flex items-center px-4 pt-20 pb-10 relative overflow-hidden"
           style={{
             backgroundColor: ss('hero').backgroundColor || data.colors.primary,
-            color: ss('hero').textColor || undefined,
-            fontFamily: ss('hero').fontFamily || undefined
+            color: ss('hero').textColor || '#ffffff',
+            fontFamily: ss('hero').fontFamily || undefined,
+            ...(ss('hero').textColor ? {'--dc-text': ss('hero').textColor} : {})
           } as React.CSSProperties}
         >
         <div className="absolute inset-0 opacity-10">
@@ -214,7 +224,7 @@ export default function AppearancePreview() {
 
         <div className="container mx-auto relative z-10 pt-4 lg:pt-0">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6 lg:space-y-8 text-white">
+            <div className="space-y-6 lg:space-y-8">
               <div className="flex flex-wrap items-center gap-1.5">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-4 h-4 sm:w-5 sm:h-5 fill-yellow-400 text-yellow-400" />
@@ -227,16 +237,14 @@ export default function AppearancePreview() {
                   value={data.hero.title}
                   onSave={v => saveHero('title', v)}
                   tag="span"
-                  className="text-white"
                 />
               </h2>
 
-              <p className="text-base sm:text-xl text-white/90 max-w-lg">
+              <p className="text-base sm:text-xl max-w-lg">
                 <EditableText
                   value={data.hero.subtitle}
                   onSave={v => saveHero('subtitle', v)}
                   tag="span"
-                  className="text-white"
                 />
               </p>
 
@@ -256,7 +264,7 @@ export default function AppearancePreview() {
               <div className="flex items-center gap-6 sm:gap-12 pt-6 border-t border-white/20">
                 {data.hero.stats.map((stat, i) => (
                   <div key={i}>
-                    <p className="text-2xl sm:text-3xl font-bold" style={{color: data.colors.accent}}>
+                    <p className="text-2xl sm:text-3xl font-bold" style={{color: 'var(--dc-text, ' + data.colors.accent + ')'}}>
                       <EditableText
                         value={stat.value}
                         onSave={v => saveHeroStat(i, 'value', v)}
@@ -264,12 +272,12 @@ export default function AppearancePreview() {
                         className="text-inherit"
                       />
                     </p>
-                    <p className="text-xs sm:text-sm text-white/70">
+                    <p className="text-xs sm:text-sm" style={{color: 'var(--dc-text, rgba(255,255,255,0.7))'}}>
                       <EditableText
                         value={stat.label}
                         onSave={v => saveHeroStat(i, 'label', v)}
                         tag="span"
-                        className="text-white/70"
+                        className="text-current"
                       />
                     </p>
                   </div>
@@ -308,21 +316,22 @@ export default function AppearancePreview() {
         <section
           className="min-h-screen flex items-center py-20 px-4"
           style={{
-            backgroundColor: sectionProps('highlights').backgroundColor || 'white',
+            backgroundColor: sectionProps('highlights').backgroundColor || data.colors.backgroundColor || 'white',
             color: sectionProps('highlights').color,
-            fontFamily: sectionProps('highlights').fontFamily
+            fontFamily: sectionProps('highlights').fontFamily,
+            ...(sectionProps('highlights').color ? {'--dc-text': sectionProps('highlights').color} : {})
           }}
         >
         <div className="container mx-auto">
           <div className="max-w-2xl mb-12">
-            <h2 className="text-5xl font-bold mb-4" style={{color: data.colors.primary}}>
+            <h2 className="text-5xl font-bold mb-4" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>
               <EditableText
                 value={data.highlights.title}
                 onSave={v => saveHighlights('title', v)}
                 tag="span"
               />
             </h2>
-            <p className="text-xl" style={{color: '#a4bbab'}}>
+            <p className="text-xl" style={{color: 'var(--dc-text, #a4bbab)'}}>
               <EditableText
                 value={data.highlights.subtitle}
                 onSave={v => saveHighlights('subtitle', v)}
@@ -368,19 +377,20 @@ export default function AppearancePreview() {
           style={{
             backgroundColor: sectionProps('promo').backgroundColor || '#fbd897',
             color: sectionProps('promo').color,
-            fontFamily: sectionProps('promo').fontFamily
+            fontFamily: sectionProps('promo').fontFamily,
+            ...(sectionProps('promo').color ? {'--dc-text': sectionProps('promo').color} : {})
           }}
         >
         <div className="container mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-5xl font-bold mb-4" style={{color: data.colors.primary}}>
+            <h2 className="text-5xl font-bold mb-4" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>
               <EditableText
                 value={data.promo.title}
                 onSave={v => save({promo: {...data!.promo, title: v}})}
                 tag="span"
               />
             </h2>
-            <p className="text-xl" style={{color: data.colors.primary}}>
+            <p className="text-xl" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>
               <EditableText
                 value={data.promo.subtitle}
                 onSave={v => save({promo: {...data!.promo, subtitle: v}})}
@@ -401,22 +411,23 @@ export default function AppearancePreview() {
         <section
           className="min-h-screen flex items-center py-20 px-4"
           style={{
-            backgroundColor: sectionProps('about').backgroundColor || 'white',
+            backgroundColor: sectionProps('about').backgroundColor || data.colors.backgroundColor || 'white',
             color: sectionProps('about').color,
-            fontFamily: sectionProps('about').fontFamily
+            fontFamily: sectionProps('about').fontFamily,
+            ...(sectionProps('about').color ? {'--dc-text': sectionProps('about').color} : {})
           }}
         >
         <div className="container mx-auto max-w-6xl">
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="space-y-6">
-              <h2 className="text-5xl font-bold" style={{color: data.colors.primary}}>
+              <h2 className="text-5xl font-bold" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>
                 <EditableText
                   value={data.about.title}
                   onSave={v => saveAbout('title', v)}
                   tag="span"
                 />
               </h2>
-              <div className="space-y-4 text-lg" style={{color: data.colors.primary}}>
+              <div className="space-y-4 text-lg" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>
                 <p>
                   <EditableText
                     value={data.about.description}
@@ -470,7 +481,8 @@ export default function AppearancePreview() {
           style={{
             backgroundColor: sectionProps('reviews').backgroundColor || `color-mix(in srgb, ${data.colors.primary} 12%, white)`,
             color: sectionProps('reviews').color,
-            fontFamily: sectionProps('reviews').fontFamily
+            fontFamily: sectionProps('reviews').fontFamily,
+            ...(sectionProps('reviews').color ? {'--dc-text': sectionProps('reviews').color} : {})
           }}
         >
         <div className="container mx-auto max-w-6xl">
@@ -478,14 +490,14 @@ export default function AppearancePreview() {
             <p className="text-sm font-semibold tracking-widest uppercase text-[#6b8a6e] mb-2">
               Testimonials
             </p>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{color: data.colors.primary}}>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>
               <EditableText
                 value={data.reviews.heading}
                 onSave={v => saveReviews('heading', v)}
                 tag="span"
               />
             </h2>
-            <p className="text-base sm:text-xl" style={{color: data.colors.primary}}>
+            <p className="text-base sm:text-xl" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>
               <EditableText
                 value={data.reviews.subheading}
                 onSave={v => saveReviews('subheading', v)}
@@ -600,15 +612,16 @@ export default function AppearancePreview() {
           style={{
             backgroundColor: sectionProps('contact').backgroundColor || '#e8dcc4',
             color: sectionProps('contact').color,
-            fontFamily: sectionProps('contact').fontFamily
+            fontFamily: sectionProps('contact').fontFamily,
+            ...(sectionProps('contact').color ? {'--dc-text': sectionProps('contact').color} : {})
           }}
         >
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-10 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4" style={{color: data.colors.primary}}>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>
               Get In Touch
             </h2>
-            <p className="text-base sm:text-xl" style={{color: data.colors.primary}}>
+            <p className="text-base sm:text-xl" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>
               Ready to order? Have questions? We&apos;re here to help!
             </p>
           </div>
@@ -616,8 +629,8 @@ export default function AppearancePreview() {
           <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-start">
             <div className="space-y-6 sm:space-y-8">
               <div>
-                <h3 className="text-xl sm:text-2xl font-bold mb-1" style={{color: data.colors.primary}}>Talk to us</h3>
-                <p className="text-xs sm:text-sm" style={{color: `${data.colors.primary}99`}}>
+                <h3 className="text-xl sm:text-2xl font-bold mb-1" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>Talk to us</h3>
+                <p className="text-xs sm:text-sm" style={{color: 'var(--dc-text, ' + data.colors.primary + '99)'}}>
                   Orders, inquiries, or bulk catering - we respond fast.
                 </p>
               </div>
@@ -628,9 +641,9 @@ export default function AppearancePreview() {
                     <Phone className="w-4 h-4 sm:w-5 sm:h-5" style={{color: data.colors.primary}} />
                   </div>
                   <div>
-                    <h4 className="font-bold mb-1 text-sm sm:text-base" style={{color: data.colors.primary}}>Call</h4>
+                    <h4 className="font-bold mb-1 text-sm sm:text-base" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>Call</h4>
                     {data.contact.phones.map((phone, i) => (
-                      <p key={i} className="text-xs sm:text-sm" style={{color: data.colors.primary}}>
+                      <p key={i} className="text-xs sm:text-sm" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>
                         <EditableText value={phone} onSave={v => saveContactPhone(i, v)} tag="span" />
                       </p>
                     ))}
@@ -642,8 +655,8 @@ export default function AppearancePreview() {
                     <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   </div>
                   <div>
-                    <h4 className="font-bold mb-1 text-sm sm:text-base" style={{color: data.colors.primary}}>Email</h4>
-                    <p className="text-xs sm:text-sm break-all" style={{color: data.colors.primary}}>
+                    <h4 className="font-bold mb-1 text-sm sm:text-base" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>Email</h4>
+                    <p className="text-xs sm:text-sm break-all" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>
                       <EditableText
                         value={data.contact.email}
                         onSave={v => saveContact('email', v)}
@@ -658,8 +671,8 @@ export default function AppearancePreview() {
                     <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   </div>
                   <div>
-                    <h4 className="font-bold mb-1 text-sm sm:text-base" style={{color: data.colors.primary}}>Hours</h4>
-                    <p className="text-xs sm:text-sm" style={{color: data.colors.primary}}>
+                    <h4 className="font-bold mb-1 text-sm sm:text-base" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>Hours</h4>
+                    <p className="text-xs sm:text-sm" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>
                       <EditableText
                         value={data.contact.hours}
                         onSave={v => saveContact('hours', v)}
@@ -674,8 +687,8 @@ export default function AppearancePreview() {
                     <MapPin className="w-4 h-4 sm:w-5 sm:h-5" style={{color: data.colors.primary}} />
                   </div>
                   <div>
-                    <h4 className="font-bold mb-1 text-sm sm:text-base" style={{color: data.colors.primary}}>Address</h4>
-                    <p className="text-xs sm:text-sm" style={{color: data.colors.primary}}>
+                    <h4 className="font-bold mb-1 text-sm sm:text-base" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>Address</h4>
+                    <p className="text-xs sm:text-sm" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>
                       <EditableText
                         value={data.contact.address}
                         onSave={v => saveContact('address', v)}

@@ -61,7 +61,8 @@ function mergeWithDefaults(raw: Partial<SiteSetting>): SiteSetting {
       mediumGreen: raw.colors?.mediumGreen || d.colors.mediumGreen,
       lightGreen: raw.colors?.lightGreen || d.colors.lightGreen,
       beige: raw.colors?.beige || d.colors.beige,
-      red: raw.colors?.red || d.colors.red
+      red: raw.colors?.red || d.colors.red,
+      backgroundColor: raw.colors?.backgroundColor || d.colors.backgroundColor
     },
     sectionStyles: (['hero', 'highlights', 'promo', 'about', 'reviews', 'contact'] as SectionId[]).reduce(
       (acc, id) => {

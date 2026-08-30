@@ -22,9 +22,10 @@ export default function AboutSection({
       id="about"
       className="min-h-screen flex items-center py-20 px-4"
       style={{
-        backgroundColor: sectionStyle?.backgroundColor || 'white',
+        backgroundColor: sectionStyle?.backgroundColor || c.backgroundColor,
         color: sectionStyle?.textColor || undefined,
-        fontFamily: sectionStyle?.fontFamily || undefined
+        fontFamily: sectionStyle?.fontFamily || undefined,
+        ...(sectionStyle?.textColor ? {'--dc-text': sectionStyle.textColor} : {})
       }}
     >
       <div className="container mx-auto max-w-6xl">
@@ -32,13 +33,13 @@ export default function AboutSection({
           <div className="space-y-6">
             <h2
               className="text-5xl font-bold"
-              style={{color: c.primary}}
+              style={{color: 'var(--dc-text, ' + c.primary + ')'}}
             >
               {about.title}
             </h2>
             <div
               className="space-y-4 text-lg"
-              style={{color: c.primary}}
+              style={{color: 'var(--dc-text, ' + c.primary + ')'}}
             >
               <p>
                 <strong>DonClaudio&apos;s Lechon House </strong>

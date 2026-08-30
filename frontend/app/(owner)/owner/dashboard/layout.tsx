@@ -449,7 +449,7 @@ export default function DashboardLayout({
         </div>
       </div>
 
-      <Toaster position="top-right" richColors closeButton />
+      <Toaster position="top-right" richColors duration={2500} visibleToasts={4} />
     </div>
   );
 }

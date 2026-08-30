@@ -77,6 +77,7 @@ export interface Colors {
   lightGreen: string;
   beige: string;
   red: string;
+  backgroundColor: string;
 }
 
 export interface SectionStyle {

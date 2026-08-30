@@ -12,7 +12,8 @@ const COLOR_LABELS: Record<keyof Colors, string> = {
   mediumGreen: 'Medium Green',
   lightGreen: 'Light Green',
   beige: 'Beige',
-  red: 'Red'
+  red: 'Red',
+  backgroundColor: 'Section Background'
 };
 
 type ColorsEditorProps = {
