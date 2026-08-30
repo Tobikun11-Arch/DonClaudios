@@ -1,7 +1,7 @@
 'use client';
 
 import {useState, useRef, useEffect, useCallback} from 'react';
-import {Paintbrush, X} from 'lucide-react';
+import {Paintbrush, RotateCcw, X} from 'lucide-react';
 import type {SectionId, SectionStyle} from '@/lib/types/settings';
 import {cn} from '@/lib/utils';
 
@@ -196,10 +196,10 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                       setLocalBg(defaultBgColor);
                       onDraftChange(sectionId, {backgroundColor: ''});
                     }}
-                    className="text-xs text-gray-400 hover:text-red-500 shrink-0"
+                    className="text-gray-400 hover:text-red-500 shrink-0"
                     title="Reset to default"
                   >
-                    Reset
+                    <RotateCcw className="w-4 h-4" />
                   </button>
                 )}
               </div>
@@ -245,10 +245,10 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                       setLocalText(defaultTextColor);
                       onDraftChange(sectionId, {textColor: ''});
                     }}
-                    className="text-xs text-gray-400 hover:text-red-500 shrink-0"
+                    className="text-gray-400 hover:text-red-500 shrink-0"
                     title="Reset to default"
                   >
-                    Reset
+                    <RotateCcw className="w-4 h-4" />
                   </button>
                 )}
               </div>
@@ -280,10 +280,10 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                       setLocalFont('');
                       onDraftChange(sectionId, {fontFamily: ''});
                     }}
-                    className="text-xs text-gray-400 hover:text-red-500 shrink-0"
+                    className="text-gray-400 hover:text-red-500 shrink-0"
                     title="Reset to default"
                   >
-                    Reset
+                    <RotateCcw className="w-4 h-4" />
                   </button>
                 )}
               </div>

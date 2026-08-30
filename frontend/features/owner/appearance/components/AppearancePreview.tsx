@@ -31,17 +31,21 @@ export default function AppearancePreview() {
 
   const save = useCallback(
     async (patch: Partial<SiteSetting>) => {
+      const toastId = toast.loading('Saving…');
       setLocal(prev => ({...(prev ?? settings!), ...patch}));
       try {
         await updateMutation.mutateAsync(patch);
         setLocal(null);
-        toast.success('Saved');
+        toast.success('Saved', {id: toastId});
       } catch (err: unknown) {
         console.error('Save failed:', err);
         setLocal(null);
-        if (isCancelledError(err)) return;
+        if (isCancelledError(err)) {
+          toast.dismiss(toastId);
+          return;
+        }
         const msg = err instanceof Error ? err.message : 'Save failed — backend may be offline';
-        toast.error(msg);
+        toast.error(msg, {id: toastId});
       }
     },
     [settings, updateMutation]
@@ -151,6 +155,8 @@ export default function AppearancePreview() {
         sectionStyles: newSectionStyles
       });
 
+      const toastId = toast.loading('Saving…');
+
       try {
         await updateMutation.mutateAsync({
           sectionStyles: newSectionStyles
@@ -161,11 +167,14 @@ export default function AppearancePreview() {
           delete next[sectionId];
           return next;
         });
-        toast.success('Section style saved');
+        toast.success('Section style saved', {id: toastId});
       } catch (err: unknown) {
         setLocal(null);
-        if (isCancelledError(err)) return;
-        toast.error('Failed to save section style');
+        if (isCancelledError(err)) {
+          toast.dismiss(toastId);
+          return;
+        }
+        toast.error('Failed to save section style', {id: toastId});
       }
     },
     [localStyles, local, settings, updateMutation]
