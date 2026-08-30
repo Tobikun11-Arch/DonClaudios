@@ -23,7 +23,7 @@ export default function HighlightsSection({
       id="highlights"
       className="min-h-screen flex items-center py-20 px-4"
       style={{
-        backgroundColor: sectionStyle?.backgroundColor || undefined,
+        backgroundColor: sectionStyle?.backgroundColor || c.backgroundColor,
         color: sectionStyle?.textColor || undefined,
         fontFamily: sectionStyle?.fontFamily || undefined,
         ...(sectionStyle?.textColor ? {'--dc-text': sectionStyle.textColor} : {})

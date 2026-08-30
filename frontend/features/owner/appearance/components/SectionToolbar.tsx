@@ -28,12 +28,31 @@ const SECTION_LABELS: Record<SectionId, string> = {
   contact: 'Contact'
 };
 
+// Windows' native color picker is unresponsive when it opens on the pure white/black
+// extremes OR any color close to them: the crosshair area doesn't change RGB, so the
+// first selection silently fails. That includes colors like '#fefefe' users may have
+// saved. Open the picker on a mid-tone brand color instead — picking from there always
+// registers, and dismissing without a change fires no event, so the preview stays
+// untouched.
+function safePickerHex(value: string): string {
+  const hex = value.toLowerCase().replace('#', '');
+  if (/^[0-9a-f]{6}$/.test(hex)) {
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    if ((r >= 240 && g >= 240 && b >= 240) || (r <= 15 && g <= 15 && b <= 15)) {
+      return '#5b8f6a';
+    }
+  }
+  return value;
+}
+
 interface Props {
   sectionId: SectionId;
   style: SectionStyle;
   defaultBgColor?: string;
   defaultTextColor?: string;
-  onDraftChange: (sectionId: SectionId, style: SectionStyle) => void;
+  onDraftChange: (sectionId: SectionId, style: Partial<SectionStyle>) => void;
   onConfirm: (sectionId: SectionId) => void;
   children: React.ReactNode;
 }
@@ -146,10 +165,10 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                 <label className="relative w-9 h-9 rounded-lg overflow-hidden border border-gray-200 shrink-0 cursor-pointer">
                   <input
                     type="color"
-                    value={localBg}
+                    value={safePickerHex(localBg)}
                     onChange={e => {
                       setLocalBg(e.target.value);
-                      onDraftChange(sectionId, {backgroundColor: e.target.value, textColor: localText, fontFamily: localFont});
+                      onDraftChange(sectionId, {backgroundColor: e.target.value});
                     }}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
@@ -165,7 +184,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                     const val = e.target.value;
                     if (/^#[0-9a-f]{0,6}$/i.test(val) || val === '' || val === '#') {
                       setLocalBg(val);
-                      onDraftChange(sectionId, {backgroundColor: val, textColor: localText, fontFamily: localFont});
+                      onDraftChange(sectionId, {backgroundColor: val});
                     }
                   }}
                   placeholder={defaultBgColor}
@@ -175,7 +194,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                   <button
                     onClick={() => {
                       setLocalBg(defaultBgColor);
-                      onDraftChange(sectionId, {backgroundColor: defaultBgColor, textColor: localText, fontFamily: localFont});
+                      onDraftChange(sectionId, {backgroundColor: ''});
                     }}
                     className="text-xs text-gray-400 hover:text-red-500 shrink-0"
                     title="Reset to default"
@@ -195,10 +214,10 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                 <label className="relative w-9 h-9 rounded-lg overflow-hidden border border-gray-200 shrink-0 cursor-pointer">
                   <input
                     type="color"
-                    value={localText}
+                    value={safePickerHex(localText)}
                     onChange={e => {
                       setLocalText(e.target.value);
-                      onDraftChange(sectionId, {backgroundColor: localBg, textColor: e.target.value, fontFamily: localFont});
+                      onDraftChange(sectionId, {textColor: e.target.value});
                     }}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
@@ -214,7 +233,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                     const val = e.target.value;
                     if (/^#[0-9a-f]{0,6}$/i.test(val) || val === '' || val === '#') {
                       setLocalText(val);
-                      onDraftChange(sectionId, {backgroundColor: localBg, textColor: val, fontFamily: localFont});
+                      onDraftChange(sectionId, {textColor: val});
                     }
                   }}
                   placeholder={defaultTextColor}
@@ -224,7 +243,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                   <button
                     onClick={() => {
                       setLocalText(defaultTextColor);
-                      onDraftChange(sectionId, {backgroundColor: localBg, textColor: defaultTextColor, fontFamily: localFont});
+                      onDraftChange(sectionId, {textColor: ''});
                     }}
                     className="text-xs text-gray-400 hover:text-red-500 shrink-0"
                     title="Reset to default"
@@ -245,7 +264,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                   value={localFont}
                   onChange={e => {
                     setLocalFont(e.target.value);
-                    onDraftChange(sectionId, {backgroundColor: localBg, textColor: localText, fontFamily: e.target.value});
+                    onDraftChange(sectionId, {fontFamily: e.target.value});
                   }}
                   className="flex-1 px-2.5 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:border-[#3c5e45] bg-white"
                 >
@@ -259,7 +278,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                   <button
                     onClick={() => {
                       setLocalFont('');
-                      onDraftChange(sectionId, {backgroundColor: localBg, textColor: localText, fontFamily: ''});
+                      onDraftChange(sectionId, {fontFamily: ''});
                     }}
                     className="text-xs text-gray-400 hover:text-red-500 shrink-0"
                     title="Reset to default"

@@ -13,7 +13,7 @@ export default function AppearancePreview() {
   const {data: settings} = useSettingsQuery();
   const updateMutation = useUpdateSettingsMutation();
   const [local, setLocal] = useState<SiteSetting | null>(null);
-  const [localStyles, setLocalStyles] = useState<Partial<Record<SectionId, SectionStyle>>>({});
+  const [localStyles, setLocalStyles] = useState<Partial<Record<SectionId, Partial<SectionStyle>>>>({});
 
   const settingsRef = useRef(settings);
   const mutationRef = useRef(updateMutation);
@@ -124,8 +124,11 @@ export default function AppearancePreview() {
   );
 
   const draftSectionStyle = useCallback(
-    (sectionId: SectionId, style: SectionStyle) => {
-      setLocalStyles(prev => ({...prev, [sectionId]: style}));
+    (sectionId: SectionId, style: Partial<SectionStyle>) => {
+      setLocalStyles(prev => {
+        const existing = prev[sectionId] ?? {};
+        return {...prev, [sectionId]: {...existing, ...style}};
+      });
     },
     []
   );
@@ -136,7 +139,10 @@ export default function AppearancePreview() {
       if (!draft) return;
 
       const currentSettings = local ?? settings!;
-      const newSectionStyles = {...currentSettings.sectionStyles, [sectionId]: draft};
+      const existing =
+        currentSettings.sectionStyles?.[sectionId] ?? {backgroundColor: '', textColor: '', fontFamily: ''};
+      const mergedStyle = {...existing, ...draft};
+      const newSectionStyles = {...currentSettings.sectionStyles, [sectionId]: mergedStyle};
 
       setLocal({
         ...currentSettings,
@@ -307,7 +313,7 @@ export default function AppearancePreview() {
         <section
           className="min-h-screen flex items-center py-20 px-4"
           style={{
-            backgroundColor: sectionProps('highlights').backgroundColor || 'white',
+            backgroundColor: sectionProps('highlights').backgroundColor || data.colors.backgroundColor || 'white',
             color: sectionProps('highlights').color,
             fontFamily: sectionProps('highlights').fontFamily,
             ...(sectionProps('highlights').color ? {'--dc-text': sectionProps('highlights').color} : {})
@@ -402,7 +408,7 @@ export default function AppearancePreview() {
         <section
           className="min-h-screen flex items-center py-20 px-4"
           style={{
-            backgroundColor: sectionProps('about').backgroundColor || 'white',
+            backgroundColor: sectionProps('about').backgroundColor || data.colors.backgroundColor || 'white',
             color: sectionProps('about').color,
             fontFamily: sectionProps('about').fontFamily,
             ...(sectionProps('about').color ? {'--dc-text': sectionProps('about').color} : {})

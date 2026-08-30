@@ -1,9 +1,8 @@
 PRIORITY TASKS:
 1. Appearance - All content in Public should be from the database, so it's CRUD. 
   - cant type in bg color input - DONE
-  - text color changing is not working - 
-  - the bg white default from highlights and about section is not changing - the color picker is not working in white bg in current appearance 
-  - the text color is not changing 
+  - text color changing is not working - DONE
+  - the bg white default from highlights and about section is not changing - the color picker is not working in white bg in current appearance - 
   - the toast loop error when changing and it must automatic close not the admin need to x it 
 
 2. Feedback - Customer account and guest feedback on the home page; admin can approve and reply to customer concerns. - ...
@@ -68,7 +67,7 @@ fix/development (new branch):
 4. make it no promos if no promo active 
 5. confirmation order ui (must matched to jollibee)
 6. adding new cashier raw error
-
+ 
 
 
 additional if only possible:

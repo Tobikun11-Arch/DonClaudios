@@ -100,7 +100,8 @@ export const DEFAULT_SETTINGS: SiteSetting = {
     mediumGreen: '#3c5e45',
     lightGreen: '#a4bbab',
     beige: '#f5f0e8',
-    red: '#c0392b'
+    red: '#c0392b',
+    backgroundColor: '#ffffff'
   },
   sectionStyles: {
     hero: {backgroundColor: '', textColor: '', fontFamily: ''},

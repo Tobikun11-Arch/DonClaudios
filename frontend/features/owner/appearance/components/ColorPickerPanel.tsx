@@ -17,8 +17,28 @@ const COLOR_FIELDS: {key: keyof Colors; label: string}[] = [
   {key: 'mediumGreen', label: 'Medium Green'},
   {key: 'lightGreen', label: 'Light Green'},
   {key: 'beige', label: 'Beige'},
-  {key: 'red', label: 'Red'}
+  {key: 'red', label: 'Red'},
+  {key: 'backgroundColor', label: 'Section Background'}
 ];
+
+// Windows' native color picker is unresponsive when it opens on the pure white/black
+// extremes OR any color close to them: the crosshair area doesn't change RGB, so the
+// first selection silently fails. That includes colors like '#fefefe' users may have
+// saved. Open the picker on a mid-tone brand color instead — picking from there always
+// registers, and dismissing without a change fires no event, so the saved color stays
+// untouched.
+function safePickerHex(value: string): string {
+  const hex = value.toLowerCase().replace('#', '');
+  if (/^[0-9a-f]{6}$/.test(hex)) {
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    if ((r >= 240 && g >= 240 && b >= 240) || (r <= 15 && g <= 15 && b <= 15)) {
+      return '#5b8f6a';
+    }
+  }
+  return value;
+}
 
 export default function ColorPickerPanel({colors, onChange}: Props) {
   const [open, setOpen] = useState(false);
@@ -59,7 +79,7 @@ export default function ColorPickerPanel({colors, onChange}: Props) {
                   <input
                     id={`color-${key}`}
                     type="color"
-                    value={colors[key]}
+                    value={safePickerHex(colors[key])}
                     onChange={e =>
                       handleColorChange(key, e.target.value)
                     }
