@@ -4,6 +4,7 @@ import {useState, useCallback, useRef, useEffect} from 'react';
 import Image from 'next/image';
 import {Star, Phone, MapPin, Mail, Clock} from 'lucide-react';
 import {toast} from 'sonner';
+import {isCancelledError} from '@tanstack/react-query';
 import EditableText from './EditableText';
 import SectionToolbar from './SectionToolbar';
 import {useSettingsQuery, useUpdateSettingsMutation} from '@/lib/hooks/useSettings';
@@ -38,6 +39,7 @@ export default function AppearancePreview() {
       } catch (err: unknown) {
         console.error('Save failed:', err);
         setLocal(null);
+        if (isCancelledError(err)) return;
         const msg = err instanceof Error ? err.message : 'Save failed — backend may be offline';
         toast.error(msg);
       }
@@ -160,8 +162,9 @@ export default function AppearancePreview() {
           return next;
         });
         toast.success('Section style saved');
-      } catch {
+      } catch (err: unknown) {
         setLocal(null);
+        if (isCancelledError(err)) return;
         toast.error('Failed to save section style');
       }
     },

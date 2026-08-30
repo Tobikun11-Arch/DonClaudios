@@ -1,10 +1,4 @@
 PRIORITY TASKS:
-1. Appearance - All content in Public should be from the database, so it's CRUD. 
-  - cant type in bg color input - DONE
-  - text color changing is not working - DONE
-  - the bg white default from highlights and about section is not changing - the color picker is not working in white bg in current appearance - 
-  - the toast loop error when changing and it must automatic close not the admin need to x it 
-
 2. Feedback - Customer account and guest feedback on the home page; admin can approve and reply to customer concerns. - ...
    - create a crud in customer account for giving a review
    - create a read reviews for admin and accept review for a good review and can reply to a customer concern
