@@ -3,3 +3,13 @@
   - text color changing is not working - DONE
   - the bg white default from highlights and about section is not changing - the color picker is not working in white bg in current appearance - DONE
   - the toast loop error when changing and it must automatic close not the admin need to x it - DONE
+
+2. Feedback - Customer account and guest feedback on the home page; admin can approve and reply to customer concerns. - ...
+   - create a crud in customer account for giving a review
+   - create a read reviews for admin and accept review for a good review and can reply to a customer concern
+     if the review is bad at all so owner can compensate first and give new review again
+   - the reviews will fetch in /homepage
+   -they can chat to each other
+
+3. Notification for admin and customer account
+

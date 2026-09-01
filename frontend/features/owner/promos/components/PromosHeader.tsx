@@ -1,5 +1,6 @@
 import {Button} from '@/components/ui/button';
 import {Tag, Plus} from 'lucide-react';
+import OwnerNotificationBell from '@/features/owner/notifications/components/OwnerNotificationBell';
 
 interface Props {
   onCreate: () => void;
@@ -20,13 +21,16 @@ export function PromosHeader({onCreate}: Props) {
         </div>
       </div>
 
-      <Button
-        onClick={onCreate}
-        className="bg-[#2d4a35] hover:bg-[#24402c]"
-      >
-        <Plus className="h-4 w-4 mr-2" />
-        Add Promo
-      </Button>
+      <div className="flex items-center gap-3">
+        <Button
+          onClick={onCreate}
+          className="bg-[#2d4a35] hover:bg-[#24402c]"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Promo
+        </Button>
+        <OwnerNotificationBell />
+      </div>
     </div>
   );
 }

@@ -1,6 +1,25 @@
-# 🗂️ Monorepo — Backend & Frontend
+# 🗂️ DonClaudio's Lechon House
 
-A monorepo containing the **Express.js** backend API and **Next.js** frontend application.
+## 📖 Project Overview
+
+**DonClaudio's Lechon House** is a digital ordering and management system for a restaurant. It provides a public storefront where customers can browse the menu, place orders, and track their order history, as well as role-based dashboards that let **owners** and **cashiers** run the business end-to-end.
+
+This project is a **monorepo** containing the **Express.js** backend API and **Next.js** frontend application.
+
+### Key Features
+
+- **Customer** — Browse the menu, place orders, check out, and view order history.
+- **Owner** — Manage products/inventory, cashiers, promos, and customize the storefront appearance.
+- **Cashier** — Handle front-of-house orders from the cashier dashboard.
+- **Authentication** — Sign up / sign in, email verification, forgot & reset password.
+- **Role-based access** — Separate layouts and dashboards for customers, owners, and cashiers.
+
+### Tech Stack
+
+| Layer    | Technology         |
+|----------|--------------------|
+| Backend  | Express.js (Node)  |
+| Frontend | Next.js (React)    |
 
 ---
 

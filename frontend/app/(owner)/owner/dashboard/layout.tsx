@@ -12,6 +12,7 @@ import {
   Tag,
   Users,
   Palette,
+  Star,
   LogOut,
   MoreHorizontal,
   X,
@@ -61,6 +62,12 @@ const DRAWER_ITEMS = [
     tab: 'appearance',
     icon: Palette,
     href: '/owner/dashboard?tab=appearance'
+  },
+  {
+    label: 'Reviews',
+    tab: 'reviews',
+    icon: Star,
+    href: '/owner/dashboard?tab=reviews'
   }
 ];
 
@@ -73,6 +80,7 @@ type DashboardLayoutProps = {
   promos?: React.ReactNode;
   cashiers?: React.ReactNode;
   appearance?: React.ReactNode;
+  reviews?: React.ReactNode;
 };
 
 export default function DashboardLayout({
@@ -81,7 +89,8 @@ export default function DashboardLayout({
   inventory,
   promos,
   cashiers,
-  appearance
+  appearance,
+  reviews: reviewsSlot
 }: DashboardLayoutProps) {
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab');
@@ -122,7 +131,8 @@ export default function DashboardLayout({
     inventory,
     promos,
     cashiers,
-    appearance
+    appearance,
+    reviews: reviewsSlot
   };
 
   const handleLogout = async () => {

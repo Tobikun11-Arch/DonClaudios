@@ -1,7 +1,7 @@
-import React from 'react'
+'use client';
 
-export default function NotificationPage() {
-  return (
-    <div>NotificationPage</div>
-  )
+import CustomerNotifications from '@/features/customer/notifications/components/CustomerNotifications';
+
+export default function NotificationSlot() {
+  return <CustomerNotifications />;
 }

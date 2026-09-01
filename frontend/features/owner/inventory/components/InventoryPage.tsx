@@ -12,6 +12,7 @@ import {AdjustModal} from './AdjustModal';
 import {MovementHistoryModal} from './MovementHistoryModal';
 import {useMemo, useState} from 'react';
 import type {Product} from '@/lib/types/product';
+import OwnerNotificationBell from '@/features/owner/notifications/components/OwnerNotificationBell';
 
 export default function InventoryPage() {
   const productsQuery = useProductsQuery();
@@ -80,13 +81,16 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-extrabold text-[#2d4a35]">
-          Inventory Management
-        </h1>
-        <p className="text-sm text-gray-500">
-          Track stock levels, restock products, and view movement history.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-[#2d4a35]">
+            Inventory Management
+          </h1>
+          <p className="text-sm text-gray-500">
+            Track stock levels, restock products, and view movement history.
+          </p>
+        </div>
+        <OwnerNotificationBell />
       </div>
 
       <InventoryStats

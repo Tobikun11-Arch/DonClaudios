@@ -57,3 +57,21 @@ export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
 
   return next();
 }
+
+export function requireCustomer(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) {
+  if (!req.auth) {
+    return next(new ApiError(401, 'UNAUTHORIZED', 'Not authenticated'));
+  }
+
+  if (req.auth.type !== 'customer') {
+    return next(
+      new ApiError(403, 'FORBIDDEN', 'Customer access required')
+    );
+  }
+
+  return next();
+}
