@@ -4,8 +4,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {useRouter} from 'next/navigation';
 import {useLogout} from '@/lib/hooks/auth/useLogout';
-import {ShoppingCart, Tag, Bell, User, Star, LogOut} from 'lucide-react';
+import {ShoppingCart, Tag, User, Star, LogOut} from 'lucide-react';
 import CustomerCartDrawer from '@/shared/components/cart/CustomerCartDrawer';
+import CustomerNotificationBell from '@/features/customer/notifications/components/CustomerNotificationBell';
+import {Toaster} from 'sonner';
 
 const TABS = [
   {
@@ -19,13 +21,6 @@ const TABS = [
     tab: 'promos',
     icon: Tag,
     href: '/customer/dashboard?tab=promos'
-  },
-  {
-    label: 'Notifications',
-    mobileLabel: 'Notifs',
-    tab: 'notification',
-    icon: Bell,
-    href: '/customer/dashboard?tab=notification'
   },
   {
     label: 'Reviews',
@@ -109,6 +104,8 @@ export default function DashboardLayout({
           {TABS.map(item => {
             const Icon = item.icon;
             const active = isActive(item.tab);
+            const badgeCount =
+              0;
             return (
               <Link
                 key={item.label}
@@ -126,7 +123,12 @@ export default function DashboardLayout({
               >
                 <Icon size={20} className="shrink-0" />
                 <span>{item.label}</span>
-                {active && (
+                {badgeCount > 0 && (
+                  <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-[#f08080] px-1.5 text-xs font-bold text-white">
+                    {badgeCount}
+                  </span>
+                )}
+                {active && !(badgeCount > 0) && (
                   <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/80" />
                 )}
               </Link>
@@ -153,6 +155,11 @@ export default function DashboardLayout({
       </aside>
 
       <main className="relative flex-1 overflow-y-auto bg-gray-50 pb-24 md:pb-0">
+        <div className="pointer-events-none absolute top-3 right-4 z-30">
+          <div className="pointer-events-auto">
+            <CustomerNotificationBell />
+          </div>
+        </div>
         <div className="px-4 py-10">{content}</div>
       </main>
 
@@ -170,18 +177,27 @@ export default function DashboardLayout({
           const label = (
             'mobileLabel' in item ? item.mobileLabel : item.label
           ) as string;
+          const badgeCount =
+            0;
           return (
             <Link
               key={item.label}
               href={item.href}
               className="relative flex flex-col items-center gap-1 px-3 py-1 min-w-15 transition-all duration-200"
             >
-              <Icon
-                size={22}
-                className={`transition-colors duration-200 ${
-                  active ? 'text-[#7ed4a0]' : 'text-[#5a8a6a]'
-                }`}
-              />
+              <div className="relative">
+                <Icon
+                  size={22}
+                  className={`transition-colors duration-200 ${
+                    active ? 'text-[#7ed4a0]' : 'text-[#5a8a6a]'
+                  }`}
+                />
+                {badgeCount > 0 && (
+                  <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#f08080] px-1 text-[10px] font-bold text-white">
+                    {badgeCount}
+                  </span>
+                )}
+              </div>
               <span
                 className={`text-[10px] font-bold leading-none transition-colors duration-200 ${
                   active ? 'text-[#7ed4a0]' : 'text-[#5a8a6a]'
@@ -203,6 +219,7 @@ export default function DashboardLayout({
       </nav>
 
       <CustomerCartDrawer />
+      <Toaster position="top-right" richColors duration={2500} visibleToasts={4} />
     </div>
   );
 }

@@ -1,9 +1,12 @@
 import {ApiError} from '../utils/error';
 import {reviewRepository} from '../repositories/review.repository';
 import {customerRepository} from '../repositories/customer.repository';
+import {adminRepository} from '../repositories/admin.repository';
 import {emailService} from './email.service';
+import {notificationService} from './notification.service';
 import {reviewReplyEmailTemplate} from '../templates/reviewReplyEmail';
 import type {CustomerDocument} from '../models/Customer.model';
+import type {AdminDocument} from '../models/Admin.model';
 
 export const reviewService = {
   async listPublic() {
@@ -44,12 +47,36 @@ export const reviewService = {
       .join(' ')
       .trim();
 
-    return reviewRepository.create({
+    const created = await reviewRepository.create({
       customerId: customer._id as any,
       customerName: customerName || 'Customer',
       rating: data.rating,
       comment: data.comment
     });
+
+    try {
+      const admins = (await adminRepository.listAll()) as
+        | (AdminDocument & {_id: unknown})[]
+        | null;
+      for (const admin of admins ?? []) {
+        try {
+          await notificationService.createForAdmin({
+            adminId: String(admin._id),
+            type: 'review_submitted',
+            title: 'New review awaiting approval',
+            message: `${customerName} submitted a ${data.rating}-star review.`,
+            reviewId: String(created._id),
+            link: '/owner/dashboard?tab=reviews'
+          });
+        } catch (error) {
+          console.error('Failed to create review notification for admin', error);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to notify admins about new review', error);
+    }
+
+    return created;
   },
 
   async updateStatusById(reviewId: string, status: 'pending' | 'approved' | 'rejected') {
@@ -87,6 +114,19 @@ export const reviewService = {
     )) as (CustomerDocument & {_id: unknown}) | null;
 
     if (customer) {
+      try {
+        await notificationService.createForCustomer({
+          customerId: String(review.customerId),
+          type: 'review_reply',
+          title: 'Reply to your review',
+          message: reply,
+          reviewId: reviewId,
+          link: '/customer/dashboard?tab=reviews'
+        });
+      } catch (error) {
+        console.error('Failed to create review reply notification', error);
+      }
+
       try {
         const {subject, text, html} = reviewReplyEmailTemplate({
           recipientName: customer.firstName,

@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import {Star} from 'lucide-react';
-import {toast, Toaster} from 'sonner';
+import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
 import {useCreateReviewMutation, useMyReviewsQuery} from '@/lib/hooks/reviews/useReviews';
 import type {Review} from '@/lib/types/review';
@@ -101,8 +101,6 @@ export default function CustomerReviews() {
 
   return (
     <div className="w-full max-w-6xl mx-auto">
-      <Toaster position="top-right" richColors />
-
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">My Reviews</h2>

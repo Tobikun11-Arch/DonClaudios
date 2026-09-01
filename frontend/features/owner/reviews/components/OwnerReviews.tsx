@@ -2,7 +2,7 @@
 
 import {useMemo, useState} from 'react';
 import {Star} from 'lucide-react';
-import {toast, Toaster} from 'sonner';
+import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
 import {
   useAdminReviewsQuery,
@@ -11,6 +11,7 @@ import {
 } from '@/lib/hooks/reviews/useReviews';
 import type {Review, ReviewStatus} from '@/lib/types/review';
 import type {NormalizedApiError} from '@/lib/api/types';
+import OwnerNotificationBell from '@/features/owner/notifications/components/OwnerNotificationBell';
 
 type Filter = 'all' | ReviewStatus;
 
@@ -116,14 +117,15 @@ export default function OwnerReviews() {
 
   return (
     <div className="w-full">
-      <Toaster position="top-right" richColors />
-
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Reviews</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Approve, reject, and reply to customer reviews. Approved reviews
-          appear on the homepage.
-        </p>
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Reviews</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Approve, reject, and reply to customer reviews. Approved reviews
+            appear on the homepage.
+          </p>
+        </div>
+        <OwnerNotificationBell />
       </div>
 
       {/* Filter tabs */}

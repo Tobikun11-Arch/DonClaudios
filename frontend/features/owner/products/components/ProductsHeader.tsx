@@ -1,5 +1,6 @@
 import {Button} from '@/components/ui/button';
 import {Plus} from 'lucide-react';
+import OwnerNotificationBell from '@/features/owner/notifications/components/OwnerNotificationBell';
 
 interface Props {
   showButton: boolean;
@@ -17,12 +18,15 @@ export function ProductsHeader({showButton, onAdd}: Props) {
           Manage your menu items and categories.
         </p>
       </div>
-      {showButton && (
-        <Button onClick={onAdd} className="bg-[#2d4a35] hover:bg-[#24402c]">
-          <Plus className="h-4 w-4" />
-          Add Product
-        </Button>
-      )}
+      <div className="flex items-center gap-3">
+        {showButton && (
+          <Button onClick={onAdd} className="bg-[#2d4a35] hover:bg-[#24402c]">
+            <Plus className="h-4 w-4" />
+            Add Product
+          </Button>
+        )}
+        <OwnerNotificationBell />
+      </div>
     </div>
   );
 }

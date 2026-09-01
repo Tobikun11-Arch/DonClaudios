@@ -1,9 +1,5 @@
 PRIORITY TASKS:
-2. Feedback - Customer account and guest feedback on the home page; admin can approve and reply to customer concerns. - ...
-   - create a crud in customer account for giving a review
-   - create a read reviews for admin and accept review for a good review and can reply to a customer concern
-     if the review is bad at all so owner can compensate first and give new review again
-   - the reviews will fetch in /homepage
+
 
 
 
@@ -11,15 +7,22 @@ PRIORITY TASKS:
 
 
 3. Closed hours - Automatically disable ordering for guest and customer accounts; admin can also manually close hours if there's ever an emergency and they're not available.
+3.1 Profile page of customer and admin
+
 4. Progress order UI - Interactive; admin or cashier can update status, e.g., "on the way" or "already delivered." and borj problem like  cancelling
+
 5. Delivery fee - Must be displayed in the cart so the customer knows the total amount, and also displayed in the order confirmation.
+
 6. Payment system - UI and functionality.
+
 7. Inventory way of deducting - grams, kilograms and per pieces etc,.
 8. Customer account - Profile tab.
 9. Notification for admin and customer account
 10. Mobile app for cashier and admin.
 
+11. rewards tab for customers / what they can buy everytime they buy using their acc/mobile app of donclaudios 
 
+12. paymongo for payment of customers                                                                                                                     
 
 
 

@@ -12,6 +12,7 @@ import {SalesTrendChart} from './SalesTrendChart';
 import {InventoryDonut} from './InventoryDonut';
 import {TopProductsTable} from './TopProductsTable';
 import {LowStockAlert} from './LowStockAlert';
+import OwnerNotificationBell from '@/features/owner/notifications/components/OwnerNotificationBell';
 
 export default function DashboardPage() {
   const summaryQuery = useDashboardSummaryQuery();
@@ -24,9 +25,12 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-[1.5rem] font-bold text-[#1A1A1A]">Dashboard</h1>
-        <p className="text-[0.875rem] text-[#6B7280]">Welcome back, Owner</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-[1.5rem] font-bold text-[#1A1A1A]">Dashboard</h1>
+          <p className="text-[0.875rem] text-[#6B7280]">Welcome back, Owner</p>
+        </div>
+        <OwnerNotificationBell />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
