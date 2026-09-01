@@ -5,6 +5,7 @@ import {env} from '../config/env';
 import {ApiError} from '../utils/error';
 import {customerRepository} from '../repositories/customer.repository';
 import {adminRepository} from '../repositories/admin.repository';
+import type {CustomerDocument} from '../models/Customer.model';
 
 const ACCESS_COOKIE = 'dc_access_token';
 const REFRESH_COOKIE = 'dc_refresh_token';
@@ -57,7 +58,7 @@ export const authController = {
           phoneNumber: admin?.phoneNumber ?? customer?.phoneNumber,
           address: admin?.address ?? customer?.address,
           username: admin?.username,
-          profilePhoto: admin?.profilePhoto,
+          profilePhoto: admin?.profilePhoto ?? customer?.profilePhoto,
           businessName: admin?.businessName,
           businessLogo: admin?.businessLogo,
           storeAddress: admin?.storeAddress,
@@ -73,38 +74,86 @@ export const authController = {
 
   async updateProfile(req: Request, res: Response, next: NextFunction) {
     try {
-      if (!req.auth || req.auth.type !== 'admin') {
-        throw new ApiError(403, 'FORBIDDEN', 'Admin access required');
+      if (!req.auth) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
       }
 
-      const updated = await adminRepository.updateProfile(
-        req.auth.userId,
-        req.body
-      );
+      const allowedCustomerFields: (keyof CustomerDocument)[] = [
+        'firstName',
+        'lastName',
+        'phoneNumber',
+        'address',
+        'profilePhoto'
+      ];
 
-      if (!updated) {
-        throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
-      }
+      if (req.auth.type === 'admin') {
+        const updated = await adminRepository.updateProfile(
+          req.auth.userId,
+          req.body
+        );
 
-      res.status(200).json({
-        user: {
-          id: updated.id,
-          type: 'admin',
-          firstName: updated.firstName,
-          lastName: updated.lastName,
-          email: updated.email,
-          phoneNumber: updated.phoneNumber,
-          address: updated.address,
-          username: updated.username,
-          profilePhoto: updated.profilePhoto,
-          businessName: updated.businessName,
-          businessLogo: updated.businessLogo,
-          storeAddress: updated.storeAddress,
-          businessContactNumber: updated.businessContactNumber,
-          operatingHours: updated.operatingHours,
-          businessType: updated.businessType
+        if (!updated) {
+          throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
         }
-      });
+
+        return res.status(200).json({
+          user: {
+            id: updated.id,
+            type: 'admin',
+            firstName: updated.firstName,
+            lastName: updated.lastName,
+            email: updated.email,
+            phoneNumber: updated.phoneNumber,
+            address: updated.address,
+            username: updated.username,
+            profilePhoto: updated.profilePhoto,
+            businessName: updated.businessName,
+            businessLogo: updated.businessLogo,
+            storeAddress: updated.storeAddress,
+            businessContactNumber: updated.businessContactNumber,
+            operatingHours: updated.operatingHours,
+            businessType: updated.businessType
+          }
+        });
+      }
+
+      if (req.auth.type === 'customer') {
+        const patch: Partial<CustomerDocument> = {};
+        for (const key of allowedCustomerFields) {
+          if (key in req.body) {
+            (patch as Record<string, unknown>)[key] = req.body[key];
+          }
+        }
+
+        const updated = await customerRepository.updateProfile(
+          req.auth.userId,
+          patch
+        );
+
+        if (!updated) {
+          throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
+        }
+
+        const user = await customerRepository.findById(req.auth.userId);
+        if (!user) {
+          throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
+        }
+
+        return res.status(200).json({
+          user: {
+            id: user.id,
+            type: 'customer',
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            address: user.address,
+            profilePhoto: user.profilePhoto
+          }
+        });
+      }
+
+      throw new ApiError(403, 'FORBIDDEN', 'Permission denied');
     } catch (error) {
       next(error);
     }

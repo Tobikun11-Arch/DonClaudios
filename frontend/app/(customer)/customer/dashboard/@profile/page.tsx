@@ -1,7 +1,5 @@
-import React from 'react'
+import {ProfileTab} from '@/features/customer/profile/components/ProfileTab';
 
-export default function ProfilePage() {
-  return (
-    <div>ProfilePage</div>
-  )
+export default function ProfileSlot() {
+  return <ProfileTab />;
 }
