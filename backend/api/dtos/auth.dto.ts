@@ -43,6 +43,7 @@ export const updateProfileDto = z.object({
   email: z.string().email().optional(),
   phoneNumber: z.string().min(1).optional(),
   username: z.string().min(1).optional(),
+  profilePhoto: z.string().min(1).optional(),
   businessName: z.string().min(1).optional(),
   businessLogo: z.string().min(1).optional(),
   storeAddress: z.string().min(1).optional(),

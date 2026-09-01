@@ -28,4 +28,12 @@ router.post(
   uploadController.uploadPromoImage
 );
 
+router.post(
+  '/profile-image',
+  requireAuth,
+  requireAdmin,
+  upload.single('file'),
+  uploadController.uploadProfileImage
+);
+
 export default router;

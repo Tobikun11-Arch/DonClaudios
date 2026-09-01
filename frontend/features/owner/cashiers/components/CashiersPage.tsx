@@ -159,7 +159,7 @@ export default function CashiersPage() {
       <CashiersFilters query={query} onQueryChange={setQuery} />
 
       {cashiersQuery.isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 md:gap-5">
           {Array.from({length: 3}).map((_, i) => (
             <CashierCardSkeleton key={i} />
           ))}
@@ -197,7 +197,7 @@ export default function CashiersPage() {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 md:gap-5">
             {visibleCashiers.map(c => (
               <CashierCard
                 key={c._id}

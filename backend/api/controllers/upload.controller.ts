@@ -2,7 +2,8 @@ import {Request, Response, NextFunction} from 'express';
 import {ApiError} from '../utils/error';
 import {
   uploadProductImageBuffer,
-  uploadPromoImageBuffer
+  uploadPromoImageBuffer,
+  uploadProfileImageBuffer
 } from '../services/cloudinary.service';
 
 type MulterRequest = Request & {
@@ -52,6 +53,32 @@ export const uploadController = {
       }
 
       const {secureUrl} = await uploadPromoImageBuffer({
+        buffer: file.buffer,
+        filename: file.originalname
+      });
+
+      return res.status(200).json({imageUrl: secureUrl});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async uploadProfileImage(
+    req: MulterRequest,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const file = req.file;
+      if (!file) {
+        throw new ApiError(400, 'NO_FILE', 'No file uploaded');
+      }
+
+      if (!file.mimetype.startsWith('image/')) {
+        throw new ApiError(400, 'INVALID_FILE', 'File must be an image');
+      }
+
+      const {secureUrl} = await uploadProfileImageBuffer({
         buffer: file.buffer,
         filename: file.originalname
       });

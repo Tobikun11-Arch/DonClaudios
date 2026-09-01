@@ -33,6 +33,7 @@ type MeResponse = {
     phoneNumber?: string;
     address?: string;
     username?: string;
+    profilePhoto?: string;
     businessName?: string;
     businessLogo?: string;
     storeAddress?: string;
@@ -54,6 +55,7 @@ export type UpdateProfileBody = {
   email?: string;
   phoneNumber?: string;
   username?: string;
+  profilePhoto?: string;
   businessName?: string;
   businessLogo?: string;
   storeAddress?: string;

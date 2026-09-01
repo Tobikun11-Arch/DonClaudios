@@ -20,11 +20,11 @@ export function CashierCard({cashier: c, onEdit, onDelete, isDeleting}: Props) {
             <div className="w-10 h-10 rounded-full bg-[#e9f5ee] text-[#2d4a35] flex items-center justify-center shrink-0">
               <User className="h-5 w-5" />
             </div>
-            <div className="min-w-0">
-              <p className="font-bold text-gray-900 truncate">
+            <div className="min-w-0 flex-1">
+              <p className="font-bold text-gray-900 break-words">
                 {c.firstName} {c.lastName}
               </p>
-              <p className="text-xs text-gray-500 truncate">@{c.username}</p>
+              <p className="text-xs text-gray-500 break-words">@{c.username}</p>
             </div>
           </div>
           <span
@@ -42,7 +42,7 @@ export function CashierCard({cashier: c, onEdit, onDelete, isDeleting}: Props) {
         <div className="mt-4 space-y-2">
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <Mail className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{c.email}</span>
+            <span className="break-words">{c.email}</span>
           </div>
           {c.phoneNumber && (
             <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -53,7 +53,7 @@ export function CashierCard({cashier: c, onEdit, onDelete, isDeleting}: Props) {
           {c.address && (
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <MapPin className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{c.address}</span>
+              <span className="break-words">{c.address}</span>
             </div>
           )}
         </div>

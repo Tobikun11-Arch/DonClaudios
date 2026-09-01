@@ -148,7 +148,7 @@ export default function DashboardLayout({
       return pathname.endsWith('/settings');
     }
     if (itemTab === null) {
-      return !tab;
+      return !tab && !pathname.endsWith('/settings');
     }
     return tab === itemTab;
   };
@@ -294,7 +294,7 @@ export default function DashboardLayout({
       </aside>
 
       {/* ── Main Content ── */}
-      <main className="flex-1 overflow-y-auto bg-gray-50 pb-24 md:pb-0">
+      <main className="flex-1 overflow-y-auto scrollbar-hide bg-gray-50 pb-24 md:pb-0">
         {tab === 'appearance' ? (
           <>{appearance}</>
         ) : (
