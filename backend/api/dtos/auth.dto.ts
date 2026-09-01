@@ -37,6 +37,25 @@ export const resetPasswordDto = z.object({
   newPassword: z.string().min(8)
 });
 
+export const updateProfileDto = z.object({
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+  phoneNumber: z.string().min(1).optional(),
+  username: z.string().min(1).optional(),
+  businessName: z.string().min(1).optional(),
+  businessLogo: z.string().min(1).optional(),
+  storeAddress: z.string().min(1).optional(),
+  businessContactNumber: z.string().min(1).optional(),
+  operatingHours: z.string().min(1).optional(),
+  businessType: z.string().min(1).optional()
+});
+
+export const changePasswordDto = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8)
+});
+
 export type RegisterDto = z.infer<typeof registerDto>;
 export type VerifyDto = z.infer<typeof verifyDto>;
 export type ResendVerificationDto = z.infer<typeof resendVerificationDto>;
@@ -44,3 +63,5 @@ export type LoginDto = z.infer<typeof loginDto>;
 export type RefreshDto = z.infer<typeof refreshDto>;
 export type ForgotPasswordDto = z.infer<typeof forgotPasswordDto>;
 export type ResetPasswordDto = z.infer<typeof resetPasswordDto>;
+export type UpdateProfileDto = z.infer<typeof updateProfileDto>;
+export type ChangePasswordDto = z.infer<typeof changePasswordDto>;

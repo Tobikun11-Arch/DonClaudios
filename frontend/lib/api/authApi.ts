@@ -32,7 +32,48 @@ type MeResponse = {
     email?: string;
     phoneNumber?: string;
     address?: string;
+    username?: string;
+    businessName?: string;
+    businessLogo?: string;
+    storeAddress?: string;
+    businessContactNumber?: string;
+    operatingHours?: string;
+    businessType?: string;
   };
+};
+
+export type MeUser = MeResponse['user'];
+
+type UpdateProfileResponse = {
+  user: MeUser;
+};
+
+export type UpdateProfileBody = {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+  username?: string;
+  businessName?: string;
+  businessLogo?: string;
+  storeAddress?: string;
+  businessContactNumber?: string;
+  operatingHours?: string;
+  businessType?: string;
+};
+
+type ChangePasswordBody = {
+  currentPassword: string;
+  newPassword: string;
+};
+
+type SessionsResponse = {
+  sessions: {
+    device: string;
+    location: string;
+    lastActive: string;
+    isCurrent?: boolean;
+  }[];
 };
 
 export async function registerCustomer(data: RegisterRequest) {
@@ -68,5 +109,23 @@ export async function logout() {
 
 export async function getMe() {
   const res = await httpClient.get<MeResponse>('/auth/me');
+  return res.data;
+}
+
+export async function updateProfile(body: UpdateProfileBody) {
+  const res = await httpClient.put<UpdateProfileResponse>(
+    '/auth/profile',
+    body
+  );
+  return res.data;
+}
+
+export async function changePassword(body: ChangePasswordBody) {
+  const res = await httpClient.put<{message: string}>('/auth/password', body);
+  return res.data;
+}
+
+export async function getSessions() {
+  const res = await httpClient.get<SessionsResponse>('/auth/sessions');
   return res.data;
 }

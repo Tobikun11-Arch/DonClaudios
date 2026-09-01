@@ -6,14 +6,16 @@ import {
   resendVerificationDto,
   verifyDto,
   loginDto,
-  refreshDto
+  refreshDto,
+  updateProfileDto,
+  changePasswordDto
 } from '../dtos/auth.dto';
 import {
   authLimiter,
   loginLimiter,
   sessionLimiter
 } from '../middleware/rateLimit';
-import {requireAuth} from '../middleware/auth';
+import {requireAuth, requireAdmin} from '../middleware/auth';
 
 const router = Router();
 
@@ -41,4 +43,27 @@ router.post(
 );
 router.post('/logout', sessionLimiter, authController.logout);
 router.get('/me', sessionLimiter, requireAuth, authController.me);
+
+router.put(
+  '/profile',
+  requireAuth,
+  requireAdmin,
+  validate(updateProfileDto),
+  authController.updateProfile
+);
+
+router.put(
+  '/password',
+  requireAuth,
+  requireAdmin,
+  validate(changePasswordDto),
+  authController.changePassword
+);
+
+router.get(
+  '/sessions',
+  requireAuth,
+  requireAdmin,
+  authController.sessions
+);
 export default router;

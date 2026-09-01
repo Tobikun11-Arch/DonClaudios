@@ -7,6 +7,8 @@ PRIORITY TASKS:
 
 5. Customer can follow up their orders 
 
+6. Dashboard dropdown for report (that summarize in dashboard) (prototype)
+
 
 3. Closed hours - Automatically disable ordering for guest and customer accounts; admin can also manually close hours if there's ever an emergency and they're not available.
 
