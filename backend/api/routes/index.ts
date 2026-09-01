@@ -9,6 +9,7 @@ import orderRoutes from './order.routes';
 import stockMovementRoutes from './stockMovement.routes';
 import dashboardRoutes from './dashboard.routes';
 import settingsRoutes from './settings.routes';
+import reviewRoutes from './review.routes';
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use('/orders', orderRoutes);
 router.use('/inventory', stockMovementRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/settings', settingsRoutes);
+router.use('/reviews', reviewRoutes);
 
 export default router;

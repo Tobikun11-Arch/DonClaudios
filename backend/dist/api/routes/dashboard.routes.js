@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const dashboard_controller_1 = require("../controllers/dashboard.controller");
+const auth_1 = require("../middleware/auth");
+const router = (0, express_1.Router)();
+router.get('/summary', auth_1.requireAuth, auth_1.requireAdmin, dashboard_controller_1.dashboardController.summary);
+router.get('/sales-trend', auth_1.requireAuth, auth_1.requireAdmin, dashboard_controller_1.dashboardController.salesTrend);
+router.get('/inventory-by-category', auth_1.requireAuth, auth_1.requireAdmin, dashboard_controller_1.dashboardController.inventoryByCategory);
+router.get('/top-products', auth_1.requireAuth, auth_1.requireAdmin, dashboard_controller_1.dashboardController.topProducts);
+router.get('/low-stock', auth_1.requireAuth, auth_1.requireAdmin, dashboard_controller_1.dashboardController.lowStock);
+exports.default = router;

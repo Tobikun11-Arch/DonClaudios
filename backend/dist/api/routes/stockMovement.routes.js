@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const stockMovement_controller_1 = require("../controllers/stockMovement.controller");
+const validation_1 = require("../middleware/validation");
+const stockMovement_dto_1 = require("../dtos/stockMovement.dto");
+const auth_1 = require("../middleware/auth");
+const router = (0, express_1.Router)();
+router.patch('/:productId/restock', auth_1.requireAuth, auth_1.requireAdmin, (0, validation_1.validate)(stockMovement_dto_1.restockDto), stockMovement_controller_1.stockMovementController.restock);
+router.patch('/:productId/adjust', auth_1.requireAuth, auth_1.requireAdmin, (0, validation_1.validate)(stockMovement_dto_1.adjustDto), stockMovement_controller_1.stockMovementController.adjust);
+router.get('/movements', auth_1.requireAuth, auth_1.requireAdmin, stockMovement_controller_1.stockMovementController.listMovements);
+exports.default = router;
