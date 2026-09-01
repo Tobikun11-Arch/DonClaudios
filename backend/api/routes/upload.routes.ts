@@ -31,7 +31,6 @@ router.post(
 router.post(
   '/profile-image',
   requireAuth,
-  requireAdmin,
   upload.single('file'),
   uploadController.uploadProfileImage
 );

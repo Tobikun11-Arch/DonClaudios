@@ -23,7 +23,7 @@ export const customerRepository = {
     data: Partial<
       Pick<
         CustomerDocument,
-        'firstName' | 'lastName' | 'phoneNumber' | 'address'
+        'firstName' | 'lastName' | 'phoneNumber' | 'address' | 'profilePhoto'
       >
     >
   ) => CustomerModel.updateOne({_id: customerId}, data).exec(),

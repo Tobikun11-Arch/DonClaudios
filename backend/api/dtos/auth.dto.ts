@@ -49,7 +49,8 @@ export const updateProfileDto = z.object({
   storeAddress: z.string().min(1).optional(),
   businessContactNumber: z.string().min(1).optional(),
   operatingHours: z.string().min(1).optional(),
-  businessType: z.string().min(1).optional()
+  businessType: z.string().min(1).optional(),
+  address: z.string().min(1).optional()
 });
 
 export const changePasswordDto = z.object({

@@ -47,7 +47,6 @@ router.get('/me', sessionLimiter, requireAuth, authController.me);
 router.put(
   '/profile',
   requireAuth,
-  requireAdmin,
   validate(updateProfileDto),
   authController.updateProfile
 );
