@@ -5,12 +5,12 @@ import {useRouter} from 'next/navigation';
 import {Bell, BellRing, CheckCheck, Trash2, Mail, MailOpen} from 'lucide-react';
 import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
-import {
-  useAdminNotificationsQuery,
+import {useAdminNotificationsQuery,
   useDeleteAdminNotificationMutation,
   useMarkAdminNotificationReadMutation,
   useMarkAllAdminNotificationsReadMutation
 } from '@/lib/hooks/notifications/useNotifications';
+import {useNotificationSound} from '@/lib/hooks/notifications/useNotificationSound';
 import type {Notification} from '@/lib/types/notification';
 import type {NormalizedApiError} from '@/lib/api/types';
 
@@ -26,6 +26,7 @@ export default function OwnerNotificationBell() {
 
   const notifications = data?.notifications ?? [];
   const unreadCount = data?.unreadCount ?? 0;
+  useNotificationSound(notifications);
 
   useEffect(() => {
     if (!open) return;

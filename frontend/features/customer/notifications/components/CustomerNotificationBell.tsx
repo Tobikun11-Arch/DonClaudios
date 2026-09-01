@@ -11,6 +11,7 @@ import {
   useMarkNotificationReadMutation,
   useMyNotificationsQuery
 } from '@/lib/hooks/notifications/useNotifications';
+import {useNotificationSound} from '@/lib/hooks/notifications/useNotificationSound';
 import type {Notification} from '@/lib/types/notification';
 import type {NormalizedApiError} from '@/lib/api/types';
 
@@ -26,6 +27,7 @@ export default function CustomerNotificationBell() {
 
   const notifications = data?.notifications ?? [];
   const unreadCount = data?.unreadCount ?? 0;
+  useNotificationSound(notifications);
 
   useEffect(() => {
     if (!open) return;
