@@ -1,23 +1,5 @@
 PRIORITY TASKS:
 
-- notification icon in mobile phone (customer) overlap the 2 icons of add to cart and history icon
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 5. Customer can follow up their orders 
 
 6. Dashboard dropdown for report (that summarize in dashboard) (prototype)
