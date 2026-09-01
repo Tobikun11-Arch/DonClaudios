@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.requireAuth = requireAuth;
 exports.requireAdmin = requireAdmin;
+exports.requireCustomer = requireCustomer;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const env_1 = require("../config/env");
 const error_1 = require("../utils/error");
@@ -39,6 +40,15 @@ function requireAdmin(req, _res, next) {
     }
     if (req.auth.type !== 'admin') {
         return next(new error_1.ApiError(403, 'FORBIDDEN', 'Admin access required'));
+    }
+    return next();
+}
+function requireCustomer(req, _res, next) {
+    if (!req.auth) {
+        return next(new error_1.ApiError(401, 'UNAUTHORIZED', 'Not authenticated'));
+    }
+    if (req.auth.type !== 'customer') {
+        return next(new error_1.ApiError(403, 'FORBIDDEN', 'Customer access required'));
     }
     return next();
 }

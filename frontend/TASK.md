@@ -1,6 +1,19 @@
 PRIORITY TASKS:
 
-4. Profile page of customer and admin
+- notification icon in mobile phone (customer) overlap the 2 icons of add to cart and history icon
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

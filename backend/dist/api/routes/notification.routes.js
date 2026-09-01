@@ -1,0 +1,15 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const notification_controller_1 = require("../controllers/notification.controller");
+const auth_1 = require("../middleware/auth");
+const router = (0, express_1.Router)();
+router.get('/admin', auth_1.requireAuth, auth_1.requireAdmin, notification_controller_1.notificationController.listAdminNotifications);
+router.patch('/admin/read-all', auth_1.requireAuth, auth_1.requireAdmin, notification_controller_1.notificationController.markAllReadAdmin);
+router.patch('/admin/:id/read', auth_1.requireAuth, auth_1.requireAdmin, notification_controller_1.notificationController.markReadAdmin);
+router.delete('/admin/:id', auth_1.requireAuth, auth_1.requireAdmin, notification_controller_1.notificationController.removeAdmin);
+router.get('/', auth_1.requireAuth, auth_1.requireCustomer, notification_controller_1.notificationController.listMyNotifications);
+router.patch('/read-all', auth_1.requireAuth, auth_1.requireCustomer, notification_controller_1.notificationController.markAllRead);
+router.patch('/:id/read', auth_1.requireAuth, auth_1.requireCustomer, notification_controller_1.notificationController.markRead);
+router.delete('/:id', auth_1.requireAuth, auth_1.requireCustomer, notification_controller_1.notificationController.remove);
+exports.default = router;

@@ -7,4 +7,5 @@ const router = (0, express_1.Router)();
 router.post('/me', auth_1.requireAuth, order_controller_1.orderController.createCustomerOrder);
 router.get('/me', auth_1.requireAuth, order_controller_1.orderController.listMyOrders);
 router.post('/guest', order_controller_1.orderController.createGuestOrder);
+router.patch('/:id/status', auth_1.requireAuth, auth_1.requireAdmin, order_controller_1.orderController.updateStatus);
 exports.default = router;

@@ -8,5 +8,7 @@ exports.adminRepository = {
         $or: [{ email: identifier.toLowerCase() }, { phoneNumber: identifier }]
     }).exec(),
     findById: (id) => Admin_model_1.AdminModel.findById(id).exec(),
-    create: (data) => Admin_model_1.AdminModel.create(data)
+    listAll: () => Admin_model_1.AdminModel.find({}).exec(),
+    create: (data) => Admin_model_1.AdminModel.create(data),
+    updateProfile: (id, data) => Admin_model_1.AdminModel.findByIdAndUpdate(id, data, { new: true }).exec()
 };

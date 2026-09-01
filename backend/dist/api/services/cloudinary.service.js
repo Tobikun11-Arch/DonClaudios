@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ensureCloudinaryConfigured = ensureCloudinaryConfigured;
 exports.uploadProductImageBuffer = uploadProductImageBuffer;
 exports.uploadPromoImageBuffer = uploadPromoImageBuffer;
+exports.uploadProfileImageBuffer = uploadProfileImageBuffer;
 const cloudinary_1 = require("cloudinary");
 let configured = false;
 function ensureCloudinaryConfigured() {
@@ -44,6 +45,23 @@ async function uploadPromoImageBuffer(params) {
     return new Promise(function executor(resolve, reject) {
         const stream = cloudinary_1.v2.uploader.upload_stream({
             folder: 'promos',
+            resource_type: 'image'
+        }, (error, result) => {
+            if (error)
+                return reject(error);
+            if (!result?.secure_url) {
+                return reject(new Error('Cloudinary upload returned no secure_url'));
+            }
+            resolve({ secureUrl: result.secure_url });
+        });
+        stream.end(params.buffer);
+    });
+}
+async function uploadProfileImageBuffer(params) {
+    ensureCloudinaryConfigured();
+    return new Promise(function executor(resolve, reject) {
+        const stream = cloudinary_1.v2.uploader.upload_stream({
+            folder: 'profile',
             resource_type: 'image'
         }, (error, result) => {
             if (error)

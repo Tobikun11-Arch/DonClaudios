@@ -234,5 +234,17 @@ exports.authService = {
         catch {
             throw new error_1.ApiError(401, 'UNAUTHORIZED', 'Invalid token');
         }
+    },
+    async changePassword(adminId, currentPassword, newPassword) {
+        const admin = await admin_repository_1.adminRepository.findById(adminId);
+        if (!admin) {
+            throw new error_1.ApiError(404, 'USER_NOT_FOUND', 'User not found');
+        }
+        const match = await bcrypt_1.default.compare(currentPassword, admin.passwordHash);
+        if (!match) {
+            throw new error_1.ApiError(400, 'INVALID_PASSWORD', 'Current password is incorrect');
+        }
+        const passwordHash = await bcrypt_1.default.hash(newPassword, 10);
+        await admin_repository_1.adminRepository.updateProfile(admin.id, { passwordHash });
     }
 };

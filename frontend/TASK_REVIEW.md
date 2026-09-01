@@ -13,3 +13,4 @@
 
 3. Notification for admin and customer account
 
+4. Profile page of customer and admin

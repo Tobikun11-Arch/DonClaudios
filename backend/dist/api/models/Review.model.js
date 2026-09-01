@@ -33,19 +33,34 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AdminModel = void 0;
+exports.ReviewModel = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const BaseUser_schema_1 = require("./base/BaseUser.schema");
-const BaseSchema = (0, BaseUser_schema_1.createBaseUserSchema)();
-const AdminSchema = new mongoose_1.Schema({
-    ...BaseSchema.obj,
-    username: { type: String, unique: true, sparse: true },
-    profilePhoto: { type: String },
-    businessName: { type: String },
-    businessLogo: { type: String },
-    storeAddress: { type: String },
-    businessContactNumber: { type: String },
-    operatingHours: { type: String },
-    businessType: { type: String }
+const ReviewSchema = new mongoose_1.Schema({
+    customerId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Customer',
+        required: true
+    },
+    customerName: { type: String, required: true, trim: true },
+    rating: { type: Number, required: true, min: 1, max: 5 },
+    comment: { type: String, required: true, trim: true },
+    status: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending'
+    },
+    reply: { type: String, default: null, trim: true },
+    replyDate: { type: Date, default: null },
+    repliedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Admin', default: null },
+    messages: [
+        {
+            authorType: { type: String, enum: ['customer', 'admin'], required: true },
+            senderName: { type: String, required: true, trim: true },
+            body: { type: String, required: true, trim: true },
+            createdAt: { type: Date, default: Date.now }
+        }
+    ]
 }, { timestamps: true });
-exports.AdminModel = mongoose_1.default.model('Admin', AdminSchema, 'admins');
+ReviewSchema.index({ status: 1, createdAt: -1 });
+ReviewSchema.index({ customerId: 1, createdAt: -1 });
+exports.ReviewModel = mongoose_1.default.model('Review', ReviewSchema, 'reviews');

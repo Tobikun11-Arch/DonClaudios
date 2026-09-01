@@ -1,4 +1,4 @@
-export type NotificationType = 'review_reply' | 'review_submitted' | 'low_stock';
+export type NotificationType = 'review_reply' | 'review_submitted' | 'low_stock' | 'order_status';
 export type NotificationTarget = 'customer' | 'admin';
 
 export interface Notification {
@@ -10,6 +10,7 @@ export interface Notification {
   title: string;
   message: string;
   reviewId?: string | null;
+  orderId?: string | null;
   link?: string | null;
   read: boolean;
   readAt?: string | null;

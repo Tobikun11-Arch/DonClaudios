@@ -14,4 +14,7 @@ router.post('/login', rateLimit_1.loginLimiter, (0, validation_1.validate)(auth_
 router.post('/refresh', rateLimit_1.sessionLimiter, (0, validation_1.validate)(auth_dto_1.refreshDto), auth_controller_1.authController.refresh);
 router.post('/logout', rateLimit_1.sessionLimiter, auth_controller_1.authController.logout);
 router.get('/me', rateLimit_1.sessionLimiter, auth_1.requireAuth, auth_controller_1.authController.me);
+router.put('/profile', auth_1.requireAuth, (0, validation_1.validate)(auth_dto_1.updateProfileDto), auth_controller_1.authController.updateProfile);
+router.put('/password', auth_1.requireAuth, auth_1.requireAdmin, (0, validation_1.validate)(auth_dto_1.changePasswordDto), auth_controller_1.authController.changePassword);
+router.get('/sessions', auth_1.requireAuth, auth_1.requireAdmin, auth_controller_1.authController.sessions);
 exports.default = router;

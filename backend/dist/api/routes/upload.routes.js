@@ -16,4 +16,5 @@ const upload = (0, multer_1.default)({
 });
 router.post('/product-image', auth_1.requireAuth, auth_1.requireAdmin, upload.single('file'), upload_controller_1.uploadController.uploadProductImage);
 router.post('/promo-image', auth_1.requireAuth, auth_1.requireAdmin, upload.single('file'), upload_controller_1.uploadController.uploadPromoImage);
+router.post('/profile-image', auth_1.requireAuth, upload.single('file'), upload_controller_1.uploadController.uploadProfileImage);
 exports.default = router;

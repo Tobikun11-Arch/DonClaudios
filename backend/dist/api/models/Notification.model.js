@@ -33,19 +33,38 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AdminModel = void 0;
+exports.NotificationModel = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const BaseUser_schema_1 = require("./base/BaseUser.schema");
-const BaseSchema = (0, BaseUser_schema_1.createBaseUserSchema)();
-const AdminSchema = new mongoose_1.Schema({
-    ...BaseSchema.obj,
-    username: { type: String, unique: true, sparse: true },
-    profilePhoto: { type: String },
-    businessName: { type: String },
-    businessLogo: { type: String },
-    storeAddress: { type: String },
-    businessContactNumber: { type: String },
-    operatingHours: { type: String },
-    businessType: { type: String }
+const NotificationSchema = new mongoose_1.Schema({
+    target: {
+        type: String,
+        enum: ['customer', 'admin'],
+        required: true
+    },
+    customerId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Customer',
+        default: null
+    },
+    adminId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Admin',
+        default: null
+    },
+    type: {
+        type: String,
+        enum: ['review_reply', 'review_submitted', 'low_stock', 'order_status'],
+        required: true
+    },
+    title: { type: String, required: true },
+    message: { type: String, required: true },
+    reviewId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Review', default: null },
+    orderId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Order', default: null },
+    link: { type: String, default: null },
+    read: { type: Boolean, default: false },
+    readAt: { type: Date, default: null }
 }, { timestamps: true });
-exports.AdminModel = mongoose_1.default.model('Admin', AdminSchema, 'admins');
+NotificationSchema.index({ target: 1, customerId: 1, read: 1 });
+NotificationSchema.index({ target: 1, adminId: 1, read: 1 });
+NotificationSchema.index({ createdAt: -1 });
+exports.NotificationModel = mongoose_1.default.model('Notification', NotificationSchema, 'notifications');

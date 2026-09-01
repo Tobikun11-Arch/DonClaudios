@@ -5,9 +5,20 @@ const error_1 = require("../utils/error");
 const order_repository_1 = require("../repositories/order.repository");
 const orderItem_repository_1 = require("../repositories/orderItem.repository");
 const transaction_repository_1 = require("../repositories/transaction.repository");
+const stockMovement_service_1 = require("../services/stockMovement.service");
+const notification_service_1 = require("../services/notification.service");
 function isNonEmptyString(value) {
     return typeof value === 'string' && value.trim().length > 0;
 }
+const STATUS_LABELS = {
+    pending: 'Pending',
+    confirmed: 'Confirmed',
+    preparing: 'Preparing',
+    ready: 'Ready for Pickup',
+    on_the_way: 'On the Way',
+    completed: 'Completed',
+    cancelled: 'Cancelled'
+};
 exports.orderController = {
     async listMyOrders(req, res, next) {
         try {
@@ -176,6 +187,56 @@ exports.orderController = {
                 isOnline: true
             });
             res.status(201).json({ order, transaction });
+        }
+        catch (error) {
+            next(error);
+        }
+    },
+    async updateStatus(req, res, next) {
+        try {
+            if (!req.auth) {
+                throw new error_1.ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+            }
+            const { status } = req.body;
+            const validStatuses = [
+                'pending',
+                'confirmed',
+                'preparing',
+                'ready',
+                'on_the_way',
+                'completed',
+                'cancelled'
+            ];
+            if (!validStatuses.includes(status)) {
+                throw new error_1.ApiError(400, 'VALIDATION_ERROR', 'Invalid order status');
+            }
+            const order = await order_repository_1.orderRepository.findById(req.params.id);
+            if (!order) {
+                throw new error_1.ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+            }
+            if (status !== 'cancelled' && !order.stockDeducted) {
+                await stockMovement_service_1.stockMovementService.deductOrderStock(String(order._id));
+                await order_repository_1.orderRepository.updateStockDeducted(String(order._id), true);
+            }
+            if (status === 'cancelled' &&
+                order.stockDeducted &&
+                order.orderStatus !== 'pending') {
+                await stockMovement_service_1.stockMovementService.restoreOrderStock(String(order._id), req.auth.userId);
+                await order_repository_1.orderRepository.updateStockDeducted(String(order._id), false);
+            }
+            await order_repository_1.orderRepository.updateStatus(req.params.id, status);
+            const updated = await order_repository_1.orderRepository.findById(req.params.id);
+            if (order.customerId) {
+                await notification_service_1.notificationService.createForCustomer({
+                    customerId: String(order.customerId),
+                    type: 'order_status',
+                    title: 'Order Status Update',
+                    message: `Your order (#${String(order._id).slice(-6).toUpperCase()}) is now ${STATUS_LABELS[status] ?? status}.`,
+                    orderId: String(order._id),
+                    link: '/customer/dashboard?tab=history'
+                });
+            }
+            res.status(200).json({ order: updated });
         }
         catch (error) {
             next(error);

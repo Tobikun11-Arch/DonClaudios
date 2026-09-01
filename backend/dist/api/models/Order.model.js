@@ -65,6 +65,7 @@ const OrderSchema = new mongoose_1.Schema({
         ],
         default: 'pending'
     },
+    stockDeducted: { type: Boolean, default: false },
     isOnline: { type: Boolean, default: true }
 }, { timestamps: true });
 OrderSchema.index({ customerId: 1, createdAt: -1 });

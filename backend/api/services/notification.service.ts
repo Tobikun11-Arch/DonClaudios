@@ -20,10 +20,11 @@ export const notificationService = {
 
   async createForCustomer(data: {
     customerId: string;
-    type: 'review_reply';
+    type: 'review_reply' | 'order_status';
     title: string;
     message: string;
     reviewId?: string;
+    orderId?: string;
     link?: string;
   }) {
     return notificationRepository.create({
@@ -33,6 +34,7 @@ export const notificationService = {
       title: data.title,
       message: data.message,
       reviewId: data.reviewId ? (data.reviewId as any) : undefined,
+      orderId: data.orderId ? (data.orderId as any) : undefined,
       link: data.link
     });
   },

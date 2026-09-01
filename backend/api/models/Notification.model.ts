@@ -1,6 +1,6 @@
 import mongoose, {Schema} from 'mongoose';
 
-export type NotificationType = 'review_reply' | 'review_submitted' | 'low_stock';
+export type NotificationType = 'review_reply' | 'review_submitted' | 'low_stock' | 'order_status';
 export type NotificationTarget = 'customer' | 'admin';
 
 export interface NotificationDocument extends mongoose.Document {
@@ -11,6 +11,7 @@ export interface NotificationDocument extends mongoose.Document {
   title: string;
   message: string;
   reviewId?: mongoose.Types.ObjectId | null;
+  orderId?: mongoose.Types.ObjectId | null;
   link?: string | null;
   read: boolean;
   readAt?: Date | null;
@@ -35,12 +36,13 @@ const NotificationSchema = new Schema<NotificationDocument>(
     },
     type: {
       type: String,
-      enum: ['review_reply', 'review_submitted', 'low_stock'],
+      enum: ['review_reply', 'review_submitted', 'low_stock', 'order_status'],
       required: true
     },
     title: {type: String, required: true},
     message: {type: String, required: true},
     reviewId: {type: Schema.Types.ObjectId, ref: 'Review', default: null},
+    orderId: {type: Schema.Types.ObjectId, ref: 'Order', default: null},
     link: {type: String, default: null},
     read: {type: Boolean, default: false},
     readAt: {type: Date, default: null}

@@ -4,12 +4,23 @@ import {orderRepository} from '../repositories/order.repository';
 import {orderItemRepository} from '../repositories/orderItem.repository';
 import {transactionRepository} from '../repositories/transaction.repository';
 import {stockMovementService} from '../services/stockMovement.service';
+import {notificationService} from '../services/notification.service';
 import type {PaymentMethod} from '../models/Transaction.model';
 import type {OrderStatus} from '../models/Order.model';
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Pending',
+  confirmed: 'Confirmed',
+  preparing: 'Preparing',
+  ready: 'Ready for Pickup',
+  on_the_way: 'On the Way',
+  completed: 'Completed',
+  cancelled: 'Cancelled'
+};
 
 export const orderController = {
   async listMyOrders(req: Request, res: Response, next: NextFunction) {
@@ -258,7 +269,7 @@ export const orderController = {
         throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
       }
 
-      if (status === 'confirmed' && !order.stockDeducted) {
+      if (status !== 'cancelled' && !order.stockDeducted) {
         await stockMovementService.deductOrderStock(String(order._id));
         await orderRepository.updateStockDeducted(String(order._id), true);
       }
@@ -278,6 +289,18 @@ export const orderController = {
       await orderRepository.updateStatus(req.params.id, status);
 
       const updated = await orderRepository.findById(req.params.id);
+
+      if (order.customerId) {
+        await notificationService.createForCustomer({
+          customerId: String(order.customerId),
+          type: 'order_status',
+          title: 'Order Status Update',
+          message: `Your order (#${String(order._id).slice(-6).toUpperCase()}) is now ${STATUS_LABELS[status] ?? status}.`,
+          orderId: String(order._id),
+          link: '/customer/dashboard?tab=history'
+        });
+      }
+
       res.status(200).json({order: updated});
     } catch (error) {
       next(error);

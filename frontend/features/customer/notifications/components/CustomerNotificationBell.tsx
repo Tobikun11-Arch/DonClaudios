@@ -65,6 +65,9 @@ export default function CustomerNotificationBell() {
     if (notification.type === 'review_reply') {
       return '/customer/dashboard?tab=reviews';
     }
+    if (notification.type === 'order_status') {
+      return '/customer/dashboard?tab=history';
+    }
     if (notification.link) {
       return notification.link;
     }

@@ -41,5 +41,24 @@ exports.uploadController = {
         catch (error) {
             next(error);
         }
+    },
+    async uploadProfileImage(req, res, next) {
+        try {
+            const file = req.file;
+            if (!file) {
+                throw new error_1.ApiError(400, 'NO_FILE', 'No file uploaded');
+            }
+            if (!file.mimetype.startsWith('image/')) {
+                throw new error_1.ApiError(400, 'INVALID_FILE', 'File must be an image');
+            }
+            const { secureUrl } = await (0, cloudinary_service_1.uploadProfileImageBuffer)({
+                buffer: file.buffer,
+                filename: file.originalname
+            });
+            return res.status(200).json({ imageUrl: secureUrl });
+        }
+        catch (error) {
+            next(error);
+        }
     }
 };
