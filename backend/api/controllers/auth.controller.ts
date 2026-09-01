@@ -4,6 +4,7 @@ import {authService} from '../services/auth.service';
 import {env} from '../config/env';
 import {ApiError} from '../utils/error';
 import {customerRepository} from '../repositories/customer.repository';
+import {adminRepository} from '../repositories/admin.repository';
 
 const ACCESS_COOKIE = 'dc_access_token';
 const REFRESH_COOKIE = 'dc_refresh_token';
@@ -41,17 +42,87 @@ export const authController = {
           ? await customerRepository.findById(req.auth.userId)
           : null;
 
+      const admin =
+        req.auth.type === 'admin'
+          ? await adminRepository.findById(req.auth.userId)
+          : null;
+
       res.status(200).json({
         user: {
           id: req.auth.userId,
           type: req.auth.type,
-          firstName: customer?.firstName,
-          lastName: customer?.lastName,
-          email: customer?.email,
-          phoneNumber: customer?.phoneNumber,
-          address: customer?.address
+          firstName: admin?.firstName ?? customer?.firstName,
+          lastName: admin?.lastName ?? customer?.lastName,
+          email: admin?.email ?? customer?.email,
+          phoneNumber: admin?.phoneNumber ?? customer?.phoneNumber,
+          address: admin?.address ?? customer?.address,
+          username: admin?.username,
+          profilePhoto: admin?.profilePhoto,
+          businessName: admin?.businessName,
+          businessLogo: admin?.businessLogo,
+          storeAddress: admin?.storeAddress,
+          businessContactNumber: admin?.businessContactNumber,
+          operatingHours: admin?.operatingHours,
+          businessType: admin?.businessType
         }
       });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth || req.auth.type !== 'admin') {
+        throw new ApiError(403, 'FORBIDDEN', 'Admin access required');
+      }
+
+      const updated = await adminRepository.updateProfile(
+        req.auth.userId,
+        req.body
+      );
+
+      if (!updated) {
+        throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
+      }
+
+      res.status(200).json({
+        user: {
+          id: updated.id,
+          type: 'admin',
+          firstName: updated.firstName,
+          lastName: updated.lastName,
+          email: updated.email,
+          phoneNumber: updated.phoneNumber,
+          address: updated.address,
+          username: updated.username,
+          profilePhoto: updated.profilePhoto,
+          businessName: updated.businessName,
+          businessLogo: updated.businessLogo,
+          storeAddress: updated.storeAddress,
+          businessContactNumber: updated.businessContactNumber,
+          operatingHours: updated.operatingHours,
+          businessType: updated.businessType
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async changePassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth || req.auth.type !== 'admin') {
+        throw new ApiError(403, 'FORBIDDEN', 'Admin access required');
+      }
+
+      await authService.changePassword(
+        req.auth.userId,
+        req.body.currentPassword,
+        req.body.newPassword
+      );
+
+      res.status(200).json({message: 'Password updated'});
     } catch (error) {
       next(error);
     }
@@ -149,6 +220,27 @@ export const authController = {
       res.clearCookie(ACCESS_COOKIE, opts);
       res.clearCookie(REFRESH_COOKIE, opts);
       res.status(200).json({message: 'Logged out'});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async sessions(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth || req.auth.type !== 'admin') {
+        throw new ApiError(403, 'FORBIDDEN', 'Admin access required');
+      }
+
+      res.status(200).json({
+        sessions: [
+          {
+            device: 'This device',
+            location: 'Current session',
+            lastActive: new Date().toISOString(),
+            isCurrent: true
+          }
+        ]
+      });
     } catch (error) {
       next(error);
     }

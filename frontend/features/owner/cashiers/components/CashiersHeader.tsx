@@ -1,6 +1,5 @@
 import {Button} from '@/components/ui/button';
 import {Plus} from 'lucide-react';
-import OwnerNotificationBell from '@/features/owner/notifications/components/OwnerNotificationBell';
 
 interface Props {
   showButton: boolean;
@@ -25,7 +24,6 @@ export function CashiersHeader({showButton, onAdd}: Props) {
             Add Cashier
           </Button>
         )}
-        <OwnerNotificationBell />
       </div>
     </div>
   );

@@ -40,3 +40,15 @@ export async function uploadPromoImage(file: File) {
 
   return res.data;
 }
+
+export async function uploadProfileImage(file: File) {
+  const data = new FormData();
+  data.append('file', file);
+
+  const res = await uploadClient.post<UploadProductImageResponse>(
+    '/upload/profile-image',
+    data
+  );
+
+  return res.data;
+}

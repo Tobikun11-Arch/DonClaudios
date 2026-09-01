@@ -13,5 +13,8 @@ export const adminRepository = {
 
   listAll: () => AdminModel.find({}).exec(),
 
-  create: (data: Partial<AdminDocument>) => AdminModel.create(data)
+  create: (data: Partial<AdminDocument>) => AdminModel.create(data),
+
+  updateProfile: (id: string, data: Partial<AdminDocument>) =>
+    AdminModel.findByIdAndUpdate(id, data, {new: true}).exec()
 };

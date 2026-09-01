@@ -1,5 +1,6 @@
 'use client';
 import {useSearchParams} from 'next/navigation';
+import {usePathname} from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {useRouter} from 'next/navigation';
@@ -10,9 +11,9 @@ import {
   Package,
   Archive,
   Tag,
-  Users,
   Palette,
   Star,
+  Settings,
   LogOut,
   MoreHorizontal,
   X,
@@ -52,12 +53,6 @@ const DRAWER_ITEMS = [
     href: '/owner/dashboard?tab=promos'
   },
   {
-    label: 'Cashiers',
-    tab: 'cashiers',
-    icon: Users,
-    href: '/owner/dashboard?tab=cashiers'
-  },
-  {
     label: 'Appearance',
     tab: 'appearance',
     icon: Palette,
@@ -68,6 +63,12 @@ const DRAWER_ITEMS = [
     tab: 'reviews',
     icon: Star,
     href: '/owner/dashboard?tab=reviews'
+  },
+  {
+    label: 'Settings',
+    tab: 'settings',
+    icon: Settings,
+    href: '/owner/dashboard/settings'
   }
 ];
 
@@ -93,6 +94,7 @@ export default function DashboardLayout({
   reviews: reviewsSlot
 }: DashboardLayoutProps) {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const tab = searchParams.get('tab');
   const router = useRouter();
   const logoutMutation = useLogout();
@@ -141,8 +143,15 @@ export default function DashboardLayout({
     router.replace('/sign-in');
   };
 
-  const isActive = (itemTab: string | null) =>
-    itemTab === null ? !tab : tab === itemTab;
+  const isActive = (itemTab: string | null) => {
+    if (itemTab === 'settings') {
+      return pathname.endsWith('/settings');
+    }
+    if (itemTab === null) {
+      return !tab && !pathname.endsWith('/settings');
+    }
+    return tab === itemTab;
+  };
 
   const drawerTabActive = DRAWER_ITEMS.some(i => isActive(i.tab));
 
@@ -285,7 +294,7 @@ export default function DashboardLayout({
       </aside>
 
       {/* ── Main Content ── */}
-      <main className="flex-1 overflow-y-auto bg-gray-50 pb-24 md:pb-0">
+      <main className="flex-1 overflow-y-auto scrollbar-hide bg-gray-50 pb-24 md:pb-0">
         {tab === 'appearance' ? (
           <>{appearance}</>
         ) : (
