@@ -6,8 +6,10 @@ import {
   listMyReviews,
   listPublicReviews,
   replyReview,
+  replyReviewByCustomer,
   updateReviewStatus
 } from '@/lib/api/reviewsApi';
+import {adminNotificationsQueryKey} from '@/lib/hooks/notifications/useNotifications';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 
 export const publicReviewsQueryKey = ['reviews', 'public'] as const;
@@ -28,7 +30,8 @@ export function useMyReviewsQuery() {
     queryKey: myReviewsQueryKey,
     queryFn: listMyReviews,
     refetchOnWindowFocus: false,
-    staleTime: 15_000
+    refetchInterval: 5000,
+    staleTime: 1000
   });
 }
 
@@ -37,7 +40,8 @@ export function useAdminReviewsQuery() {
     queryKey: adminReviewsQueryKey,
     queryFn: listAdminReviews,
     refetchOnWindowFocus: false,
-    staleTime: 15_000
+    refetchInterval: 5000,
+    staleTime: 1000
   });
 }
 
@@ -69,6 +73,18 @@ export function useReplyReviewMutation() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({queryKey: adminReviewsQueryKey});
       await queryClient.invalidateQueries({queryKey: myReviewsQueryKey});
+    }
+  });
+}
+
+export function useCustomerReplyReviewMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: replyReviewByCustomer,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({queryKey: myReviewsQueryKey});
+      await queryClient.invalidateQueries({queryKey: adminReviewsQueryKey});
+      await queryClient.invalidateQueries({queryKey: adminNotificationsQueryKey});
     }
   });
 }

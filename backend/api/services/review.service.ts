@@ -107,7 +107,21 @@ export const reviewService = {
       throw new ApiError(404, 'REVIEW_NOT_FOUND', 'Review not found');
     }
 
-    const updated = await reviewRepository.addReply(reviewId, reply, adminId);
+    const admin = (await adminRepository.findById(adminId)) as
+      | (AdminDocument & {_id: unknown})
+      | null;
+    const senderName = admin
+      ? [admin.firstName, admin.lastName].filter(Boolean).join(' ')
+      : "DonClaudio's Team";
+
+    await reviewRepository.addMessage(reviewId, {
+      authorType: 'admin',
+      senderName: senderName || "DonClaudio's Team",
+      body: reply.trim(),
+      createdAt: new Date()
+    });
+
+    const updated = await reviewRepository.addReply(reviewId, reply.trim(), adminId);
 
     const customer = (await customerRepository.findById(
       String(review.customerId)
@@ -136,6 +150,63 @@ export const reviewService = {
       } catch (error) {
         console.error('Failed to send review reply email', error);
       }
+    }
+
+    return updated;
+  },
+
+  async replyByCustomer(
+    reviewId: string,
+    customerId: string,
+    reply: string
+  ) {
+    if (!reply.trim()) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'Reply is required');
+    }
+
+    const review = await reviewRepository.findById(reviewId);
+    if (!review) {
+      throw new ApiError(404, 'REVIEW_NOT_FOUND', 'Review not found');
+    }
+
+    if (String(review.customerId) !== String(customerId)) {
+      throw new ApiError(403, 'FORBIDDEN', 'You can only reply to your own review');
+    }
+
+    const customer = (await customerRepository.findById(customerId)) as
+      | (CustomerDocument & {_id: unknown})
+      | null;
+    const senderName = customer
+      ? [customer.firstName, customer.lastName].filter(Boolean).join(' ')
+      : 'Customer';
+
+    const updated = await reviewRepository.addMessage(reviewId, {
+      authorType: 'customer',
+      senderName: senderName || 'Customer',
+      body: reply.trim(),
+      createdAt: new Date()
+    });
+
+    try {
+      const admins = (await adminRepository.listAll()) as
+        | (AdminDocument & {_id: unknown})[]
+        | null;
+      for (const admin of admins ?? []) {
+        try {
+          await notificationService.createForAdmin({
+            adminId: String(admin._id),
+            type: 'review_submitted',
+            title: 'Customer replied to a review',
+            message: `${senderName} replied: "${reply.trim()}"`,
+            reviewId: reviewId,
+            link: '/owner/dashboard?tab=reviews'
+          });
+        } catch (error) {
+          console.error('Failed to create review reply notification for admin', error);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to notify admins about customer reply', error);
     }
 
     return updated;

@@ -1,5 +1,15 @@
 export type ReviewStatus = 'pending' | 'approved' | 'rejected';
 
+export type ReviewAuthorType = 'customer' | 'admin';
+
+export interface ReviewMessage {
+  _id: string;
+  authorType: ReviewAuthorType;
+  senderName: string;
+  body: string;
+  createdAt: string;
+}
+
 export interface Review {
   _id: string;
   customerId: string;
@@ -9,6 +19,7 @@ export interface Review {
   status: ReviewStatus;
   reply?: string | null;
   replyDate?: string | null;
+  messages: ReviewMessage[];
   createdAt: string;
   updatedAt: string;
 }
@@ -44,4 +55,12 @@ export interface ReplyReviewResponse {
 
 export interface ReplyReviewBody {
   reply: string;
+}
+
+export interface ReplyReviewByCustomerBody {
+  reply: string;
+}
+
+export interface ReplyReviewByCustomerResponse {
+  review: Review;
 }

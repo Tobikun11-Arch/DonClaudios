@@ -1,5 +1,10 @@
 import {OrderModel} from '../models/Order.model';
-import {ReviewDocument, ReviewModel, ReviewStatus} from '../models/Review.model';
+import {
+  ReviewDocument,
+  ReviewMessage,
+  ReviewModel,
+  ReviewStatus
+} from '../models/Review.model';
 
 export const reviewRepository = {
   findById: (id: string) => ReviewModel.findById(id).exec(),
@@ -28,6 +33,13 @@ export const reviewRepository = {
     ReviewModel.findByIdAndUpdate(
       id,
       {reply, replyDate: new Date(), repliedBy: adminId},
+      {new: true}
+    ).exec(),
+
+  addMessage: (id: string, message: ReviewMessage) =>
+    ReviewModel.findByIdAndUpdate(
+      id,
+      {$push: {messages: message}},
       {new: true}
     ).exec()
 };

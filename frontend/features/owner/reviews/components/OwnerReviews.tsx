@@ -1,7 +1,7 @@
 'use client';
 
-import {useMemo, useState} from 'react';
-import {Star} from 'lucide-react';
+import {useMemo, useRef, useState} from 'react';
+import {Star, Send, Mail, MailOpen} from 'lucide-react';
 import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
 import {
@@ -9,7 +9,7 @@ import {
   useReplyReviewMutation,
   useUpdateReviewStatusMutation
 } from '@/lib/hooks/reviews/useReviews';
-import type {Review, ReviewStatus} from '@/lib/types/review';
+import type {Review, ReviewMessage, ReviewStatus} from '@/lib/types/review';
 import type {NormalizedApiError} from '@/lib/api/types';
 import OwnerNotificationBell from '@/features/owner/notifications/components/OwnerNotificationBell';
 
@@ -46,14 +46,70 @@ function statusBadge(status: ReviewStatus) {
   );
 }
 
+function formatDate(value?: string) {
+  if (!value) return '';
+  return new Date(value).toLocaleString();
+}
+
+function MessageBubble({
+  message,
+  sending
+}: {
+  message: ReviewMessage;
+  sending?: boolean;
+}) {
+  const isAdmin = message.authorType === 'admin';
+  const isMy = isAdmin;
+  return (
+    <div className={`flex ${isMy ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
+          isMy
+            ? 'bg-[#2d4a35] text-white'
+            : 'bg-gray-100 text-gray-800 border border-gray-200'
+        } ${sending ? 'opacity-70' : ''}`}
+      >
+        <p
+          className={`text-xs font-bold mb-0.5 ${
+            isMy ? 'text-[#b8d4c0]' : 'text-gray-500'
+          }`}
+        >
+          {message.senderName}
+        </p>
+        <p className="text-sm whitespace-pre-wrap">{message.body}</p>
+        {sending && (
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <span className="text-[11px] italic opacity-80">Sending...</span>
+            <span className="flex gap-0.5" aria-hidden>
+              <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" />
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-current animate-bounce"
+                style={{animationDelay: '120ms'}}
+              />
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-current animate-bounce"
+                style={{animationDelay: '240ms'}}
+              />
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function OwnerReviews() {
   const {data, isLoading, isError} = useAdminReviewsQuery();
   const updateStatus = useUpdateReviewStatusMutation();
   const replyMutation = useReplyReviewMutation();
 
   const [filter, setFilter] = useState<Filter>('all');
-  const [replyingTo, setReplyingTo] = useState<Review | null>(null);
-  const [replyText, setReplyText] = useState('');
+  const [replyingId, setReplyingId] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [pendingMessages, setPendingMessages] = useState<
+    Record<string, ReviewMessage[]>
+  >({});
+  const tempIdCounter = useRef(0);
 
   const reviews = useMemo(
     () =>
@@ -73,6 +129,24 @@ export default function OwnerReviews() {
     };
   }, [data]);
 
+  const messagesFor = (review: Review): ReviewMessage[] => {
+    if (review.messages && review.messages.length > 0) {
+      return review.messages;
+    }
+    if (review.reply) {
+      return [
+        {
+          _id: 'legacy',
+          authorType: 'admin',
+          senderName: "DonClaudio's Team",
+          body: review.reply,
+          createdAt: review.replyDate ?? review.updatedAt
+        }
+      ];
+    }
+    return [];
+  };
+
   const handleStatus = async (review: Review, status: ReviewStatus) => {
     try {
       await updateStatus.mutateAsync({id: review._id, body: {status}});
@@ -84,26 +158,40 @@ export default function OwnerReviews() {
     }
   };
 
-  const openReply = (review: Review) => {
-    setReplyingTo(review);
-    setReplyText(review.reply ?? '');
-  };
-
-  const submitReply = async () => {
-    if (!replyingTo) return;
-    if (!replyText.trim()) {
+  const submitReply = async (review: Review) => {
+    const text = (drafts[review._id] ?? '').trim();
+    if (!text) {
       toast.error('Reply cannot be empty.');
       return;
     }
+    const tempId = `temp-${++tempIdCounter.current}`;
+    const tempMessage: ReviewMessage = {
+      _id: tempId,
+      authorType: 'admin',
+      senderName: 'You',
+      body: text,
+      createdAt: new Date().toISOString()
+    };
+    setPendingMessages(prev => ({
+      ...prev,
+      [review._id]: [...(prev[review._id] ?? []), tempMessage]
+    }));
+    setReplyingId(null);
+    setDrafts(prev => ({...prev, [review._id]: ''}));
+    const removeTemp = () =>
+      setPendingMessages(prev => ({
+        ...prev,
+        [review._id]: (prev[review._id] ?? []).filter(m => m._id !== tempId)
+      }));
     try {
       await replyMutation.mutateAsync({
-        id: replyingTo._id,
-        body: {reply: replyText.trim()}
+        id: review._id,
+        body: {reply: text}
       });
-      toast.success('Reply sent. Customer notified via email.');
-      setReplyingTo(null);
-      setReplyText('');
+      toast.success('Reply sent. Customer notified.');
+      removeTemp();
     } catch (error) {
+      removeTemp();
       toast.error((error as NormalizedApiError)?.message ?? 'Failed to send reply.');
     }
   };
@@ -159,96 +247,129 @@ export default function OwnerReviews() {
         </div>
       ) : (
         <div className="space-y-4">
-          {reviews.map(review => (
-            <div key={review._id} className="rounded-2xl bg-white shadow p-6">
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <Stars rating={review.rating} />
-                    {statusBadge(review.status)}
+          {reviews.map(review => {
+            const messages = [
+              ...messagesFor(review),
+              ...(pendingMessages[review._id] ?? [])
+            ];
+            const isReplying = replyingId === review._id;
+            const draft = drafts[review._id] ?? '';
+            return (
+              <div key={review._id} className="rounded-2xl bg-white shadow p-6">
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <Stars rating={review.rating} />
+                      {statusBadge(review.status)}
+                    </div>
+                    <p className="text-sm font-bold text-gray-900 mt-3">
+                      {review.customerName}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {formatDate(review.createdAt)}
+                    </p>
+                    <p className="text-sm text-gray-700 mt-3">
+                      &ldquo;{review.comment}&rdquo;
+                    </p>
                   </div>
-                  <p className="text-sm font-bold text-gray-900 mt-3">
-                    {review.customerName}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    {review.createdAt
-                      ? new Date(review.createdAt).toLocaleString()
-                      : ''}
-                  </p>
-                  <p className="text-sm text-gray-700 mt-3">
-                    &ldquo;{review.comment}&rdquo;
-                  </p>
+
+                  <div className="flex md:flex-col gap-2 shrink-0">
+                    {review.status !== 'approved' && (
+                      <Button
+                        onClick={() => handleStatus(review, 'approved')}
+                        disabled={updateStatus.isPending}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        Approve
+                      </Button>
+                    )}
+                    {review.status !== 'rejected' && (
+                      <Button
+                        onClick={() => handleStatus(review, 'rejected')}
+                        disabled={updateStatus.isPending}
+                        variant="destructive"
+                        size="sm"
+                      >
+                        Reject
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex md:flex-col gap-2 shrink-0">
-                  {review.status !== 'approved' && (
+                {messages.length > 0 && (
+                  <div className="mt-5 space-y-2.5">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                      Conversation
+                    </p>
+                    {messages.map(message => (
+                      <MessageBubble
+                        key={message._id}
+                        message={message}
+                        sending={message._id.startsWith('temp-')}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                <div className="mt-5 pt-4 border-t border-gray-100">
+                  {!isReplying ? (
                     <Button
-                      onClick={() => handleStatus(review, 'approved')}
-                      disabled={updateStatus.isPending}
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => setReplyingId(review._id)}
+                      variant="outline"
                       size="sm"
+                      className="gap-2 text-[#2d4a35]"
                     >
-                      Approve
+                      {draft.trim() || review.reply ? (
+                        <MailOpen size={16} />
+                      ) : (
+                        <Mail size={16} />
+                      )}
+                      {draft.trim() || review.reply ? 'Edit Reply' : 'Reply'}
                     </Button>
+                  ) : (
+                    <div>
+                      <textarea
+                        autoFocus
+                        value={draft}
+                        onChange={e =>
+                          setDrafts(prev => ({
+                            ...prev,
+                            [review._id]: e.target.value
+                          }))
+                        }
+                        rows={3}
+                        maxLength={2000}
+                        placeholder="Write your reply..."
+                        className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e]"
+                      />
+                      <div className="flex justify-end gap-2 mt-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setReplyingId(null);
+                            setDrafts(prev => ({...prev, [review._id]: ''}));
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => submitReply(review)}
+                          disabled={replyMutation.isPending}
+                          className="bg-[#2d4a35] hover:bg-[#3a5c44] text-white gap-1.5"
+                        >
+                          <Send size={14} />
+                          {replyMutation.isPending ? 'Sending...' : 'Send Reply'}
+                        </Button>
+                      </div>
+                    </div>
                   )}
-                  {review.status !== 'rejected' && (
-                    <Button
-                      onClick={() => handleStatus(review, 'rejected')}
-                      disabled={updateStatus.isPending}
-                      variant="destructive"
-                      size="sm"
-                    >
-                      Reject
-                    </Button>
-                  )}
-                  <Button onClick={() => openReply(review)} variant="outline" size="sm">
-                    {review.reply ? 'Edit Reply' : 'Reply'}
-                  </Button>
                 </div>
               </div>
-
-              {review.reply && (
-                <div className="mt-4 rounded-xl bg-gray-50 border border-gray-100 p-4">
-                  <p className="text-xs font-bold text-gray-500 mb-1">
-                    Your Reply ({review.replyDate ? new Date(review.replyDate).toLocaleDateString() : ''})
-                  </p>
-                  <p className="text-sm text-gray-700">&ldquo;{review.reply}&rdquo;</p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Reply modal */}
-      {replyingTo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-bold text-gray-900 mb-1">Reply to Review</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              Replying to {replyingTo.customerName}. They will be notified by email.
-            </p>
-            <textarea
-              value={replyText}
-              onChange={e => setReplyText(e.target.value)}
-              rows={4}
-              maxLength={2000}
-              placeholder="Write your reply..."
-              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e]"
-            />
-            <div className="flex justify-end gap-2 mt-4">
-              <Button variant="ghost" onClick={() => setReplyingTo(null)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={submitReply}
-                disabled={replyMutation.isPending}
-                className="bg-[#2d4a35] hover:bg-[#3a5c44] text-white"
-              >
-                {replyMutation.isPending ? 'Sending...' : 'Send Reply'}
-              </Button>
-            </div>
-          </div>
+            );
+          })}
         </div>
       )}
     </div>

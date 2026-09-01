@@ -4,6 +4,8 @@ import type {
   CreateReviewResponse,
   ListReviewsResponse,
   ReplyReviewBody,
+  ReplyReviewByCustomerBody,
+  ReplyReviewByCustomerResponse,
   ReplyReviewResponse,
   UpdateReviewStatusBody,
   UpdateReviewStatusResponse
@@ -43,6 +45,17 @@ export async function updateReviewStatus(params: {
 export async function replyReview(params: {id: string; body: ReplyReviewBody}) {
   const res = await httpClient.post<ReplyReviewResponse>(
     `/reviews/${params.id}/reply`,
+    params.body
+  );
+  return res.data;
+}
+
+export async function replyReviewByCustomer(params: {
+  id: string;
+  body: ReplyReviewByCustomerBody;
+}) {
+  const res = await httpClient.post<ReplyReviewByCustomerResponse>(
+    `/reviews/${params.id}/customer-reply`,
     params.body
   );
   return res.data;

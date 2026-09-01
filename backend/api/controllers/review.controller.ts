@@ -71,5 +71,21 @@ export const reviewController = {
     } catch (error) {
       next(error);
     }
+  },
+
+  async customerReply(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+      }
+      const review = await reviewService.replyByCustomer(
+        req.params.id,
+        req.auth.userId,
+        req.body.reply
+      );
+      res.status(200).json({review});
+    } catch (error) {
+      next(error);
+    }
   }
 };

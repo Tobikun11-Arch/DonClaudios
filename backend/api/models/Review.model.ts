@@ -2,6 +2,15 @@ import mongoose, {Schema} from 'mongoose';
 
 export type ReviewStatus = 'pending' | 'approved' | 'rejected';
 
+export type ReviewAuthorType = 'customer' | 'admin';
+
+export interface ReviewMessage {
+  authorType: ReviewAuthorType;
+  senderName: string;
+  body: string;
+  createdAt: Date;
+}
+
 export interface ReviewDocument extends mongoose.Document {
   customerId: mongoose.Types.ObjectId;
   customerName: string;
@@ -11,6 +20,7 @@ export interface ReviewDocument extends mongoose.Document {
   reply?: string | null;
   replyDate?: Date | null;
   repliedBy?: mongoose.Types.ObjectId | null;
+  messages: ReviewMessage[];
 }
 
 const ReviewSchema = new Schema<ReviewDocument>(
@@ -30,7 +40,15 @@ const ReviewSchema = new Schema<ReviewDocument>(
     },
     reply: {type: String, default: null, trim: true},
     replyDate: {type: Date, default: null},
-    repliedBy: {type: Schema.Types.ObjectId, ref: 'Admin', default: null}
+    repliedBy: {type: Schema.Types.ObjectId, ref: 'Admin', default: null},
+    messages: [
+      {
+        authorType: {type: String, enum: ['customer', 'admin'], required: true},
+        senderName: {type: String, required: true, trim: true},
+        body: {type: String, required: true, trim: true},
+        createdAt: {type: Date, default: Date.now}
+      }
+    ]
   },
   {timestamps: true}
 );

@@ -20,7 +20,8 @@ export function useMyNotificationsQuery() {
     queryKey: notificationsQueryKey,
     queryFn: listMyNotifications,
     refetchOnWindowFocus: false,
-    staleTime: 15_000
+    refetchInterval: 5000,
+    staleTime: 1000
   });
 }
 
@@ -65,7 +66,8 @@ export function useAdminNotificationsQuery() {
     queryKey: adminNotificationsQueryKey,
     queryFn: listAdminNotifications,
     refetchOnWindowFocus: false,
-    staleTime: 15_000
+    refetchInterval: 5000,
+    staleTime: 1000
   });
 }
 

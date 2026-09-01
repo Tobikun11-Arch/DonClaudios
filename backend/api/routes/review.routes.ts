@@ -40,4 +40,12 @@ router.post(
   reviewController.reply
 );
 
+router.post(
+  '/:id/customer-reply',
+  requireAuth,
+  requireCustomer,
+  validate(replyReviewDto),
+  reviewController.customerReply
+);
+
 export default router;
