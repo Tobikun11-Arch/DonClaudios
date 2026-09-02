@@ -43,31 +43,6 @@ function StarRating({
   );
 }
 
-function statusBadge(review: Review) {
-  const map: Record<string, {label: string; className: string}> = {
-    pending: {
-      label: 'Pending Approval',
-      className: 'bg-amber-100 text-amber-700'
-    },
-    approved: {
-      label: 'Approved',
-      className: 'bg-green-100 text-green-700'
-    },
-    rejected: {
-      label: 'Rejected',
-      className: 'bg-red-100 text-red-600'
-    }
-  };
-  const cfg = map[review.status] ?? map.pending;
-  return (
-    <span
-      className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${cfg.className}`}
-    >
-      {cfg.label}
-    </span>
-  );
-}
-
 function MessageBubble({
   message,
   sending
@@ -291,7 +266,6 @@ export default function CustomerReviews() {
                   <div className="flex items-center gap-2">
                     <StarRating value={review.rating} onChange={() => {}} disabled />
                   </div>
-                  {statusBadge(review)}
                 </div>
 
                 <p className="text-sm text-gray-700 mt-3">
