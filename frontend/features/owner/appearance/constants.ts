@@ -27,6 +27,7 @@ export const DEFAULT_SETTINGS: SiteSetting = {
   },
   about: {
     title: 'Our Story',
+    image: '/assets/ourstory.JPG',
     description:
       "DonClaudio's Lechon House has been serving Tanza, Cavite with authentic Filipino lechon for years. We're passionate about bringing families together with food that celebrates our rich culinary heritage. Every lechon is carefully prepared using time-honored recipes and slow-roasted over open flames to achieve that perfect balance of crispy skin and succulent meat. We source only the finest ingredients because your celebrations deserve nothing less.",
     stats: [

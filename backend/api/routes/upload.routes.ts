@@ -35,4 +35,12 @@ router.post(
   uploadController.uploadProfileImage
 );
 
+router.post(
+  '/section-image',
+  requireAuth,
+  requireAdmin,
+  upload.single('file'),
+  uploadController.uploadSectionImage
+);
+
 export default router;
