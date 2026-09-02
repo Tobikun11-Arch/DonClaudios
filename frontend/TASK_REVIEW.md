@@ -3,6 +3,7 @@
   - text color changing is not working - DONE
   - the bg white default from highlights and about section is not changing - the color picker is not working in white bg in current appearance - DONE
   - the toast loop error when changing and it must automatic close not the admin need to x it - DONE
+  - Owner can change image in hero, highlights and about section
 
 2. Feedback - Customer account and guest feedback on the home page; admin can approve and reply to customer concerns. - ...
    - create a crud in customer account for giving a review
