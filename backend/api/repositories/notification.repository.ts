@@ -13,6 +13,14 @@ export const notificationRepository = {
 
   findById: (id: string) => NotificationModel.findById(id).exec(),
 
+  findReviewRequestByOrder: (customerId: string, orderId: string) =>
+    NotificationModel.exists({
+      target: 'customer',
+      customerId,
+      type: 'review_requested',
+      orderId
+    }).exec(),
+
   countUnreadByCustomerId: (customerId: string) =>
     NotificationModel.countDocuments({target: 'customer', customerId, read: false}).exec(),
 

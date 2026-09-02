@@ -1,6 +1,7 @@
 import {Router} from 'express';
 import {orderController} from '../controllers/order.controller';
-import {requireAdmin, requireAuth} from '../middleware/auth';
+import {orderMessageController} from '../controllers/orderMessage.controller';
+import {requireAdmin, requireAuth, requireCustomer} from '../middleware/auth';
 
 const router = Router();
 
@@ -12,6 +13,37 @@ router.patch(
   requireAuth,
   requireAdmin,
   orderController.updateStatus
+);
+
+router.get(
+  '/follow-up',
+  requireAuth,
+  requireAdmin,
+  orderMessageController.listFollowUpOrders
+);
+router.get(
+  '/:id/messages',
+  requireAuth,
+  requireCustomer,
+  orderMessageController.listForCustomer
+);
+router.get(
+  '/:id/messages/admin',
+  requireAuth,
+  requireAdmin,
+  orderMessageController.listForAdmin
+);
+router.post(
+  '/:id/messages',
+  requireAuth,
+  requireCustomer,
+  orderMessageController.sendByCustomer
+);
+router.post(
+  '/:id/messages/admin',
+  requireAuth,
+  requireAdmin,
+  orderMessageController.sendByAdmin
 );
 
 export default router;

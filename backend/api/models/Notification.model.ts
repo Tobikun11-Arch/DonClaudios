@@ -1,6 +1,12 @@
 import mongoose, {Schema} from 'mongoose';
 
-export type NotificationType = 'review_reply' | 'review_submitted' | 'low_stock' | 'order_status';
+export type NotificationType =
+  | 'review_reply'
+  | 'review_submitted'
+  | 'review_requested'
+  | 'order_message'
+  | 'low_stock'
+  | 'order_status';
 export type NotificationTarget = 'customer' | 'admin';
 
 export interface NotificationDocument extends mongoose.Document {
@@ -36,7 +42,7 @@ const NotificationSchema = new Schema<NotificationDocument>(
     },
     type: {
       type: String,
-      enum: ['review_reply', 'review_submitted', 'low_stock', 'order_status'],
+      enum: ['review_reply', 'review_submitted', 'review_requested', 'order_message', 'low_stock', 'order_status'],
       required: true
     },
     title: {type: String, required: true},

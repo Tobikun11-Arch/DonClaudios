@@ -62,10 +62,10 @@ export default function CustomerNotificationBell() {
   };
 
   const destinationFor = (notification: Notification) => {
-    if (notification.type === 'review_reply') {
+    if (notification.type === 'review_reply' || notification.type === 'review_requested') {
       return '/customer/dashboard?tab=reviews';
     }
-    if (notification.type === 'order_status') {
+    if (notification.type === 'order_message' || notification.type === 'order_status') {
       return '/customer/dashboard?tab=history';
     }
     if (notification.link) {

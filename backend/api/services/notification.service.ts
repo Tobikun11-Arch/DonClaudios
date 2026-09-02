@@ -20,7 +20,7 @@ export const notificationService = {
 
   async createForCustomer(data: {
     customerId: string;
-    type: 'review_reply' | 'order_status';
+    type: 'review_reply' | 'review_requested' | 'order_message' | 'order_status';
     title: string;
     message: string;
     reviewId?: string;
@@ -39,12 +39,36 @@ export const notificationService = {
     });
   },
 
+  async createReviewRequestForCustomer(data: {
+    customerId: string;
+    orderId: string;
+    title: string;
+    message: string;
+  }) {
+    const existing = await notificationRepository.findReviewRequestByOrder(
+      data.customerId,
+      data.orderId
+    );
+    if (existing) return null;
+
+    return notificationRepository.create({
+      target: 'customer',
+      customerId: data.customerId as any,
+      orderId: data.orderId as any,
+      type: 'review_requested',
+      title: data.title,
+      message: data.message,
+      link: '/customer/dashboard?tab=reviews'
+    });
+  },
+
   async createForAdmin(data: {
     adminId: string;
-    type: 'review_submitted' | 'low_stock';
+    type: 'review_submitted' | 'order_message' | 'low_stock';
     title: string;
     message: string;
     reviewId?: string;
+    orderId?: string;
     link?: string;
   }) {
     return notificationRepository.create({
@@ -54,6 +78,7 @@ export const notificationService = {
       title: data.title,
       message: data.message,
       reviewId: data.reviewId ? (data.reviewId as any) : undefined,
+      orderId: data.orderId ? (data.orderId as any) : undefined,
       link: data.link
     });
   },

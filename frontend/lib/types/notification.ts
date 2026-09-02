@@ -1,4 +1,10 @@
-export type NotificationType = 'review_reply' | 'review_submitted' | 'low_stock' | 'order_status';
+export type NotificationType =
+  | 'review_reply'
+  | 'review_submitted'
+  | 'review_requested'
+  | 'order_message'
+  | 'low_stock'
+  | 'order_status';
 export type NotificationTarget = 'customer' | 'admin';
 
 export interface Notification {

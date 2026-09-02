@@ -299,6 +299,19 @@ export const orderController = {
           orderId: String(order._id),
           link: '/customer/dashboard?tab=history'
         });
+
+        if (status === 'completed') {
+          try {
+            await notificationService.createReviewRequestForCustomer({
+              customerId: String(order.customerId),
+              orderId: String(order._id),
+              title: 'We\u2019d love your feedback!',
+              message: `Your order (#${String(order._id).slice(-6).toUpperCase()}) was completed. Please take a moment to share your experience.`
+            });
+          } catch (error) {
+            console.error('Failed to create review request notification', error);
+          }
+        }
       }
 
       res.status(200).json({order: updated});
