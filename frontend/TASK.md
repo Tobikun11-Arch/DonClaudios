@@ -7,8 +7,12 @@ PRIORITY TASKS:
 
 3. Closed hours - Automatically disable ordering for guest and customer accounts; admin can also manually close hours if there's ever an emergency and they're not available.
 
-
 4. Progress order UI - Interactive; admin or cashier can update status, e.g., "on the way" or "already delivered." and borj problem like  cancelling
+
+11. rewards tab for customers / what they can buy everytime they buy using their acc/mobile app of donclaudios 
+  - list of all prodcut with hm points per product
+
+13. Change ui of menu ui and slug ui per product
 
 6. Payment system - UI and functionality.
 
@@ -19,8 +23,7 @@ PRIORITY TASKS:
    - cashier mobile app available in offline
    - if no connections from cashier and web app the menu will be triggered as unavailable righht now sign as closed 
 
-11. rewards tab for customers / what they can buy everytime they buy using their acc/mobile app of donclaudios 
-  - list of all prodcut with hm points per product
+
 
 12.  paymongo for payment of customers                                                                                                                     
 

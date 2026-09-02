@@ -17,6 +17,10 @@ export type UploadPromoImageResponse = {
   imageUrl: string;
 };
 
+export type UploadSectionImageResponse = {
+  imageUrl: string;
+};
+
 export async function uploadProductImage(file: File) {
   const data = new FormData();
   data.append('file', file);
@@ -47,6 +51,18 @@ export async function uploadProfileImage(file: File) {
 
   const res = await uploadClient.post<UploadProductImageResponse>(
     '/upload/profile-image',
+    data
+  );
+
+  return res.data;
+}
+
+export async function uploadSectionImage(file: File) {
+  const data = new FormData();
+  data.append('file', file);
+
+  const res = await uploadClient.post<UploadSectionImageResponse>(
+    '/upload/section-image',
     data
   );
 

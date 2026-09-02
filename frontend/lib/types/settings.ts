@@ -30,6 +30,7 @@ export interface HighlightsSection {
 export interface AboutSection {
   title: string;
   description: string;
+  image: string;
   stats: StatItem[];
 }
 

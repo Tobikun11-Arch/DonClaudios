@@ -1,11 +1,11 @@
 'use client';
 
 import {useState, useCallback, useRef, useEffect} from 'react';
-import Image from 'next/image';
 import {Star, Phone, MapPin, Mail, Clock} from 'lucide-react';
 import {toast} from 'sonner';
 import {isCancelledError} from '@tanstack/react-query';
 import EditableText from './EditableText';
+import EditableImage from './EditableImage';
 import SectionToolbar from './SectionToolbar';
 import {useSettingsQuery, useUpdateSettingsMutation} from '@/lib/hooks/useSettings';
 import type {SiteSetting, SectionId, SectionStyle} from '@/lib/types/settings';
@@ -63,6 +63,29 @@ export default function AppearancePreview() {
       const stats = [...data!.hero.stats];
       stats[index] = {...stats[index], [field]: value};
       await save({hero: {...data!.hero, stats}});
+    },
+    [data, save]
+  );
+
+  const saveHeroImage = useCallback(
+    async (url: string) => {
+      await save({hero: {...data!.hero, backgroundImage: url}});
+    },
+    [data, save]
+  );
+
+  const saveHighlightImage = useCallback(
+    async (index: number, url: string) => {
+      const images = [...data!.highlights.images];
+      images[index] = {url, alt: images[index]?.alt ?? ''};
+      await save({highlights: {...data!.highlights, images}});
+    },
+    [data, save]
+  );
+
+  const saveAboutImage = useCallback(
+    async (image: string) => {
+      await save({about: {...data!.about, image}});
     },
     [data, save]
   );
@@ -296,7 +319,11 @@ export default function AppearancePreview() {
 
             <div className="relative">
               <div className="relative w-full h-75 sm:h-100 lg:h-150 rounded-3xl overflow-hidden">
-                <Image src="/assets/hero_image.JPG" alt="Delicious Lechon" fill className="object-cover" />
+                <EditableImage
+                  src={data.hero.backgroundImage}
+                  alt="Delicious Lechon"
+                  onSaved={saveHeroImage}
+                />
               </div>
               <div className="absolute bottom-4 sm:bottom-8 left-4 sm:left-8 right-4 sm:right-8 bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-xl">
                 <div className="flex items-center justify-between">
@@ -351,7 +378,13 @@ export default function AppearancePreview() {
 
           <div className="grid md:grid-cols-3 gap-6">
             <div className="md:col-span-2 relative overflow-hidden rounded-2xl h-125">
-              <Image src="/assets/highlights1.JPG" alt="Restaurant Interior" fill className="object-cover" priority />
+              <EditableImage
+                src={data.highlights.images[0]?.url ?? '/assets/highlights1.JPG'}
+                alt={data.highlights.images[0]?.alt ?? 'Restaurant Interior'}
+                onSaved={v => saveHighlightImage(0, v)}
+                showRemove
+                onRemove={() => saveHighlightImage(0, '')}
+              />
               <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent flex items-end p-8">
                 <div className="text-white">
                   <h3 className="text-3xl font-bold mb-2">Lechon House</h3>
@@ -362,13 +395,25 @@ export default function AppearancePreview() {
 
             <div className="space-y-6">
               <div className="relative overflow-hidden rounded-2xl h-60">
-                <Image src="/assets/Highlight2.png" alt="Dining Area" fill className="object-cover" />
+                <EditableImage
+                  src={data.highlights.images[1]?.url ?? '/assets/Highlight2.png'}
+                  alt={data.highlights.images[1]?.alt ?? 'Dining Area'}
+                  onSaved={v => saveHighlightImage(1, v)}
+                  showRemove
+                  onRemove={() => saveHighlightImage(1, '')}
+                />
                 <div className="absolute inset-0 bg-black/40 flex items-end p-6">
                   <h3 className="text-white text-xl font-bold">Walkin&apos; Order</h3>
                 </div>
               </div>
               <div className="relative overflow-hidden rounded-2xl h-60">
-                <Image src="/assets/Highlights3.png" alt="Our Specialty" fill className="object-cover" />
+                <EditableImage
+                  src={data.highlights.images[2]?.url ?? '/assets/Highlights3.png'}
+                  alt={data.highlights.images[2]?.alt ?? 'Our Specialty'}
+                  onSaved={v => saveHighlightImage(2, v)}
+                  showRemove
+                  onRemove={() => saveHighlightImage(2, '')}
+                />
                 <div className="absolute inset-0 bg-black/40 flex items-end p-6">
                   <h3 className="text-white text-xl font-bold">Crispy Perfection</h3>
                 </div>
@@ -475,7 +520,13 @@ export default function AppearancePreview() {
             <div className="relative">
               <div className="absolute -inset-4 rounded-3xl" />
               <div className="relative w-full h-150 rounded-3xl overflow-hidden">
-                <Image src="/assets/ourstory.JPG" alt="About DonClaudio's" fill className="object-cover" />
+                <EditableImage
+                  src={data.about.image || '/assets/ourstory.JPG'}
+                  alt="About DonClaudio's"
+                  onSaved={saveAboutImage}
+                  showRemove
+                  onRemove={() => saveAboutImage('')}
+                />
               </div>
             </div>
           </div>

@@ -104,7 +104,7 @@ export default function HeroSection({
           <div className="relative">
             <div className="relative w-full h-75 sm:h-100 lg:h-150 rounded-3xl overflow-hidden">
               <Image
-                src="/assets/hero_image.JPG"
+                src={hero.backgroundImage || '/assets/hero_image.JPG'}
                 alt="Delicious Lechon"
                 fill
                 className="object-cover"

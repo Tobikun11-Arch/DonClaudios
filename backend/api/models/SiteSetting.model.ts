@@ -18,6 +18,7 @@ export interface SiteSettingDocument extends mongoose.Document {
     subtitle: string;
     ctaText: string;
     ctaLink: string;
+    backgroundImage: string;
     stats: StatItem[];
   };
   highlights: {
@@ -28,6 +29,7 @@ export interface SiteSettingDocument extends mongoose.Document {
   about: {
     title: string;
     description: string;
+    image: string;
     stats: StatItem[];
   };
   promo: {
@@ -109,6 +111,7 @@ const SiteSettingSchema = new Schema<SiteSettingDocument>(
       subtitle: {type: String, default: ''},
       ctaText: {type: String, default: ''},
       ctaLink: {type: String, default: '/order'},
+      backgroundImage: {type: String, default: '/assets/hero_image.JPG'},
       stats: {type: [StatItemSchema], default: []}
     },
     highlights: {
@@ -119,6 +122,7 @@ const SiteSettingSchema = new Schema<SiteSettingDocument>(
     about: {
       title: {type: String, default: ''},
       description: {type: String, default: ''},
+      image: {type: String, default: '/assets/ourstory.JPG'},
       stats: {type: [StatItemSchema], default: []}
     },
     promo: {

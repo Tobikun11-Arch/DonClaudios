@@ -31,6 +31,7 @@ function mergeWithDefaults(raw: Partial<SiteSetting>): SiteSetting {
     about: {
       title: raw.about?.title || d.about.title,
       description: raw.about?.description || d.about.description,
+      image: raw.about?.image || d.about.image,
       stats: raw.about?.stats?.length ? raw.about.stats : d.about.stats
     },
     reviews: {
