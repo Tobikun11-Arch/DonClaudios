@@ -1,10 +1,10 @@
 PRIORITY TASKS:
 
-  c
-
 6. Dashboard dropdown for report (that summarize in dashboard) (prototype)
 
 7. connect the online offline of cashier using poll
+
+8. admin must power to end or delete the conversation from reviews if bad happens like a troll customer
 
 3. Closed hours - Automatically disable ordering for guest and customer accounts; admin can also manually close hours if there's ever an emergency and they're not available.
 
