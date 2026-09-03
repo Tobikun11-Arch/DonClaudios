@@ -188,7 +188,6 @@ export default function CustomerReviews() {
         id: review._id,
         body: {reply: text}
       });
-      toast.success('Your reply was sent to DonClaudio\u2019s.');
       removeTemp();
     } catch (error) {
       removeTemp();
@@ -326,6 +325,12 @@ export default function CustomerReviews() {
                             [review._id]: e.target.value
                           }))
                         }
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            submitReply(review);
+                          }
+                        }}
                         rows={3}
                         maxLength={2000}
                         placeholder="Write your reply..."
@@ -343,15 +348,13 @@ export default function CustomerReviews() {
                           Cancel
                         </Button>
                         <Button
-                          size="sm"
+                          size="icon-sm"
                           onClick={() => submitReply(review)}
                           disabled={customerReplyMutation.isPending}
-                          className="bg-[#2d4a35] hover:bg-[#3a5c44] text-white gap-1.5"
+                          className="bg-[#2d4a35] hover:bg-[#3a5c44] text-white shrink-0"
+                          aria-label="Send reply"
                         >
                           <Send size={14} />
-                          {customerReplyMutation.isPending
-                            ? 'Sending...'
-                            : 'Send Reply'}
                         </Button>
                       </div>
                     </div>

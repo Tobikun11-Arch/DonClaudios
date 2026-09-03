@@ -93,7 +93,6 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
   const sendReply = async (text: string) => {
     try {
       await sendMutation.mutateAsync({orderId, body: text});
-      toast.success('Reply sent.');
     } catch (error) {
       toast.error((error as NormalizedApiError)?.message ?? 'Failed to send reply.');
     }

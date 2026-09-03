@@ -295,7 +295,6 @@ function OrderCard({
   const handleSend = async (text: string) => {
     try {
       await sendMutation.mutateAsync({orderId: order._id, body: text});
-      toast.success('Reply sent.');
     } catch (error) {
       toast.error(
         (error as NormalizedApiError)?.message ?? 'Failed to send reply.'

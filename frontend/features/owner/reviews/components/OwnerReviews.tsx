@@ -190,7 +190,6 @@ export default function OwnerReviews() {
         id: review._id,
         body: {reply: text}
       });
-      toast.success('Reply sent. Customer notified.');
       removeTemp();
     } catch (error) {
       removeTemp();
@@ -340,6 +339,12 @@ export default function OwnerReviews() {
                             [review._id]: e.target.value
                           }))
                         }
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            submitReply(review);
+                          }
+                        }}
                         rows={3}
                         maxLength={2000}
                         placeholder="Write your reply..."
@@ -357,13 +362,13 @@ export default function OwnerReviews() {
                           Cancel
                         </Button>
                         <Button
-                          size="sm"
+                          size="icon-sm"
                           onClick={() => submitReply(review)}
                           disabled={replyMutation.isPending}
-                          className="bg-[#2d4a35] hover:bg-[#3a5c44] text-white gap-1.5"
+                          className="bg-[#2d4a35] hover:bg-[#3a5c44] text-white shrink-0"
+                          aria-label="Send reply"
                         >
                           <Send size={14} />
-                          {replyMutation.isPending ? 'Sending...' : 'Send Reply'}
                         </Button>
                       </div>
                     </div>
