@@ -70,6 +70,7 @@ export type OrderHistoryEntry = {
     phoneNumber: string;
     address?: string;
   };
+  customerName?: string;
   items: OrderHistoryItem[];
   createdAt?: string;
   updatedAt?: string;

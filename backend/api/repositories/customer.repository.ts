@@ -16,6 +16,11 @@ export const customerRepository = {
 
   listAll: () => CustomerModel.find({}).exec(),
 
+  listByIds: (ids: string[]) =>
+    CustomerModel.find({_id: {$in: ids}})
+      .select('firstName lastName phoneNumber email')
+      .exec(),
+
   create: (data: Partial<CustomerDocument>) => CustomerModel.create(data),
 
   updateProfile: (

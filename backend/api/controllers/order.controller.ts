@@ -6,6 +6,7 @@ import {transactionRepository} from '../repositories/transaction.repository';
 import {stockMovementService} from '../services/stockMovement.service';
 import {notificationService} from '../services/notification.service';
 import {cashierRepository} from '../repositories/cashier.repository';
+import {customerRepository} from '../repositories/customer.repository';
 import type {PaymentMethod} from '../models/Transaction.model';
 import type {OrderStatus} from '../models/Order.model';
 import type {CashierDocument} from '../models/Cashier.model';
@@ -64,11 +65,28 @@ export const orderController = {
         {}
       );
 
+      const customerIds = orders
+        .filter(order => order.customerId)
+        .map(order => String(order.customerId));
+      const customers = await customerRepository.listByIds(customerIds);
+      const nameByCustomerId = new Map(
+        customers.map(c => [
+          String(c._id),
+          `${c.firstName} ${c.lastName}`.trim()
+        ])
+      );
+
       res.json({
-        orders: orders.map(order => ({
-          ...order.toObject(),
-          items: itemsByOrderId[String(order._id)] ?? []
-        }))
+        orders: orders.map(order => {
+          const customerName = order.customerId
+            ? nameByCustomerId.get(String(order.customerId))
+            : undefined;
+          return {
+            ...order.toObject(),
+            customerName,
+            items: itemsByOrderId[String(order._id)] ?? []
+          };
+        })
       });
     } catch (error) {
       next(error);
