@@ -9,12 +9,14 @@ export default function OrderChatThread({
   messages,
   sending,
   onSubmit,
-  placeholder = 'Type your message...'
+  placeholder = 'Type your message...',
+  teamOnRight = false
 }: {
   messages: OrderMessage[];
   sending?: boolean;
   onSubmit: (text: string) => void;
   placeholder?: string;
+  teamOnRight?: boolean;
 }) {
   const [draft, setDraft] = useState('');
 
@@ -30,7 +32,11 @@ export default function OrderChatThread({
       {messages.length > 0 && (
         <div className="space-y-2.5">
           {messages.map(message => (
-            <MessageBubble key={message._id} message={message} />
+            <MessageBubble
+              key={message._id}
+              message={message}
+              teamOnRight={teamOnRight}
+            />
           ))}
         </div>
       )}
@@ -56,26 +62,37 @@ export default function OrderChatThread({
   );
 }
 
-function MessageBubble({message}: {message: OrderMessage}) {
+function MessageBubble({
+  message,
+  teamOnRight
+}: {
+  message: OrderMessage;
+  teamOnRight: boolean;
+}) {
   const isTeam = message.authorType === 'admin';
+  const onRight = teamOnRight ? isTeam : !isTeam;
   return (
-    <div className={`flex ${isTeam ? 'justify-start' : 'justify-end'}`}>
+    <div className={`flex ${onRight ? 'justify-end' : 'justify-start'}`}>
       <div
         className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
-          isTeam
-            ? 'bg-gray-100 text-gray-800 border border-gray-200'
-            : 'bg-[#2d4a35] text-white'
+          onRight
+            ? 'bg-[#2d4a35] text-white'
+            : 'bg-gray-100 text-gray-800 border border-gray-200'
         }`}
       >
         <p
           className={`text-xs font-bold mb-0.5 ${
-            isTeam ? 'text-gray-500' : 'text-[#b8d4c0]'
+            onRight ? 'text-[#b8d4c0]' : 'text-gray-500'
           }`}
         >
           {isTeam ? "DonClaudio's Team" : message.senderName || 'You'}
         </p>
         <p className="text-sm whitespace-pre-wrap">{message.body}</p>
-        <p className={`mt-1 text-[10px] ${isTeam ? 'text-gray-400' : 'text-[#b8d4c0]'}`}>
+        <p
+          className={`mt-1 text-[10px] ${
+            onRight ? 'text-[#b8d4c0]' : 'text-gray-400'
+          }`}
+        >
           {message.createdAt ? new Date(message.createdAt).toLocaleString() : ''}
         </p>
       </div>

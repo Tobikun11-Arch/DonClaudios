@@ -313,6 +313,7 @@ function OrderCard({
               sending={sendMutation.isPending}
               onSubmit={handleSend}
               placeholder="Reply to the customer..."
+              teamOnRight
             />
           )}
         </div>
