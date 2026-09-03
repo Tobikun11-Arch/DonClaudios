@@ -1,8 +1,8 @@
 'use client';
 
+import {useEffect, useRef} from 'react';
 import Image from 'next/image';
 import type {OrderHistoryEntry, OrderHistoryItem} from '@/lib/api/orderApi';
-
 function formatStatus(status: string) {
   return status
     .split('_')
@@ -46,7 +46,9 @@ type OrderHistorySectionProps = {
   isError?: boolean;
   activeRange?: HistoryRange;
   onRangeChange?: (range: HistoryRange) => void;
-  renderFollowUp?: (order: OrderHistoryEntry) => React.ReactNode;
+  renderFollowUp?: (order: OrderHistoryEntry, openChat: boolean) => React.ReactNode;
+  highlightOrderId?: string | null;
+  openChatOrderId?: string | null;
 };
 
 export default function OrderHistorySection({
@@ -57,8 +59,23 @@ export default function OrderHistorySection({
   isError = false,
   activeRange,
   onRangeChange,
-  renderFollowUp
+  renderFollowUp,
+  highlightOrderId,
+  openChatOrderId = null
 }: OrderHistorySectionProps) {
+  const highlightRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!highlightOrderId || !highlightRef.current) return;
+    highlightRef.current.scrollIntoView({behavior: 'smooth', block: 'center'});
+    highlightRef.current.classList.add('ring-highlight');
+    const timer = setTimeout(
+      () => highlightRef.current?.classList.remove('ring-highlight'),
+      2500
+    );
+    return () => clearTimeout(timer);
+  }, [highlightOrderId]);
+
   return (
     <section className="w-full max-w-6xl mx-auto px-4 mb-10">
       <div className="flex items-end justify-between gap-4 mb-4">
@@ -102,7 +119,12 @@ export default function OrderHistorySection({
       ) : (
         <div className="space-y-4">
           {orders.map(order => (
-            <div key={order._id} className="rounded-2xl bg-white shadow p-5">
+            <div
+              key={order._id}
+              id={`order-${order._id}`}
+              ref={highlightOrderId === order._id ? highlightRef : undefined}
+              className="rounded-2xl bg-white shadow p-5"
+            >
               <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
                 <div>
                   <p className="text-sm font-bold text-gray-900">
@@ -170,7 +192,7 @@ export default function OrderHistorySection({
                 </p>
               ) : null}
 
-              {renderFollowUp ? renderFollowUp(order) : null}
+              {renderFollowUp ? renderFollowUp(order, order._id === openChatOrderId) : null}
             </div>
           ))}
         </div>

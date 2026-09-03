@@ -12,8 +12,14 @@ import {
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
 import type {NormalizedApiError} from '@/lib/api/types';
 
-export default function CustomerOrderFollowUp({order}: {order: OrderHistoryEntry}) {
-  const [open, setOpen] = useState(false);
+export default function CustomerOrderFollowUp({
+  order,
+  defaultOpen = false
+}: {
+  order: OrderHistoryEntry;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
   const messagesQuery = useOrderMessagesQuery(order._id, open);
   const sendMutation = useSendOrderMessageMutation();
 

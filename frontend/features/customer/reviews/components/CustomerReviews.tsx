@@ -11,6 +11,7 @@ import {
 } from '@/lib/hooks/reviews/useReviews';
 import type {Review, ReviewMessage} from '@/lib/types/review';
 import type {NormalizedApiError} from '@/lib/api/types';
+import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
 
 function StarRating({
   value,
@@ -94,17 +95,25 @@ export default function CustomerReviews() {
   const createMutation = useCreateReviewMutation();
   const customerReplyMutation = useCustomerReplyReviewMutation();
 
+  const {highlightId, isOpenChat} = useScrollToHighlight();
+
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
-  const [replyingId, setReplyingId] = useState<string | null>(null);
+  const [replyingId, setReplyingId] = useState<string | null>(
+    isOpenChat ? highlightId : null
+  );
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [pendingMessages, setPendingMessages] = useState<
     Record<string, ReviewMessage[]>
   >({});
   const tempIdCounter = useRef(0);
+  const [prevOpenChat, setPrevOpenChat] = useState(isOpenChat);
+  if (isOpenChat !== prevOpenChat) {
+    setPrevOpenChat(isOpenChat);
+    if (isOpenChat && highlightId) setReplyingId(highlightId);
+  }
 
   const reviews = data?.reviews ?? [];
-
   const handleSubmit = async () => {
     if (rating < 1) {
       toast.error('Please select a rating.');
@@ -261,7 +270,7 @@ export default function CustomerReviews() {
             const isReplying = replyingId === review._id;
             const draft = drafts[review._id] ?? '';
             return (
-              <div key={review._id} className="rounded-2xl bg-white shadow p-6">
+              <div key={review._id} id={`review-${review._id}`} className="rounded-2xl bg-white shadow p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-2">
                     <StarRating value={review.rating} onChange={() => {}} disabled />

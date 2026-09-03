@@ -55,7 +55,11 @@ export default function OwnerNotificationBell() {
     }
     setOpen(false);
     if (notification.link) {
-      router.push(notification.link);
+      const highlightId = notification.orderId ?? notification.reviewId;
+      const url = highlightId
+        ? `${notification.link}${notification.link.includes('?') ? '&' : '?'}highlight=${highlightId}`
+        : notification.link;
+      router.push(url);
     }
   };
 

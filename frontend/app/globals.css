@@ -132,6 +132,17 @@ html, body {
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+@keyframes ring-highlight-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(45,74,53,0.35); }
+  50%  { box-shadow: 0 0 0 6px rgba(45,74,53,0.15); }
+  100% { box-shadow: 0 0 0 0 rgba(45,74,53,0); }
+}
+
+.ring-highlight {
+  animation: ring-highlight-pulse 2.5s ease-out;
+  border-radius: 1rem;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

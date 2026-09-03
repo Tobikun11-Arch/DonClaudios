@@ -12,6 +12,7 @@ import {
 import type {Review, ReviewMessage, ReviewStatus} from '@/lib/types/review';
 import type {NormalizedApiError} from '@/lib/api/types';
 import OwnerNotificationBell from '@/features/owner/notifications/components/OwnerNotificationBell';
+import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
 
 type Filter = 'all' | ReviewStatus;
 
@@ -110,6 +111,7 @@ export default function OwnerReviews() {
     Record<string, ReviewMessage[]>
   >({});
   const tempIdCounter = useRef(0);
+  useScrollToHighlight();
 
   const reviews = useMemo(
     () =>
@@ -255,7 +257,7 @@ export default function OwnerReviews() {
             const isReplying = replyingId === review._id;
             const draft = drafts[review._id] ?? '';
             return (
-              <div key={review._id} className="rounded-2xl bg-white shadow p-6">
+              <div key={review._id} id={`review-${review._id}`} className="rounded-2xl bg-white shadow p-6">
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-3">

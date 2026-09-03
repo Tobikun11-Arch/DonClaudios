@@ -3,6 +3,7 @@
 import {useMemo, useState} from 'react';
 import {toast} from 'sonner';
 import {MessageCircle, Package, ChevronRight} from 'lucide-react';
+import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
 import OrderChatThread from '@/features/order/components/OrderChatThread';
 import {Modal} from '@/features/owner/cashiers/components/Modal';
 import {Button} from '@/components/ui/button';
@@ -81,10 +82,18 @@ export function CashierOrders() {
   const {data, isLoading, isError} = useAllOrdersQuery();
   const updateStatusMutation = useUpdateOrderStatusMutation();
   const [statusFilter, setStatusFilter] = useState<string>('active');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [cancellingOrder, setCancellingOrder] = useState<OrderHistoryEntry | null>(null);
 
   const orders = data?.orders ?? [];
+  const {highlightId, isOpenChat} = useScrollToHighlight();
+  const [expandedId, setExpandedId] = useState<string | null>(
+    isOpenChat ? highlightId : null
+  );
+  const [prevOpenChat, setPrevOpenChat] = useState(isOpenChat);
+  if (isOpenChat !== prevOpenChat) {
+    setPrevOpenChat(isOpenChat);
+    if (isOpenChat && highlightId) setExpandedId(highlightId);
+  }
 
   const visibleOrders = useMemo(() => {
     if (statusFilter === 'all') return orders;
@@ -188,25 +197,26 @@ export function CashierOrders() {
       ) : (
         <div className="space-y-3">
           {visibleOrders.map(order => (
-            <OrderCard
-              key={order._id}
-              order={order}
-              expanded={expandedId === order._id}
-              onToggle={() =>
-                setExpandedId(expandedId === order._id ? null : order._id)
-              }
-              onNextStatus={() => handleNextStatus(order)}
-              onCancel={() => setCancellingOrder(order)}
-              statusUpdating={
-                updateStatusMutation.isPending &&
-                updateStatusMutation.variables?.orderId === order._id
-              }
-              cancelUpdating={
-                updateStatusMutation.isPending &&
-                (updateStatusMutation.variables?.orderId ?? null) ===
-                  (cancellingOrder?._id ?? null)
-              }
-            />
+            <div key={order._id} id={`order-${order._id}`}>
+              <OrderCard
+                order={order}
+                expanded={expandedId === order._id}
+                onToggle={() =>
+                  setExpandedId(expandedId === order._id ? null : order._id)
+                }
+                onNextStatus={() => handleNextStatus(order)}
+                onCancel={() => setCancellingOrder(order)}
+                statusUpdating={
+                  updateStatusMutation.isPending &&
+                  updateStatusMutation.variables?.orderId === order._id
+                }
+                cancelUpdating={
+                  updateStatusMutation.isPending &&
+                  (updateStatusMutation.variables?.orderId ?? null) ===
+                    (cancellingOrder?._id ?? null)
+                }
+              />
+            </div>
           ))}
         </div>
       )}
