@@ -1,7 +1,8 @@
 'use client';
 
-import {useEffect, useRef} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import Image from 'next/image';
+import {ChevronDown, ChevronUp} from 'lucide-react';
 import type {OrderHistoryEntry, OrderHistoryItem} from '@/lib/api/orderApi';
 function formatStatus(status: string) {
   return status
@@ -12,6 +13,21 @@ function formatStatus(status: string) {
 
 function formatOrderType(orderType: string) {
   return orderType.charAt(0).toUpperCase() + orderType.slice(1);
+}
+
+function formatPaymentMethod(paymentMethod?: string) {
+  switch (paymentMethod) {
+    case 'cash':
+      return 'Cash';
+    case 'card':
+      return 'Card';
+    case 'gcash':
+      return 'GCash';
+    case 'other':
+      return 'Other';
+    default:
+      return 'Cash';
+  }
 }
 
 function getItemName(item: OrderHistoryItem) {
@@ -119,84 +135,226 @@ export default function OrderHistorySection({
       ) : (
         <div className="space-y-4">
           {orders.map(order => (
-            <div
+            <OrderCard
               key={order._id}
-              id={`order-${order._id}`}
-              ref={highlightOrderId === order._id ? highlightRef : undefined}
-              className="rounded-2xl bg-white shadow p-5"
-            >
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                <div>
-                  <p className="text-sm font-bold text-gray-900">
-                    Order #{order._id}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {formatOrderType(order.orderType)}
-                    {order.createdAt ? ` • ${new Date(order.createdAt).toLocaleString()}` : ''}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span className="rounded-full bg-[#3c5e45]/10 px-3 py-1 text-xs font-bold text-[#3c5e45]">
-                    {formatStatus(order.orderStatus)}
-                  </span>
-                  <span className="text-sm font-extrabold text-gray-900">
-                    ₱{order.totalAmount}.00
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-4 space-y-3">
-                {order.items.map((item, index) => {
-                  const imageUrl = getItemImage(item);
-                  return (
-                    <div
-                      key={item._id ?? `${order._id}-${index}`}
-                      className="flex items-start gap-3 rounded-xl border border-gray-100 p-3"
-                    >
-                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-50">
-                        <Image
-                          src={imageUrl && imageUrl.length > 0 ? imageUrl : '/assets/sample_menu.png'}
-                          alt={getItemName(item)}
-                          fill
-                          sizes="56px"
-                          className="object-cover"
-                        />
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-gray-900 line-clamp-2">
-                          {getItemName(item)}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Qty {item.quantity} • ₱{item.price}.00 each
-                        </p>
-                        {item.specialRequest ? (
-                          <p className="text-xs text-gray-500 mt-1">
-                            Request: {item.specialRequest}
-                          </p>
-                        ) : null}
-                      </div>
-
-                      <p className="text-sm font-bold text-gray-900">
-                        ₱{item.price * item.quantity}.00
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {order.riderNotes ? (
-                <p className="mt-4 text-xs text-gray-500">
-                  Notes: {order.riderNotes}
-                </p>
-              ) : null}
-
-              {renderFollowUp ? renderFollowUp(order, order._id === openChatOrderId) : null}
-            </div>
+              order={order}
+              highlightRef={highlightOrderId === order._id ? highlightRef : undefined}
+              renderFollowUp={renderFollowUp}
+              openChatOrderId={openChatOrderId}
+            />
           ))}
         </div>
       )}
     </section>
+  );
+}
+
+function OrderCard({
+  order,
+  highlightRef,
+  renderFollowUp,
+  openChatOrderId
+}: {
+  order: OrderHistoryEntry;
+  highlightRef?: React.Ref<HTMLDivElement> | null;
+  renderFollowUp?: (
+    order: OrderHistoryEntry,
+    openChat: boolean
+  ) => React.ReactNode;
+  openChatOrderId?: string | null;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  const firstItem = order.items[0];
+  const itemCount = order.items.length;
+
+  const name = firstItem ? getItemName(firstItem) : 'Order';
+  const imageUrl = firstItem ? getItemImage(firstItem) : undefined;
+  const badge = itemCount > 0 ? `${itemCount} item${itemCount > 1 ? 's' : ''}` : '';
+
+  const subtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const deliveryFee =
+    order.deliveryFee ??
+    (order.orderType === 'delivery' && itemCount > 0 ? 49 : 0);
+
+  return (
+    <div
+      ref={highlightRef}
+      id={`order-${order._id}`}
+      className="rounded-2xl bg-white shadow"
+    >
+      <button
+        type="button"
+        onClick={() => setExpanded(prev => !prev)}
+        aria-expanded={expanded}
+        className="w-full text-left p-5 flex items-center gap-3 transition-colors hover:bg-gray-50"
+      >
+        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-50">
+          {firstItem ? (
+            <Image
+              src={
+                imageUrl && imageUrl.length > 0
+                  ? imageUrl
+                  : '/assets/sample_menu.png'
+              }
+              alt={name}
+              fill
+              sizes="56px"
+              className="object-cover"
+            />
+          ) : (
+            <span className="flex h-full w-full items-center justify-center text-gray-300" />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold text-gray-900 line-clamp-1">
+            {name}
+          </p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {formatOrderType(order.orderType)}
+            {badge ? ` • ${badge}` : ''}
+          </p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {order.createdAt ? new Date(order.createdAt).toLocaleString() : ''}
+          </p>
+        </div>
+
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <span className="rounded-full bg-[#3c5e45]/10 px-3 py-1 text-xs font-bold text-[#3c5e45]">
+            {formatStatus(order.orderStatus)}
+          </span>
+          <span className="text-sm font-extrabold text-gray-900">
+            ₱{order.totalAmount}.00
+          </span>
+        </div>
+
+        <span className="shrink-0 text-gray-400">
+          {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+        </span>
+      </button>
+
+      {expanded && (
+        <div className="border-t border-gray-100 p-5">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+            <div>
+              <p className="text-sm font-bold text-gray-900">
+                Order #{order._id}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {order.createdAt ? new Date(order.createdAt).toLocaleString() : ''}
+              </p>
+            </div>
+
+            <div className="flex flex-col items-start md:items-end gap-2">
+              <span className="rounded-full bg-[#3c5e45]/10 px-3 py-1 text-xs font-bold text-[#3c5e45]">
+                {formatStatus(order.orderStatus)}
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-gray-100 p-3">
+              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                Order type
+              </p>
+              <p className="mt-1 text-sm font-bold text-gray-900">
+                {formatOrderType(order.orderType)}
+              </p>
+            </div>
+            <div className="rounded-xl border border-gray-100 p-3">
+              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                Payment method
+              </p>
+              <p className="mt-1 text-sm font-bold text-gray-900">
+                {formatPaymentMethod(order.paymentMethod)}
+              </p>
+            </div>
+            <div className="rounded-xl border border-gray-100 p-3">
+              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                Payment status
+              </p>
+              <p className="mt-1 text-sm font-bold text-gray-900">
+                {order.orderStatus === 'cancelled' ? 'Cancelled' : 'Paid'}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            {order.items.map((item, index) => {
+              const itemImageUrl = getItemImage(item);
+              return (
+                <div
+                  key={item._id ?? `${order._id}-${index}`}
+                  className="flex items-start gap-3 rounded-xl border border-gray-100 p-3"
+                >
+                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-50">
+                    <Image
+                      src={
+                        itemImageUrl && itemImageUrl.length > 0
+                          ? itemImageUrl
+                          : '/assets/sample_menu.png'
+                      }
+                      alt={getItemName(item)}
+                      fill
+                      sizes="56px"
+                      className="object-cover"
+                    />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-gray-900 line-clamp-2">
+                      {getItemName(item)}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Qty {item.quantity} • ₱{item.price}.00 each
+                    </p>
+                    {item.specialRequest ? (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Request: {item.specialRequest}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <p className="text-sm font-bold text-gray-900">
+                    ₱{item.price * item.quantity}.00
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 rounded-xl bg-gray-50 p-4">
+            <div className="flex items-center justify-between text-sm text-gray-700">
+              <span>Subtotal</span>
+              <span className="font-semibold">₱{subtotal}.00</span>
+            </div>
+            <div className="mt-2 flex items-center justify-between text-sm text-gray-700">
+              <span>Delivery fee</span>
+              <span className="font-semibold">
+                {deliveryFee > 0 ? `₱${deliveryFee}.00` : 'Free'}
+              </span>
+            </div>
+            <div className="mt-2 h-px bg-gray-200" />
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-sm font-semibold text-gray-900">Total</span>
+              <span className="text-base font-extrabold text-gray-900">
+                ₱{order.totalAmount}.00
+              </span>
+            </div>
+          </div>
+
+          {order.riderNotes ? (
+            <p className="mt-4 text-xs text-gray-500">
+              Notes: {order.riderNotes}
+            </p>
+          ) : null}
+
+          {renderFollowUp ? (
+            renderFollowUp(order, order._id === openChatOrderId)
+          ) : null}
+        </div>
+      )}
+    </div>
   );
 }

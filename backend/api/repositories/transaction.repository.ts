@@ -5,6 +5,9 @@ export const transactionRepository = {
 
   findByOrderId: (orderId: string) => TransactionModel.findOne({orderId}).exec(),
 
+  listByOrderIds: (orderIds: string[]) =>
+    TransactionModel.find({orderId: {$in: orderIds}}).exec(),
+
   listByCashierId: (cashierId: string) =>
     TransactionModel.find({cashierId}).sort({timestamp: -1}).exec(),
 

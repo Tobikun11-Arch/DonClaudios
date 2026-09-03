@@ -61,6 +61,8 @@ export type OrderHistoryEntry = {
   _id: string;
   orderType: 'pickup' | 'delivery' | 'reservation';
   totalAmount: number;
+  deliveryFee?: number;
+  paymentMethod?: 'cash' | 'card' | 'gcash' | 'other';
   riderNotes?: string;
   orderStatus: string;
   isGuest: boolean;

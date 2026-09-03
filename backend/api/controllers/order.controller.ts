@@ -102,6 +102,11 @@ export const orderController = {
         ])
       );
 
+      const transactions = await transactionRepository.listByOrderIds(orderIds);
+      const paymentMethodByOrderId = new Map(
+        transactions.map(t => [String(t.orderId), t.paymentMethod])
+      );
+
       res.json({
         orders: orders.map(order => {
           const customerName = order.customerId
@@ -110,6 +115,7 @@ export const orderController = {
           return {
             ...order.toObject(),
             customerName,
+            paymentMethod: paymentMethodByOrderId.get(String(order._id)),
             items: itemsByOrderId[String(order._id)] ?? []
           };
         })
@@ -139,10 +145,15 @@ export const orderController = {
         }
       }
 
+      const transaction = await transactionRepository.findByOrderId(
+        String(order._id)
+      );
+
       res.json({
         order: {
           ...order.toObject(),
           customerName,
+          paymentMethod: transaction?.paymentMethod,
           items
         }
       });
@@ -170,9 +181,15 @@ export const orderController = {
         {}
       );
 
+      const transactions = await transactionRepository.listByOrderIds(orderIds);
+      const paymentMethodByOrderId = new Map(
+        transactions.map(t => [String(t.orderId), t.paymentMethod])
+      );
+
       res.json({
         orders: orders.map(order => ({
           ...order.toObject(),
+          paymentMethod: paymentMethodByOrderId.get(String(order._id)),
           items: itemsByOrderId[String(order._id)] ?? []
         }))
       });
@@ -204,11 +221,15 @@ export const orderController = {
         throw new ApiError(400, 'VALIDATION_ERROR', 'totalAmount is invalid');
       }
 
+      const safeDeliveryFee =
+        orderType === 'delivery' && items.length > 0 ? 49 : 0;
+
       const order = await orderRepository.create({
         customerId: req.auth.userId as any,
         isGuest: false,
         orderType,
         totalAmount: safeTotalAmount,
+        deliveryFee: safeDeliveryFee,
         riderNotes: isNonEmptyString(riderNotes) ? riderNotes : undefined,
         isOnline: true
       });
@@ -306,6 +327,9 @@ export const orderController = {
         throw new ApiError(400, 'VALIDATION_ERROR', 'totalAmount is invalid');
       }
 
+      const safeDeliveryFee =
+        orderType === 'delivery' && items.length > 0 ? 49 : 0;
+
       const order = await orderRepository.create({
         customerId: null,
         isGuest: true,
@@ -319,6 +343,7 @@ export const orderController = {
         },
         orderType,
         totalAmount: safeTotalAmount,
+        deliveryFee: safeDeliveryFee,
         riderNotes: isNonEmptyString(riderNotes) ? riderNotes : undefined,
         isOnline: true
       });
