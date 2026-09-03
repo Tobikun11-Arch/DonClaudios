@@ -18,6 +18,7 @@ export type RewardRedemption = {
   productImage?: string;
   pointsSpent: number;
   quantity: number;
+  redeemCode?: string;
   status: 'pending' | 'fulfilled' | 'cancelled';
   createdAt: string;
 };

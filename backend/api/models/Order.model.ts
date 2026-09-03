@@ -25,6 +25,7 @@ export interface GuestInfo {
   lastName: string;
   phoneNumber: string;
   address?: string;
+  email?: string;
 }
 
 export interface OrderDocument extends mongoose.Document {
@@ -32,6 +33,7 @@ export interface OrderDocument extends mongoose.Document {
   isGuest: boolean;
   guestInfo?: GuestInfo;
   orderType: OrderType;
+  orderSource: 'online' | 'in-store';
   totalAmount: number;
   deliveryFee: number;
   riderNotes?: string;
@@ -47,7 +49,8 @@ const GuestInfoSchema = new Schema<GuestInfo>(
     firstName: {type: String, required: true},
     lastName: {type: String, required: true},
     phoneNumber: {type: String, required: true},
-    address: {type: String}
+    address: {type: String},
+    email: {type: String}
   },
   {_id: false}
 );
@@ -61,6 +64,11 @@ const OrderSchema = new Schema<OrderDocument>(
       type: String,
       enum: ['pickup', 'delivery', 'reservation'],
       required: true
+    },
+    orderSource: {
+      type: String,
+      enum: ['online', 'in-store'],
+      default: 'online'
     },
     totalAmount: {type: Number, required: true},
     deliveryFee: {type: Number, default: 0},

@@ -1,7 +1,5 @@
 PRIORITY TASKS:
 
-6. rewards tab for customers / what they can buy everytime they buy using their acc/mobile app of donclaudios 
-  - list of all prodcut with hm points per product
 
 6. Dashboard dropdown for report (that summarize in dashboard) (prototype)
 

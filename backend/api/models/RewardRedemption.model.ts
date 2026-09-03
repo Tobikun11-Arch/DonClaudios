@@ -7,6 +7,7 @@ export interface RewardRedemptionDocument extends mongoose.Document {
   productImage?: string;
   pointsSpent: number;
   quantity: number;
+  redeemCode: string;
   status: 'pending' | 'fulfilled' | 'cancelled';
   createdAt: Date;
   updatedAt: Date;
@@ -28,6 +29,12 @@ const RewardRedemptionSchema = new Schema<RewardRedemptionDocument>(
     productImage: {type: String},
     pointsSpent: {type: Number, required: true, min: 1},
     quantity: {type: Number, required: true, min: 1, default: 1},
+    redeemCode: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true
+    },
     status: {
       type: String,
       enum: ['pending', 'fulfilled', 'cancelled'],
