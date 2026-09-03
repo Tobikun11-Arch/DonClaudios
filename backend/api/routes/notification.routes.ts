@@ -1,8 +1,41 @@
 import {Router} from 'express';
 import {notificationController} from '../controllers/notification.controller';
-import {requireAdmin, requireAuth, requireCustomer} from '../middleware/auth';
+import {
+  requireAdmin,
+  requireAuth,
+  requireCashier,
+  requireCustomer
+} from '../middleware/auth';
 
 const router = Router();
+
+router.get(
+  '/cashier',
+  requireAuth,
+  requireCashier,
+  notificationController.listCashierNotifications
+);
+
+router.patch(
+  '/cashier/read-all',
+  requireAuth,
+  requireCashier,
+  notificationController.markAllReadCashier
+);
+
+router.patch(
+  '/cashier/:id/read',
+  requireAuth,
+  requireCashier,
+  notificationController.markReadCashier
+);
+
+router.delete(
+  '/cashier/:id',
+  requireAuth,
+  requireCashier,
+  notificationController.removeCashier
+);
 
 router.get(
   '/admin',

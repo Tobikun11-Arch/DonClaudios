@@ -6,6 +6,8 @@ export const orderRepository = {
   listByCustomerId: (customerId: string) =>
     OrderModel.find({customerId}).sort({createdAt: -1}).exec(),
 
+  listAll: () => OrderModel.find({}).sort({createdAt: -1}).exec(),
+
   listByIds: (orderIds: string[]) =>
     OrderModel.find({_id: {$in: orderIds}}).exec(),
 

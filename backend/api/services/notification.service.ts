@@ -18,6 +18,14 @@ export const notificationService = {
     return notificationRepository.countUnreadByAdminId(adminId);
   },
 
+  async listForCashier(cashierId: string) {
+    return notificationRepository.listByCashierId(cashierId);
+  },
+
+  async countUnreadForCashier(cashierId: string) {
+    return notificationRepository.countUnreadByCashierId(cashierId);
+  },
+
   async createForCustomer(data: {
     customerId: string;
     type: 'review_reply' | 'review_requested' | 'order_message' | 'order_status';
@@ -83,6 +91,25 @@ export const notificationService = {
     });
   },
 
+  async createForCashier(data: {
+    cashierId: string;
+    type: 'order_message' | 'order_status' | 'new_order';
+    title: string;
+    message: string;
+    orderId?: string;
+    link?: string;
+  }) {
+    return notificationRepository.create({
+      target: 'cashier',
+      cashierId: data.cashierId as any,
+      type: data.type,
+      title: data.title,
+      message: data.message,
+      orderId: data.orderId ? (data.orderId as any) : undefined,
+      link: data.link
+    });
+  },
+
   async markRead(customerId: string, notificationId: string) {
     const notification = await notificationRepository.findById(notificationId);
     if (!notification) {
@@ -113,6 +140,21 @@ export const notificationService = {
     return notificationRepository.markRead(notificationId);
   },
 
+  async markReadForCashier(cashierId: string, notificationId: string) {
+    const notification = await notificationRepository.findById(notificationId);
+    if (!notification) {
+      throw new ApiError(404, 'NOTIFICATION_NOT_FOUND', 'Notification not found');
+    }
+    if (String(notification.cashierId) !== cashierId) {
+      throw new ApiError(
+        403,
+        'FORBIDDEN',
+        'You can only update your own notifications'
+      );
+    }
+    return notificationRepository.markRead(notificationId);
+  },
+
   async markAllRead(customerId: string) {
     await notificationRepository.markAllReadByCustomerId(customerId);
     return notificationRepository.countUnreadByCustomerId(customerId);
@@ -121,6 +163,11 @@ export const notificationService = {
   async markAllReadForAdmin(adminId: string) {
     await notificationRepository.markAllReadByAdminId(adminId);
     return notificationRepository.countUnreadByAdminId(adminId);
+  },
+
+  async markAllReadForCashier(cashierId: string) {
+    await notificationRepository.markAllReadByCashierId(cashierId);
+    return notificationRepository.countUnreadByCashierId(cashierId);
   },
 
   async remove(customerId: string, notificationId: string) {
@@ -145,6 +192,22 @@ export const notificationService = {
       throw new ApiError(404, 'NOTIFICATION_NOT_FOUND', 'Notification not found');
     }
     if (String(notification.adminId) !== adminId) {
+      throw new ApiError(
+        403,
+        'FORBIDDEN',
+        'You can only delete your own notifications'
+      );
+    }
+    await notificationRepository.deleteById(notificationId);
+    return {message: 'Notification deleted'};
+  },
+
+  async removeForCashier(cashierId: string, notificationId: string) {
+    const notification = await notificationRepository.findById(notificationId);
+    if (!notification) {
+      throw new ApiError(404, 'NOTIFICATION_NOT_FOUND', 'Notification not found');
+    }
+    if (String(notification.cashierId) !== cashierId) {
       throw new ApiError(
         403,
         'FORBIDDEN',

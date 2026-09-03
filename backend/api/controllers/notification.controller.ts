@@ -121,5 +121,66 @@ export const notificationController = {
     } catch (error) {
       next(error);
     }
+  },
+
+  async listCashierNotifications(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+      }
+      const notifications = await notificationService.listForCashier(
+        req.auth.userId
+      );
+      const unreadCount = await notificationService.countUnreadForCashier(
+        req.auth.userId
+      );
+      res.status(200).json({notifications, unreadCount});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async markReadCashier(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+      }
+      const notification = await notificationService.markReadForCashier(
+        req.auth.userId,
+        req.params.id
+      );
+      res.status(200).json({notification});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async markAllReadCashier(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+      }
+      const unreadCount = await notificationService.markAllReadForCashier(
+        req.auth.userId
+      );
+      res.status(200).json({unreadCount});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async removeCashier(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+      }
+      const result = await notificationService.removeForCashier(
+        req.auth.userId,
+        req.params.id
+      );
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
   }
 };

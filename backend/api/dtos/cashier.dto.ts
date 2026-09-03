@@ -7,7 +7,8 @@ export const createCashierDto = z.object({
   password: z.string().min(8),
   username: z.string().min(3),
   phoneNumber: z.string().min(1).optional(),
-  address: z.string().min(1).optional()
+  address: z.string().min(1).optional(),
+  profilePhoto: z.string().url().optional()
 });
 
 export type CreateCashierDto = z.infer<typeof createCashierDto>;

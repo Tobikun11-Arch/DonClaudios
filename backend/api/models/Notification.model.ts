@@ -6,13 +6,15 @@ export type NotificationType =
   | 'review_requested'
   | 'order_message'
   | 'low_stock'
-  | 'order_status';
-export type NotificationTarget = 'customer' | 'admin';
+  | 'order_status'
+  | 'new_order';
+export type NotificationTarget = 'customer' | 'admin' | 'cashier';
 
 export interface NotificationDocument extends mongoose.Document {
   target: NotificationTarget;
   customerId?: mongoose.Types.ObjectId | null;
   adminId?: mongoose.Types.ObjectId | null;
+  cashierId?: mongoose.Types.ObjectId | null;
   type: NotificationType;
   title: string;
   message: string;
@@ -27,7 +29,7 @@ const NotificationSchema = new Schema<NotificationDocument>(
   {
     target: {
       type: String,
-      enum: ['customer', 'admin'],
+      enum: ['customer', 'admin', 'cashier'],
       required: true
     },
     customerId: {
@@ -40,9 +42,14 @@ const NotificationSchema = new Schema<NotificationDocument>(
       ref: 'Admin',
       default: null
     },
+    cashierId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Cashier',
+      default: null
+    },
     type: {
       type: String,
-      enum: ['review_reply', 'review_submitted', 'review_requested', 'order_message', 'low_stock', 'order_status'],
+      enum: ['review_reply', 'review_submitted', 'review_requested', 'order_message', 'low_stock', 'order_status', 'new_order'],
       required: true
     },
     title: {type: String, required: true},
@@ -58,6 +65,7 @@ const NotificationSchema = new Schema<NotificationDocument>(
 
 NotificationSchema.index({target: 1, customerId: 1, read: 1});
 NotificationSchema.index({target: 1, adminId: 1, read: 1});
+NotificationSchema.index({target: 1, cashierId: 1, read: 1});
 NotificationSchema.index({createdAt: -1});
 
 export const NotificationModel = mongoose.model<NotificationDocument>(

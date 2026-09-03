@@ -133,6 +133,19 @@ export async function listMyOrders() {
   return res.data;
 }
 
+export async function listAllOrders() {
+  const res = await httpClient.get<ListOrdersResponse>('/orders/all');
+  return res.data;
+}
+
+export async function updateOrderStatus(orderId: string, status: string) {
+  const res = await httpClient.patch<{order: OrderHistoryEntry}>(
+    `/orders/${orderId}/status`,
+    {status}
+  );
+  return res.data;
+}
+
 export async function listOrderMessages(orderId: string) {
   const res = await httpClient.get<ListOrderMessagesResponse>(
     `/orders/${orderId}/messages`

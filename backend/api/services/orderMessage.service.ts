@@ -3,10 +3,12 @@ import {orderRepository} from '../repositories/order.repository';
 import {orderMessageRepository} from '../repositories/orderMessage.repository';
 import {customerRepository} from '../repositories/customer.repository';
 import {adminRepository} from '../repositories/admin.repository';
+import {cashierRepository} from '../repositories/cashier.repository';
 import {notificationService} from './notification.service';
 import type {OrderDocument} from '../models/Order.model';
 import type {CustomerDocument} from '../models/Customer.model';
 import type {AdminDocument} from '../models/Admin.model';
+import type {CashierDocument} from '../models/Cashier.model';
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -100,25 +102,25 @@ export const orderMessageService = {
     });
 
     try {
-      const admins = (await adminRepository.listAll()) as
-        | (AdminDocument & {_id: unknown})[]
+      const cashiers = (await cashierRepository.listAll()) as
+        | (CashierDocument & {_id: unknown})[]
         | null;
-      for (const admin of admins ?? []) {
+      for (const cashier of cashiers ?? []) {
         try {
-          await notificationService.createForAdmin({
-            adminId: String(admin._id),
+          await notificationService.createForCashier({
+            cashierId: String(cashier._id),
             type: 'order_message',
             title: 'Order follow-up',
             message: `${senderName || 'Customer'} asked about order #${String(order._id).slice(-6).toUpperCase()}: "${body.trim()}"`,
             orderId: orderId,
-            link: '/owner/dashboard?tab=order-followup'
+            link: '/cashier/dashboard?tab=orders'
           });
         } catch (error) {
-          console.error('Failed to create order message admin notification', error);
+          console.error('Failed to create order message cashier notification', error);
         }
       }
     } catch (error) {
-      console.error('Failed to notify admins about order message', error);
+      console.error('Failed to notify cashiers about order message', error);
     }
 
     return message;

@@ -11,15 +11,31 @@ interface Props {
   isDeleting: boolean;
 }
 
+function CashierAvatar({cashier: c}: {cashier: Cashier}) {
+  if (c.profilePhoto) {
+    return (
+      /* eslint-disable-next-line @next/next/no-img-element */
+      <img
+        src={c.profilePhoto}
+        alt={`${c.firstName} ${c.lastName}`}
+        className="h-10 w-10 rounded-full object-cover shrink-0"
+      />
+    );
+  }
+  return (
+    <div className="w-10 h-10 rounded-full bg-[#e9f5ee] text-[#2d4a35] flex items-center justify-center shrink-0">
+      <User className="h-5 w-5" />
+    </div>
+  );
+}
+
 export function CashierCard({cashier: c, onEdit, onDelete, isDeleting}: Props) {
   return (
     <Card className="overflow-hidden border-gray-100 p-0">
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-full bg-[#e9f5ee] text-[#2d4a35] flex items-center justify-center shrink-0">
-              <User className="h-5 w-5" />
-            </div>
+            <CashierAvatar cashier={c} />
             <div className="min-w-0 flex-1">
               <p className="font-bold text-gray-900 break-words">
                 {c.firstName} {c.lastName}

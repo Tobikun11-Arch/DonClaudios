@@ -23,6 +23,7 @@ PRIORITY TASKS:
    - cashier mobile app available in offline
    - if no connections from cashier and web app the menu will be triggered as unavailable righht now sign as closed 
 
+11.  sms - for admin for stock alerts, reservation type / for customer for delivery that their order is on the way
 
 
 12.  paymongo for payment of customers                                                                                                                     

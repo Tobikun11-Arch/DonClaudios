@@ -1,74 +1,45 @@
 'use client';
 import {useSearchParams} from 'next/navigation';
-import {usePathname} from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {useRouter} from 'next/navigation';
 import {useLogout} from '@/lib/hooks/auth/useLogout';
 import {useState, useRef, useCallback, useEffect} from 'react';
 import {
-  LayoutDashboard,
+  ClipboardList,
   Package,
-  Archive,
-  Tag,
-  Palette,
-  Star,
-  Settings,
+  User,
   LogOut,
   MoreHorizontal,
   X,
   ChevronRight
 } from 'lucide-react';
 import {Toaster} from 'sonner';
+import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
 
 const PRIMARY_TABS = [
   {
-    label: 'Dashboard',
-    mobileLabel: 'Home',
-    tab: null,
-    icon: LayoutDashboard,
-    href: '/owner/dashboard'
+    label: 'Orders',
+    mobileLabel: 'Orders',
+    tab: 'orders',
+    icon: ClipboardList,
+    href: '/cashier/dashboard?tab=orders'
   },
   {
-    label: 'Products',
-    mobileLabel: 'Products',
-    tab: 'products',
+    label: 'Menu & Stock',
+    mobileLabel: 'Menu',
+    tab: 'menu',
     icon: Package,
-    href: '/owner/dashboard?tab=products'
-  },
-  {
-    label: 'Inventory',
-    mobileLabel: 'Inventory',
-    tab: 'inventory',
-    icon: Archive,
-    href: '/owner/dashboard?tab=inventory'
+    href: '/cashier/dashboard?tab=menu'
   }
 ];
 
 const DRAWER_ITEMS = [
   {
-    label: 'Promos',
-    tab: 'promos',
-    icon: Tag,
-    href: '/owner/dashboard?tab=promos'
-  },
-  {
-    label: 'Appearance',
-    tab: 'appearance',
-    icon: Palette,
-    href: '/owner/dashboard?tab=appearance'
-  },
-  {
-    label: 'Reviews',
-    tab: 'reviews',
-    icon: Star,
-    href: '/owner/dashboard?tab=reviews'
-  },
-  {
     label: 'Settings',
     tab: 'settings',
-    icon: Settings,
-    href: '/owner/dashboard/settings'
+    icon: User,
+    href: '/cashier/dashboard?tab=settings'
   }
 ];
 
@@ -76,25 +47,18 @@ const ALL_SIDEBAR_ITEMS = [...PRIMARY_TABS, ...DRAWER_ITEMS];
 
 type DashboardLayoutProps = {
   children: React.ReactNode;
-  products?: React.ReactNode;
-  inventory?: React.ReactNode;
-  promos?: React.ReactNode;
-  cashiers?: React.ReactNode;
-  appearance?: React.ReactNode;
-  reviews?: React.ReactNode;
+  orders?: React.ReactNode;
+  menu?: React.ReactNode;
+  settings?: React.ReactNode;
 };
 
 export default function DashboardLayout({
   children,
-  products,
-  inventory,
-  promos,
-  cashiers,
-  appearance,
-  reviews: reviewsSlot
+  orders,
+  menu,
+  settings
 }: DashboardLayoutProps) {
   const searchParams = useSearchParams();
-  const pathname = usePathname();
   const tab = searchParams.get('tab');
   const router = useRouter();
   const logoutMutation = useLogout();
@@ -129,12 +93,9 @@ export default function DashboardLayout({
   }, []);
 
   const slotByTab: Record<string, React.ReactNode | undefined> = {
-    products,
-    inventory,
-    promos,
-    cashiers,
-    appearance,
-    reviews: reviewsSlot
+    orders,
+    menu,
+    settings
   };
 
   const handleLogout = async () => {
@@ -144,11 +105,8 @@ export default function DashboardLayout({
   };
 
   const isActive = (itemTab: string | null) => {
-    if (itemTab === 'settings') {
-      return pathname.endsWith('/settings');
-    }
     if (itemTab === null) {
-      return !tab && !pathname.endsWith('/settings');
+      return !tab;
     }
     return tab === itemTab;
   };
@@ -157,7 +115,6 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen cursor-default bg-gray-50">
-      {/* ── Desktop Sidebar ── */}
       <aside
         onMouseEnter={handleSidebarEnter}
         onMouseLeave={handleSidebarLeave}
@@ -168,7 +125,6 @@ export default function DashboardLayout({
           ${sidebarExpanded ? 'w-64 shadow-2xl' : 'w-[72px] shadow-xl'}
         `}
       >
-        {/* Logo Area */}
         <div
           className={`relative flex items-center justify-center px-4 border-b border-[#3a5c44] transition-[height,padding] duration-200 ease-out ${sidebarExpanded ? 'h-[178px] py-6' : 'h-24 py-2'}`}
         >
@@ -197,7 +153,7 @@ export default function DashboardLayout({
           >
             <Image
               src="/assets/logo.png"
-              alt="Don Claudio's Lechon House"
+              alt="Cashier Dashboard"
               width={130}
               height={130}
               className="object-contain drop-shadow-lg"
@@ -206,7 +162,6 @@ export default function DashboardLayout({
           </div>
         </div>
 
-        {/* Nav Items */}
         <nav
           className={`flex-1 flex flex-col gap-1 ${sidebarExpanded ? 'px-2' : 'px-0'} py-4 overflow-y-auto overflow-x-hidden`}
         >
@@ -258,7 +213,6 @@ export default function DashboardLayout({
           })}
         </nav>
 
-        {/* Logout */}
         <div
           className={`${sidebarExpanded ? 'px-2' : 'px-0'} pb-5 pt-2 border-t border-[#3a5c44]`}
         >
@@ -293,18 +247,21 @@ export default function DashboardLayout({
         </div>
       </aside>
 
-      {/* ── Main Content ── */}
       <main className="flex-1 overflow-y-auto scrollbar-hide bg-gray-50 pb-24 md:pb-0">
-        {tab === 'appearance' ? (
-          <>{appearance}</>
-        ) : (
-          <div className="px-6 py-6">
-            {tab && slotByTab[tab] ? slotByTab[tab] : children}
+        <div className="px-6 py-6">
+          <div className="mb-6 flex items-center justify-between gap-3">
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Cashier Dashboard</h1>
+              <p className="text-sm text-gray-500">
+                Manage orders, stock, and account.
+              </p>
+            </div>
+            <CashierNotificationBell />
           </div>
-        )}
+          {tab && slotByTab[tab] ? slotByTab[tab] : children}
+        </div>
       </main>
 
-      {/* ── Mobile Bottom Nav ── */}
       <nav
         className="
           md:hidden fixed bottom-0 left-0 right-0 z-50
@@ -338,10 +295,10 @@ export default function DashboardLayout({
 
               <span
                 className={`
-          mt-1 h-0.5 w-6 rounded-full bg-[#7ed4a0]
-          transition-all duration-300 ease-out
-          ${active ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}
-        `}
+                  mt-1 h-0.5 w-6 rounded-full bg-[#7ed4a0]
+                  transition-all duration-300 ease-out
+                  ${active ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}
+                `}
               />
             </Link>
           );
@@ -375,7 +332,6 @@ export default function DashboardLayout({
         </button>
       </nav>
 
-      {/* ── Mobile Drawer Overlay ── */}
       <div
         onClick={() => setDrawerOpen(false)}
         className={`
@@ -389,7 +345,6 @@ export default function DashboardLayout({
         `}
       />
 
-      {/* ── Mobile Drawer ── */}
       <div
         className={`
           md:hidden fixed bottom-0 left-0 right-0

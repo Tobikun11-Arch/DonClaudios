@@ -6,6 +6,7 @@ export type Cashier = {
   username: string;
   phoneNumber?: string;
   address?: string;
+  profilePhoto?: string;
   isOnline: boolean;
   isVerified: boolean;
   createdAt?: string;
@@ -28,6 +29,7 @@ export type CreateCashierBody = {
   username: string;
   phoneNumber?: string;
   address?: string;
+  profilePhoto?: string;
 };
 
 export type CreateCashierResponse = {
