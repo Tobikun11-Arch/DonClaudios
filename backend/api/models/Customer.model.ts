@@ -3,6 +3,7 @@ import {BaseUserDocument, createBaseUserSchema} from './base/BaseUser.schema';
 
 export interface CustomerDocument extends BaseUserDocument {
   profilePhoto?: string;
+  points: number;
 }
 
 const BaseSchema = createBaseUserSchema<CustomerDocument>();
@@ -10,7 +11,8 @@ const BaseSchema = createBaseUserSchema<CustomerDocument>();
 const CustomerSchema = new Schema<CustomerDocument>(
   {
     ...BaseSchema.obj,
-    profilePhoto: {type: String}
+    profilePhoto: {type: String},
+    points: {type: Number, default: 0, min: 0}
   },
   {timestamps: true}
 );
