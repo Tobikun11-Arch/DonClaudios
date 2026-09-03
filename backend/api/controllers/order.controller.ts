@@ -5,8 +5,34 @@ import {orderItemRepository} from '../repositories/orderItem.repository';
 import {transactionRepository} from '../repositories/transaction.repository';
 import {stockMovementService} from '../services/stockMovement.service';
 import {notificationService} from '../services/notification.service';
+import {cashierRepository} from '../repositories/cashier.repository';
 import type {PaymentMethod} from '../models/Transaction.model';
 import type {OrderStatus} from '../models/Order.model';
+import type {CashierDocument} from '../models/Cashier.model';
+
+async function notifyCashiersOfNewOrder(orderId: string, totalAmount: number) {
+  try {
+    const cashiers = (await cashierRepository.listAll()) as
+      | (CashierDocument & {_id: unknown})[]
+      | null;
+    for (const cashier of cashiers ?? []) {
+      try {
+        await notificationService.createForCashier({
+          cashierId: String(cashier._id),
+          type: 'new_order',
+          title: 'New order',
+          message: `A new order (#${String(orderId).slice(-6).toUpperCase()}) worth ₱${totalAmount}.00 has been placed.`,
+          orderId: orderId,
+          link: '/cashier/dashboard?tab=orders'
+        });
+      } catch (error) {
+        console.error('Failed to create new order cashier notification', error);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to notify cashiers of new order', error);
+  }
+}
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -23,6 +49,32 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export const orderController = {
+  async listAllOrders(req: Request, res: Response, next: NextFunction) {
+    try {
+      const orders = await orderRepository.listAll();
+      const orderIds = orders.map(order => String(order._id));
+      const items = await orderItemRepository.listByOrderIds(orderIds);
+      const itemsByOrderId = items.reduce<Record<string, typeof items>>(
+        (acc, item) => {
+          const orderId = String(item.orderId);
+          acc[orderId] = acc[orderId] ?? [];
+          acc[orderId].push(item);
+          return acc;
+        },
+        {}
+      );
+
+      res.json({
+        orders: orders.map(order => ({
+          ...order.toObject(),
+          items: itemsByOrderId[String(order._id)] ?? []
+        }))
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async listMyOrders(req: Request, res: Response, next: NextFunction) {
     try {
       if (!req.auth) {
@@ -129,6 +181,8 @@ export const orderController = {
         totalAmount: safeTotalAmount,
         isOnline: true
       });
+
+      notifyCashiersOfNewOrder(String(order._id), safeTotalAmount);
 
       res.status(201).json({order, transaction});
     } catch (error) {
@@ -237,6 +291,8 @@ export const orderController = {
         isOnline: true
       });
 
+      notifyCashiersOfNewOrder(String(order._id), safeTotalAmount);
+
       res.status(201).json({order, transaction});
     } catch (error) {
       next(error);
@@ -299,6 +355,19 @@ export const orderController = {
           orderId: String(order._id),
           link: '/customer/dashboard?tab=history'
         });
+
+        if (status === 'completed') {
+          try {
+            await notificationService.createReviewRequestForCustomer({
+              customerId: String(order.customerId),
+              orderId: String(order._id),
+              title: 'We\u2019d love your feedback!',
+              message: `Your order (#${String(order._id).slice(-6).toUpperCase()}) was completed. Please take a moment to share your experience.`
+            });
+          } catch (error) {
+            console.error('Failed to create review request notification', error);
+          }
+        }
       }
 
       res.status(200).json({order: updated});

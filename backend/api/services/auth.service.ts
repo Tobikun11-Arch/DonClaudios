@@ -339,16 +339,19 @@ export const authService = {
   },
 
   async changePassword(
-    adminId: string,
+    userId: string,
+    type: 'admin' | 'cashier',
     currentPassword: string,
     newPassword: string
   ) {
-    const admin = await adminRepository.findById(adminId);
-    if (!admin) {
+    const repo =
+      type === 'cashier' ? cashierRepository : adminRepository;
+    const user = await repo.findById(userId);
+    if (!user) {
       throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
     }
 
-    const match = await bcrypt.compare(currentPassword, admin.passwordHash);
+    const match = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!match) {
       throw new ApiError(
         400,
@@ -358,6 +361,6 @@ export const authService = {
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 10);
-    await adminRepository.updateProfile(admin.id, {passwordHash} as any);
+    await repo.updateProfile(user.id, {passwordHash} as any);
   }
 };

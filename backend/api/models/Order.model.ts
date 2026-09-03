@@ -37,6 +37,8 @@ export interface OrderDocument extends mongoose.Document {
   orderStatus: OrderStatus;
   isOnline: boolean;
   stockDeducted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const GuestInfoSchema = new Schema<GuestInfo>(

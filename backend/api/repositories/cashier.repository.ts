@@ -21,5 +21,15 @@ export const cashierRepository = {
   updateById: (id: string, data: Partial<CashierDocument>) =>
     CashierModel.findByIdAndUpdate(id, data, {new: true}).exec(),
 
+  updateProfile: (
+    id: string,
+    data: Partial<
+      Pick<
+        CashierDocument,
+        'firstName' | 'lastName' | 'phoneNumber' | 'address' | 'profilePhoto'
+      >
+    >
+  ) => CashierModel.findByIdAndUpdate(id, data, {new: true}).exec(),
+
   deleteById: (id: string) => CashierModel.findByIdAndDelete(id).exec()
 };

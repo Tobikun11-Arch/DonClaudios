@@ -54,7 +54,6 @@ router.put(
 router.put(
   '/password',
   requireAuth,
-  requireAdmin,
   validate(changePasswordDto),
   authController.changePassword
 );

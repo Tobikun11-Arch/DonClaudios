@@ -75,3 +75,19 @@ export function requireCustomer(
 
   return next();
 }
+
+export function requireCashier(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) {
+  if (!req.auth) {
+    return next(new ApiError(401, 'UNAUTHORIZED', 'Not authenticated'));
+  }
+
+  if (req.auth.type !== 'cashier') {
+    return next(new ApiError(403, 'FORBIDDEN', 'Cashier access required'));
+  }
+
+  return next();
+}

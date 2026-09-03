@@ -1,11 +1,19 @@
-export type NotificationType = 'review_reply' | 'review_submitted' | 'low_stock' | 'order_status';
-export type NotificationTarget = 'customer' | 'admin';
+export type NotificationType =
+  | 'review_reply'
+  | 'review_submitted'
+  | 'review_requested'
+  | 'order_message'
+  | 'low_stock'
+  | 'order_status'
+  | 'new_order';
+export type NotificationTarget = 'customer' | 'admin' | 'cashier';
 
 export interface Notification {
   _id: string;
   target: NotificationTarget;
   customerId?: string | null;
   adminId?: string | null;
+  cashierId?: string | null;
   type: NotificationType;
   title: string;
   message: string;

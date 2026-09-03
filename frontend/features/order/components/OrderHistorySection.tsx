@@ -30,12 +30,23 @@ function getItemImage(item: OrderHistoryItem) {
   return undefined;
 }
 
+export type HistoryRange = 'today' | '7days' | 'month';
+
+const RANGE_OPTIONS: {value: HistoryRange; label: string}[] = [
+  {value: 'today', label: 'Today'},
+  {value: '7days', label: '7 Days'},
+  {value: 'month', label: 'Last Month'}
+];
+
 type OrderHistorySectionProps = {
   orders: OrderHistoryEntry[];
   title: string;
   description: string;
   isLoading?: boolean;
   isError?: boolean;
+  activeRange?: HistoryRange;
+  onRangeChange?: (range: HistoryRange) => void;
+  renderFollowUp?: (order: OrderHistoryEntry) => React.ReactNode;
 };
 
 export default function OrderHistorySection({
@@ -43,7 +54,10 @@ export default function OrderHistorySection({
   title,
   description,
   isLoading = false,
-  isError = false
+  isError = false,
+  activeRange,
+  onRangeChange,
+  renderFollowUp
 }: OrderHistorySectionProps) {
   return (
     <section className="w-full max-w-6xl mx-auto px-4 mb-10">
@@ -53,6 +67,25 @@ export default function OrderHistorySection({
           <p className="text-sm text-gray-500 mt-1">{description}</p>
         </div>
       </div>
+
+      {onRangeChange ? (
+        <div className="flex items-center gap-3 mb-6 overflow-x-auto">
+          {RANGE_OPTIONS.map(option => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onRangeChange(option.value)}
+              className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-bold transition-colors ${
+                activeRange === option.value
+                  ? 'bg-[#3c5e45] text-white'
+                  : 'bg-[#3c5e45]/10 text-[#3c5e45] hover:bg-[#3c5e45]/20'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {isLoading ? (
         <div className="rounded-2xl bg-white shadow p-5 text-sm text-gray-500">
@@ -136,6 +169,8 @@ export default function OrderHistorySection({
                   Notes: {order.riderNotes}
                 </p>
               ) : null}
+
+              {renderFollowUp ? renderFollowUp(order) : null}
             </div>
           ))}
         </div>

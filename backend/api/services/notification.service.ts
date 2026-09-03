@@ -18,9 +18,17 @@ export const notificationService = {
     return notificationRepository.countUnreadByAdminId(adminId);
   },
 
+  async listForCashier(cashierId: string) {
+    return notificationRepository.listByCashierId(cashierId);
+  },
+
+  async countUnreadForCashier(cashierId: string) {
+    return notificationRepository.countUnreadByCashierId(cashierId);
+  },
+
   async createForCustomer(data: {
     customerId: string;
-    type: 'review_reply' | 'order_status';
+    type: 'review_reply' | 'review_requested' | 'order_message' | 'order_status';
     title: string;
     message: string;
     reviewId?: string;
@@ -39,12 +47,36 @@ export const notificationService = {
     });
   },
 
+  async createReviewRequestForCustomer(data: {
+    customerId: string;
+    orderId: string;
+    title: string;
+    message: string;
+  }) {
+    const existing = await notificationRepository.findReviewRequestByOrder(
+      data.customerId,
+      data.orderId
+    );
+    if (existing) return null;
+
+    return notificationRepository.create({
+      target: 'customer',
+      customerId: data.customerId as any,
+      orderId: data.orderId as any,
+      type: 'review_requested',
+      title: data.title,
+      message: data.message,
+      link: '/customer/dashboard?tab=reviews'
+    });
+  },
+
   async createForAdmin(data: {
     adminId: string;
-    type: 'review_submitted' | 'low_stock';
+    type: 'review_submitted' | 'order_message' | 'low_stock';
     title: string;
     message: string;
     reviewId?: string;
+    orderId?: string;
     link?: string;
   }) {
     return notificationRepository.create({
@@ -54,6 +86,26 @@ export const notificationService = {
       title: data.title,
       message: data.message,
       reviewId: data.reviewId ? (data.reviewId as any) : undefined,
+      orderId: data.orderId ? (data.orderId as any) : undefined,
+      link: data.link
+    });
+  },
+
+  async createForCashier(data: {
+    cashierId: string;
+    type: 'order_message' | 'order_status' | 'new_order';
+    title: string;
+    message: string;
+    orderId?: string;
+    link?: string;
+  }) {
+    return notificationRepository.create({
+      target: 'cashier',
+      cashierId: data.cashierId as any,
+      type: data.type,
+      title: data.title,
+      message: data.message,
+      orderId: data.orderId ? (data.orderId as any) : undefined,
       link: data.link
     });
   },
@@ -88,6 +140,21 @@ export const notificationService = {
     return notificationRepository.markRead(notificationId);
   },
 
+  async markReadForCashier(cashierId: string, notificationId: string) {
+    const notification = await notificationRepository.findById(notificationId);
+    if (!notification) {
+      throw new ApiError(404, 'NOTIFICATION_NOT_FOUND', 'Notification not found');
+    }
+    if (String(notification.cashierId) !== cashierId) {
+      throw new ApiError(
+        403,
+        'FORBIDDEN',
+        'You can only update your own notifications'
+      );
+    }
+    return notificationRepository.markRead(notificationId);
+  },
+
   async markAllRead(customerId: string) {
     await notificationRepository.markAllReadByCustomerId(customerId);
     return notificationRepository.countUnreadByCustomerId(customerId);
@@ -96,6 +163,11 @@ export const notificationService = {
   async markAllReadForAdmin(adminId: string) {
     await notificationRepository.markAllReadByAdminId(adminId);
     return notificationRepository.countUnreadByAdminId(adminId);
+  },
+
+  async markAllReadForCashier(cashierId: string) {
+    await notificationRepository.markAllReadByCashierId(cashierId);
+    return notificationRepository.countUnreadByCashierId(cashierId);
   },
 
   async remove(customerId: string, notificationId: string) {
@@ -120,6 +192,22 @@ export const notificationService = {
       throw new ApiError(404, 'NOTIFICATION_NOT_FOUND', 'Notification not found');
     }
     if (String(notification.adminId) !== adminId) {
+      throw new ApiError(
+        403,
+        'FORBIDDEN',
+        'You can only delete your own notifications'
+      );
+    }
+    await notificationRepository.deleteById(notificationId);
+    return {message: 'Notification deleted'};
+  },
+
+  async removeForCashier(cashierId: string, notificationId: string) {
+    const notification = await notificationRepository.findById(notificationId);
+    if (!notification) {
+      throw new ApiError(404, 'NOTIFICATION_NOT_FOUND', 'Notification not found');
+    }
+    if (String(notification.cashierId) !== cashierId) {
       throw new ApiError(
         403,
         'FORBIDDEN',

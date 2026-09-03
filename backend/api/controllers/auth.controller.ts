@@ -5,7 +5,9 @@ import {env} from '../config/env';
 import {ApiError} from '../utils/error';
 import {customerRepository} from '../repositories/customer.repository';
 import {adminRepository} from '../repositories/admin.repository';
+import {cashierRepository} from '../repositories/cashier.repository';
 import type {CustomerDocument} from '../models/Customer.model';
+import type {CashierDocument} from '../models/Cashier.model';
 
 const ACCESS_COOKIE = 'dc_access_token';
 const REFRESH_COOKIE = 'dc_refresh_token';
@@ -48,17 +50,24 @@ export const authController = {
           ? await adminRepository.findById(req.auth.userId)
           : null;
 
+      const cashier =
+        req.auth.type === 'cashier'
+          ? await cashierRepository.findById(req.auth.userId)
+          : null;
+
       res.status(200).json({
         user: {
           id: req.auth.userId,
           type: req.auth.type,
-          firstName: admin?.firstName ?? customer?.firstName,
-          lastName: admin?.lastName ?? customer?.lastName,
-          email: admin?.email ?? customer?.email,
-          phoneNumber: admin?.phoneNumber ?? customer?.phoneNumber,
-          address: admin?.address ?? customer?.address,
-          username: admin?.username,
-          profilePhoto: admin?.profilePhoto ?? customer?.profilePhoto,
+          firstName: admin?.firstName ?? customer?.firstName ?? cashier?.firstName,
+          lastName: admin?.lastName ?? customer?.lastName ?? cashier?.lastName,
+          email: admin?.email ?? customer?.email ?? cashier?.email,
+          phoneNumber:
+            admin?.phoneNumber ?? customer?.phoneNumber ?? cashier?.phoneNumber,
+          address: admin?.address ?? customer?.address ?? cashier?.address,
+          username: admin?.username ?? cashier?.username,
+          profilePhoto:
+            admin?.profilePhoto ?? customer?.profilePhoto ?? cashier?.profilePhoto,
           businessName: admin?.businessName,
           businessLogo: admin?.businessLogo,
           storeAddress: admin?.storeAddress,
@@ -153,6 +162,69 @@ export const authController = {
         });
       }
 
+      if (req.auth.type === 'cashier') {
+        const allowedCashierFields: (keyof CashierDocument)[] = [
+          'firstName',
+          'lastName',
+          'phoneNumber',
+          'address',
+          'username',
+          'email',
+          'profilePhoto'
+        ];
+        const patch: Partial<CashierDocument> = {};
+        for (const key of allowedCashierFields) {
+          if (key in req.body) {
+            (patch as Record<string, unknown>)[key] = req.body[key];
+          }
+        }
+
+        if (patch.email !== undefined) {
+          patch.email = (patch.email as string).toLowerCase();
+          const existingEmail = await cashierRepository.findByEmail(
+            patch.email as string
+          );
+          if (existingEmail && String(existingEmail._id) !== req.auth.userId) {
+            throw new ApiError(409, 'EMAIL_EXISTS', 'Email already exists');
+          }
+        }
+
+        if (patch.username !== undefined) {
+          const existingUsername = await cashierRepository.findByUsername(
+            patch.username as string
+          );
+          if (
+            existingUsername &&
+            String(existingUsername._id) !== req.auth.userId
+          ) {
+            throw new ApiError(409, 'USERNAME_EXISTS', 'Username already exists');
+          }
+        }
+
+        const updated = await cashierRepository.updateProfile(
+          req.auth.userId,
+          patch
+        );
+
+        if (!updated) {
+          throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
+        }
+
+        return res.status(200).json({
+          user: {
+            id: updated.id,
+            type: 'cashier',
+            firstName: updated.firstName,
+            lastName: updated.lastName,
+            email: updated.email,
+            phoneNumber: updated.phoneNumber,
+            address: updated.address,
+            username: updated.username,
+            profilePhoto: updated.profilePhoto
+          }
+        });
+      }
+
       throw new ApiError(403, 'FORBIDDEN', 'Permission denied');
     } catch (error) {
       next(error);
@@ -161,12 +233,13 @@ export const authController = {
 
   async changePassword(req: Request, res: Response, next: NextFunction) {
     try {
-      if (!req.auth || req.auth.type !== 'admin') {
-        throw new ApiError(403, 'FORBIDDEN', 'Admin access required');
+      if (!req.auth || (req.auth.type !== 'admin' && req.auth.type !== 'cashier')) {
+        throw new ApiError(403, 'FORBIDDEN', 'Permission denied');
       }
 
       await authService.changePassword(
         req.auth.userId,
+        req.auth.type,
         req.body.currentPassword,
         req.body.newPassword
       );

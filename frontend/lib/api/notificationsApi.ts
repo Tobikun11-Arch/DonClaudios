@@ -59,3 +59,31 @@ export async function deleteAdminNotification(id: string) {
   );
   return res.data;
 }
+
+export async function listCashierNotifications() {
+  const res = await httpClient.get<ListNotificationsResponse>(
+    '/notifications/cashier'
+  );
+  return res.data;
+}
+
+export async function markCashierNotificationRead(id: string) {
+  const res = await httpClient.patch<NotificationResponse>(
+    `/notifications/cashier/${id}/read`
+  );
+  return res.data;
+}
+
+export async function markAllCashierNotificationsRead() {
+  const res = await httpClient.patch<MarkAllReadResponse>(
+    '/notifications/cashier/read-all'
+  );
+  return res.data;
+}
+
+export async function deleteCashierNotification(id: string) {
+  const res = await httpClient.delete<DeleteNotificationResponse>(
+    `/notifications/cashier/${id}`
+  );
+  return res.data;
+}

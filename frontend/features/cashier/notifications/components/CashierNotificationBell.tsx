@@ -6,24 +6,24 @@ import {Bell, BellRing, CheckCheck, Trash2, Mail, MailOpen} from 'lucide-react';
 import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
 import {
-  useDeleteNotificationMutation,
-  useMarkAllNotificationsReadMutation,
-  useMarkNotificationReadMutation,
-  useMyNotificationsQuery
+  useCashierNotificationsQuery,
+  useDeleteCashierNotificationMutation,
+  useMarkAllCashierNotificationsReadMutation,
+  useMarkCashierNotificationReadMutation
 } from '@/lib/hooks/notifications/useNotifications';
 import {useNotificationSound} from '@/lib/hooks/notifications/useNotificationSound';
 import type {Notification} from '@/lib/types/notification';
 import type {NormalizedApiError} from '@/lib/api/types';
 
-export default function CustomerNotificationBell() {
+export default function CashierNotificationBell() {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  const {data, isLoading} = useMyNotificationsQuery();
-  const markReadMutation = useMarkNotificationReadMutation();
-  const markAllReadMutation = useMarkAllNotificationsReadMutation();
-  const deleteMutation = useDeleteNotificationMutation();
+  const {data, isLoading} = useCashierNotificationsQuery();
+  const markReadMutation = useMarkCashierNotificationReadMutation();
+  const markAllReadMutation = useMarkAllCashierNotificationsReadMutation();
+  const deleteMutation = useDeleteCashierNotificationMutation();
 
   const notifications = data?.notifications ?? [];
   const unreadCount = data?.unreadCount ?? 0;
@@ -40,7 +40,7 @@ export default function CustomerNotificationBell() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
 
-  const handleOpen = () => {
+  const handleOpen = async () => {
     setOpen(prev => !prev);
   };
 
@@ -55,23 +55,9 @@ export default function CustomerNotificationBell() {
       }
     }
     setOpen(false);
-    const destination = destinationFor(notification);
-    if (destination) {
-      router.push(destination);
-    }
-  };
-
-  const destinationFor = (notification: Notification) => {
-    if (notification.type === 'review_reply' || notification.type === 'review_requested') {
-      return '/customer/dashboard?tab=reviews';
-    }
-    if (notification.type === 'order_message' || notification.type === 'order_status') {
-      return '/customer/dashboard?tab=history';
-    }
     if (notification.link) {
-      return notification.link;
+      router.push(notification.link);
     }
-    return null;
   };
 
   const handleMarkAllRead = async () => {
@@ -90,7 +76,6 @@ export default function CustomerNotificationBell() {
     e.stopPropagation();
     try {
       await deleteMutation.mutateAsync(notification._id);
-      toast.success('Notification deleted.');
     } catch (error) {
       toast.error(
         (error as NormalizedApiError)?.message ?? 'Failed to delete notification.'
