@@ -93,6 +93,38 @@ export const orderController = {
     }
   },
 
+  async getOrderById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const order = await orderRepository.findById(req.params.id);
+      if (!order) {
+        throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+      }
+
+      const items = await orderItemRepository.listByOrderIds([String(order._id)]);
+
+      let customerName: string | undefined;
+      if (order.customerId) {
+        const customers = await customerRepository.listByIds([
+          String(order.customerId)
+        ]);
+        const customer = customers[0];
+        if (customer) {
+          customerName = `${customer.firstName} ${customer.lastName}`.trim();
+        }
+      }
+
+      res.json({
+        order: {
+          ...order.toObject(),
+          customerName,
+          items
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async listMyOrders(req: Request, res: Response, next: NextFunction) {
     try {
       if (!req.auth) {

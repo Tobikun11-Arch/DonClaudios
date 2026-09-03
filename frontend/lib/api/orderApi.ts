@@ -80,6 +80,10 @@ export type ListOrdersResponse = {
   orders: OrderHistoryEntry[];
 };
 
+export type OrderDetailResponse = {
+  order: OrderHistoryEntry;
+};
+
 export type OrderMessage = {
   _id: string;
   orderId: string;
@@ -136,6 +140,11 @@ export async function listMyOrders() {
 
 export async function listAllOrders() {
   const res = await httpClient.get<ListOrdersResponse>('/orders/all');
+  return res.data;
+}
+
+export async function getOrderById(orderId: string) {
+  const res = await httpClient.get<OrderDetailResponse>(`/orders/${orderId}`);
   return res.data;
 }
 

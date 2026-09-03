@@ -6,6 +6,7 @@ import {MessageCircle, Package, ChevronRight} from 'lucide-react';
 import OrderChatThread from '@/features/order/components/OrderChatThread';
 import {Modal} from '@/features/owner/cashiers/components/Modal';
 import {Button} from '@/components/ui/button';
+import Link from 'next/link';
 import {useAllOrdersQuery, useUpdateOrderStatusMutation, useSendCashierOrderMessageMutation} from '@/lib/hooks/orders/useCashierOrder';
 import {useAdminOrderMessagesQuery} from '@/lib/hooks/orders/useOrderMessage';
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
@@ -21,9 +22,9 @@ export const ORDER_STATUSES = [
   'cancelled'
 ] as const;
 
-const STATUS_FLOW = ['pending', 'confirmed', 'preparing', 'ready', 'completed'] as const;
-const CANCELLABLE = ['pending', 'confirmed', 'preparing'] as const;
-const STATUS_LABELS: Record<string, string> = {
+export const STATUS_FLOW = ['pending', 'confirmed', 'preparing', 'ready', 'completed'] as const;
+export const CANCELLABLE = ['pending', 'confirmed', 'preparing'] as const;
+export const STATUS_LABELS: Record<string, string> = {
   pending: 'Pending',
   confirmed: 'Confirmed',
   preparing: 'Preparing',
@@ -33,17 +34,17 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: 'Cancelled'
 };
 
-function formatStatus(status: string) {
+export function formatStatus(status: string) {
   return STATUS_LABELS[status] ?? status;
 }
 
-function orderTypeLabel(orderType: string) {
+export function orderTypeLabel(orderType: string) {
   if (orderType === 'pickup') return 'Pickup';
   if (orderType === 'delivery') return 'Delivery';
   return 'Reservation';
 }
 
-function customerDisplay(order: OrderHistoryEntry) {
+export function customerDisplay(order: OrderHistoryEntry) {
   if (order.guestInfo) {
     return `${order.guestInfo.firstName} ${order.guestInfo.lastName}`.trim();
   }
@@ -55,7 +56,7 @@ function customerDisplay(order: OrderHistoryEntry) {
     : `Customer #${String(order._id).slice(-6).toUpperCase()}`;
 }
 
-function statusChipClass(status: string) {
+export function statusChipClass(status: string) {
   switch (status) {
     case 'pending':
       return 'bg-amber-50 text-amber-700 border-amber-200';
@@ -323,6 +324,13 @@ function OrderCard({
         </div>
 
         <div className="flex items-center gap-2">
+          <Link
+            href={`/cashier/dashboard/orders/${order._id}`}
+            className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 transition-colors hover:bg-[#e9f5ee] hover:border-[#6b8a6e] hover:text-[#2d4a35]"
+          >
+            <Package size={14} />
+            View
+          </Link>
           <button
             onClick={onToggle}
             className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50"
