@@ -7,6 +7,7 @@ import OrderHistorySection, {
 import CustomerOrderFollowUp from '@/features/order/components/CustomerOrderFollowUp';
 import {useMyOrdersQuery} from '@/lib/hooks/orders/useCustomerOrder';
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
+import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
 
 function isWithinRange(order: OrderHistoryEntry, range: HistoryRange) {
   if (!order.createdAt) return false;
@@ -28,11 +29,24 @@ function isWithinRange(order: OrderHistoryEntry, range: HistoryRange) {
 export default function HistorySlot() {
   const [range, setRange] = useState<HistoryRange>('today');
   const ordersQuery = useMyOrdersQuery();
+  const {highlightId, isOpenChat} = useScrollToHighlight();
 
   const orders = useMemo(
     () => (ordersQuery.data?.orders ?? []).filter(order => isWithinRange(order, range)),
     [ordersQuery.data, range]
   );
+
+  const highlightedOrder = (ordersQuery.data?.orders ?? []).find(
+    o => o._id === highlightId
+  );
+  if (
+    highlightId &&
+    highlightedOrder &&
+    !isWithinRange(highlightedOrder, range) &&
+    range !== 'month'
+  ) {
+    setRange('month');
+  }
 
   return (
     <div className="w-full max-w-6xl mx-auto">
@@ -44,7 +58,11 @@ export default function HistorySlot() {
         isError={ordersQuery.isError}
         activeRange={range}
         onRangeChange={setRange}
-        renderFollowUp={order => <CustomerOrderFollowUp order={order} />}
+        renderFollowUp={(order, openChat) => (
+          <CustomerOrderFollowUp order={order} defaultOpen={openChat} />
+        )}
+        highlightOrderId={highlightId}
+        openChatOrderId={isOpenChat ? highlightId : null}
       />
     </div>
   );

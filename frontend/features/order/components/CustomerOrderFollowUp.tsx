@@ -12,15 +12,20 @@ import {
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
 import type {NormalizedApiError} from '@/lib/api/types';
 
-export default function CustomerOrderFollowUp({order}: {order: OrderHistoryEntry}) {
-  const [open, setOpen] = useState(false);
+export default function CustomerOrderFollowUp({
+  order,
+  defaultOpen = false
+}: {
+  order: OrderHistoryEntry;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
   const messagesQuery = useOrderMessagesQuery(order._id, open);
   const sendMutation = useSendOrderMessageMutation();
 
   const handleSend = async (text: string) => {
     try {
       await sendMutation.mutateAsync({orderId: order._id, body: text});
-      toast.success('Message sent to DonClaudio\u2019s.');
     } catch (error) {
       toast.error(
         (error as NormalizedApiError)?.message ?? 'Failed to send message.'

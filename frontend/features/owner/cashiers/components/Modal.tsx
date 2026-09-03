@@ -12,16 +12,14 @@ export function Modal({open, title, children, onClose}: Props) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-100">
-      <div
-        className="absolute inset-0 bg-black/40"
-        onClick={onClose}
-        role="button"
-        tabIndex={0}
-        aria-label="Close modal"
-      />
+    <div
+      className="fixed inset-0 z-100"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-black/40" aria-hidden="true" />
       <div className="absolute inset-0 flex items-end sm:items-center justify-center p-0 sm:p-6">
         <div
+          onClick={e => e.stopPropagation()}
           className="w-full sm:max-w-2xl bg-white shadow-xl border border-gray-100 rounded-t-2xl sm:rounded-2xl
           h-full sm:h-auto flex flex-col"
         >

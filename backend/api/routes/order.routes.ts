@@ -18,6 +18,7 @@ router.post('/me', requireAuth, orderController.createCustomerOrder);
 router.get('/me', requireAuth, orderController.listMyOrders);
 router.post('/guest', orderController.createGuestOrder);
 router.get('/all', requireAuth, requireStaff, orderController.listAllOrders);
+router.get('/:id', requireAuth, requireStaff, orderController.getOrderById);
 router.patch(
   '/:id/status',
   requireAuth,

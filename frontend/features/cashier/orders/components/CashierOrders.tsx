@@ -3,7 +3,11 @@
 import {useMemo, useState} from 'react';
 import {toast} from 'sonner';
 import {MessageCircle, Package, ChevronRight} from 'lucide-react';
+import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
 import OrderChatThread from '@/features/order/components/OrderChatThread';
+import {Modal} from '@/features/owner/cashiers/components/Modal';
+import {Button} from '@/components/ui/button';
+import Link from 'next/link';
 import {useAllOrdersQuery, useUpdateOrderStatusMutation, useSendCashierOrderMessageMutation} from '@/lib/hooks/orders/useCashierOrder';
 import {useAdminOrderMessagesQuery} from '@/lib/hooks/orders/useOrderMessage';
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
@@ -19,8 +23,9 @@ export const ORDER_STATUSES = [
   'cancelled'
 ] as const;
 
-const STATUS_FLOW = ['pending', 'confirmed', 'preparing', 'ready', 'completed'] as const;
-const STATUS_LABELS: Record<string, string> = {
+export const STATUS_FLOW = ['pending', 'confirmed', 'preparing', 'ready', 'completed'] as const;
+export const CANCELLABLE = ['pending', 'confirmed', 'preparing'] as const;
+export const STATUS_LABELS: Record<string, string> = {
   pending: 'Pending',
   confirmed: 'Confirmed',
   preparing: 'Preparing',
@@ -30,26 +35,29 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: 'Cancelled'
 };
 
-function formatStatus(status: string) {
+export function formatStatus(status: string) {
   return STATUS_LABELS[status] ?? status;
 }
 
-function orderTypeLabel(orderType: string) {
+export function orderTypeLabel(orderType: string) {
   if (orderType === 'pickup') return 'Pickup';
   if (orderType === 'delivery') return 'Delivery';
   return 'Reservation';
 }
 
-function customerDisplay(order: OrderHistoryEntry) {
+export function customerDisplay(order: OrderHistoryEntry) {
   if (order.guestInfo) {
     return `${order.guestInfo.firstName} ${order.guestInfo.lastName}`.trim();
+  }
+  if (order.customerName) {
+    return order.customerName;
   }
   return order.isGuest
     ? 'Guest'
     : `Customer #${String(order._id).slice(-6).toUpperCase()}`;
 }
 
-function statusChipClass(status: string) {
+export function statusChipClass(status: string) {
   switch (status) {
     case 'pending':
       return 'bg-amber-50 text-amber-700 border-amber-200';
@@ -74,9 +82,18 @@ export function CashierOrders() {
   const {data, isLoading, isError} = useAllOrdersQuery();
   const updateStatusMutation = useUpdateOrderStatusMutation();
   const [statusFilter, setStatusFilter] = useState<string>('active');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [cancellingOrder, setCancellingOrder] = useState<OrderHistoryEntry | null>(null);
 
   const orders = data?.orders ?? [];
+  const {highlightId, isOpenChat} = useScrollToHighlight();
+  const [expandedId, setExpandedId] = useState<string | null>(
+    isOpenChat ? highlightId : null
+  );
+  const [prevOpenChat, setPrevOpenChat] = useState(isOpenChat);
+  if (isOpenChat !== prevOpenChat) {
+    setPrevOpenChat(isOpenChat);
+    if (isOpenChat && highlightId) setExpandedId(highlightId);
+  }
 
   const visibleOrders = useMemo(() => {
     if (statusFilter === 'all') return orders;
@@ -96,6 +113,18 @@ export function CashierOrders() {
     } catch (error) {
       toast.error(
         (error as NormalizedApiError)?.message ?? 'Failed to update status.'
+      );
+    }
+  };
+
+  const handleCancel = async (order: OrderHistoryEntry) => {
+    try {
+      await updateStatusMutation.mutateAsync({orderId: order._id, status: 'cancelled'});
+      toast.success('Order cancelled.');
+      setCancellingOrder(null);
+    } catch (error) {
+      toast.error(
+        (error as NormalizedApiError)?.message ?? 'Failed to cancel order.'
       );
     }
   };
@@ -168,22 +197,74 @@ export function CashierOrders() {
       ) : (
         <div className="space-y-3">
           {visibleOrders.map(order => (
-            <OrderCard
-              key={order._id}
-              order={order}
-              expanded={expandedId === order._id}
-              onToggle={() =>
-                setExpandedId(expandedId === order._id ? null : order._id)
-              }
-              onNextStatus={() => handleNextStatus(order)}
-              statusUpdating={
-                updateStatusMutation.isPending &&
-                updateStatusMutation.variables?.orderId === order._id
-              }
-            />
+            <div key={order._id} id={`order-${order._id}`}>
+              <OrderCard
+                order={order}
+                expanded={expandedId === order._id}
+                onToggle={() =>
+                  setExpandedId(expandedId === order._id ? null : order._id)
+                }
+                onNextStatus={() => handleNextStatus(order)}
+                onCancel={() => setCancellingOrder(order)}
+                statusUpdating={
+                  updateStatusMutation.isPending &&
+                  updateStatusMutation.variables?.orderId === order._id
+                }
+                cancelUpdating={
+                  updateStatusMutation.isPending &&
+                  (updateStatusMutation.variables?.orderId ?? null) ===
+                    (cancellingOrder?._id ?? null)
+                }
+              />
+            </div>
           ))}
         </div>
       )}
+
+      <Modal
+        open={!!cancellingOrder}
+        title="Cancel order"
+        onClose={() => setCancellingOrder(null)}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Are you sure you want to cancel order{' '}
+            <span className="font-bold text-gray-900">
+              #
+              {cancellingOrder
+                ? String(cancellingOrder._id).slice(-6).toUpperCase()
+                : ''}
+            </span>{' '}
+            from{' '}
+            <span className="font-bold text-gray-900">
+              {cancellingOrder ? customerDisplay(cancellingOrder) : ''}
+            </span>
+            ? This cannot be undone.
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setCancellingOrder(null)}
+              disabled={updateStatusMutation.isPending}
+            >
+              Keep Order
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() =>
+                cancellingOrder && handleCancel(cancellingOrder)
+              }
+              disabled={updateStatusMutation.isPending}
+            >
+              {updateStatusMutation.isPending
+                ? 'Cancelling…'
+                : 'Cancel Order'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -193,13 +274,17 @@ function OrderCard({
   expanded,
   onToggle,
   onNextStatus,
-  statusUpdating
+  onCancel,
+  statusUpdating,
+  cancelUpdating
 }: {
   order: OrderHistoryEntry;
   expanded: boolean;
   onToggle: () => void;
   onNextStatus: () => void;
+  onCancel: () => void;
   statusUpdating: boolean;
+  cancelUpdating: boolean;
 }) {
   const messagesQuery = useAdminOrderMessagesQuery(order._id, expanded);
   const sendMutation = useSendCashierOrderMessageMutation();
@@ -210,7 +295,6 @@ function OrderCard({
   const handleSend = async (text: string) => {
     try {
       await sendMutation.mutateAsync({orderId: order._id, body: text});
-      toast.success('Reply sent.');
     } catch (error) {
       toast.error(
         (error as NormalizedApiError)?.message ?? 'Failed to send reply.'
@@ -249,6 +333,13 @@ function OrderCard({
         </div>
 
         <div className="flex items-center gap-2">
+          <Link
+            href={`/cashier/dashboard/orders/${order._id}`}
+            className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 transition-colors hover:bg-[#e9f5ee] hover:border-[#6b8a6e] hover:text-[#2d4a35]"
+          >
+            <Package size={14} />
+            View
+          </Link>
           <button
             onClick={onToggle}
             className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50"
@@ -278,15 +369,26 @@ function OrderCard({
 
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
         {canAdvance ? (
-          <button
-            onClick={onNextStatus}
-            disabled={statusUpdating}
-            className="rounded-xl bg-[#2d4a35] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#3a5c44] disabled:opacity-50"
-          >
-            {statusUpdating
-              ? 'Updating...'
-              : `Mark ${formatStatus(STATUS_FLOW[statusIdx + 1])}`}
-          </button>
+          <>
+            <button
+              onClick={onNextStatus}
+              disabled={statusUpdating || cancelUpdating}
+              className="rounded-xl bg-[#2d4a35] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#3a5c44] disabled:opacity-50"
+            >
+              {statusUpdating
+                ? 'Updating...'
+                : `Mark ${formatStatus(STATUS_FLOW[statusIdx + 1])}`}
+            </button>
+            {CANCELLABLE.includes(order.orderStatus as (typeof CANCELLABLE)[number]) && (
+              <button
+                onClick={onCancel}
+                disabled={statusUpdating || cancelUpdating}
+                className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-bold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
+              >
+                Cancel Order
+              </button>
+            )}
+          </>
         ) : (
           <span className="text-xs text-gray-400">
             {order.orderStatus === 'cancelled'

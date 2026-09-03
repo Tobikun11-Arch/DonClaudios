@@ -72,7 +72,7 @@ export const notificationService = {
 
   async createForAdmin(data: {
     adminId: string;
-    type: 'review_submitted' | 'order_message' | 'low_stock';
+    type: 'review_submitted' | 'order_message' | 'low_stock' | 'new_order';
     title: string;
     message: string;
     reviewId?: string;

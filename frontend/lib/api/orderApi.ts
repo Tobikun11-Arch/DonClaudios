@@ -61,6 +61,8 @@ export type OrderHistoryEntry = {
   _id: string;
   orderType: 'pickup' | 'delivery' | 'reservation';
   totalAmount: number;
+  deliveryFee?: number;
+  paymentMethod?: 'cash' | 'card' | 'gcash' | 'other';
   riderNotes?: string;
   orderStatus: string;
   isGuest: boolean;
@@ -70,6 +72,7 @@ export type OrderHistoryEntry = {
     phoneNumber: string;
     address?: string;
   };
+  customerName?: string;
   items: OrderHistoryItem[];
   createdAt?: string;
   updatedAt?: string;
@@ -77,6 +80,10 @@ export type OrderHistoryEntry = {
 
 export type ListOrdersResponse = {
   orders: OrderHistoryEntry[];
+};
+
+export type OrderDetailResponse = {
+  order: OrderHistoryEntry;
 };
 
 export type OrderMessage = {
@@ -135,6 +142,11 @@ export async function listMyOrders() {
 
 export async function listAllOrders() {
   const res = await httpClient.get<ListOrdersResponse>('/orders/all');
+  return res.data;
+}
+
+export async function getOrderById(orderId: string) {
+  const res = await httpClient.get<OrderDetailResponse>(`/orders/${orderId}`);
   return res.data;
 }
 

@@ -43,7 +43,7 @@ export function CashierSettings() {
     .filter(Boolean)
     .join(' ');
 
-  const persist = (body: Record<string, string>) => {
+  const persist = (body: Record<string, string>, opts?: {silent?: boolean}) => {
     const cleaned: Record<string, string> = {};
     for (const [key, value] of Object.entries(body)) {
       if (typeof value === 'string' && value.trim().length === 0) continue;
@@ -52,7 +52,9 @@ export function CashierSettings() {
     updateProfileMutation.mutate(cleaned, {
       onError: err =>
         toast.error(getFriendlyErrorMessage(err, 'Failed to save')),
-      onSuccess: () => toast.success('Saved.')
+      onSuccess: () => {
+        if (!opts?.silent) toast.success('Saved.');
+      }
     });
   };
 
@@ -113,7 +115,7 @@ export function CashierSettings() {
           <AvatarUpload
             imageUrl={cashierPhoto}
             fallback={displayFullName || 'D'}
-            onSave={url => persist({profilePhoto: url})}
+            onSave={url => persist({profilePhoto: url}, {silent: true})}
           />
         </div>
 

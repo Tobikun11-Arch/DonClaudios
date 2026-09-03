@@ -2,7 +2,45 @@ import {ApiError} from '../utils/error';
 import {productRepository} from '../repositories/product.repository';
 import {stockMovementRepository} from '../repositories/stockMovement.repository';
 import {orderItemRepository} from '../repositories/orderItem.repository';
+import {adminRepository} from '../repositories/admin.repository';
+import {notificationService} from './notification.service';
 import type {StockMovementType} from '../models/StockMovement.model';
+import type {AdminDocument} from '../models/Admin.model';
+
+const LOW_STOCK_THRESHOLD = 10;
+
+async function notifyAdminsLowStock(
+  products: Array<{productId: string; name: string; stock: number}>
+) {
+  const lowProducts = products.filter(p => p.stock <= LOW_STOCK_THRESHOLD);
+  if (lowProducts.length === 0) return;
+
+  try {
+    const admins = (await adminRepository.listAll()) as
+      | (AdminDocument & {_id: unknown})[]
+      | null;
+    for (const admin of admins ?? []) {
+      for (const product of lowProducts) {
+        try {
+          const isOut = product.stock <= 0;
+          await notificationService.createForAdmin({
+            adminId: String(admin._id),
+            type: 'low_stock',
+            title: isOut ? 'Product out of stock' : 'Low product stock alert',
+            message: isOut
+              ? `"${product.name}" is now out of stock.`
+              : `"${product.name}" is low on stock (${product.stock} remaining).`,
+            link: '/owner/dashboard?tab=inventory'
+          });
+        } catch (error) {
+          console.error('Failed to create low stock notification for admin', error);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to notify admins about low stock', error);
+  }
+}
 
 export const stockMovementService = {
   async restockProduct(
@@ -68,6 +106,12 @@ export const stockMovementService = {
       performedBy: adminId as any
     });
 
+    if (newStock <= LOW_STOCK_THRESHOLD) {
+      await notifyAdminsLowStock([
+        {productId: String(product._id), name: product.name, stock: newStock}
+      ]);
+    }
+
     return product;
   },
 
@@ -86,6 +130,7 @@ export const stockMovementService = {
       previousStock: number;
       newStock: number;
     }> = [];
+    const affectedProducts: Array<{productId: string; name: string; stock: number}> = [];
 
     for (const item of items) {
       const product = await productRepository.findById(
@@ -119,7 +164,15 @@ export const stockMovementService = {
         previousStock,
         newStock
       });
+
+      affectedProducts.push({
+        productId: String(product._id),
+        name: product.name,
+        stock: newStock
+      });
     }
+
+    await notifyAdminsLowStock(affectedProducts);
 
     return movements;
   },

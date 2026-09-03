@@ -15,3 +15,5 @@
 3. Notification for admin and customer account
 
 4. Profile page of customer and admin
+
+5. Customer can follow up their orders 

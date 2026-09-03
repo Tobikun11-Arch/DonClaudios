@@ -62,14 +62,25 @@ export default function CustomerNotificationBell() {
   };
 
   const destinationFor = (notification: Notification) => {
+    const highlightId = notification.orderId ?? notification.reviewId;
+    const openChat =
+      notification.type === 'order_message' || notification.type === 'review_reply'
+        ? '&openChat=1'
+        : '';
+    const withHighlight = (base: string) =>
+      highlightId ? `${base}&highlight=${highlightId}${openChat}` : base;
+
     if (notification.type === 'review_reply' || notification.type === 'review_requested') {
-      return '/customer/dashboard?tab=reviews';
+      return withHighlight('/customer/dashboard?tab=reviews');
     }
     if (notification.type === 'order_message' || notification.type === 'order_status') {
-      return '/customer/dashboard?tab=history';
+      return withHighlight('/customer/dashboard?tab=history');
     }
     if (notification.link) {
-      return notification.link;
+      const highlight = highlightId
+        ? `${notification.link}${notification.link.includes('?') ? '&' : '?'}highlight=${highlightId}${openChat}`
+        : notification.link;
+      return highlight;
     }
     return null;
   };

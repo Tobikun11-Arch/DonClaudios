@@ -2,16 +2,29 @@
 
 import {
   listAllOrders,
-  updateOrderStatus
+  updateOrderStatus,
+  getOrderById
 } from '@/lib/api/orderApi';
 import {sendAdminOrderMessage} from '@/lib/api/orderApi';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {cashierNotificationsQueryKey} from '@/lib/hooks/notifications/useNotifications';
 
 export const allOrdersQueryKey = ['orders', 'all'] as const;
+const orderDetailKey = (orderId: string) => ['orders', orderId] as const;
 const followUpOrdersKey = ['orders', 'follow-up'] as const;
 const orderMessagesKey = (orderId: string) =>
   ['orders', orderId, 'messages'] as const;
+
+export function useOrderDetailQuery(orderId: string) {
+  return useQuery({
+    queryKey: orderDetailKey(orderId),
+    queryFn: () => getOrderById(orderId),
+    enabled: !!orderId,
+    refetchOnWindowFocus: false,
+    refetchInterval: 5000,
+    staleTime: 1000
+  });
+}
 
 export function useAllOrdersQuery() {
   return useQuery({
@@ -28,9 +41,12 @@ export function useUpdateOrderStatusMutation() {
   return useMutation({
     mutationFn: ({orderId, status}: {orderId: string; status: string}) =>
       updateOrderStatus(orderId, status),
-    onSuccess: async () => {
+    onSuccess: async ({order}) => {
       await queryClient.invalidateQueries({queryKey: allOrdersQueryKey});
       await queryClient.invalidateQueries({queryKey: followUpOrdersKey});
+      await queryClient.invalidateQueries({
+        queryKey: orderDetailKey(order._id)
+      });
       await queryClient.invalidateQueries({queryKey: cashierNotificationsQueryKey});
     }
   });

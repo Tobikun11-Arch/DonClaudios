@@ -56,7 +56,12 @@ export default function CashierNotificationBell() {
     }
     setOpen(false);
     if (notification.link) {
-      router.push(notification.link);
+      const highlightId = notification.orderId ?? notification.reviewId;
+      const openChat = notification.type === 'order_message' ? '&openChat=1' : '';
+      const url = highlightId
+        ? `${notification.link}${notification.link.includes('?') ? '&' : '?'}highlight=${highlightId}${openChat}`
+        : notification.link;
+      router.push(url);
     }
   };
 
