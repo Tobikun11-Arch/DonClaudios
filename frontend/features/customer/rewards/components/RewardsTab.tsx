@@ -1,15 +1,16 @@
 'use client';
 
-import {useMemo, useState} from 'react';
+import {useMemo, useRef, useState} from 'react';
 import Image from 'next/image';
-import {Coins, Gift, History, Loader2, Sparkles, X, CheckCircle2} from 'lucide-react';
+import {Coins, Gift, History, Loader2, Sparkles, X, CheckCircle2, Store, QrCode} from 'lucide-react';
+import {QRCodeSVG} from 'qrcode.react';
 import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
 import {
   useRewardsQuery,
   useRedeemRewardMutation
 } from '@/lib/hooks/rewards/useRewards';
-import type {RewardProduct} from '@/lib/api/rewardsApi';
+import type {RewardProduct, RewardRedemption} from '@/lib/api/rewardsApi';
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pending',
@@ -24,6 +25,25 @@ export default function RewardsTab() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [category, setCategory] = useState('All');
+  const [redeemedReward, setRedeemedReward] = useState<RewardRedemption | null>(null);
+  const [qrView, setQrView] = useState<RewardRedemption | null>(null);
+  const redeemedQrRef = useRef<HTMLDivElement>(null);
+  const historyQrRef = useRef<HTMLDivElement>(null);
+
+  const downloadQR = (ref: React.RefObject<HTMLDivElement | null>, code: string) => {
+    const svg = ref.current?.querySelector('svg');
+    if (!svg) return;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const blob = new Blob([svgData], {type: 'image/svg+xml'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reward-qr-${code}.svg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const points = rewardsQuery.data?.points ?? 0;
   const redemptions = rewardsQuery.data?.redemptions ?? [];
@@ -55,6 +75,9 @@ export default function RewardsTab() {
       });
       setConfirmOpen(false);
       setSelected(null);
+      if (result.redemption.redeemCode) {
+        setRedeemedReward(result.redemption);
+      }
       toast.success(
         `Reward redeemed! You have ${result.remainingPoints} points left.`
       );
@@ -362,21 +385,36 @@ export default function RewardsTab() {
                         <p className="text-sm font-bold text-[#c9a227]">
                           -{redemption.pointsSpent.toLocaleString()} pts
                         </p>
-                        <span
-                          className={`mt-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-                            redemption.status === 'fulfilled'
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : redemption.status === 'cancelled'
-                                ? 'bg-red-100 text-red-600'
-                                : 'bg-amber-100 text-amber-700'
-                          }`}
-                        >
-                          {redemption.status === 'fulfilled' && (
-                            <CheckCircle2 className="h-3 w-3" />
-                          )}
-                          {STATUS_LABELS[redemption.status] ??
-                            redemption.status}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          <span
+                            className={`mt-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                              redemption.status === 'fulfilled'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : redemption.status === 'cancelled'
+                                  ? 'bg-red-100 text-red-600'
+                                  : 'bg-amber-100 text-amber-700'
+                            }`}
+                          >
+                            {redemption.status === 'fulfilled' && (
+                              <CheckCircle2 className="h-3 w-3" />
+                            )}
+                            {STATUS_LABELS[redemption.status] ??
+                              redemption.status}
+                          </span>
+                          {redemption.status === 'pending' &&
+                            redemption.redeemCode && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 rounded-full p-0 text-[#2d4a35] hover:bg-[#2d4a35] hover:text-white"
+                                onClick={() => setQrView(redemption)}
+                                aria-label="Show QR code"
+                              >
+                                <QrCode className="h-3 w-3" />
+                              </Button>
+                            )}
+                        </div>
                       </div>
                     </li>
                   ))}
@@ -384,8 +422,146 @@ export default function RewardsTab() {
               )}
             </div>
           </div>
+      </div>
+    )}
+
+    {/* QR Code modal — shown after successful redeem */}
+    {redeemedReward && (
+      <div
+        className="fixed inset-0 z-[130] flex items-center justify-center bg-black/50 p-4"
+        role="dialog"
+        aria-modal="true"
+        onClick={() => setRedeemedReward(null)}
+      >
+        <div
+          className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <QrCode className="h-5 w-5 text-[#2d4a35]" />
+              <p className="text-lg font-bold text-gray-900">
+                Your Redemption QR
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="shrink-0 rounded-full"
+              onClick={() => setRedeemedReward(null)}
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+
+          <div className="mt-4 flex justify-center" ref={redeemedQrRef}>
+            <QRCodeSVG
+              value={redeemedReward.redeemCode ?? ''}
+              size={200}
+              level="M"
+              includeMargin
+            />
+          </div>
+
+          <div className="mt-4 flex justify-center">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => downloadQR(redeemedQrRef, redeemedReward.redeemCode ?? '')}
+              className="rounded-full"
+            >
+              Download QR Code
+            </Button>
+          </div>
+
+          <div className="mt-4 rounded-xl bg-amber-50 p-3 text-center">
+            <p className="flex items-center justify-center gap-1.5 text-xs font-bold text-amber-800">
+              <Store className="h-4 w-4" />
+              In-Store Only
+            </p>
+            <p className="mt-1 text-xs text-amber-700">
+              Rewards can only be redeemed at our physical store. Show this QR
+              code at the counter to claim your reward.
+            </p>
+          </div>
+
+          <p className="mt-3 truncate text-center text-xs text-gray-400">
+            Code: {redeemedReward.redeemCode}
+          </p>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    )}
+
+    {/* QR Code view modal — shown from history */}
+    {qrView && (
+      <div
+        className="fixed inset-0 z-[130] flex items-center justify-center bg-black/50 p-4"
+        role="dialog"
+        aria-modal="true"
+        onClick={() => setQrView(null)}
+      >
+        <div
+          className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <QrCode className="h-5 w-5 text-[#2d4a35]" />
+              <p className="text-lg font-bold text-gray-900">
+                Redemption QR
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="shrink-0 rounded-full"
+              onClick={() => setQrView(null)}
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+
+          <div className="mt-4 flex justify-center" ref={historyQrRef}>
+            <QRCodeSVG
+              value={qrView.redeemCode ?? ''}
+              size={200}
+              level="M"
+              includeMargin
+            />
+          </div>
+
+          <div className="mt-4 flex justify-center">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => downloadQR(historyQrRef, qrView.redeemCode ?? '')}
+              className="rounded-full"
+            >
+              Download QR Code
+            </Button>
+          </div>
+
+          <div className="mt-4 rounded-xl bg-amber-50 p-3 text-center">
+            <p className="flex items-center justify-center gap-1.5 text-xs font-bold text-amber-800">
+              <Store className="h-4 w-4" />
+              In-Store Only
+            </p>
+            <p className="mt-1 text-xs text-amber-700">
+              This reward can only be claimed in-store. Present this QR code at
+              the counter to redeem.
+            </p>
+          </div>
+
+          <p className="mt-3 truncate text-center text-xs text-gray-400">
+            Code: {qrView.redeemCode}
+          </p>
+        </div>
+      </div>
+    )}
+  </div>
+);
 }

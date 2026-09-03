@@ -1,3 +1,4 @@
+import {randomUUID} from 'crypto';
 import {ApiError} from '../utils/error';
 import {customerRepository} from '../repositories/customer.repository';
 import {productRepository} from '../repositories/product.repository';
@@ -43,6 +44,7 @@ export const rewardService = {
         productImage: r.productImage,
         pointsSpent: r.pointsSpent,
         quantity: r.quantity,
+        redeemCode: r.redeemCode,
         status: r.status,
         createdAt: r.createdAt
       }))
@@ -105,6 +107,7 @@ export const rewardService = {
       productImage: product.imageUrl,
       pointsSpent: pointsRequired,
       quantity: safeQty,
+      redeemCode: randomUUID(),
       status: 'pending'
     });
 
@@ -116,6 +119,7 @@ export const rewardService = {
         productImage: product.imageUrl,
         pointsSpent: pointsRequired,
         quantity: safeQty,
+        redeemCode: redemption.redeemCode,
         status: redemption.status,
         createdAt: redemption.createdAt
       },

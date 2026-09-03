@@ -177,6 +177,45 @@ export async function listFollowUpOrders() {
   return res.data;
 }
 
+export type CreateCounterOrderInput = {
+  customerInfo: {
+    firstName: string;
+    lastName: string;
+    phoneNumber?: string;
+    email?: string;
+  };
+  items: GuestOrderItemInput[];
+  totalAmount: number;
+  paymentMethod?: 'cash' | 'card' | 'gcash' | 'other';
+};
+
+export type CounterOrderEntry = OrderHistoryEntry & {
+  paymentMethod?: 'cash' | 'card' | 'gcash' | 'other';
+  orderSource?: 'online' | 'in-store';
+};
+
+export async function createCounterOrder(body: CreateCounterOrderInput) {
+  const res = await httpClient.post<CreatedGuestOrderResponse>(
+    '/orders/counter',
+    body
+  );
+  return res.data;
+}
+
+export async function listCounterOrders() {
+  const res = await httpClient.get<{orders: CounterOrderEntry[]}>(
+    '/orders/counter'
+  );
+  return res.data;
+}
+
+export async function voidCounterOrder(orderId: string) {
+  const res = await httpClient.post<{order: CounterOrderEntry}>(
+    `/orders/counter/${orderId}/void`
+  );
+  return res.data;
+}
+
 export async function sendOrderMessage(orderId: string, body: string) {
   const res = await httpClient.post<{message: OrderMessage}>(
     `/orders/${orderId}/messages`,

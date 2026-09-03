@@ -17,6 +17,11 @@ export const orderRepository = {
   listByStatus: (orderStatus: string) =>
     OrderModel.find({orderStatus}).sort({createdAt: -1}).exec(),
 
+  listInStore: () =>
+    OrderModel.find({orderSource: 'in-store'})
+      .sort({createdAt: -1})
+      .exec(),
+
   create: (data: Partial<OrderDocument>) => OrderModel.create(data),
 
   updateStatus: (orderId: string, orderStatus: string) =>

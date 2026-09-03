@@ -38,6 +38,7 @@ export const orderMessageService = {
     for (const summary of summaries) {
       const order = ordersById.get(String(summary._id));
       if (!order) continue;
+      if (order.orderSource === 'in-store') continue;
       results.push({
         orderId: String(order._id),
         orderType: order.orderType,

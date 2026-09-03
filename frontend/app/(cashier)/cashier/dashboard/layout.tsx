@@ -12,14 +12,22 @@ import {
   LogOut,
   MoreHorizontal,
   X,
-  ChevronRight
+  ChevronRight,
+  ShoppingCart
 } from 'lucide-react';
 import {Toaster} from 'sonner';
 import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
 
 const PRIMARY_TABS = [
   {
-    label: 'Orders',
+    label: 'Counter Order',
+    mobileLabel: 'Counter',
+    tab: 'counter',
+    icon: ShoppingCart,
+    href: '/cashier/dashboard?tab=counter'
+  },
+  {
+    label: 'Customer Orders',
     mobileLabel: 'Orders',
     tab: 'orders',
     icon: ClipboardList,
@@ -50,13 +58,15 @@ type DashboardLayoutProps = {
   orders?: React.ReactNode;
   menu?: React.ReactNode;
   settings?: React.ReactNode;
+  counter?: React.ReactNode;
 };
 
 export default function DashboardLayout({
   children,
   orders,
   menu,
-  settings
+  settings,
+  counter
 }: DashboardLayoutProps) {
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab');
@@ -95,7 +105,8 @@ export default function DashboardLayout({
   const slotByTab: Record<string, React.ReactNode | undefined> = {
     orders,
     menu,
-    settings
+    settings,
+    counter
   };
 
   const handleLogout = async () => {
@@ -108,7 +119,7 @@ export default function DashboardLayout({
     if (itemTab === null) {
       return !tab;
     }
-    const currentTab = tab ?? 'orders';
+    const currentTab = tab ?? 'counter';
     return currentTab === itemTab;
   };
 
@@ -259,7 +270,7 @@ export default function DashboardLayout({
             </div>
             <CashierNotificationBell />
           </div>
-          {tab && slotByTab[tab] ? slotByTab[tab] : children}
+          {(tab && slotByTab[tab] ? slotByTab[tab] : slotByTab.counter) ?? children}
         </div>
       </main>
 
