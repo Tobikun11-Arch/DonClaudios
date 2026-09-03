@@ -6,10 +6,12 @@ import {transactionRepository} from '../repositories/transaction.repository';
 import {stockMovementService} from '../services/stockMovement.service';
 import {notificationService} from '../services/notification.service';
 import {cashierRepository} from '../repositories/cashier.repository';
+import {adminRepository} from '../repositories/admin.repository';
 import {customerRepository} from '../repositories/customer.repository';
 import type {PaymentMethod} from '../models/Transaction.model';
 import type {OrderStatus} from '../models/Order.model';
 import type {CashierDocument} from '../models/Cashier.model';
+import type {AdminDocument} from '../models/Admin.model';
 
 async function notifyCashiersOfNewOrder(orderId: string, totalAmount: number) {
   try {
@@ -32,6 +34,30 @@ async function notifyCashiersOfNewOrder(orderId: string, totalAmount: number) {
     }
   } catch (error) {
     console.error('Failed to notify cashiers of new order', error);
+  }
+}
+
+async function notifyAdminsOfNewOrder(orderId: string, totalAmount: number) {
+  try {
+    const admins = (await adminRepository.listAll()) as
+      | (AdminDocument & {_id: unknown})[]
+      | null;
+    for (const admin of admins ?? []) {
+      try {
+        await notificationService.createForAdmin({
+          adminId: String(admin._id),
+          type: 'new_order',
+          title: 'New order received',
+          message: `A new order (#${String(orderId).slice(-6).toUpperCase()}) worth ₱${totalAmount}.00 has been placed.`,
+          orderId: orderId,
+          link: '/owner/dashboard?tab=orders'
+        });
+      } catch (error) {
+        console.error('Failed to create new order admin notification', error);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to notify admins of new order', error);
   }
 }
 
@@ -233,6 +259,7 @@ export const orderController = {
       });
 
       notifyCashiersOfNewOrder(String(order._id), safeTotalAmount);
+      notifyAdminsOfNewOrder(String(order._id), safeTotalAmount);
 
       res.status(201).json({order, transaction});
     } catch (error) {
@@ -342,6 +369,7 @@ export const orderController = {
       });
 
       notifyCashiersOfNewOrder(String(order._id), safeTotalAmount);
+      notifyAdminsOfNewOrder(String(order._id), safeTotalAmount);
 
       res.status(201).json({order, transaction});
     } catch (error) {

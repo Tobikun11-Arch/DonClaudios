@@ -108,7 +108,8 @@ export default function DashboardLayout({
     if (itemTab === null) {
       return !tab;
     }
-    return tab === itemTab;
+    const currentTab = tab ?? 'orders';
+    return currentTab === itemTab;
   };
 
   const drawerTabActive = DRAWER_ITEMS.some(i => isActive(i.tab));
