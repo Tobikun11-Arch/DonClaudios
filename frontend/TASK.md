@@ -1,9 +1,10 @@
 PRIORITY TASKS:
 
-5. Customer can follow up their orders 
+  c
 
 6. Dashboard dropdown for report (that summarize in dashboard) (prototype)
 
+7. connect the online offline of cashier using poll
 
 3. Closed hours - Automatically disable ordering for guest and customer accounts; admin can also manually close hours if there's ever an emergency and they're not available.
 

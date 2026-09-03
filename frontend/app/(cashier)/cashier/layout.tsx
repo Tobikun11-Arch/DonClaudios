@@ -8,7 +8,7 @@ import Loading from '@/app/loading';
 
 export default function CashierLayout({children}: {children: React.ReactNode}) {
   const router = useRouter();
-  const {data, isLoading, isFetching, isError, isSuccess} = useMeQuery();
+  const {data, isLoading, isError, isSuccess} = useMeQuery();
 
   useEffect(() => {
     if (isError) {
@@ -23,7 +23,7 @@ export default function CashierLayout({children}: {children: React.ReactNode}) {
     }
   }, [data, isError, isSuccess, router]);
 
-  if (isLoading || isFetching) return <Loading/>;
+  if (isLoading) return <Loading/>;
 
   return <>{children}</>;
 }
