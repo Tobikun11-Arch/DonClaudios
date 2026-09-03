@@ -1,5 +1,8 @@
 PRIORITY TASKS:
 
+6. rewards tab for customers / what they can buy everytime they buy using their acc/mobile app of donclaudios 
+  - list of all prodcut with hm points per product
+
 6. Dashboard dropdown for report (that summarize in dashboard) (prototype)
 
 7. connect the online offline of cashier using poll
@@ -10,8 +13,7 @@ PRIORITY TASKS:
 
 4. Progress order UI - Interactive; admin or cashier can update status, e.g., "on the way" or "already delivered." and borj problem like  cancelling
 
-11. rewards tab for customers / what they can buy everytime they buy using their acc/mobile app of donclaudios 
-  - list of all prodcut with hm points per product
+5. Every completed order the receipt will send to customer email
 
 13. Change ui of menu ui and slug ui per product
 

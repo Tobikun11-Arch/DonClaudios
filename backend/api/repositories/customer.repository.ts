@@ -23,6 +23,18 @@ export const customerRepository = {
 
   create: (data: Partial<CustomerDocument>) => CustomerModel.create(data),
 
+  addPoints: (customerId: string, points: number) =>
+    CustomerModel.updateOne(
+      {_id: customerId},
+      {$inc: {points}}
+    ).exec(),
+
+  subtractPoints: (customerId: string, points: number) =>
+    CustomerModel.updateOne(
+      {_id: customerId, points: {$gte: points}},
+      {$inc: {points: -points}}
+    ).exec(),
+
   updateProfile: (
     customerId: string,
     data: Partial<

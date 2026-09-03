@@ -461,6 +461,26 @@ export const orderController = {
 
         if (status === 'completed') {
           try {
+            const pointsEarned = Math.floor(order.totalAmount / 10);
+            if (pointsEarned > 0) {
+              await customerRepository.addPoints(
+                String(order.customerId),
+                pointsEarned
+              );
+              await notificationService.createForCustomer({
+                customerId: String(order.customerId),
+                type: 'order_status',
+                title: 'Rewards points earned!',
+                message: `You earned ${pointsEarned} rewards points for your order (#${String(order._id).slice(-6).toUpperCase()}). Redeem them in the Rewards tab!`,
+                orderId: String(order._id),
+                link: '/customer/dashboard?tab=rewards'
+              });
+            }
+          } catch (error) {
+            console.error('Failed to award rewards points', error);
+          }
+
+          try {
             await notificationService.createReviewRequestForCustomer({
               customerId: String(order.customerId),
               orderId: String(order._id),
