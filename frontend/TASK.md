@@ -29,13 +29,11 @@ QA:
 
 
 
-
 New repository - cashier mobile app apk (this was connected to online order if the connection cut maybe the cashier dont have internet so online ordering will be unavailable in website and ask customer to contact in facebook instead and wait for reply from them if theres ordering available)
 1. expo go setup - ✔
 2. app if online ask cashier acct login if offline connection the app use just save offline whos cashier is logged in
 3. if online all orders data, transactions etc will saved online mongodb
 4. if offline it will saved in sqlite and back to online it will saved all data that stored offline to mongodb and deelete the data in offline
-
 
 
 
@@ -51,13 +49,12 @@ fix/development (new branch):
 
 
 
+
 additional if only possible:
 1. customer can leave a feedback thru trustpilot and system fetch data from all review there
 2. in address if user select it, they can add details and save to user address details also, if user add that his house is red etc,.
-3. customer support, floating circle in left bottom and if click it can chat to donclaudios cashier or owner can answer it, it also have faq for customer
+3. customer support, floating circle in left bottom and if click it can chat to donclaudios cashier or owner can answer it, it also have faq for customer 
 4. reservation/event calendar for owner/admin
-
-
 
 
 
@@ -72,4 +69,4 @@ Proposal suggestions:
 7 No more admin
 8 Receipt printer that connected to apk
 
-Need to clarify to owner that if the pos will be used it must register to bir
+Need to clarify to owner that if the pos will be used it must register to BIR
