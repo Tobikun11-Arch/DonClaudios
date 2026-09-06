@@ -8,6 +8,7 @@ import {useState, useRef, useCallback, useEffect} from 'react';
 import {ShoppingCart, Tag, User, Star, LogOut, Gift} from 'lucide-react';
 import CustomerCartDrawer from '@/shared/components/cart/CustomerCartDrawer';
 import CustomerNotificationBell from '@/features/customer/notifications/components/CustomerNotificationBell';
+import SupportChatBubble from '@/features/support/components/SupportChatBubble';
 import {Toaster} from 'sonner';
 
 const TABS = [
@@ -337,6 +338,7 @@ export default function DashboardLayout({
 
       <CustomerCartDrawer />
       <Toaster position="top-right" richColors duration={2500} visibleToasts={4} />
+      <SupportChatBubble />
     </div>
   );
 }

@@ -72,7 +72,6 @@ npm run dev
 ```
 
 Frontend runs on: `http://localhost:3000`
-
 ---
 
 ## 🛠️ Tech Stack
