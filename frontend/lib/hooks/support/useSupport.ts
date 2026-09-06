@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  closeMySupportConversation,
   closeSupportConversation,
   getMySupportConversation,
   getOrCreateSupportConversation,
@@ -146,6 +147,26 @@ export function useCloseSupportConversationMutation() {
       });
       await queryClient.invalidateQueries({
         queryKey: ['support', 'admin', 'messages']
+      });
+    }
+  });
+}
+
+export function useCustomerCloseSupportConversationMutation(
+  conversationId: string,
+  guestSessionId?: string | null
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      closeMySupportConversation(conversationId, guestSessionId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({queryKey: supportMyKey});
+      await queryClient.invalidateQueries({
+        queryKey: supportMessagesKey(conversationId)
+      });
+      await queryClient.invalidateQueries({
+        queryKey: supportAdminConversationsKey
       });
     }
   });

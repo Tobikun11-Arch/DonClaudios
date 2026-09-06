@@ -5,6 +5,7 @@ import {Send, Loader2, Clock, RotateCw} from 'lucide-react';
 import SupportMessageBubble from './SupportMessageBubble';
 import GuestIdentityForm from './GuestIdentityForm';
 import {
+  useCustomerCloseSupportConversationMutation,
   useGetOrCreateSupportConversationMutation,
   useSupportMessagesQuery,
   useSendSupportMessageMutation
@@ -23,6 +24,8 @@ export default function SupportChatPanel({
   isGuest,
   guestSessionId,
   viewerName,
+  conversationStatus,
+  closedBy,
   creationFailed,
   onRetryStart,
   onConversationCreated,
@@ -32,6 +35,8 @@ export default function SupportChatPanel({
   isGuest: boolean;
   guestSessionId: string | null;
   viewerName?: string | null;
+  conversationStatus?: 'open' | 'closed';
+  closedBy?: 'owner' | 'customer' | null;
   creationFailed?: boolean;
   onRetryStart?: () => void;
   onConversationCreated: (id: string) => void;
@@ -49,6 +54,10 @@ export default function SupportChatPanel({
 
   const getOrCreateMutation = useGetOrCreateSupportConversationMutation();
   const sendMutation = useSendSupportMessageMutation(
+    conversationId ?? '',
+    guestSessionIdState
+  );
+  const closeMutation = useCustomerCloseSupportConversationMutation(
     conversationId ?? '',
     guestSessionIdState
   );
@@ -124,6 +133,15 @@ export default function SupportChatPanel({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const handleCloseChat = async () => {
+    if (!conversationId || closeMutation.isPending) return;
+    try {
+      await closeMutation.mutateAsync();
+    } catch {
+      // Ignore; the next poll will reconcile the real status.
     }
   };
 
@@ -209,13 +227,36 @@ export default function SupportChatPanel({
         )}
       </div>
 
+      {conversationStatus === 'closed' ? (
+        <div className="border-t border-amber-100 bg-amber-50 px-3 py-2 text-[11px] leading-snug text-amber-700">
+          {closedBy === 'customer'
+            ? 'You marked this conversation as resolved.'
+            : "DonClaudio's marked this conversation as resolved."}{' '}
+          Send a message to reopen.
+        </div>
+      ) : (
+        <div className="flex justify-end border-t border-gray-100 px-3 py-1.5">
+          <button
+            onClick={handleCloseChat}
+            disabled={closeMutation.isPending}
+            className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-gray-400 transition-colors hover:bg-gray-100 hover:text-[#2d4a35] disabled:opacity-50"
+          >
+            {closeMutation.isPending ? 'Marking...' : 'Mark as resolved'}
+          </button>
+        </div>
+      )}
+
       <div className="flex items-end gap-2 border-t border-gray-100 p-3">
         <textarea
           value={draft}
           onChange={e => setDraft(e.target.value)}
           onKeyDown={handleKeyDown}
           rows={1}
-          placeholder="Type your message... (Enter to send)"
+          placeholder={
+            conversationStatus === 'closed'
+              ? 'Send a message to reopen...'
+              : 'Type your message... (Enter to send)'
+          }
           className="flex-1 resize-none rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e]"
         />
         <button

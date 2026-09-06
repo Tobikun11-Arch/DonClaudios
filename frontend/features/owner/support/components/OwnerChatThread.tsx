@@ -16,9 +16,13 @@ type PendingItem = {
 };
 
 export default function OwnerChatThread({
-  conversationId
+  conversationId,
+  conversationStatus,
+  closedBy
 }: {
   conversationId: string;
+  conversationStatus?: 'open' | 'closed';
+  closedBy?: 'owner' | 'customer' | null;
 }) {
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState<PendingItem[]>([]);
@@ -128,6 +132,14 @@ export default function OwnerChatThread({
           </>
         )}
       </div>
+
+      {conversationStatus === 'closed' && (
+        <div className="border-t border-amber-100 bg-amber-50 px-3 py-2 text-[11px] leading-snug text-amber-700">
+          {closedBy === 'customer'
+            ? 'Closed by the customer. Replying will reopen this conversation.'
+            : 'This conversation is resolved. Replying will reopen it.'}
+        </div>
+      )}
 
       <div className="flex items-end gap-2 border-t border-gray-100 p-3">
         <textarea

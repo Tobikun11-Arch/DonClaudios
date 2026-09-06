@@ -16,6 +16,11 @@ router.post(
   optionalAuth,
   supportController.sendMessage
 );
+router.patch(
+  '/conversations/:id/close',
+  optionalAuth,
+  supportController.closeMyConversation
+);
 
 router.get(
   '/admin/conversations',

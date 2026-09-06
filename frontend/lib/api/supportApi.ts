@@ -8,6 +8,8 @@ export type SupportConversation = {
   guestContact?: string | null;
   guestSessionId?: string | null;
   status: 'open' | 'closed';
+  closedBy?: 'owner' | 'customer' | null;
+  closedAt?: string | null;
   lastMessageAt: string;
   createdAt: string;
   displayName?: string;
@@ -129,6 +131,18 @@ export async function sendAdminSupportMessage(
 export async function closeSupportConversation(conversationId: string) {
   const res = await httpClient.patch<{conversation: SupportConversation}>(
     `/support/admin/conversations/${conversationId}/close`
+  );
+  return res.data;
+}
+
+export async function closeMySupportConversation(
+  conversationId: string,
+  guestSessionId?: string | null
+) {
+  const res = await httpClient.patch<{conversation: SupportConversation}>(
+    `/support/conversations/${conversationId}/close`,
+    {},
+    {headers: guestHeaders(guestSessionId)}
   );
   return res.data;
 }

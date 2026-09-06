@@ -118,6 +118,8 @@ export default function SupportChatBubble() {
               isGuest={!isLoggedIn}
               guestSessionId={guestSessionId}
               viewerName={viewerName}
+              conversationStatus={queryConversation?.status ?? 'open'}
+              closedBy={queryConversation?.closedBy ?? null}
               creationFailed={createFailed}
               onRetryStart={handleRetryCreate}
               onConversationCreated={handleConversationCreated}

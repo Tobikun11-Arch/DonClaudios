@@ -97,9 +97,8 @@ export const supportService = {
 
     if (conversation) {
       if (conversation.status === 'closed') {
-        conversation = (await supportConversationRepository.updateStatus(
-          String(conversation._id),
-          'open'
+        conversation = (await supportConversationRepository.reopen(
+          String(conversation._id)
         )) as SupportConversationDocument | null;
       }
       if (!data.customerId && (data.guestName || data.guestContact)) {
@@ -203,10 +202,7 @@ export const supportService = {
     });
 
     if (conversation.status === 'closed') {
-      await supportConversationRepository.updateStatus(
-        String(conversation._id),
-        'open'
-      );
+      await supportConversationRepository.reopen(String(conversation._id));
     }
     await supportConversationRepository.updateLastMessageAt(
       String(conversation._id)
@@ -284,6 +280,7 @@ export const supportService = {
         _id: conv._id,
         customerType: conv.customerType,
         status: conv.status,
+        closedBy: conv.closedBy ?? null,
         lastMessageAt:
           conv.lastMessageAt || summary?.lastMessageAt || conv.createdAt,
         createdAt: conv.createdAt,
@@ -330,6 +327,10 @@ export const supportService = {
       String(conversation._id)
     );
 
+    if (conversation.status === 'closed') {
+      await supportConversationRepository.reopen(String(conversation._id));
+    }
+
     if (conversation.customerId) {
       try {
         await notificationService.createForCustomer({
@@ -352,9 +353,25 @@ export const supportService = {
 
   async closeForOwner(conversationId: string) {
     const conversation = await getConversationOrThrow(conversationId);
-    return supportConversationRepository.updateStatus(
+    return supportConversationRepository.close(
       String(conversation._id),
-      'closed'
+      'owner'
+    );
+  },
+
+  async closeByCustomer(
+    conversationId: string,
+    data: {customerId?: string; guestSessionId?: string}
+  ) {
+    const conversation = await getConversationOrThrow(conversationId);
+    assertCanAccess(
+      conversation,
+      data.customerId,
+      data.guestSessionId
+    );
+    return supportConversationRepository.close(
+      String(conversation._id),
+      'customer'
     );
   }
 };

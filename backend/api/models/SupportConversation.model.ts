@@ -2,6 +2,7 @@ import mongoose, {Schema} from 'mongoose';
 
 export type SupportCustomerType = 'guest' | 'account';
 export type SupportConversationStatus = 'open' | 'closed';
+export type SupportConversationCloser = 'owner' | 'customer';
 
 export interface SupportConversationDocument extends mongoose.Document {
   customerId?: mongoose.Types.ObjectId | null;
@@ -10,6 +11,8 @@ export interface SupportConversationDocument extends mongoose.Document {
   guestContact?: string | null;
   guestSessionId?: string | null;
   status: SupportConversationStatus;
+  closedBy?: SupportConversationCloser | null;
+  closedAt?: Date | null;
   lastMessageAt: Date;
   createdAt: Date;
 }
@@ -30,6 +33,8 @@ const SupportConversationSchema = new Schema<SupportConversationDocument>(
       enum: ['open', 'closed'],
       default: 'open'
     },
+    closedBy: {type: String, enum: ['owner', 'customer'], default: null},
+    closedAt: {type: Date, default: null},
     lastMessageAt: {type: Date, default: Date.now}
   },
   {timestamps: true}

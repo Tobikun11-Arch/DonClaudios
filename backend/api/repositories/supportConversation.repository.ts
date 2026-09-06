@@ -45,5 +45,19 @@ export const supportConversationRepository = {
       id,
       {status},
       {new: true}
+    ).exec(),
+
+  close: (id: string, closedBy: 'owner' | 'customer') =>
+    SupportConversationModel.findByIdAndUpdate(
+      id,
+      {status: 'closed', closedBy, closedAt: new Date()},
+      {new: true}
+    ).exec(),
+
+  reopen: (id: string) =>
+    SupportConversationModel.findByIdAndUpdate(
+      id,
+      {status: 'open', closedBy: null, closedAt: null},
+      {new: true}
     ).exec()
 };

@@ -123,5 +123,20 @@ export const supportController = {
     } catch (error) {
       next(error);
     }
+  },
+
+  async closeMyConversation(req: Request, res: Response, next: NextFunction) {
+    try {
+      const conversation = await supportService.closeByCustomer(
+        req.params.id,
+        {
+          customerId: authCustomerId(req),
+          guestSessionId: guestSessionId(req)
+        }
+      );
+      res.status(200).json({conversation});
+    } catch (error) {
+      next(error);
+    }
   }
 };

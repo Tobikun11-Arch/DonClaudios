@@ -104,6 +104,12 @@ export default function SupportInbox() {
                       <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#f08080] px-1.5 text-xs font-bold text-white">
                         {c.unreadCount}
                       </span>
+                    ) : filter === 'closed' ? (
+                      <span className="truncate text-[11px] font-semibold text-gray-500">
+                        {c.closedBy === 'customer'
+                          ? 'Closed by customer'
+                          : 'Resolved by you'}
+                      </span>
                     ) : (
                       <span className="text-[11px] text-gray-400">
                         {new Date(c.lastMessageAt).toLocaleDateString([], {
@@ -157,7 +163,11 @@ export default function SupportInbox() {
               </div>
             </div>
             <div className="flex-1 min-h-0">
-              <OwnerChatThread conversationId={selected._id} />
+              <OwnerChatThread
+                conversationId={selected._id}
+                conversationStatus={selected.status}
+                closedBy={selected.closedBy ?? null}
+              />
             </div>
           </>
         ) : (
@@ -189,7 +199,11 @@ export default function SupportInbox() {
               </button>
             </div>
             <div className="flex-1 min-h-0">
-              <OwnerChatThread conversationId={selected._id} />
+              <OwnerChatThread
+                conversationId={selected._id}
+                conversationStatus={selected.status}
+                closedBy={selected.closedBy ?? null}
+              />
             </div>
           </div>
         ) : (
