@@ -5,7 +5,8 @@ export type NotificationType =
   | 'order_message'
   | 'low_stock'
   | 'order_status'
-  | 'new_order';
+  | 'new_order'
+  | 'support_message';
 export type NotificationTarget = 'customer' | 'admin' | 'cashier';
 
 export interface Notification {

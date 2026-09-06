@@ -17,7 +17,8 @@ import {
   LogOut,
   MoreHorizontal,
   X,
-  ChevronRight
+  ChevronRight,
+  Headset
 } from 'lucide-react';
 import {Toaster} from 'sonner';
 
@@ -46,6 +47,12 @@ const PRIMARY_TABS = [
 ];
 
 const DRAWER_ITEMS = [
+  {
+    label: 'Support Chats',
+    tab: 'support',
+    icon: Headset,
+    href: '/owner/dashboard?tab=support'
+  },
   {
     label: 'Promos',
     tab: 'promos',
@@ -82,6 +89,7 @@ type DashboardLayoutProps = {
   cashiers?: React.ReactNode;
   appearance?: React.ReactNode;
   reviews?: React.ReactNode;
+  support?: React.ReactNode;
 };
 
 export default function DashboardLayout({
@@ -91,7 +99,8 @@ export default function DashboardLayout({
   promos,
   cashiers,
   appearance,
-  reviews: reviewsSlot
+  reviews: reviewsSlot,
+  support
 }: DashboardLayoutProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -134,7 +143,8 @@ export default function DashboardLayout({
     promos,
     cashiers,
     appearance,
-    reviews: reviewsSlot
+    reviews: reviewsSlot,
+    support
   };
 
   const handleLogout = async () => {

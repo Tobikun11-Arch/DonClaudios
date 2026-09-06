@@ -28,7 +28,7 @@ export const notificationService = {
 
   async createForCustomer(data: {
     customerId: string;
-    type: 'review_reply' | 'review_requested' | 'order_message' | 'order_status';
+    type: 'review_reply' | 'review_requested' | 'order_message' | 'order_status' | 'support_message';
     title: string;
     message: string;
     reviewId?: string;
@@ -72,7 +72,7 @@ export const notificationService = {
 
   async createForAdmin(data: {
     adminId: string;
-    type: 'review_submitted' | 'order_message' | 'low_stock' | 'new_order';
+    type: 'review_submitted' | 'order_message' | 'low_stock' | 'new_order' | 'support_message';
     title: string;
     message: string;
     reviewId?: string;

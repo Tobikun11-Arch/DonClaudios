@@ -18,20 +18,19 @@ declare global {
   }
 }
 
-export function requireAuth(req: Request, _res: Response, next: NextFunction) {
+export function extractAccessToken(req: Request): string | undefined {
   const header = req.headers.authorization;
-  let token: string | undefined;
-
   if (header) {
     const [scheme, value] = header.split(' ');
     if (scheme === 'Bearer' && value) {
-      token = value;
+      return value;
     }
   }
+  return req.cookies?.[ACCESS_COOKIE] as string | undefined;
+}
 
-  if (!token) {
-    token = req.cookies?.[ACCESS_COOKIE] as string | undefined;
-  }
+export function requireAuth(req: Request, _res: Response, next: NextFunction) {
+  const token = extractAccessToken(req);
 
   if (!token) {
     return next(new ApiError(401, 'UNAUTHORIZED', 'Missing access token'));
@@ -44,6 +43,24 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction) {
   } catch {
     return next(new ApiError(401, 'UNAUTHORIZED', 'Invalid token'));
   }
+}
+
+export function optionalAuth(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) {
+  const token = extractAccessToken(req);
+  if (!token) {
+    return next();
+  }
+  try {
+    const payload = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
+    req.auth = payload;
+  } catch {
+    // Ignore invalid/expired token; leave req.auth unset (treat as guest)
+  }
+  return next();
 }
 
 export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
