@@ -9,8 +9,11 @@ import {
 export const reviewRepository = {
   findById: (id: string) => ReviewModel.findById(id).exec(),
 
-  listApproved: () =>
-    ReviewModel.find({status: 'approved'}).sort({createdAt: -1}).exec(),
+listApproved: () =>
+    ReviewModel.find({status: 'approved'})
+      .sort({createdAt: -1})
+      .populate('customerId', 'profilePhoto')
+      .exec(),
 
   listAll: () => ReviewModel.find({}).sort({createdAt: -1}).exec(),
 

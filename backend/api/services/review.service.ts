@@ -10,7 +10,26 @@ import type {AdminDocument} from '../models/Admin.model';
 
 export const reviewService = {
   async listPublic() {
-    return reviewRepository.listApproved();
+    const reviews = await reviewRepository.listApproved();
+    return reviews.map(review => {
+      const obj = review.toObject();
+      const customer = obj.customerId as
+        | {_id?: unknown; profilePhoto?: string}
+        | null
+        | undefined;
+      const isPopulated =
+        customer && typeof customer === 'object' && !Array.isArray(customer);
+      const profilePhoto = isPopulated
+        ? (customer as {profilePhoto?: string}).profilePhoto ?? null
+        : null;
+      return {
+        ...obj,
+        profilePhoto,
+        customerId: isPopulated
+          ? String((customer as {_id?: unknown})._id)
+          : String(obj.customerId)
+      };
+    });
   },
 
   async listForAdmin() {

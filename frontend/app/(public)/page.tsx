@@ -15,12 +15,18 @@ export default function HomePage() {
     rating: review.rating,
     quote: review.comment,
     name: review.customerName,
-    tag: 'Verified Customer'
+    tag: 'Verified Customer',
+    profilePhoto: review.profilePhoto ?? null,
+    images: review.images ?? []
   }));
 
   const reviews =
     settings && liveReviews.length > 0
-      ? {...settings.reviews, items: liveReviews}
+      ? {
+          ...settings.reviews,
+          featured: liveReviews[0],
+          items: liveReviews.slice(1)
+        }
       : settings?.reviews;
 
   return (

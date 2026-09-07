@@ -24,6 +24,7 @@ export interface Review {
   status: ReviewStatus;
   orderId?: string | null;
   images?: ReviewImage[];
+  profilePhoto?: string | null;
   reply?: string | null;
   replyDate?: string | null;
   messages: ReviewMessage[];
