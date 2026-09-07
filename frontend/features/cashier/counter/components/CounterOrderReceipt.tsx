@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import type {CounterOrderEntry, OrderHistoryItem} from '@/lib/api/orderApi';
 
 const BUSINESS_NAME = 'DonClaudio’s Lechon House';
@@ -17,6 +18,14 @@ function getItemName(item: OrderHistoryItem) {
     return item.productId.name ?? 'Product';
   }
   return 'Product';
+}
+
+function getItemImage(item: OrderHistoryItem) {
+  if (item.imageUrl) return item.imageUrl;
+  if (item.productId && typeof item.productId === 'object') {
+    return item.productId.imageUrl;
+  }
+  return undefined;
 }
 
 const ORDER_TYPE_LABEL: Record<string, string> = {
