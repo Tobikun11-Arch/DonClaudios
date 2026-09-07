@@ -33,6 +33,18 @@ export const reviewController = {
     }
   },
 
+  async getEligibility(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+      }
+      const eligibility = await reviewService.getEligibility(req.auth.userId);
+      res.status(200).json(eligibility);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async createReview(req: Request, res: Response, next: NextFunction) {
     try {
       if (!req.auth) {

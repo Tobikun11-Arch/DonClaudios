@@ -9,20 +9,34 @@ import {
 export const reviewRepository = {
   findById: (id: string) => ReviewModel.findById(id).exec(),
 
-  listApproved: () =>
-    ReviewModel.find({status: 'approved'}).sort({createdAt: -1}).exec(),
+listApproved: () =>
+    ReviewModel.find({status: 'approved'})
+      .sort({createdAt: -1})
+      .populate('customerId', 'profilePhoto')
+      .exec(),
 
   listAll: () => ReviewModel.find({}).sort({createdAt: -1}).exec(),
 
   listByCustomerId: (customerId: string) =>
     ReviewModel.find({customerId}).sort({createdAt: -1}).exec(),
 
-  hasCompletedOrder: (customerId: string) =>
-    OrderModel.exists({
-      customerId,
-      isGuest: false,
-      orderStatus: 'completed'
-    }).exec(),
+  getUnreviewedCompletedOrders: async (customerId: string) => {
+    const [orders, reviewed] = await Promise.all([
+      OrderModel.find({customerId, isGuest: false, orderStatus: 'completed'})
+        .sort({createdAt: 1})
+        .exec(),
+      ReviewModel.find({customerId, orderId: {$ne: null}})
+        .select('orderId')
+        .exec()
+    ]);
+    const reviewedIds = new Set(
+      reviewed
+        .map(review => review.orderId)
+        .filter((id): id is NonNullable<typeof id> => id != null)
+        .map(String)
+    );
+    return orders.filter(order => !reviewedIds.has(String(order._id)));
+  },
 
   create: (data: Partial<ReviewDocument>) => ReviewModel.create(data),
 

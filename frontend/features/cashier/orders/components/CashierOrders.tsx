@@ -1,16 +1,16 @@
 'use client';
 
 import {useMemo, useState} from 'react';
+import Image from 'next/image';
 import {toast} from 'sonner';
-import {MessageCircle, Package, ChevronRight} from 'lucide-react';
+import {MessageCircle, Package, ChevronRight, ChevronDown, ChevronUp, User, Phone, MapPin} from 'lucide-react';
 import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
 import OrderChatThread from '@/features/order/components/OrderChatThread';
 import {Modal} from '@/features/owner/cashiers/components/Modal';
 import {Button} from '@/components/ui/button';
-import Link from 'next/link';
 import {useAllOrdersQuery, useUpdateOrderStatusMutation, useSendCashierOrderMessageMutation} from '@/lib/hooks/orders/useCashierOrder';
 import {useAdminOrderMessagesQuery} from '@/lib/hooks/orders/useOrderMessage';
-import type {OrderHistoryEntry} from '@/lib/api/orderApi';
+import type {OrderHistoryEntry, OrderHistoryItem} from '@/lib/api/orderApi';
 import type {NormalizedApiError} from '@/lib/api/types';
 
 export const ORDER_STATUSES = [
@@ -288,6 +288,7 @@ function OrderCard({
 }) {
   const messagesQuery = useAdminOrderMessagesQuery(order._id, expanded);
   const sendMutation = useSendCashierOrderMessageMutation();
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const statusIdx = STATUS_FLOW.indexOf(order.orderStatus as never);
   const canAdvance = statusIdx >= 0 && statusIdx < STATUS_FLOW.length - 1;
@@ -302,72 +303,202 @@ function OrderCard({
     }
   };
 
+  const items = order.items ?? [];
+  const firstItem = items[0];
+  const thumbUrl = firstItem ? getItemImage(firstItem) : undefined;
+  const thumbName = firstItem ? getItemName(firstItem) : 'Order';
+  const subtotal = items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+  const discount = Math.max(0, subtotal - order.totalAmount);
+
   return (
-    <div className="rounded-2xl bg-white shadow p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-bold text-gray-900">
-              {customerDisplay(order)}
+    <div className="rounded-2xl bg-white shadow">
+      <div
+        onClick={() => setDetailsOpen(prev => !prev)}
+        className="w-full cursor-pointer select-none p-5 transition-colors hover:bg-gray-50"
+      >
+        <div className="flex items-center gap-3">
+          <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-50">
+            {firstItem ? (
+              <Image
+                src={
+                  thumbUrl && thumbUrl.length > 0
+                    ? thumbUrl
+                    : '/assets/sample_menu.png'
+                }
+                alt={thumbName}
+                fill
+                sizes="56px"
+                className="object-cover"
+              />
+            ) : (
+              <span className="flex h-full w-full items-center justify-center bg-gray-50" />
+            )}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <p className="truncate text-sm font-bold text-gray-900">
+                {customerDisplay(order)}
+              </p>
+              <span
+                className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-bold ${statusChipClass(order.orderStatus)}`}
+              >
+                {formatStatus(order.orderStatus)}
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-gray-400">
+              Order #{String(order._id).slice(-6).toUpperCase()} •{' '}
+              {orderTypeLabel(order.orderType)} • ₱{order.totalAmount}.00
+              {order.isGuest && (
+                <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
+                  GUEST
+                </span>
+              )}
             </p>
-            <span
-              className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${statusChipClass(order.orderStatus)}`}
+            {order.createdAt && (
+              <p className="mt-0.5 text-[11px] text-gray-400">
+                {new Date(order.createdAt).toLocaleString()}
+              </p>
+            )}
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={e => {
+                e.stopPropagation();
+                onToggle();
+              }}
+              className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50"
             >
-              {formatStatus(order.orderStatus)}
+              <MessageCircle size={14} />
+              Follow-up
+              <ChevronRight
+                size={14}
+                className={`transition-transform ${expanded ? 'rotate-90' : ''}`}
+              />
+            </button>
+            <span className="text-gray-400">
+              {detailsOpen ? (
+                <ChevronUp size={18} />
+              ) : (
+                <ChevronDown size={18} />
+              )}
             </span>
           </div>
-          <p className="text-xs text-gray-400 mt-1">
-            Order #{String(order._id).slice(-6).toUpperCase()} •{' '}
-            {orderTypeLabel(order.orderType)} • ₱{order.totalAmount}.00
-            {order.isGuest && (
-              <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
-                GUEST
-              </span>
-            )}
-          </p>
-          {order.createdAt && (
-            <p className="text-[11px] text-gray-400 mt-0.5">
-              {new Date(order.createdAt).toLocaleString()}
-            </p>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/cashier/dashboard/orders/${order._id}`}
-            className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 transition-colors hover:bg-[#e9f5ee] hover:border-[#6b8a6e] hover:text-[#2d4a35]"
-          >
-            <Package size={14} />
-            View
-          </Link>
-          <button
-            onClick={onToggle}
-            className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50"
-          >
-            <MessageCircle size={14} />
-            Follow-up
-            <ChevronRight
-              size={14}
-              className={`transition-transform ${expanded ? 'rotate-90' : ''}`}
-            />
-          </button>
         </div>
       </div>
 
-      {order.items && order.items.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {order.items.map((item, i) => (
-            <span
-              key={i}
-              className="rounded-lg bg-gray-50 px-2.5 py-1 text-xs text-gray-600"
-            >
-              {item.quantity}× {item.name || 'Item'}
-            </span>
-          ))}
+      {detailsOpen && (
+        <div className="border-t border-gray-100 p-5">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="flex items-center gap-2 rounded-xl border border-gray-100 p-3">
+              <User size={16} className="shrink-0 text-[#2d4a35]" />
+              <span className="text-sm text-gray-600">
+                {order.guestInfo
+                  ? `${order.guestInfo.firstName} ${order.guestInfo.lastName}`
+                  : customerDisplay(order)}
+              </span>
+            </div>
+            {order.guestInfo?.phoneNumber && (
+              <div className="flex items-center gap-2 rounded-xl border border-gray-100 p-3">
+                <Phone size={16} className="shrink-0 text-[#2d4a35]" />
+                <span className="text-sm text-gray-600">
+                  {order.guestInfo.phoneNumber}
+                </span>
+              </div>
+            )}
+            {order.guestInfo?.address && (
+              <div className="flex items-center gap-2 rounded-xl border border-gray-100 p-3 sm:col-span-2">
+                <MapPin size={16} className="shrink-0 text-[#2d4a35]" />
+                <span className="text-sm text-gray-600">
+                  {order.guestInfo.address}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {order.riderNotes && (
+            <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50 p-3">
+              <p className="mb-1 text-xs font-bold uppercase tracking-wide text-amber-700">
+                Rider / Notes
+              </p>
+              <p className="text-sm text-gray-700">{order.riderNotes}</p>
+            </div>
+          )}
+
+          <div className="mt-4">
+            <h3 className="mb-3 text-sm font-bold text-gray-900">
+              Order Items
+            </h3>
+            <div className="space-y-3">
+              {items.map((item, index) => {
+                const imageUrl = getItemImage(item);
+                return (
+                  <div
+                    key={item._id ?? `${order._id}-${index}`}
+                    className="flex items-start gap-3 rounded-xl border border-gray-100 p-3"
+                  >
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-gray-50">
+                      <Image
+                        src={
+                          imageUrl && imageUrl.length > 0
+                            ? imageUrl
+                            : '/assets/sample_menu.png'
+                        }
+                        alt={getItemName(item)}
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 text-sm font-bold text-gray-900">
+                        {getItemName(item)}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Qty {item.quantity} • {money(item.price)} each
+                      </p>
+                      {item.specialRequest && (
+                        <p className="mt-1 rounded-lg bg-orange-50 px-2 py-1 text-xs text-orange-700">
+                          Request: {item.specialRequest}
+                        </p>
+                      )}
+                    </div>
+                    <p className="shrink-0 text-sm font-bold text-gray-900">
+                      {money(item.price * item.quantity)}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 space-y-1 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
+              <div className="flex items-center justify-between">
+                <span>Subtotal</span>
+                <span className="font-semibold">{money(subtotal)}</span>
+              </div>
+              {discount > 0 && (
+                <div className="flex items-center justify-between">
+                  <span>Discount</span>
+                  <span className="font-semibold">-{money(discount)}</span>
+                </div>
+              )}
+              <div className="mt-2 flex items-center justify-between border-t border-gray-200 pt-2">
+                <span className="font-semibold text-gray-900">Total</span>
+                <span className="text-base font-extrabold text-gray-900">
+                  {money(order.totalAmount)}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
+      <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 px-5 py-4">
         {canAdvance ? (
           <>
             <button
@@ -399,8 +530,8 @@ function OrderCard({
       </div>
 
       {expanded && (
-        <div className="mt-4 rounded-xl bg-gray-50 p-4">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">
+        <div className="border-t border-gray-100 bg-gray-50 p-4">
+          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500">
             Conversation with {customerDisplay(order)}
           </p>
           {messagesQuery.isLoading ? (
@@ -422,4 +553,27 @@ function OrderCard({
       )}
     </div>
   );
+}
+
+function getItemName(item: OrderHistoryItem) {
+  if (item.name) return item.name;
+  if (item.productId && typeof item.productId === 'object') {
+    return item.productId.name ?? 'Product';
+  }
+  return 'Product';
+}
+
+function getItemImage(item: OrderHistoryItem) {
+  if (item.imageUrl) return item.imageUrl;
+  if (item.productId && typeof item.productId === 'object') {
+    return item.productId.imageUrl;
+  }
+  return undefined;
+}
+
+function money(value: number) {
+  return `₱${(Number.isFinite(value) ? value : 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
 }

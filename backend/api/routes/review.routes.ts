@@ -14,6 +14,13 @@ router.get('/', reviewController.listPublic);
 
 router.get('/my', requireAuth, requireCustomer, reviewController.listMyReviews);
 
+router.get(
+  '/eligibility',
+  requireAuth,
+  requireCustomer,
+  reviewController.getEligibility
+);
+
 router.get('/admin', requireAuth, requireAdmin, reviewController.listAdmin);
 
 router.post(

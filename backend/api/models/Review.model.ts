@@ -11,12 +11,19 @@ export interface ReviewMessage {
   createdAt: Date;
 }
 
+export interface ReviewImage {
+  url: string;
+  alt?: string;
+}
+
 export interface ReviewDocument extends mongoose.Document {
   customerId: mongoose.Types.ObjectId;
   customerName: string;
   rating: number;
   comment: string;
   status: ReviewStatus;
+  orderId?: mongoose.Types.ObjectId | null;
+  images?: ReviewImage[];
   reply?: string | null;
   replyDate?: Date | null;
   repliedBy?: mongoose.Types.ObjectId | null;
@@ -38,6 +45,13 @@ const ReviewSchema = new Schema<ReviewDocument>(
       enum: ['pending', 'approved', 'rejected'],
       default: 'pending'
     },
+    orderId: {type: Schema.Types.ObjectId, ref: 'Order', default: null},
+    images: [
+      {
+        url: {type: String, required: true},
+        alt: {type: String, default: ''}
+      }
+    ],
     reply: {type: String, default: null, trim: true},
     replyDate: {type: Date, default: null},
     repliedBy: {type: Schema.Types.ObjectId, ref: 'Admin', default: null},
@@ -55,6 +69,10 @@ const ReviewSchema = new Schema<ReviewDocument>(
 
 ReviewSchema.index({status: 1, createdAt: -1});
 ReviewSchema.index({customerId: 1, createdAt: -1});
+ReviewSchema.index(
+  {customerId: 1, orderId: 1},
+  {unique: true, partialFilterExpression: {orderId: {$ne: null}}}
+);
 
 export const ReviewModel = mongoose.model<ReviewDocument>(
   'Review',

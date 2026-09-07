@@ -1,7 +1,7 @@
 import {Router} from 'express';
 import multer from 'multer';
 import {uploadController} from '../controllers/upload.controller';
-import {requireAdmin, requireAuth} from '../middleware/auth';
+import {requireAdmin, requireAuth, requireCustomer} from '../middleware/auth';
 
 const router = Router();
 
@@ -41,6 +41,14 @@ router.post(
   requireAdmin,
   upload.single('file'),
   uploadController.uploadSectionImage
+);
+
+router.post(
+  '/review-image',
+  requireAuth,
+  requireCustomer,
+  upload.single('file'),
+  uploadController.uploadReviewImage
 );
 
 export default router;

@@ -44,6 +44,8 @@ export interface ReviewItem {
   quote: string;
   name: string;
   tag: string;
+  profilePhoto?: string | null;
+  images?: {url: string; alt?: string}[];
 }
 
 export interface ReviewsSection {

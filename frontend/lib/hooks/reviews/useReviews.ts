@@ -2,6 +2,7 @@
 
 import {
   createReview,
+  getReviewEligibility,
   listAdminReviews,
   listMyReviews,
   listPublicReviews,
@@ -15,6 +16,7 @@ import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 export const publicReviewsQueryKey = ['reviews', 'public'] as const;
 export const myReviewsQueryKey = ['reviews', 'my'] as const;
 export const adminReviewsQueryKey = ['reviews', 'admin'] as const;
+export const reviewEligibilityQueryKey = ['reviews', 'eligibility'] as const;
 
 export function usePublicReviewsQuery() {
   return useQuery({
@@ -45,12 +47,25 @@ export function useAdminReviewsQuery() {
   });
 }
 
+export function useReviewEligibilityQuery() {
+  return useQuery({
+    queryKey: reviewEligibilityQueryKey,
+    queryFn: getReviewEligibility,
+    refetchOnWindowFocus: false,
+    refetchInterval: 5000,
+    staleTime: 1000
+  });
+}
+
 export function useCreateReviewMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createReview,
     onSuccess: async () => {
       await queryClient.invalidateQueries({queryKey: myReviewsQueryKey});
+      await queryClient.invalidateQueries({
+        queryKey: reviewEligibilityQueryKey
+      });
     }
   });
 }

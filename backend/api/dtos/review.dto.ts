@@ -2,7 +2,12 @@ import {z} from 'zod';
 
 export const createReviewDto = z.object({
   rating: z.coerce.number().int().min(1).max(5),
-  comment: z.string().min(1).max(1000)
+  comment: z.string().min(1).max(1000),
+  images: z
+    .array(z.string().url().max(500))
+    .max(3)
+    .optional()
+    .default([])
 });
 
 export type CreateReviewDto = z.infer<typeof createReviewDto>;

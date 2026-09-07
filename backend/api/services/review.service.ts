@@ -10,7 +10,26 @@ import type {AdminDocument} from '../models/Admin.model';
 
 export const reviewService = {
   async listPublic() {
-    return reviewRepository.listApproved();
+    const reviews = await reviewRepository.listApproved();
+    return reviews.map(review => {
+      const obj = review.toObject();
+      const customer = obj.customerId as
+        | {_id?: unknown; profilePhoto?: string}
+        | null
+        | undefined;
+      const isPopulated =
+        customer && typeof customer === 'object' && !Array.isArray(customer);
+      const profilePhoto = isPopulated
+        ? (customer as {profilePhoto?: string}).profilePhoto ?? null
+        : null;
+      return {
+        ...obj,
+        profilePhoto,
+        customerId: isPopulated
+          ? String((customer as {_id?: unknown})._id)
+          : String(obj.customerId)
+      };
+    });
   },
 
   async listForAdmin() {
@@ -21,17 +40,36 @@ export const reviewService = {
     return reviewRepository.listByCustomerId(customerId);
   },
 
-  async createById(customerId: string, data: {rating: number; comment: string}) {
+  async getEligibility(customerId: string) {
+    const unreviewedOrders = await reviewRepository.getUnreviewedCompletedOrders(
+      customerId
+    );
+    return {
+      eligible: unreviewedOrders.length > 0,
+      remainingCount: unreviewedOrders.length
+    };
+  },
+
+  async createById(
+    customerId: string,
+    data: {rating: number; comment: string; images?: string[]}
+  ) {
     if (!data.comment.trim()) {
       throw new ApiError(400, 'VALIDATION_ERROR', 'Comment is required');
     }
 
-    const hasOrder = await reviewRepository.hasCompletedOrder(customerId);
-    if (!hasOrder) {
+    const images = (data.images ?? [])
+      .map(url => ({url, alt: ''}))
+      .slice(0, 3);
+
+    const unreviewedOrders = await reviewRepository.getUnreviewedCompletedOrders(
+      customerId
+    );
+    if (unreviewedOrders.length === 0) {
       throw new ApiError(
         403,
         'REVIEW_NOT_ELIGIBLE',
-        'You need at least one completed order to leave a review.'
+        'You can only leave one review per completed order.'
       );
     }
 
@@ -47,12 +85,29 @@ export const reviewService = {
       .join(' ')
       .trim();
 
-    const created = await reviewRepository.create({
-      customerId: customer._id as any,
-      customerName: customerName || 'Customer',
-      rating: data.rating,
-      comment: data.comment
-    });
+    const targetOrder = unreviewedOrders[0];
+
+    let created;
+    try {
+      created = await reviewRepository.create({
+        customerId: customer._id as any,
+        customerName: customerName || 'Customer',
+        rating: data.rating,
+        comment: data.comment,
+        orderId: targetOrder._id as any,
+        images
+      });
+    } catch (error) {
+      const isDuplicate = (error as {code?: number})?.code === 11000;
+      if (isDuplicate) {
+        throw new ApiError(
+          403,
+          'REVIEW_NOT_ELIGIBLE',
+          'This order has already been reviewed.'
+        );
+      }
+      throw error;
+    }
 
     try {
       const admins = (await adminRepository.listAll()) as

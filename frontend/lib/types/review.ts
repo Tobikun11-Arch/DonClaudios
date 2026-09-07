@@ -10,6 +10,11 @@ export interface ReviewMessage {
   createdAt: string;
 }
 
+export interface ReviewImage {
+  url: string;
+  alt?: string;
+}
+
 export interface Review {
   _id: string;
   customerId: string;
@@ -17,11 +22,24 @@ export interface Review {
   rating: number;
   comment: string;
   status: ReviewStatus;
+  orderId?: string | null;
+  images?: ReviewImage[];
+  profilePhoto?: string | null;
   reply?: string | null;
   replyDate?: string | null;
   messages: ReviewMessage[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ReviewEligibility {
+  eligible: boolean;
+  remainingCount: number;
+}
+
+export interface ReviewEligibilityResponse {
+  eligible: boolean;
+  remainingCount: number;
 }
 
 export interface ListReviewsResponse {
@@ -39,6 +57,7 @@ export interface CreateReviewResponse {
 export interface CreateReviewBody {
   rating: number;
   comment: string;
+  images?: string[];
 }
 
 export interface UpdateReviewStatusResponse {
