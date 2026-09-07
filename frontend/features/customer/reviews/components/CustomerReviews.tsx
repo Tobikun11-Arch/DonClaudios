@@ -1,17 +1,28 @@
 'use client';
 
 import {useRef, useState} from 'react';
-import {Star, Send, MessageCircle} from 'lucide-react';
+import Image from 'next/image';
+import {Star, Send, MessageCircle, ImagePlus, X} from 'lucide-react';
 import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
 import {
   useCreateReviewMutation,
   useCustomerReplyReviewMutation,
-  useMyReviewsQuery
+  useMyReviewsQuery,
+  useReviewEligibilityQuery
 } from '@/lib/hooks/reviews/useReviews';
+import {uploadReviewImage} from '@/lib/api/uploadApi';
 import type {Review, ReviewMessage} from '@/lib/types/review';
 import type {NormalizedApiError} from '@/lib/api/types';
 import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
+
+const MAX_REVIEW_IMAGES = 3;
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
+type SelectedImage = {
+  file: File;
+  previewUrl: string;
+};
 
 function StarRating({
   value,
@@ -92,6 +103,8 @@ function MessageBubble({
 
 export default function CustomerReviews() {
   const {data, isLoading, isError} = useMyReviewsQuery();
+  const {data: eligibilityData, isLoading: eligibilityLoading} =
+    useReviewEligibilityQuery();
   const createMutation = useCreateReviewMutation();
   const customerReplyMutation = useCustomerReplyReviewMutation();
 
@@ -99,6 +112,9 @@ export default function CustomerReviews() {
 
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
+  const [images, setImages] = useState<SelectedImage[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const [replyingId, setReplyingId] = useState<string | null>(
     isOpenChat ? highlightId : null
   );
@@ -114,6 +130,47 @@ export default function CustomerReviews() {
   }
 
   const reviews = data?.reviews ?? [];
+  const remainingCount = eligibilityData?.remainingCount ?? 0;
+  const canReview = remainingCount > 0;
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    const freeSlots = MAX_REVIEW_IMAGES - images.length;
+    if (freeSlots <= 0) {
+      toast.error('You can attach up to 3 images.');
+      return;
+    }
+
+    const accepted: SelectedImage[] = [];
+    for (const file of files.slice(0, freeSlots)) {
+      if (!file.type.startsWith('image/')) {
+        toast.error(`"${file.name}" must be an image file.`);
+        continue;
+      }
+      if (file.size > MAX_IMAGE_SIZE) {
+        toast.error(`"${file.name}" must be under 5MB.`);
+        continue;
+      }
+      accepted.push({file, previewUrl: URL.createObjectURL(file)});
+    }
+
+    if (accepted.length > 0) {
+      setImages(prev => [...prev, ...accepted]);
+    }
+    if (e.target) {
+      e.target.value = '';
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setImages(prev => {
+      const next = [...prev];
+      const [removed] = next.splice(index, 1);
+      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      return next;
+    });
+  };
+
   const handleSubmit = async () => {
     if (rating < 1) {
       toast.error('Please select a rating.');
@@ -124,21 +181,41 @@ export default function CustomerReviews() {
       return;
     }
 
+    const uploadedUrls: string[] = [];
     try {
-      await createMutation.mutateAsync({rating, comment});
+      if (images.length > 0) {
+        setUploadingImages(true);
+        for (const image of images) {
+          const {imageUrl} = await uploadReviewImage(image.file);
+          uploadedUrls.push(imageUrl);
+        }
+      }
+      await createMutation.mutateAsync({
+        rating,
+        comment,
+        images: uploadedUrls
+      });
       toast.success('Review submitted! It will appear after approval.');
       setRating(0);
       setComment('');
+      setImages(prev => {
+        prev.forEach(image => URL.revokeObjectURL(image.previewUrl));
+        return [];
+      });
     } catch (error) {
       const err = error as NormalizedApiError;
       const code = err?.code;
       if (code === 'REVIEW_NOT_ELIGIBLE') {
-        toast.error('You need at least one completed order to leave a review.');
+        toast.error('You can only leave one review per completed order.');
       } else {
         toast.error(err?.message ?? 'Failed to submit review.');
       }
+    } finally {
+      setUploadingImages(false);
     }
   };
+
+  const isSubmitting = createMutation.isPending || uploadingImages;
 
   const messagesFor = (review: Review): ReviewMessage[] => {
     if (review.messages && review.messages.length > 0) {
@@ -210,38 +287,113 @@ export default function CustomerReviews() {
       {/* Submit review */}
       <div className="rounded-2xl bg-white shadow p-6 mb-6">
         <h3 className="text-lg font-bold text-gray-900 mb-1">Leave a Review</h3>
-        <p className="text-sm text-gray-500 mb-4">
-          You can review after completing at least one order.
-        </p>
+        {canReview ? (
+          <p className="text-sm text-gray-500 mb-4">
+            You can review after completing an order. You have{' '}
+            <span className="font-semibold text-[#2d4a35]">
+              {remainingCount} review{remainingCount === 1 ? '' : 's'}
+            </span>{' '}
+            left.
+          </p>
+        ) : (
+          <p className="text-sm text-gray-500 mb-4">
+            One review per completed order. Come back after your next completed
+            order to leave another review.
+          </p>
+        )}
 
-        <div className="mb-4">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Your Rating
-          </label>
-          <StarRating value={rating} onChange={setRating} />
-        </div>
+        {!eligibilityLoading && !canReview ? (
+          <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 text-sm text-gray-500">
+            You&apos;ve already left a review for all of your completed orders.
+          </div>
+        ) : (
+          <>
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Your Rating
+              </label>
+              <StarRating value={rating} onChange={setRating} />
+            </div>
 
-        <div className="mb-4">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Your Review
-          </label>
-          <textarea
-            value={comment}
-            onChange={e => setComment(e.target.value)}
-            rows={4}
-            maxLength={1000}
-            placeholder="Tell us about your experience..."
-            className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e]"
-          />
-        </div>
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Your Review
+              </label>
+              <textarea
+                value={comment}
+                onChange={e => setComment(e.target.value)}
+                rows={4}
+                maxLength={1000}
+                placeholder="Tell us about your experience..."
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e]"
+              />
+            </div>
 
-        <Button
-          onClick={handleSubmit}
-          disabled={createMutation.isPending}
-          className="bg-[#2d4a35] hover:bg-[#3a5c44] text-white"
-        >
-          {createMutation.isPending ? 'Submitting...' : 'Submit Review'}
-        </Button>
+            {/* Images */}
+            <div className="mb-5">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Photos{' '}
+                <span className="font-normal text-gray-400">
+                  (optional, up to {MAX_REVIEW_IMAGES})
+                </span>
+              </label>
+              <div className="flex flex-wrap gap-3">
+                {images.map((image, index) => (
+                  <div
+                    key={image.previewUrl}
+                    className="relative h-24 w-24 rounded-xl overflow-hidden border border-gray-200"
+                  >
+                    <Image
+                      src={image.previewUrl}
+                      alt={`Review image ${index + 1}`}
+                      fill
+                      sizes="96px"
+                      className="object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute top-1 right-1 rounded-full bg-black/60 text-white p-1 hover:bg-black/80"
+                      aria-label="Remove image"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+                {images.length < MAX_REVIEW_IMAGES && (
+                  <button
+                    type="button"
+                    onClick={() => imageInputRef.current?.click()}
+                    className="h-24 w-24 rounded-xl border-2 border-dashed border-gray-300 hover:border-[#6b8a6e] hover:bg-gray-50 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-[#2d4a35] transition-colors"
+                  >
+                    <ImagePlus size={20} />
+                    <span className="text-[11px] font-semibold">Add Photo</span>
+                  </button>
+                )}
+              </div>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageChange}
+                className="hidden"
+              />
+            </div>
+
+            <Button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="bg-[#2d4a35] hover:bg-[#3a5c44] text-white"
+            >
+              {uploadingImages
+                ? 'Submitting...'
+                : createMutation.isPending
+                  ? 'Submitting...'
+                  : 'Submit Review'}
+            </Button>
+          </>
+        )}
       </div>
 
       {/* My reviews list */}
@@ -279,6 +431,21 @@ export default function CustomerReviews() {
                 <p className="text-sm text-gray-700 mt-3">
                   &ldquo;{review.comment}&rdquo;
                 </p>
+
+                {review.images && review.images.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {review.images.map((image, index) => (
+                      <Image
+                        key={index}
+                        src={image.url}
+                        alt={image.alt || 'Review photo'}
+                        width={96}
+                        height={96}
+                        className="h-24 w-24 rounded-lg object-cover border border-gray-200"
+                      />
+                    ))}
+                  </div>
+                )}
 
                 <p className="text-xs text-gray-400 mt-2">
                   {review.createdAt

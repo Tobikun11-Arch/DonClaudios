@@ -21,6 +21,10 @@ export type UploadSectionImageResponse = {
   imageUrl: string;
 };
 
+export type UploadReviewImageResponse = {
+  imageUrl: string;
+};
+
 export async function uploadProductImage(file: File) {
   const data = new FormData();
   data.append('file', file);
@@ -63,6 +67,18 @@ export async function uploadSectionImage(file: File) {
 
   const res = await uploadClient.post<UploadSectionImageResponse>(
     '/upload/section-image',
+    data
+  );
+
+  return res.data;
+}
+
+export async function uploadReviewImage(file: File) {
+  const data = new FormData();
+  data.append('file', file);
+
+  const res = await uploadClient.post<UploadReviewImageResponse>(
+    '/upload/review-image',
     data
   );
 

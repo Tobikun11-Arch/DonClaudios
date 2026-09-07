@@ -1,6 +1,7 @@
 'use client';
 
 import {useMemo, useRef, useState} from 'react';
+import Image from 'next/image';
 import {Star, Send, Mail, MailOpen} from 'lucide-react';
 import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
@@ -272,6 +273,20 @@ export default function OwnerReviews() {
                     <p className="text-sm text-gray-700 mt-3">
                       &ldquo;{review.comment}&rdquo;
                     </p>
+                    {review.images && review.images.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {review.images.map((image, index) => (
+                          <Image
+                            key={index}
+                            src={image.url}
+                            alt={image.alt || 'Review photo'}
+                            width={96}
+                            height={96}
+                            className="h-24 w-24 rounded-lg object-cover border border-gray-200"
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex md:flex-col gap-2 shrink-0">

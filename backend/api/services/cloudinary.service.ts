@@ -124,3 +124,28 @@ export async function uploadSectionImageBuffer(params: {
     stream.end(params.buffer);
   });
 }
+
+export async function uploadReviewImageBuffer(params: {
+  buffer: Buffer;
+  filename?: string;
+}) {
+  ensureCloudinaryConfigured();
+
+  return new Promise<{secureUrl: string}>(function executor(resolve, reject) {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'reviews',
+        resource_type: 'image'
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        if (!result?.secure_url) {
+          return reject(new Error('Cloudinary upload returned no secure_url'));
+        }
+        resolve({secureUrl: result.secure_url});
+      }
+    );
+
+    stream.end(params.buffer);
+  });
+}

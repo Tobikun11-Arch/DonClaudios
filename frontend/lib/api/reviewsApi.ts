@@ -7,6 +7,7 @@ import type {
   ReplyReviewByCustomerBody,
   ReplyReviewByCustomerResponse,
   ReplyReviewResponse,
+  ReviewEligibilityResponse,
   UpdateReviewStatusBody,
   UpdateReviewStatusResponse
 } from '@/lib/types/review';
@@ -18,6 +19,13 @@ export async function listPublicReviews() {
 
 export async function listMyReviews() {
   const res = await httpClient.get<ListReviewsResponse>('/reviews/my');
+  return res.data;
+}
+
+export async function getReviewEligibility() {
+  const res = await httpClient.get<ReviewEligibilityResponse>(
+    '/reviews/eligibility'
+  );
   return res.data;
 }
 
