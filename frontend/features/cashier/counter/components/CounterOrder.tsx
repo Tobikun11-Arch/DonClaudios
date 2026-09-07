@@ -2,7 +2,16 @@
 
 import {useMemo, useState} from 'react';
 import Image from 'next/image';
-import {Minus, Plus, Search, Trash2, ShoppingCart, RotateCcw} from 'lucide-react';
+import {
+  Minus,
+  Plus,
+  Search,
+  Trash2,
+  ShoppingCart,
+  RotateCcw,
+  Receipt,
+  X
+} from 'lucide-react';
 import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
@@ -13,6 +22,8 @@ import {
   useCreateCounterOrderMutation,
   useVoidCounterOrderMutation
 } from '@/lib/hooks/orders/useCashierCounterOrder';
+import CounterOrderReceipt from './CounterOrderReceipt';
+import type {CounterOrderEntry} from '@/lib/api/orderApi';
 
 type CartLine = {
   productId: string;
@@ -136,6 +147,7 @@ export default function CounterOrder() {
   const voidOrder = useVoidCounterOrderMutation();
   const {data: historyData, isLoading: historyLoading} = useCounterOrdersQuery();
   const history = useMemo(() => historyData?.orders ?? [], [historyData]);
+  const [receiptOrder, setReceiptOrder] = useState<CounterOrderEntry | null>(null);
 
   const handlePlaceOrder = async () => {
     if (cart.length === 0) {
@@ -405,7 +417,7 @@ export default function CounterOrder() {
                 />
               </div>
               <div>
-                <Label className="text-xs font-medium">Email (receipt)</Label>
+                <Label className="text-xs font-medium">Order confirmation</Label>
                 <Input
                   type="email"
                   value={email}
@@ -463,12 +475,17 @@ export default function CounterOrder() {
             {history.map(order => (
               <div
                 key={order._id}
-                className="rounded-xl border border-gray-100 p-3"
+                className="cursor-pointer rounded-xl border border-gray-100 p-3 transition-colors hover:border-gray-200 hover:bg-gray-50"
+                onClick={() => setReceiptOrder(order)}
               >
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-gray-800">
+                  <button
+                    type="button"
+                    className="text-sm font-semibold text-gray-800 hover:text-[#2d4a35] hover:underline"
+                    onClick={() => setReceiptOrder(order)}
+                  >
                     #{String(order._id).slice(-6).toUpperCase()}
-                  </p>
+                  </button>
                   <span
                     className={
                       'rounded-full px-2 py-0.5 text-xs font-semibold ' +
@@ -487,24 +504,63 @@ export default function CounterOrder() {
                   <span className="text-sm font-bold text-gray-900">
                     ₱{order.totalAmount.toLocaleString()}
                   </span>
-                  {order.orderStatus !== 'cancelled' && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-red-600"
-                      disabled={voidOrder.isPending}
-                      onClick={() => handleVoid(order._id)}
-                    >
-                      <RotateCcw className="h-4 w-4" /> Void
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {order.orderStatus !== 'cancelled' && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600"
+                        disabled={voidOrder.isPending}
+                        onClick={e => {
+                          e.stopPropagation();
+                          handleVoid(order._id);
+                        }}
+                      >
+                        <RotateCcw className="h-4 w-4" /> Void
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {receiptOrder && (
+        <div
+          className="fixed inset-0 z-100"
+          onClick={() => setReceiptOrder(null)}
+        >
+          <div className="absolute inset-0 bg-black/40" aria-hidden="true" />
+          <div className="absolute inset-0 flex items-center justify-center p-0 sm:p-6">
+            <div
+              onClick={e => e.stopPropagation()}
+              className="flex h-full w-full flex-col overflow-hidden bg-white shadow-xl sm:h-auto sm:w-auto sm:max-w-md sm:rounded-2xl sm:border sm:border-gray-100"
+            >
+              <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+                <div>
+                  <p className="text-sm font-bold text-gray-900">Order Receipt</p>
+                  <p className="text-xs text-gray-500">
+                    #{String(receiptOrder._id).slice(-6).toUpperCase()}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReceiptOrder(null)}
+                  className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                <CounterOrderReceipt order={receiptOrder} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
