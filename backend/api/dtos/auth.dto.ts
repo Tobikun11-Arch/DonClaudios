@@ -50,7 +50,11 @@ export const updateProfileDto = z.object({
   businessContactNumber: z.string().min(1).optional(),
   operatingHours: z.string().min(1).optional(),
   businessType: z.string().min(1).optional(),
-  address: z.string().min(1).optional()
+  address: z.string().min(1).optional(),
+  closingTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  advanceCloseMinutes: z.number().int().min(5).max(60).optional(),
+  isManuallyClosed: z.boolean().optional(),
+  manualCloseReason: z.string().optional()
 });
 
 export const changePasswordDto = z.object({

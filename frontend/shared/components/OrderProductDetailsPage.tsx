@@ -17,6 +17,7 @@ import {
   getPromoBadgeForProduct
 } from '@/lib/utils/promoPricing';
 import {useCustomerCartQuery} from '@/lib/hooks/cart/useCustomerCart';
+import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 
 export default function OrderProductDetailsPage({id}: {id: string}) {
   const productQuery = useProductQuery(id);
@@ -29,6 +30,9 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
   const router = useRouter();
   const pathname = usePathname();
   const isCustomerRoute = pathname.startsWith('/customer');
+
+  const storeStatusQuery = useStoreStatusQuery();
+  const storeClosed = storeStatusQuery.data?.status.isOpen === false;
 
   const openCart = useCartUiStore(s => s.open);
   const cartQuery = useCustomerCartQuery(isCustomerRoute);
@@ -240,7 +244,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                 </div>
                 <Button
                   type="button"
-                  disabled={!product}
+                  disabled={!product || storeClosed}
                   onClick={() => {
                     if (!product) return;
                     if (isCustomerRoute) {
@@ -267,7 +271,10 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                   }}
                   className="w-full sm:flex-1 h-12 rounded-full bg-[#3c5e45] text-white"
                 >
-                  Add to Cart - <span className="font-bold">₱{total}.00</span>
+                  Add to Cart -{' '}
+                  <span className="font-bold">
+                    {storeClosed ? 'Store is Closed' : `₱${total}.00`}
+                  </span>
                 </Button>
               </div>
             </div>

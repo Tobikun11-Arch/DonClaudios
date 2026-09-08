@@ -8,6 +8,7 @@ import {notificationService} from '../services/notification.service';
 import {cashierRepository} from '../repositories/cashier.repository';
 import {customerRepository} from '../repositories/customer.repository';
 import {sendOrderReceiptEmail} from '../services/receipt.service';
+import {storeStatusService} from '../services/storeStatus.service';
 import type {PaymentMethod} from '../models/Transaction.model';
 import type {OrderStatus} from '../models/Order.model';
 import type {CashierDocument} from '../models/Cashier.model';
@@ -38,6 +39,19 @@ async function notifyCashiersOfNewOrder(orderId: string, totalAmount: number) {
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+async function assertStoreOpen() {
+  const status = await storeStatusService.getStoreStatus();
+  if (!status.isOpen) {
+    throw new ApiError(
+      423,
+      'STORE_CLOSED',
+      status.isManuallyClosed && status.manualCloseReason
+        ? `Store is temporarily closed: ${status.manualCloseReason}`
+        : 'Store is currently closed'
+    );
+  }
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -181,6 +195,8 @@ export const orderController = {
         throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
       }
 
+      await assertStoreOpen();
+
       const {orderType, items, totalAmount, riderNotes, paymentMethod} =
         req.body;
 
@@ -266,6 +282,8 @@ export const orderController = {
 
   async createGuestOrder(req: Request, res: Response, next: NextFunction) {
     try {
+      await assertStoreOpen();
+
       const {
         guestInfo,
         orderType,

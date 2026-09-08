@@ -39,6 +39,10 @@ type MeResponse = {
     businessContactNumber?: string;
     operatingHours?: string;
     businessType?: string;
+    closingTime?: string;
+    advanceCloseMinutes?: number;
+    isManuallyClosed?: boolean;
+    manualCloseReason?: string;
   };
 };
 
@@ -62,6 +66,10 @@ export type UpdateProfileBody = {
   businessContactNumber?: string;
   operatingHours?: string;
   businessType?: string;
+  closingTime?: string;
+  advanceCloseMinutes?: number;
+  isManuallyClosed?: boolean;
+  manualCloseReason?: string;
 };
 
 type ChangePasswordBody = {

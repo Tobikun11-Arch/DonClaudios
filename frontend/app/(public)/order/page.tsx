@@ -18,6 +18,8 @@ import {
   getBundleBadge,
   getPromoBadgeForProduct
 } from '@/lib/utils/promoPricing';
+import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
+import StoreClosedOverlay from '@/shared/components/StoreClosedOverlay';
 
 function ProductsSection() {
   const {data, isLoading, isError} = useProductsQuery();
@@ -290,11 +292,21 @@ export default function OrderPage() {
 
   const setSavedLocation = useLocationStore(s => s.setLocation);
 
+  const storeStatusQuery = useStoreStatusQuery();
+
   const shouldShowLocationPicker = !savedLocation;
+
+  const isStoreClosed = storeStatusQuery.data?.status.isOpen === false;
 
   return (
     <div className="min-h-screen">
-      {shouldShowLocationPicker && (
+      {isStoreClosed ? (
+        <div className="pt-12">
+          {storeStatusQuery.data?.status ? (
+            <StoreClosedOverlay status={storeStatusQuery.data.status} />
+          ) : null}
+        </div>
+      ) : shouldShowLocationPicker ? (
         <div className="flex items-center justify-center min-h-screen p-4">
           <LocationPicker
             onConfirm={loc => {
@@ -302,9 +314,9 @@ export default function OrderPage() {
             }}
           />
         </div>
+      ) : (
+        <ProductsSection />
       )}
-
-      {!shouldShowLocationPicker && <ProductsSection />}
     </div>
   );
 }
