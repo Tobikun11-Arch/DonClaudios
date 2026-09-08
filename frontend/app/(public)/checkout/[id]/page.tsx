@@ -222,7 +222,8 @@ export default function CheckoutGuestPage() {
           ? 'gcash'
           : paymentMethod === 'Cash'
             ? 'cash'
-            : undefined
+            : undefined,
+      changeFor: changeFor.trim().length ? changeFor.trim() : undefined
     });
 
     const orderId = created?.order?._id;

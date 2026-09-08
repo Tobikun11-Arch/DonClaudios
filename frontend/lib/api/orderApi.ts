@@ -19,6 +19,7 @@ export type CreateGuestOrderInput = {
   totalAmount: number;
   riderNotes?: string;
   paymentMethod?: 'cash' | 'card' | 'gcash' | 'other';
+  changeFor?: string;
 };
 
 export type CreateCustomerOrderInput = {
@@ -27,6 +28,13 @@ export type CreateCustomerOrderInput = {
   totalAmount: number;
   riderNotes?: string;
   paymentMethod?: 'cash' | 'card' | 'gcash' | 'other';
+  contactInfo?: {
+    firstName?: string;
+    lastName?: string;
+    phoneNumber?: string;
+    address?: string;
+  };
+  changeFor?: string;
 };
 
 export type CreatedGuestOrderResponse = {
@@ -66,6 +74,7 @@ export type OrderHistoryEntry = {
   riderNotes?: string;
   orderStatus: string;
   isGuest: boolean;
+  changeFor?: string;
   guestInfo?: {
     firstName: string;
     lastName: string;

@@ -255,7 +255,10 @@ export default function OrderPromoBundleDetailsPage({id}: {id: string}) {
                           name: promo.title,
                           price: unitPrice,
                           quantity: qty,
-                          imageUrl: promo.imageUrl
+                          imageUrl: promo.imageUrl,
+                          instructions: instructions.trim().length
+                            ? instructions.trim()
+                            : undefined
                         });
                       } else {
                         addItem({

@@ -6,6 +6,7 @@ export type ServerCartItem = {
   price: number;
   quantity: number;
   imageUrl?: string;
+  instructions?: string;
 };
 
 export type ServerCart = {
@@ -27,6 +28,7 @@ export async function addCartItem(body: {
   price: number;
   quantity: number;
   imageUrl?: string;
+  instructions?: string;
 }) {
   const res = await httpClient.post<{cart: ServerCart}>('/cart/items', body);
   return res.data;

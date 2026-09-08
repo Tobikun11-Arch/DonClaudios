@@ -41,6 +41,11 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+function normalizeChangeFor(value: unknown): string | undefined {
+  if (!isNonEmptyString(value)) return undefined;
+  return value.trim();
+}
+
 async function assertStoreOpen() {
   const status = await storeStatusService.getStoreStatus();
   if (!status.isOpen) {
@@ -197,7 +202,7 @@ export const orderController = {
 
       await assertStoreOpen();
 
-      const {orderType, items, totalAmount, riderNotes, paymentMethod} =
+      const {orderType, items, totalAmount, riderNotes, paymentMethod, contactInfo, changeFor} =
         req.body;
 
       const validOrderTypes = ['pickup', 'delivery', 'reservation'] as const;
@@ -217,13 +222,38 @@ export const orderController = {
       const safeDeliveryFee =
         orderType === 'delivery' && items.length > 0 ? 49 : 0;
 
+      const customerList = await customerRepository.listByIds([
+        req.auth.userId as string
+      ]);
+      const customerProfile = customerList[0];
+
+      const offeredName = isNonEmptyString(contactInfo?.firstName)
+        ? contactInfo.firstName
+        : undefined;
+      const offeredLastName = isNonEmptyString(contactInfo?.lastName)
+        ? contactInfo.lastName
+        : undefined;
+      const offeredPhone = isNonEmptyString(contactInfo?.phoneNumber)
+        ? contactInfo.phoneNumber
+        : undefined;
+      const offeredAddress = isNonEmptyString(contactInfo?.address)
+        ? contactInfo.address
+        : undefined;
+
       const order = await orderRepository.create({
         customerId: req.auth.userId as any,
         isGuest: false,
+        guestInfo: {
+          firstName: offeredName ?? customerProfile?.firstName ?? '',
+          lastName: offeredLastName ?? customerProfile?.lastName ?? '',
+          phoneNumber: offeredPhone ?? customerProfile?.phoneNumber ?? '',
+          address: offeredAddress ?? customerProfile?.address ?? undefined
+        },
         orderType,
         totalAmount: safeTotalAmount,
         deliveryFee: safeDeliveryFee,
         riderNotes: isNonEmptyString(riderNotes) ? riderNotes : undefined,
+        changeFor: normalizeChangeFor(changeFor),
         isOnline: true
       });
 
@@ -290,7 +320,8 @@ export const orderController = {
         items,
         totalAmount,
         riderNotes,
-        paymentMethod
+        paymentMethod,
+        changeFor
       } = req.body;
 
       if (!guestInfo || typeof guestInfo !== 'object') {
@@ -339,6 +370,7 @@ export const orderController = {
         totalAmount: safeTotalAmount,
         deliveryFee: safeDeliveryFee,
         riderNotes: isNonEmptyString(riderNotes) ? riderNotes : undefined,
+        changeFor: normalizeChangeFor(changeFor),
         isOnline: true
       });
 

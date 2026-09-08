@@ -253,7 +253,10 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                         name: product.name,
                         price: product.price,
                         quantity: qty,
-                        imageUrl: product.imageUrl
+                        imageUrl: product.imageUrl,
+                        instructions: instructions.trim().length
+                          ? instructions.trim()
+                          : undefined
                       });
                     } else {
                       addItem({

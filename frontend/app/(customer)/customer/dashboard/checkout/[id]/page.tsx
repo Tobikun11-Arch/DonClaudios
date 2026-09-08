@@ -209,14 +209,24 @@ export default function CustomerCheckoutPage() {
           return {
             productId: getProductId(i.productId),
             quantity: i.quantity,
-            price: unitPrice
+            price: unitPrice,
+            specialRequest: i.instructions?.trim().length
+              ? i.instructions.trim()
+              : undefined
           };
         }),
         totalAmount: total,
         riderNotes: notesToRider.trim().length
           ? notesToRider.trim()
           : undefined,
-        paymentMethod: paymentMethod === 'GCash' ? 'gcash' : 'cash'
+        paymentMethod: paymentMethod === 'GCash' ? 'gcash' : 'cash',
+        contactInfo: {
+          firstName: customer?.firstName,
+          lastName: customer?.lastName,
+          phoneNumber: customer?.phoneNumber,
+          address: address.trim().length ? address.trim() : undefined
+        },
+        changeFor: changeFor.trim().length ? changeFor.trim() : undefined
       });
 
       const orderId = created?.order?._id;
@@ -656,6 +666,12 @@ export default function CustomerCheckoutPage() {
                             </p>
                           ) : null}
                         </div>
+
+                        {item.instructions?.trim() ? (
+                          <p className="mt-1 text-xs text-gray-500 italic">
+                            “{item.instructions}”
+                          </p>
+                        ) : null}
 
                         <div className="mt-2 inline-flex items-center rounded-full border border-gray-200 overflow-hidden">
                           <button

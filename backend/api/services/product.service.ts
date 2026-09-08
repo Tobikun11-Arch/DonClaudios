@@ -29,7 +29,7 @@ export const productService = {
     return productRepository.create({
       ...data,
       isAvailable: data.isAvailable ?? true,
-      createdBy: adminId
+      createdBy: adminId as any
     });
   },
 

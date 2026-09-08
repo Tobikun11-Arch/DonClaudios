@@ -6,6 +6,7 @@ export interface CartItem {
   price: number;
   quantity: number;
   imageUrl?: string;
+  instructions?: string;
 }
 
 export interface CartDocument extends mongoose.Document {
@@ -20,7 +21,8 @@ const CartItemSchema = new Schema<CartItem>(
     name: {type: String, required: true},
     price: {type: Number, required: true},
     quantity: {type: Number, required: true, min: 1},
-    imageUrl: {type: String}
+    imageUrl: {type: String},
+    instructions: {type: String}
   },
   {_id: false}
 );

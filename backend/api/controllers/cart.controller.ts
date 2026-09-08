@@ -22,14 +22,15 @@ export const cartController = {
         throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
       }
 
-      const {productId, name, price, quantity, imageUrl} = req.body;
+      const {productId, name, price, quantity, imageUrl, instructions} = req.body;
 
       const cart = await cartService.addItem(req.auth.userId, {
         productId,
         name,
         price,
         quantity,
-        imageUrl
+        imageUrl,
+        instructions
       });
 
       res.status(200).json({cart});

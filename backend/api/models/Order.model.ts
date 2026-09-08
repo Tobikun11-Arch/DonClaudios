@@ -37,6 +37,7 @@ export interface OrderDocument extends mongoose.Document {
   totalAmount: number;
   deliveryFee: number;
   riderNotes?: string;
+  changeFor?: string;
   orderStatus: OrderStatus;
   isOnline: boolean;
   stockDeducted: boolean;
@@ -73,6 +74,7 @@ const OrderSchema = new Schema<OrderDocument>(
     totalAmount: {type: Number, required: true},
     deliveryFee: {type: Number, default: 0},
     riderNotes: {type: String},
+    changeFor: {type: String},
     orderStatus: {
       type: String,
       enum: [
