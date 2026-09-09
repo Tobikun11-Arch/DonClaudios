@@ -170,7 +170,7 @@ export default function Header() {
             className="flex items-center gap-2 bg-[#3c5e45]"
           >
             <span className="relative">
-              <ShoppingCart className="w-4 h-4" />
+              <ShoppingCart className="w-6 h-6" />
               {isOrderRoute && cartUniqueCount > 0 && (
                 <span className="absolute -right-2 -top-2 h-5 min-w-5 px-1 rounded-full bg-[#c30010] text-white text-[10px] font-bold grid place-items-center">
                   {cartUniqueCount}
@@ -240,7 +240,7 @@ export default function Header() {
               className="flex items-center justify-center gap-2 bg-[#3c5e45] text-sm px-3 py-2"
             >
               <span className="relative">
-                <ShoppingCart className="w-4 h-4" />
+                <ShoppingCart className="w-6 h-6" />
                 {isOrderRoute && cartUniqueCount > 0 && (
                   <span className="absolute -right-2 -top-2 h-5 min-w-5 px-1 rounded-full bg-[#c30010] text-white text-[10px] font-bold grid place-items-center">
                     {cartUniqueCount}
