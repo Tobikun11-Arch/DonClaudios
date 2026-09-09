@@ -430,6 +430,17 @@ function OrderCard({
             </div>
           )}
 
+          {order.paymentMethod === 'cash' && order.changeFor ? (
+            <div className="mt-3 rounded-xl border border-teal-100 bg-teal-50 p-3">
+              <p className="mb-1 text-xs font-bold uppercase tracking-wide text-teal-700">
+                Change for
+              </p>
+              <p className="text-sm font-semibold text-gray-900">
+                {order.changeFor}
+              </p>
+            </div>
+          ) : null}
+
           <div className="mt-4">
             <h3 className="mb-3 text-sm font-bold text-gray-900">
               Order Items

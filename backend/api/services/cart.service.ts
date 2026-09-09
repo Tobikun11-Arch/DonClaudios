@@ -14,6 +14,7 @@ export const cartService = {
       price: number;
       quantity: number;
       imageUrl?: string;
+      instructions?: string;
     }
   ) {
     const quantity = Math.max(1, item.quantity);
@@ -28,13 +29,15 @@ export const cartService = {
       existing.name = item.name;
       existing.price = item.price;
       existing.imageUrl = item.imageUrl;
+      existing.instructions = item.instructions;
     } else {
       cart.items.push({
         productId: item.productId as any,
         name: item.name,
         price: item.price,
         quantity,
-        imageUrl: item.imageUrl
+        imageUrl: item.imageUrl,
+        instructions: item.instructions
       });
     }
 

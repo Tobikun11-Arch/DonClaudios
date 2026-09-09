@@ -191,6 +191,13 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
             <p className="text-sm text-gray-700">{order.riderNotes}</p>
           </div>
         ) : null}
+
+        {order.paymentMethod === 'cash' && order.changeFor ? (
+          <div className="mt-4 rounded-xl bg-teal-50 border border-teal-100 p-3">
+            <p className="text-xs font-bold text-teal-700 uppercase tracking-wide mb-1">Change for</p>
+            <p className="text-sm font-semibold text-gray-900">{order.changeFor}</p>
+          </div>
+        ) : null}
       </div>
 
       <div className="rounded-2xl bg-white shadow p-6">

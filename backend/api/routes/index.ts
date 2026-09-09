@@ -13,6 +13,7 @@ import reviewRoutes from './review.routes';
 import notificationRoutes from './notification.routes';
 import rewardRoutes from './reward.routes';
 import supportRoutes from './support.routes';
+import storeStatusRoutes from './storeStatus.routes';
 
 const router = Router();
 
@@ -30,5 +31,6 @@ router.use('/reviews', reviewRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/rewards', rewardRoutes);
 router.use('/support', supportRoutes);
+router.use('/store-status', storeStatusRoutes);
 
 export default router;

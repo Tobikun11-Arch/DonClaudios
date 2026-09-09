@@ -6,11 +6,13 @@ import OwnerNotificationBell from '@/features/owner/notifications/components/Own
 import {ProfileTab} from './ProfileTab';
 import {SecurityTab} from './SecurityTab';
 import {TeamTab} from './TeamTab';
+import {StoreStatusTab} from './StoreStatusTab';
 
-type TabId = 'profile' | 'security' | 'team';
+type TabId = 'profile' | 'store' | 'security' | 'team';
 
 const TABS: {id: TabId; label: string}[] = [
   {id: 'profile', label: 'Profile & Business Info'},
+  {id: 'store', label: 'Store Status'},
   {id: 'security', label: 'Security'},
   {id: 'team', label: 'Team'}
 ];
@@ -58,6 +60,7 @@ export function SettingsPage() {
 
       <div className="mt-6">
         {active === 'profile' && <ProfileTab />}
+        {active === 'store' && <StoreStatusTab />}
         {active === 'security' && <SecurityTab />}
         {active === 'team' && <TeamTab />}
       </div>

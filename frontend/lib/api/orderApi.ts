@@ -19,6 +19,7 @@ export type CreateGuestOrderInput = {
   totalAmount: number;
   riderNotes?: string;
   paymentMethod?: 'cash' | 'card' | 'gcash' | 'other';
+  changeFor?: string;
 };
 
 export type CreateCustomerOrderInput = {
@@ -27,6 +28,13 @@ export type CreateCustomerOrderInput = {
   totalAmount: number;
   riderNotes?: string;
   paymentMethod?: 'cash' | 'card' | 'gcash' | 'other';
+  contactInfo?: {
+    firstName?: string;
+    lastName?: string;
+    phoneNumber?: string;
+    address?: string;
+  };
+  changeFor?: string;
 };
 
 export type CreatedGuestOrderResponse = {
@@ -66,6 +74,8 @@ export type OrderHistoryEntry = {
   riderNotes?: string;
   orderStatus: string;
   isGuest: boolean;
+  changeFor?: string;
+  cancelReason?: string;
   guestInfo?: {
     firstName: string;
     lastName: string;
@@ -228,6 +238,27 @@ export async function sendAdminOrderMessage(orderId: string, body: string) {
   const res = await httpClient.post<{message: OrderMessage}>(
     `/orders/${orderId}/messages/admin`,
     {body}
+  );
+  return res.data;
+}
+
+export async function getTrackedOrder(orderId: string, phoneNumber?: string) {
+  const res = await httpClient.get<OrderDetailResponse>(
+    `/orders/customer/track/${orderId}`,
+    {params: phoneNumber ? {phoneNumber} : undefined}
+  );
+  return res.data;
+}
+
+export async function cancelTrackedOrder(
+  orderId: string,
+  reason: string,
+  phoneNumber?: string
+) {
+  const res = await httpClient.post<OrderDetailResponse>(
+    `/orders/customer/track/${orderId}/cancel`,
+    {reason},
+    {params: phoneNumber ? {phoneNumber} : undefined}
   );
   return res.data;
 }

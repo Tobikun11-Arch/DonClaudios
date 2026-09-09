@@ -18,6 +18,7 @@ import {useCartUiStore} from '@/app/store/cartUiStore';
 import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
+import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 import CartRemoveConfirmModal from './CartRemoveConfirmModal';
 
 type CartDrawerProps = {
@@ -73,6 +74,9 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
     () => promosQuery.data?.promos ?? [],
     [promosQuery.data?.promos]
   );
+
+  const storeStatusQuery = useStoreStatusQuery();
+  const storeClosed = storeStatusQuery.data?.status.isOpen === false;
 
   const subtotal = useMemo(() => {
     if (promos.length === 0) return getCartSubtotal(items);
@@ -305,10 +309,10 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
           <Button
             type="button"
             className="mt-4 w-full h-12 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
-            disabled={items.length === 0}
+            disabled={items.length === 0 || storeClosed}
             onClick={goToCheckout}
           >
-            Go To Checkout
+            {storeClosed ? 'Store is Closed' : 'Go To Checkout'}
           </Button>
         </div>
       </div>

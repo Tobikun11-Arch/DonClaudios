@@ -8,6 +8,7 @@ import {notificationService} from '../services/notification.service';
 import {cashierRepository} from '../repositories/cashier.repository';
 import {customerRepository} from '../repositories/customer.repository';
 import {sendOrderReceiptEmail} from '../services/receipt.service';
+import {storeStatusService} from '../services/storeStatus.service';
 import type {PaymentMethod} from '../models/Transaction.model';
 import type {OrderStatus} from '../models/Order.model';
 import type {CashierDocument} from '../models/Cashier.model';
@@ -38,6 +39,24 @@ async function notifyCashiersOfNewOrder(orderId: string, totalAmount: number) {
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+function normalizeChangeFor(value: unknown): string | undefined {
+  if (!isNonEmptyString(value)) return undefined;
+  return value.trim();
+}
+
+async function assertStoreOpen() {
+  const status = await storeStatusService.getStoreStatus();
+  if (!status.isOpen) {
+    throw new ApiError(
+      423,
+      'STORE_CLOSED',
+      status.isManuallyClosed && status.manualCloseReason
+        ? `Store is temporarily closed: ${status.manualCloseReason}`
+        : 'Store is currently closed'
+    );
+  }
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -139,6 +158,123 @@ export const orderController = {
     }
   },
 
+  async trackOrder(req: Request, res: Response, next: NextFunction) {
+    try {
+      const order = await orderRepository.findById(req.params.id);
+      if (!order) {
+        throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+      }
+
+      if (!req.auth) {
+        const phoneNumber =
+          typeof req.query.phoneNumber === 'string'
+            ? req.query.phoneNumber.trim()
+            : '';
+        if (
+          !phoneNumber ||
+          order.isGuest !== true ||
+          !order.guestInfo ||
+          order.guestInfo.phoneNumber !== phoneNumber
+        ) {
+          throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+        }
+      } else if (req.auth.type === 'customer') {
+        if (
+          order.isGuest ||
+          !order.customerId ||
+          String(order.customerId) !== req.auth.userId
+        ) {
+          throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+        }
+      } else {
+        throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+      }
+
+      const items = await orderItemRepository.listByOrderIds([String(order._id)]);
+
+      let customerName: string | undefined;
+      if (order.customerId) {
+        const customers = await customerRepository.listByIds([
+          String(order.customerId)
+        ]);
+        const customer = customers[0];
+        if (customer) {
+          customerName = `${customer.firstName} ${customer.lastName}`.trim();
+        }
+      }
+
+      const transaction = await transactionRepository.findByOrderId(
+        String(order._id)
+      );
+
+      res.json({
+        order: {
+          ...order.toObject(),
+          customerName,
+          paymentMethod: transaction?.paymentMethod,
+          items
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async cancelOrder(req: Request, res: Response, next: NextFunction) {
+    try {
+      const order = await orderRepository.findById(req.params.id);
+      if (!order) {
+        throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+      }
+
+      if (!req.auth) {
+        const phoneNumber =
+          typeof req.query.phoneNumber === 'string'
+            ? req.query.phoneNumber.trim()
+            : '';
+        if (
+          !phoneNumber ||
+          order.isGuest !== true ||
+          !order.guestInfo ||
+          order.guestInfo.phoneNumber !== phoneNumber
+        ) {
+          throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+        }
+      } else if (req.auth.type === 'customer') {
+        if (
+          order.isGuest ||
+          !order.customerId ||
+          String(order.customerId) !== req.auth.userId
+        ) {
+          throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+        }
+      } else {
+        throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+      }
+
+      const CANCELLABLE = ['pending', 'confirmed', 'preparing'];
+      if (!CANCELLABLE.includes(order.orderStatus)) {
+        throw new ApiError(
+          400,
+          'INVALID_OPERATION',
+          'Order can no longer be cancelled'
+        );
+      }
+
+      const reason =
+        typeof req.body?.reason === 'string' && req.body.reason.trim().length > 0
+          ? req.body.reason.trim()
+          : undefined;
+
+      await orderRepository.cancel(String(order._id), reason);
+
+      const updated = await orderRepository.findById(String(order._id));
+      res.status(200).json({order: updated});
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async listMyOrders(req: Request, res: Response, next: NextFunction) {
     try {
       if (!req.auth) {
@@ -181,7 +317,9 @@ export const orderController = {
         throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
       }
 
-      const {orderType, items, totalAmount, riderNotes, paymentMethod} =
+      await assertStoreOpen();
+
+      const {orderType, items, totalAmount, riderNotes, paymentMethod, contactInfo, changeFor} =
         req.body;
 
       const validOrderTypes = ['pickup', 'delivery', 'reservation'] as const;
@@ -201,13 +339,38 @@ export const orderController = {
       const safeDeliveryFee =
         orderType === 'delivery' && items.length > 0 ? 49 : 0;
 
+      const customerList = await customerRepository.listByIds([
+        req.auth.userId as string
+      ]);
+      const customerProfile = customerList[0];
+
+      const offeredName = isNonEmptyString(contactInfo?.firstName)
+        ? contactInfo.firstName
+        : undefined;
+      const offeredLastName = isNonEmptyString(contactInfo?.lastName)
+        ? contactInfo.lastName
+        : undefined;
+      const offeredPhone = isNonEmptyString(contactInfo?.phoneNumber)
+        ? contactInfo.phoneNumber
+        : undefined;
+      const offeredAddress = isNonEmptyString(contactInfo?.address)
+        ? contactInfo.address
+        : undefined;
+
       const order = await orderRepository.create({
         customerId: req.auth.userId as any,
         isGuest: false,
+        guestInfo: {
+          firstName: offeredName ?? customerProfile?.firstName ?? '',
+          lastName: offeredLastName ?? customerProfile?.lastName ?? '',
+          phoneNumber: offeredPhone ?? customerProfile?.phoneNumber ?? '',
+          address: offeredAddress ?? customerProfile?.address ?? undefined
+        },
         orderType,
         totalAmount: safeTotalAmount,
         deliveryFee: safeDeliveryFee,
         riderNotes: isNonEmptyString(riderNotes) ? riderNotes : undefined,
+        changeFor: normalizeChangeFor(changeFor),
         isOnline: true
       });
 
@@ -266,13 +429,16 @@ export const orderController = {
 
   async createGuestOrder(req: Request, res: Response, next: NextFunction) {
     try {
+      await assertStoreOpen();
+
       const {
         guestInfo,
         orderType,
         items,
         totalAmount,
         riderNotes,
-        paymentMethod
+        paymentMethod,
+        changeFor
       } = req.body;
 
       if (!guestInfo || typeof guestInfo !== 'object') {
@@ -321,6 +487,7 @@ export const orderController = {
         totalAmount: safeTotalAmount,
         deliveryFee: safeDeliveryFee,
         riderNotes: isNonEmptyString(riderNotes) ? riderNotes : undefined,
+        changeFor: normalizeChangeFor(changeFor),
         isOnline: true
       });
 

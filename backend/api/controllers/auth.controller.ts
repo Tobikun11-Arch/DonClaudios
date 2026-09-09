@@ -73,7 +73,11 @@ export const authController = {
           storeAddress: admin?.storeAddress,
           businessContactNumber: admin?.businessContactNumber,
           operatingHours: admin?.operatingHours,
-          businessType: admin?.businessType
+          businessType: admin?.businessType,
+          closingTime: admin?.closingTime,
+          advanceCloseMinutes: admin?.advanceCloseMinutes,
+          isManuallyClosed: admin?.isManuallyClosed,
+          manualCloseReason: admin?.manualCloseReason
         }
       });
     } catch (error) {
@@ -121,7 +125,11 @@ export const authController = {
             storeAddress: updated.storeAddress,
             businessContactNumber: updated.businessContactNumber,
             operatingHours: updated.operatingHours,
-            businessType: updated.businessType
+            businessType: updated.businessType,
+            closingTime: updated.closingTime,
+            advanceCloseMinutes: updated.advanceCloseMinutes,
+            isManuallyClosed: updated.isManuallyClosed,
+            manualCloseReason: updated.manualCloseReason
           }
         });
       }

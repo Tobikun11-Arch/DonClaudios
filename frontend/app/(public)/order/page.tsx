@@ -12,16 +12,19 @@ import {useLocationStore} from '@/app/store/locationStore';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import type {Promo} from '@/lib/types/promo';
 import Link from 'next/link';
-import {Button} from '@/components/ui/button';
 
 import {
   getBundleBadge,
   getPromoBadgeForProduct
 } from '@/lib/utils/promoPricing';
+import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
+import StoreClosedOverlay from '@/shared/components/StoreClosedOverlay';
+import {getGuestOrderHistory} from '@/lib/orders/orderHistoryStorage';
 
 function ProductsSection() {
   const {data, isLoading, isError} = useProductsQuery();
   const promosQuery = usePublicPromosQuery();
+  const [guestOrders] = useState(() => getGuestOrderHistory());
   const products = useMemo(() => data?.products ?? [], [data?.products]);
 
   const promos = useMemo(
@@ -66,6 +69,15 @@ function ProductsSection() {
 
   const [activeTab, setActiveTab] = useState('featured');
   const [query, setQuery] = useState('');
+
+  const activeOrderCount = useMemo(
+    () =>
+      guestOrders.filter(
+        order =>
+          order.orderStatus !== 'completed' && order.orderStatus !== 'cancelled'
+      ).length,
+    [guestOrders]
+  );
 
   const featuredItems = useMemo(() => {
     return availableProducts.slice(0, 5);
@@ -175,17 +187,20 @@ function ProductsSection() {
 
       <div className='flex justify-between'>
         <h1 className="text-2xl font-bold mb-2">DonClaudios Menu</h1>
-      <Button
-        asChild
-        type="button"
-        variant="ghost"
-        className="relative rounded-full"
+      <Link
+        href="/order-history"
         aria-label="Order history"
+        className="relative inline-flex items-center rounded-full p-2 hover:bg-[#2d4a35]/10 transition-colors -mt-1"
       >
-        <Link href="/order-history">
-          <History className="h-12 w-12 text-[#2d4a35]" />
-        </Link>
-      </Button>
+        <span className="relative inline-block">
+          <History className="h-6 w-6 text-[#2d4a35]" />
+          {activeOrderCount > 0 && (
+            <span className="absolute -right-1.5 -top-1.5 h-6 min-w-6 px-1.5 rounded-full bg-[#c30010] text-white text-xs font-bold grid place-items-center">
+              {activeOrderCount}
+            </span>
+          )}
+        </span>
+      </Link>
       </div>
 
       <section className="mb-10">
@@ -290,11 +305,21 @@ export default function OrderPage() {
 
   const setSavedLocation = useLocationStore(s => s.setLocation);
 
+  const storeStatusQuery = useStoreStatusQuery();
+
   const shouldShowLocationPicker = !savedLocation;
+
+  const isStoreClosed = storeStatusQuery.data?.status.isOpen === false;
 
   return (
     <div className="min-h-screen">
-      {shouldShowLocationPicker && (
+      {isStoreClosed ? (
+        <div className="pt-12">
+          {storeStatusQuery.data?.status ? (
+            <StoreClosedOverlay status={storeStatusQuery.data.status} />
+          ) : null}
+        </div>
+      ) : shouldShowLocationPicker ? (
         <div className="flex items-center justify-center min-h-screen p-4">
           <LocationPicker
             onConfirm={loc => {
@@ -302,9 +327,9 @@ export default function OrderPage() {
             }}
           />
         </div>
+      ) : (
+        <ProductsSection />
       )}
-
-      {!shouldShowLocationPicker && <ProductsSection />}
     </div>
   );
 }
