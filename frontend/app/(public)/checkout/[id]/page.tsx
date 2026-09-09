@@ -265,7 +265,7 @@ export default function CheckoutGuestPage() {
       disabled={items.length === 0 || createOrderMutation.isPending}
       onClick={handleCheckout}
     >
-      {createOrderMutation.isPending ? 'Placing order...' : 'Checkout'}
+      {createOrderMutation.isPending ? 'Placing order...' : 'Place order'}
     </Button>
   );
 

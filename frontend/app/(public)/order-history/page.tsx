@@ -16,6 +16,7 @@ export default function GuestOrderHistoryPage() {
         orders={guestOrders}
         title="Order History"
         description="Guest orders saved on this browser."
+        variant="guest"
       />
     </main>
   );

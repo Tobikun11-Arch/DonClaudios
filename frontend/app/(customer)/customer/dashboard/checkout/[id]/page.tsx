@@ -253,7 +253,7 @@ export default function CustomerCheckoutPage() {
       }
       onClick={handleCheckout}
     >
-      {createOrderMutation.isPending ? 'Placing order...' : 'Checkout'}
+      {createOrderMutation.isPending ? 'Placing order...' : 'Place order'}
     </Button>
   );
 

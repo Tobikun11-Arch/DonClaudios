@@ -116,10 +116,12 @@ function deliveryAddress(order: OrderHistoryEntry) {
 
 export default function OrderTracking({
   orderId,
-  variant
+  variant,
+  embedded = false
 }: {
   orderId: string;
   variant: 'guest' | 'customer';
+  embedded?: boolean;
 }) {
   const [phone, setPhone] = useState('');
   const [phoneSubmitted, setPhoneSubmitted] = useState(false);
@@ -151,13 +153,20 @@ export default function OrderTracking({
         initialValue={phone}
         onChangeValue={setPhone}
         onSubmit={() => setPhoneSubmitted(true)}
+        embedded={embedded}
       />
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="w-full max-w-3xl mx-auto px-4 py-10 space-y-6">
+    <div className={embedded ? 'bg-gray-50' : 'min-h-screen bg-gray-50'}>
+      <div
+        className={
+          embedded
+            ? 'w-full max-w-3xl mx-auto space-y-4'
+            : 'w-full max-w-3xl mx-auto px-4 py-10 space-y-6'
+        }
+      >
         {query.isLoading && !order ? (
           <div className="rounded-2xl bg-white shadow p-10 grid place-items-center">
             <div className="h-8 w-8 rounded-full border-4 border-[#3c5e45]/20 border-t-[#3c5e45] animate-spin" />
@@ -196,15 +205,17 @@ export default function OrderTracking({
 function PhoneGate({
   initialValue,
   onChangeValue,
-  onSubmit
+  onSubmit,
+  embedded = false
 }: {
   initialValue: string;
   onChangeValue: (value: string) => void;
   onSubmit: () => void;
+  embedded?: boolean;
 }) {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="w-full max-w-md mx-auto px-4 py-16">
+    <div className={embedded ? 'bg-gray-50' : 'min-h-screen bg-gray-50'}>
+      <div className="w-full max-w-md mx-auto px-4 py-12">
         <div className="rounded-2xl bg-white shadow p-8 text-center">
           <div className="relative w-20 h-20 mx-auto rounded-full bg-[#3c5e45]/10 overflow-hidden">
             <Image
@@ -487,7 +498,6 @@ function CancelOrderButton({
   const [reason, setReason] = useState(CANCEL_REASONS[0]);
   const [otherText, setOtherText] = useState('');
   const cancelMutation = useCancelTrackedOrderMutation(orderId, phone);
-
   const isPending = cancelMutation.isPending;
   const error = cancelMutation.error as {
     message?: string;

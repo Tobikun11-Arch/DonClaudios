@@ -3,6 +3,7 @@
 import {useEffect, useRef, useState} from 'react';
 import Image from 'next/image';
 import {ChevronDown, ChevronUp} from 'lucide-react';
+import OrderTracking from './OrderTracking';
 import type {OrderHistoryEntry, OrderHistoryItem} from '@/lib/api/orderApi';
 function formatStatus(status: string) {
   return status
@@ -65,6 +66,7 @@ type OrderHistorySectionProps = {
   renderFollowUp?: (order: OrderHistoryEntry, openChat: boolean) => React.ReactNode;
   highlightOrderId?: string | null;
   openChatOrderId?: string | null;
+  variant?: 'guest' | 'customer';
 };
 
 export default function OrderHistorySection({
@@ -77,7 +79,8 @@ export default function OrderHistorySection({
   onRangeChange,
   renderFollowUp,
   highlightOrderId,
-  openChatOrderId = null
+  openChatOrderId = null,
+  variant = 'customer'
 }: OrderHistorySectionProps) {
   const highlightRef = useRef<HTMLDivElement | null>(null);
 
@@ -138,6 +141,7 @@ export default function OrderHistorySection({
             <OrderCard
               key={order._id}
               order={order}
+              variant={variant}
               highlightRef={highlightOrderId === order._id ? highlightRef : undefined}
               renderFollowUp={renderFollowUp}
               openChatOrderId={openChatOrderId}
@@ -151,11 +155,13 @@ export default function OrderHistorySection({
 
 function OrderCard({
   order,
+  variant,
   highlightRef,
   renderFollowUp,
   openChatOrderId
 }: {
   order: OrderHistoryEntry;
+  variant: 'guest' | 'customer';
   highlightRef?: React.Ref<HTMLDivElement> | null;
   renderFollowUp?: (
     order: OrderHistoryEntry,
@@ -234,7 +240,11 @@ function OrderCard({
         </span>
       </button>
 
-      {expanded && (
+      {expanded && order.orderStatus !== 'completed' ? (
+        <div className="border-t border-gray-100 p-4 sm:p-5">
+          <OrderTracking orderId={order._id} variant={variant} embedded />
+        </div>
+      ) : expanded ? (
         <div className="border-t border-gray-100 p-5">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
             <div>
@@ -354,7 +364,7 @@ function OrderCard({
             renderFollowUp(order, order._id === openChatOrderId)
           ) : null}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
