@@ -5,9 +5,14 @@ import {
   getTrackedOrder
 } from '@/lib/api/orderApi';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {updateGuestOrderHistoryEntry} from '@/lib/orders/orderHistoryStorage';
 
 const TERMINAL_STATUSES = ['completed', 'cancelled'] as const;
 type TrackStatus = (typeof TERMINAL_STATUSES)[number];
+
+export const allOrdersQueryKey = ['orders', 'all'] as const;
+export const myOrdersQueryKey = ['orders', 'me'] as const;
+export const followUpOrdersKey = ['orders', 'follow-up'] as const;
 
 const trackOrderKey = (orderId: string, phoneNumber?: string) =>
   ['orders', 'track', orderId, phoneNumber ?? ''] as const;
@@ -43,10 +48,17 @@ export function useCancelTrackedOrderMutation(
   return useMutation({
     mutationFn: (reason: string) =>
       cancelTrackedOrder(orderId, reason, phoneNumber),
-    onSuccess: async () => {
+    onSuccess: async data => {
+      const updated = data?.order;
+      if (updated) {
+        updateGuestOrderHistoryEntry(updated);
+      }
       await queryClient.invalidateQueries({
         queryKey: trackOrderKey(orderId, phoneNumber)
       });
+      await queryClient.invalidateQueries({queryKey: myOrdersQueryKey});
+      await queryClient.invalidateQueries({queryKey: allOrdersQueryKey});
+      await queryClient.invalidateQueries({queryKey: followUpOrdersKey});
     }
   });
 }

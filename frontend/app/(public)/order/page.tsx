@@ -1,7 +1,7 @@
 'use client';
 
 import LocationPicker from '@/features/order/components/LocationPicker';
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import Image from 'next/image';
 import {Input} from '@/components/ui/input';
 import {Search, History} from 'lucide-react';
@@ -19,12 +19,26 @@ import {
 } from '@/lib/utils/promoPricing';
 import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 import StoreClosedOverlay from '@/shared/components/StoreClosedOverlay';
-import {getGuestOrderHistory} from '@/lib/orders/orderHistoryStorage';
+import {getGuestOrderHistory, subscribeGuestOrderHistory} from '@/lib/orders/orderHistoryStorage';
+import type {OrderHistoryEntry} from '@/lib/api/orderApi';
 
 function ProductsSection() {
   const {data, isLoading, isError} = useProductsQuery();
   const promosQuery = usePublicPromosQuery();
-  const [guestOrders] = useState(() => getGuestOrderHistory());
+  const [guestOrders, setGuestOrders] = useState<OrderHistoryEntry[]>([]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeGuestOrderHistory(() =>
+      setGuestOrders(getGuestOrderHistory())
+    );
+    const rafId = requestAnimationFrame(() =>
+      setGuestOrders(getGuestOrderHistory())
+    );
+    return () => {
+      unsubscribe();
+      cancelAnimationFrame(rafId);
+    };
+  }, []);
   const products = useMemo(() => data?.products ?? [], [data?.products]);
 
   const promos = useMemo(

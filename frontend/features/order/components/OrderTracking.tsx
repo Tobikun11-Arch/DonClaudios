@@ -12,7 +12,7 @@ const STORE_NAME = "DonClaudio's Lechon House";
 const STORE_ADDRESS =
   'Jasmine St. De Roman Brgy.Daang Amaya 1, Tanza, Cavite, Philippines 4108';
 
-const CANCELLABLE = ['pending', 'confirmed', 'preparing'];
+const CANCELLABLE = ['pending'];
 
 const CANCEL_REASONS = [
   'Ordered by mistake',
@@ -521,8 +521,7 @@ function CancelOrderButton({
         Cancel Order
       </Button>
       <p className="mt-2 text-center text-xs text-gray-400">
-        You can cancel while the order is still pending, confirmed, or being
-        prepared.
+        You can only cancel while your order is still pending.
       </p>
 
       {open ? (

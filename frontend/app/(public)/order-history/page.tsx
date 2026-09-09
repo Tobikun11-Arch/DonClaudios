@@ -1,14 +1,28 @@
 'use client';
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import OrderHistorySection from '@/features/order/components/OrderHistorySection';
-import {getGuestOrderHistory} from '@/lib/orders/orderHistoryStorage';
+import {
+  getGuestOrderHistory,
+  subscribeGuestOrderHistory
+} from '@/lib/orders/orderHistoryStorage';
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
 
 export default function GuestOrderHistoryPage() {
-  const [guestOrders] = useState<OrderHistoryEntry[]>(() =>
-    getGuestOrderHistory()
-  );
+  const [guestOrders, setGuestOrders] = useState<OrderHistoryEntry[]>([]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeGuestOrderHistory(() =>
+      setGuestOrders(getGuestOrderHistory())
+    );
+    const rafId = requestAnimationFrame(() =>
+      setGuestOrders(getGuestOrderHistory())
+    );
+    return () => {
+      unsubscribe();
+      cancelAnimationFrame(rafId);
+    };
+  }, []);
 
   return (
     <main className="min-h-screen bg-gray-50 pt-28 pb-12">
