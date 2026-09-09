@@ -13,6 +13,8 @@ export function useMyOrdersQuery() {
   return useQuery({
     queryKey: ['orders', 'me'],
     queryFn: listMyOrders,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    refetchInterval: 5000,
+    staleTime: 1000
   });
 }

@@ -252,13 +252,21 @@ export const orderController = {
         throw new ApiError(403, 'FORBIDDEN', 'Order not found');
       }
 
-      const CANCELLABLE = ['pending', 'confirmed', 'preparing'];
+      const CANCELLABLE = ['pending'];
       if (!CANCELLABLE.includes(order.orderStatus)) {
         throw new ApiError(
           400,
           'INVALID_OPERATION',
           'Order can no longer be cancelled'
         );
+      }
+
+      if (order.stockDeducted) {
+        await stockMovementService.restoreOrderStock(
+          String(order._id),
+          (req.auth?.userId as string) ?? 'customer'
+        );
+        await orderRepository.updateStockDeducted(String(order._id), false);
       }
 
       const reason =

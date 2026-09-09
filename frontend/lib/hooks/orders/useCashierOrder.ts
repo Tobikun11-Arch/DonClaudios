@@ -22,6 +22,7 @@ export function useOrderDetailQuery(orderId: string) {
     enabled: !!orderId,
     refetchOnWindowFocus: false,
     refetchInterval: 5000,
+    refetchIntervalInBackground: true,
     staleTime: 1000
   });
 }
@@ -32,6 +33,7 @@ export function useAllOrdersQuery() {
     queryFn: listAllOrders,
     refetchOnWindowFocus: false,
     refetchInterval: 5000,
+    refetchIntervalInBackground: true,
     staleTime: 1000
   });
 }
