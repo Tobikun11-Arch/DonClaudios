@@ -27,6 +27,12 @@ export const orderRepository = {
   updateStatus: (orderId: string, orderStatus: string) =>
     OrderModel.updateOne({_id: orderId}, {orderStatus}).exec(),
 
+  cancel: (orderId: string, reason?: string) =>
+    OrderModel.updateOne(
+      {_id: orderId},
+      {orderStatus: 'cancelled', cancelReason: reason}
+    ).exec(),
+
   updateStockDeducted: (orderId: string, stockDeducted: boolean) =>
     OrderModel.updateOne({_id: orderId}, {stockDeducted}).exec()
 };

@@ -1,7 +1,12 @@
 import {Router} from 'express';
 import {orderController} from '../controllers/order.controller';
 import {orderMessageController} from '../controllers/orderMessage.controller';
-import {requireAuth, requireCustomer, requireCashier} from '../middleware/auth';
+import {
+  requireAuth,
+  requireCustomer,
+  requireCashier,
+  optionalAuth
+} from '../middleware/auth';
 import {ApiError} from '../utils/error';
 import type {Request, Response, NextFunction} from 'express';
 
@@ -17,6 +22,17 @@ function requireStaff(req: Request, _res: Response, next: NextFunction) {
 router.post('/me', requireAuth, orderController.createCustomerOrder);
 router.get('/me', requireAuth, orderController.listMyOrders);
 router.post('/guest', orderController.createGuestOrder);
+
+router.get(
+  '/customer/track/:id',
+  optionalAuth,
+  orderController.trackOrder
+);
+router.post(
+  '/customer/track/:id/cancel',
+  optionalAuth,
+  orderController.cancelOrder
+);
 router.get('/all', requireAuth, requireStaff, orderController.listAllOrders);
 
 router.get(

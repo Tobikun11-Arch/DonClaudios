@@ -158,6 +158,123 @@ export const orderController = {
     }
   },
 
+  async trackOrder(req: Request, res: Response, next: NextFunction) {
+    try {
+      const order = await orderRepository.findById(req.params.id);
+      if (!order) {
+        throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+      }
+
+      if (!req.auth) {
+        const phoneNumber =
+          typeof req.query.phoneNumber === 'string'
+            ? req.query.phoneNumber.trim()
+            : '';
+        if (
+          !phoneNumber ||
+          order.isGuest !== true ||
+          !order.guestInfo ||
+          order.guestInfo.phoneNumber !== phoneNumber
+        ) {
+          throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+        }
+      } else if (req.auth.type === 'customer') {
+        if (
+          order.isGuest ||
+          !order.customerId ||
+          String(order.customerId) !== req.auth.userId
+        ) {
+          throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+        }
+      } else {
+        throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+      }
+
+      const items = await orderItemRepository.listByOrderIds([String(order._id)]);
+
+      let customerName: string | undefined;
+      if (order.customerId) {
+        const customers = await customerRepository.listByIds([
+          String(order.customerId)
+        ]);
+        const customer = customers[0];
+        if (customer) {
+          customerName = `${customer.firstName} ${customer.lastName}`.trim();
+        }
+      }
+
+      const transaction = await transactionRepository.findByOrderId(
+        String(order._id)
+      );
+
+      res.json({
+        order: {
+          ...order.toObject(),
+          customerName,
+          paymentMethod: transaction?.paymentMethod,
+          items
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async cancelOrder(req: Request, res: Response, next: NextFunction) {
+    try {
+      const order = await orderRepository.findById(req.params.id);
+      if (!order) {
+        throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+      }
+
+      if (!req.auth) {
+        const phoneNumber =
+          typeof req.query.phoneNumber === 'string'
+            ? req.query.phoneNumber.trim()
+            : '';
+        if (
+          !phoneNumber ||
+          order.isGuest !== true ||
+          !order.guestInfo ||
+          order.guestInfo.phoneNumber !== phoneNumber
+        ) {
+          throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+        }
+      } else if (req.auth.type === 'customer') {
+        if (
+          order.isGuest ||
+          !order.customerId ||
+          String(order.customerId) !== req.auth.userId
+        ) {
+          throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+        }
+      } else {
+        throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+      }
+
+      const CANCELLABLE = ['pending', 'confirmed', 'preparing'];
+      if (!CANCELLABLE.includes(order.orderStatus)) {
+        throw new ApiError(
+          400,
+          'INVALID_OPERATION',
+          'Order can no longer be cancelled'
+        );
+      }
+
+      const reason =
+        typeof req.body?.reason === 'string' && req.body.reason.trim().length > 0
+          ? req.body.reason.trim()
+          : undefined;
+
+      await orderRepository.cancel(String(order._id), reason);
+
+      const updated = await orderRepository.findById(String(order._id));
+      res.status(200).json({order: updated});
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async listMyOrders(req: Request, res: Response, next: NextFunction) {
     try {
       if (!req.auth) {

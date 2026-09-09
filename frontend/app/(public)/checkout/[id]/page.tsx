@@ -254,7 +254,7 @@ export default function CheckoutGuestPage() {
     }
     clearCart();
     if (orderId) {
-      router.push(`/order-confirmation/${orderId}`);
+      window.location.assign(`/order-confirmation/${orderId}`);
     }
   };
 

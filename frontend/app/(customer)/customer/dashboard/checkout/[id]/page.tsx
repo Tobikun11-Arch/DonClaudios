@@ -45,8 +45,7 @@ const NOTE_SUGGESTIONS = [
 function buildMapPreviewSrc(userLat: number, userLng: number) {
   const midLat = (userLat + STORE.lat) / 2;
   const midLng = (userLng + STORE.lng) / 2;
-  const spread =
-    Math.abs(userLat - STORE.lat) + Math.abs(userLng - STORE.lng);
+  const spread = Math.abs(userLat - STORE.lat) + Math.abs(userLng - STORE.lng);
   const zoom = Math.max(5000, Math.round(spread * 80000 + 5000));
 
   return (
@@ -176,9 +175,7 @@ export default function CustomerCheckoutPage() {
       .map(s => s.trim())
       .includes(suggestion);
 
-  const handleQuickSelectPayment = (
-    method: 'Cash' | 'GCash'
-  ) => {
+  const handleQuickSelectPayment = (method: 'Cash' | 'GCash') => {
     setPaymentMethod(method);
     setPaymentError('');
   };
@@ -232,7 +229,9 @@ export default function CustomerCheckoutPage() {
       const orderId = created?.order?._id;
       await clearCartMutation.mutateAsync();
       if (orderId) {
-        router.push(`/customer/dashboard/order-confirmation/${orderId}`);
+        window.location.assign(
+          `/customer/dashboard/order-confirmation/${orderId}`
+        );
       }
     } catch (error) {
       const message =
@@ -292,9 +291,7 @@ export default function CustomerCheckoutPage() {
                 type="button"
                 aria-label="Edit account details"
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50"
-                onClick={() =>
-                  router.push('/customer/dashboard?tab=profile')
-                }
+                onClick={() => router.push('/customer/dashboard?tab=profile')}
               >
                 <Pencil className="h-3.5 w-3.5" />
                 Edit
@@ -374,9 +371,7 @@ export default function CustomerCheckoutPage() {
               {orderType === 'Reservation' ? (
                 <div className="flex flex-wrap items-center gap-3">
                   <div>
-                    <p className="text-xs font-semibold text-gray-700">
-                      Date
-                    </p>
+                    <p className="text-xs font-semibold text-gray-700">Date</p>
                     <input
                       type="date"
                       value={reservationDate}
@@ -385,9 +380,7 @@ export default function CustomerCheckoutPage() {
                     />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-gray-700">
-                      Time
-                    </p>
+                    <p className="text-xs font-semibold text-gray-700">Time</p>
                     <input
                       type="time"
                       value={reservationTime}
@@ -539,9 +532,7 @@ export default function CustomerCheckoutPage() {
                   >
                     <button
                       type="button"
-                      onClick={() =>
-                        handleQuickSelectPayment(option.value)
-                      }
+                      onClick={() => handleQuickSelectPayment(option.value)}
                       aria-pressed={selected}
                       className="flex w-full items-center gap-3 px-4 py-3.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3c5e45]/30 rounded-xl"
                     >
