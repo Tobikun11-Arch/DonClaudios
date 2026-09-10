@@ -1,11 +1,13 @@
 PRIORITY TASKS:
-6. Dashboard dropdown for report (that summarize in dashboard) (prototype)
-7. connect the online offline of cashier using poll
-8. admin must power to end or delete the conversation from reviews if bad happens like a troll customer
-3. Closed hours - Automatically disable ordering for guest and customer accounts; admin can also manually close hours if there's ever an emergency and they're not available.
-4. Progress order UI - Interactive; admin or cashier can update status, e.g., "on the way" or "already delivered." and borj problem like  cancelling
 5. Every completed order the receipt will send to customer email
-13. Change ui of menu ui and slug ui per product
+8. admin must power to end or delete the conversation from reviews if bad happens like a troll customer
+4. Progress order UI - Interactive; admin or cashier can update status, e.g., "on the way" or "already delivered." and borj problem like  cancelling
+6. Dashboard dropdown for report (that summarize in dashboard) (prototype)
+13. Change ui of menu ui and slug ui per product - development gc reference
+
+
+
+7. connect the online offline of cashier using poll
 6. Payment system - UI and functionality.
 7. Inventory way of deducting - grams, kilograms and per pieces etc,.
 10. Mobile app for cashier/owner/customer.
@@ -14,7 +16,7 @@ PRIORITY TASKS:
 11.  sms - for admin for stock alerts, reservation type / for customer for delivery that their order is on the way
 12.  paymongo for payment customers                                                                                                                     
 13. add animation in homepage
-14. Testimonials section - scroll part or automatic scroll view for more reviews
+
 
 
 

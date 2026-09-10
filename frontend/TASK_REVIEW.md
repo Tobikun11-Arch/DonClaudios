@@ -20,3 +20,7 @@
 
 6. rewards tab for customers / what they can buy everytime they buy using their acc/mobile app of donclaudios 
   - list of all prodcut with hm points per product
+
+7. Closed hours - Automatically disable ordering for guest and customer accounts; admin can also manually close hours if there's ever an emergency and they're not available.
+
+8. Testimonials section - scroll part or automatic scroll view for more reviews
