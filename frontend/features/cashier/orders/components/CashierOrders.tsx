@@ -23,7 +23,7 @@ export const ORDER_STATUSES = [
   'cancelled'
 ] as const;
 
-export const STATUS_FLOW = ['pending', 'confirmed', 'preparing', 'ready', 'completed'] as const;
+export const STATUS_FLOW = ['pending', 'confirmed', 'preparing', 'ready', 'on_the_way', 'completed'] as const;
 export const CANCELLABLE = ['pending', 'confirmed', 'preparing'] as const;
 export const STATUS_LABELS: Record<string, string> = {
   pending: 'Pending',

@@ -37,6 +37,38 @@ async function notifyCashiersOfNewOrder(orderId: string, totalAmount: number) {
   }
 }
 
+async function notifyCashiersOfOrderCancelled(
+  orderId: string,
+  customerName: string,
+  reason?: string
+) {
+  try {
+    const cashiers = (await cashierRepository.listAll()) as
+      | (CashierDocument & {_id: unknown})[]
+      | null;
+    const reasonText = reason ? ` Reason: ${reason}.` : '';
+    for (const cashier of cashiers ?? []) {
+      try {
+        await notificationService.createForCashier({
+          cashierId: String(cashier._id),
+          type: 'order_status',
+          title: 'Order cancelled',
+          message: `${customerName} cancelled order (#${String(orderId).slice(-6).toUpperCase()}).${reasonText}`,
+          orderId: orderId,
+          link: '/cashier/dashboard?tab=orders'
+        });
+      } catch (error) {
+        console.error(
+          'Failed to create order cancelled cashier notification',
+          error
+        );
+      }
+    }
+  } catch (error) {
+    console.error('Failed to notify cashiers of cancelled order', error);
+  }
+}
+
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
@@ -275,6 +307,17 @@ export const orderController = {
           : undefined;
 
       await orderRepository.cancel(String(order._id), reason);
+
+      const customerName = order.isGuest
+        ? [order.guestInfo?.firstName, order.guestInfo?.lastName]
+            .filter(Boolean)
+            .join(' ') || 'Guest'
+        : 'Customer';
+      await notifyCashiersOfOrderCancelled(
+        String(order._id),
+        customerName,
+        reason
+      );
 
       const updated = await orderRepository.findById(String(order._id));
       res.status(200).json({order: updated});
