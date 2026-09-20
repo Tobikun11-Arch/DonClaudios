@@ -3,7 +3,7 @@ Guest Ordering / Security
 1. Add phone number OTP verification for guest orders — customer's number must be verified before the order is accepted (can't proceed until OTP is entered).
 2. User sign up - instead of verification of email it will verify their phone number using text
 3. sign-in email/phone number
-
+4. no same phone number 
 
 
 

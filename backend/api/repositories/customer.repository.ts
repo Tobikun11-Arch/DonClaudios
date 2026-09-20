@@ -1,15 +1,19 @@
 import {CustomerModel, CustomerDocument} from '../models/Customer.model';
+import {phoneVariants} from '../utils/phone';
 
 export const customerRepository = {
   findByEmail: (email: string) =>
     CustomerModel.findOne({email: email.toLowerCase()}).exec(),
 
   findByPhoneNumber: (phoneNumber: string) =>
-    CustomerModel.findOne({phoneNumber}).exec(),
+    CustomerModel.findOne({phoneNumber: {$in: phoneVariants(phoneNumber)}}).exec(),
 
   findByEmailOrPhoneNumber: (identifier: string) =>
     CustomerModel.findOne({
-      $or: [{email: identifier.toLowerCase()}, {phoneNumber: identifier}]
+      $or: [
+        {email: identifier.toLowerCase()},
+        {phoneNumber: {$in: phoneVariants(identifier)}}
+      ]
     }).exec(),
 
   findById: (id: string) => CustomerModel.findById(id).exec(),

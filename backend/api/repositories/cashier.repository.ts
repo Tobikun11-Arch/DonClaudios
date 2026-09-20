@@ -1,4 +1,5 @@
 import {CashierModel, CashierDocument} from '../models/Cashier.model';
+import {phoneVariants} from '../utils/phone';
 
 export const cashierRepository = {
   findByEmail: (email: string) =>
@@ -7,9 +8,15 @@ export const cashierRepository = {
   findByUsername: (username: string) =>
     CashierModel.findOne({username: username.trim()}).exec(),
 
+  findByPhoneNumber: (phoneNumber: string) =>
+    CashierModel.findOne({phoneNumber: {$in: phoneVariants(phoneNumber)}}).exec(),
+
   findByEmailOrPhoneNumber: (identifier: string) =>
     CashierModel.findOne({
-      $or: [{email: identifier.toLowerCase()}, {phoneNumber: identifier}]
+      $or: [
+        {email: identifier.toLowerCase()},
+        {phoneNumber: {$in: phoneVariants(identifier)}}
+      ]
     }).exec(),
 
   findById: (id: string) => CashierModel.findById(id).exec(),
