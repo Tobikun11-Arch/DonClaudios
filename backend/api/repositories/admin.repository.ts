@@ -1,12 +1,19 @@
 import {AdminModel, AdminDocument} from '../models/Admin.model';
+import {phoneVariants} from '../utils/phone';
 
 export const adminRepository = {
   findByEmail: (email: string) =>
     AdminModel.findOne({email: email.toLowerCase()}).exec(),
 
+  findByPhoneNumber: (phoneNumber: string) =>
+    AdminModel.findOne({phoneNumber: {$in: phoneVariants(phoneNumber)}}).exec(),
+
   findByEmailOrPhoneNumber: (identifier: string) =>
     AdminModel.findOne({
-      $or: [{email: identifier.toLowerCase()}, {phoneNumber: identifier}]
+      $or: [
+        {email: identifier.toLowerCase()},
+        {phoneNumber: {$in: phoneVariants(identifier)}}
+      ]
     }).exec(),
 
   findById: (id: string) => AdminModel.findById(id).exec(),

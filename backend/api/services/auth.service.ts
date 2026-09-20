@@ -26,17 +26,22 @@ export const authService = {
     phoneNumber: string;
     address: string;
   }) {
-    const [existingEmail, existingPhone] = await Promise.all([
-      customerRepository.findByEmail(data.email),
-      customerRepository.findByPhoneNumber(data.phoneNumber)
-    ]);
+    const existingEmail = await customerRepository.findByEmail(data.email);
 
     if (existingEmail) {
       throw new ApiError(409, 'EMAIL_EXISTS', 'Email already exists');
     }
 
-    if (existingPhone) {
-      throw new ApiError(409, 'PHONE_EXISTS', 'Phone number already exists');
+    if (data.phoneNumber) {
+      const [customerPhone, cashierPhone, adminPhone] = await Promise.all([
+        customerRepository.findByPhoneNumber(data.phoneNumber),
+        cashierRepository.findByPhoneNumber(data.phoneNumber),
+        adminRepository.findByPhoneNumber(data.phoneNumber)
+      ]);
+
+      if (customerPhone || cashierPhone || adminPhone) {
+        throw new ApiError(409, 'PHONE_EXISTS', 'Phone number already exists');
+      }
     }
 
     try {
@@ -237,16 +242,12 @@ export const authService = {
       adminRepository.findByEmailOrPhoneNumber(identifier)
     ]);
 
-    const user = customer || cashier || admin;
-    const userType = customer
-      ? 'customer'
-      : cashier
-        ? 'cashier'
-        : admin
-          ? 'admin'
-          : null;
+    const candidates: {user: any; type: 'customer' | 'cashier' | 'admin'}[] = [];
+    if (customer) candidates.push({user: customer, type: 'customer'});
+    if (cashier) candidates.push({user: cashier, type: 'cashier'});
+    if (admin) candidates.push({user: admin, type: 'admin'});
 
-    if (!user || !userType) {
+    if (candidates.length === 0) {
       throw new ApiError(
         401,
         'INVALID_CREDENTIALS',
@@ -254,32 +255,35 @@ export const authService = {
       );
     }
 
-    if (!user.isVerified) {
-      throw new ApiError(403, 'NOT_VERIFIED', 'Email not verified');
+    const verifiedCandidates = candidates.filter(c => c.user.isVerified);
+    if (verifiedCandidates.length === 0) {
+      throw new ApiError(403, 'NOT_VERIFIED', 'Account not verified');
     }
 
-    const match = await bcrypt.compare(password, user.passwordHash);
-    if (!match) {
-      throw new ApiError(
-        401,
-        'INVALID_CREDENTIALS',
-        'Invalid email or password'
+    for (const {user, type} of verifiedCandidates) {
+      const match = await bcrypt.compare(password, user.passwordHash);
+      if (!match) continue;
+
+      const accessToken: string = jwt.sign(
+        {userId: user.id, type},
+        env.JWT_SECRET,
+        {expiresIn: '15m'}
       );
+
+      const refreshToken = jwt.sign(
+        {userId: user.id, type},
+        env.JWT_REFRESH_SECRET,
+        {expiresIn: '7d'}
+      );
+
+      return {accessToken, refreshToken, user, userType: type};
     }
 
-    const accessToken: string = jwt.sign(
-      {userId: user.id, type: userType},
-      env.JWT_SECRET,
-      {expiresIn: '15m'}
+    throw new ApiError(
+      401,
+      'INVALID_CREDENTIALS',
+      'Invalid email or password'
     );
-
-    const refreshToken = jwt.sign(
-      {userId: user.id, type: userType},
-      env.JWT_REFRESH_SECRET,
-      {expiresIn: '7d'}
-    );
-
-    return {accessToken, refreshToken, user, userType};
   },
 
   async refreshAccessToken(refreshToken: string) {
