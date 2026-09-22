@@ -19,7 +19,6 @@ export default function SignUpPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [houseAddress, setHouseAddress] = useState('');
   const [showAutoLocate, setShowAutoLocate] = useState(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,38 +26,15 @@ export default function SignUpPage() {
   const router = useRouter();
 
   const handleAddressInteract = () => {
-    setLocationError(null);
-
-    if (!navigator.geolocation) {
-      setLocationError('Geolocation is not supported by your browser.');
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      () => {
-        setShowAutoLocate(true);
-      },
-      error => {
-        setShowAutoLocate(false);
-        if (error.code === error.PERMISSION_DENIED) {
-          setLocationError(
-            'Location access was denied. Click the address field to try again.'
-          );
-        } else {
-          setLocationError(
-            'Unable to retrieve your location. Please try again.'
-          );
-        }
-      }
-    );
+    setShowAutoLocate(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
 
-    if (!houseAddress) {
-      setErrorMessage('Please allow location access to fill your address.');
+    if (!houseAddress.trim()) {
+      setErrorMessage('Please provide your delivery address.');
       return;
     }
 
@@ -83,7 +59,7 @@ export default function SignUpPage() {
         phoneNumber,
         address: houseAddress
       });
-      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+      router.push(`/verify-phone?phone=${encodeURIComponent(phoneNumber)}`);
     } catch (error) {
       setErrorMessage(
         getFriendlyErrorMessage(
@@ -162,29 +138,31 @@ export default function SignUpPage() {
 
         <div className="space-y-2">
           <Label htmlFor="houseAddress">
-            Address (House){' '}
+            Address{' '}
             <span className="text-xs font-normal text-muted-foreground">
-              — Location access required
+              — type your full address or let the system detect it
             </span>
           </Label>
-
-          <div
-            className="flex items-center gap-2 cursor-pointer rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring"
-            onClick={!isSubmitting ? handleAddressInteract : undefined}
+          <Input
+            id="houseAddress"
+            type="text"
+            placeholder="House no., street, barangay, city"
+            value={houseAddress}
+            onChange={e => setHouseAddress(e.target.value)}
+            disabled={isSubmitting}
+            required
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={handleAddressInteract}
+            disabled={isSubmitting}
           >
-            <MapPin size={16} className="shrink-0 text-muted-foreground" />
-            <span
-              className={
-                houseAddress ? 'text-foreground' : 'text-muted-foreground'
-              }
-            >
-              {houseAddress || 'Click to use your current location'}
-            </span>
-          </div>
-
-          {locationError && (
-            <p className="text-xs text-destructive">{locationError}</p>
-          )}
+            <MapPin size={14} className="shrink-0" />
+            Auto-detect my location
+          </Button>
 
           {showAutoLocate && (
             <div className="pt-3">
