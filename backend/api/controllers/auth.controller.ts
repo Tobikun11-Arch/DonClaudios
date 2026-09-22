@@ -269,7 +269,7 @@ export const authController = {
 
   async verify(req: Request, res: Response, next: NextFunction) {
     try {
-      await authService.verify(req.body.email, req.body.code);
+      await authService.verify(req.body.phoneNumber, req.body.code);
       res.status(200).json({message: 'Verified'});
     } catch (error) {
       next(error);
@@ -278,7 +278,7 @@ export const authController = {
 
   async resendVerification(req: Request, res: Response, next: NextFunction) {
     try {
-      await authService.resendVerification(req.body.email);
+      await authService.resendVerification(req.body.phoneNumber);
       res.status(200).json({message: 'Verification code resent'});
     } catch (error) {
       next(error);

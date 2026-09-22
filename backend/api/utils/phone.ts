@@ -22,3 +22,17 @@ export function phoneVariants(input: string): string[] {
 
   return Array.from(new Set(variants));
 }
+
+export function toInternationalPhone(input: string): string | null {
+  const digits = input.replace(/\D/g, '');
+
+  if (/^0\d{10}$/.test(digits)) {
+    return '63' + digits.slice(1);
+  }
+
+  if (/^63\d{10}$/.test(digits)) {
+    return digits;
+  }
+
+  return null;
+}

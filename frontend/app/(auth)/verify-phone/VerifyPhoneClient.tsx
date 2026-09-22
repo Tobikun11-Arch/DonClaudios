@@ -1,8 +1,9 @@
 'use client';
 
-import {useMemo, useState, type FormEvent} from 'react';
+import {useEffect, useMemo, useState, type FormEvent} from 'react';
 import Link from 'next/link';
 import {useRouter, useSearchParams} from 'next/navigation';
+import {Check} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Label} from '@/components/ui/label';
 import {
@@ -11,24 +12,35 @@ import {
   InputOTPSlot,
   InputOTPSeparator
 } from '@/components/ui/input-otp';
-import {resendVerificationCode, verifyCustomerEmail} from '@/lib/api/authApi';
+import {resendVerificationCode, verifyCustomerPhone} from '@/lib/api/authApi';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
-export default function VerifyEmailClient() {
+export default function VerifyPhoneClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const emailFromQuery = searchParams.get('email') ?? '';
+  const phoneFromQuery = searchParams.get('phone') ?? '';
 
   const [code, setCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isVerified, setIsVerified] = useState(false);
+
+  useEffect(() => {
+    if (!isVerified) return;
+
+    const timer = setTimeout(() => {
+      router.push('/sign-in');
+    }, 2200);
+
+    return () => clearTimeout(timer);
+  }, [isVerified, router]);
 
   const canSubmit = useMemo(() => {
-    return emailFromQuery.trim().length > 0 && code.trim().length === 6;
-  }, [emailFromQuery, code]);
+    return phoneFromQuery.trim().length > 0 && code.trim().length === 6;
+  }, [phoneFromQuery, code]);
 
   const handleVerify = async (e: FormEvent) => {
     e.preventDefault();
@@ -39,12 +51,14 @@ export default function VerifyEmailClient() {
     setSuccessMessage(null);
 
     try {
-      await verifyCustomerEmail({
-        email: emailFromQuery.trim(),
+      await verifyCustomerPhone({
+        phoneNumber: phoneFromQuery.trim(),
         code: code.trim()
       });
-      setSuccessMessage('Your email has been verified. You can now sign in.');
-      router.push('/sign-in');
+      setIsVerified(true);
+      setSuccessMessage(
+        'Your phone number has been verified. You can now sign in.'
+      );
     } catch (error) {
       setErrorMessage(getFriendlyErrorMessage(error, 'Verification failed.'));
     } finally {
@@ -60,8 +74,8 @@ export default function VerifyEmailClient() {
     setSuccessMessage(null);
 
     try {
-      await resendVerificationCode({email: emailFromQuery.trim()});
-      setSuccessMessage('Verification code resent. Please check your email.');
+      await resendVerificationCode({phoneNumber: phoneFromQuery.trim()});
+      setSuccessMessage('Verification code resent. Please check your phone.');
     } catch (error) {
       setErrorMessage(getFriendlyErrorMessage(error, 'Failed to resend code.'));
     } finally {
@@ -69,14 +83,32 @@ export default function VerifyEmailClient() {
     }
   };
 
+  if (isVerified) {
+    return (
+      <div className="flex flex-col items-center justify-center space-y-4 py-10 text-center">
+        <div className="relative flex h-24 w-24 items-center justify-center">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500/40" />
+          <div className="relative flex h-24 w-24 animate-in zoom-in items-center justify-center rounded-full bg-[#3c5e45] shadow-lg duration-500">
+            <Check className="h-12 w-12 text-white" strokeWidth={3} />
+          </div>
+        </div>
+        <p className="text-xl font-bold text-foreground">Phone verified!</p>
+        <p className="text-sm text-muted-foreground">
+          Your phone number has been verified successfully. Redirecting you to
+          sign in…
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
         <h2 className="text-3xl font-bold tracking-tight text-foreground">
-          Verify your email
+          Verify your phone number
         </h2>
         <p className="text-muted-foreground">
-          Enter the 6-digit code we sent to your email address.
+          Enter the 6-digit code we texted to {phoneFromQuery.trim()}.
         </p>
       </div>
 
@@ -115,7 +147,7 @@ export default function VerifyEmailClient() {
           size="lg"
           disabled={isSubmitting || !canSubmit}
         >
-          {isSubmitting ? 'Verifying...' : 'Verify Email'}
+          {isSubmitting ? 'Verifying...' : 'Verify Phone'}
         </Button>
 
         <Button
@@ -124,7 +156,7 @@ export default function VerifyEmailClient() {
           className="w-full"
           size="lg"
           onClick={handleResend}
-          disabled={isResending || emailFromQuery.trim().length === 0}
+          disabled={isResending || phoneFromQuery.trim().length === 0}
         >
           {isResending ? 'Resending...' : 'Resend code'}
         </Button>

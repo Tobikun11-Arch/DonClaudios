@@ -91,15 +91,15 @@ export async function registerCustomer(data: RegisterRequest) {
   return res.data;
 }
 
-export async function verifyCustomerEmail(params: {
-  email: string;
+export async function verifyCustomerPhone(params: {
+  phoneNumber: string;
   code: string;
 }) {
   const res = await httpClient.post<{message: string}>('/auth/verify', params);
   return res.data;
 }
 
-export async function resendVerificationCode(params: {email: string}) {
+export async function resendVerificationCode(params: {phoneNumber: string}) {
   const res = await httpClient.post<{message: string}>(
     '/auth/resend-verification',
     params

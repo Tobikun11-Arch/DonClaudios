@@ -10,12 +10,12 @@ export const registerDto = z.object({
 });
 
 export const verifyDto = z.object({
-  email: z.string().email(),
+  phoneNumber: z.string().min(1),
   code: z.string().length(6) // always 6 digits from generateVerificationCode()
 });
 
 export const resendVerificationDto = z.object({
-  email: z.string().email()
+  phoneNumber: z.string().min(1)
 });
 
 export const loginDto = z.object({

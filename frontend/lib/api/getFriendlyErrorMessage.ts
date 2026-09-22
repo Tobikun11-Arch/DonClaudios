@@ -54,7 +54,7 @@ export function getFriendlyErrorMessage(
       case 'INVALID_CREDENTIALS':
         return 'Invalid email/phone number or password.';
       case 'NOT_VERIFIED':
-        return 'Your email is not verified yet. Please verify your email to continue.';
+        return 'Your phone number is not verified yet. Please verify it to continue.';
       case 'INVALID_CODE':
         return 'Invalid verification code.';
       case 'EXPIRED_CODE':
