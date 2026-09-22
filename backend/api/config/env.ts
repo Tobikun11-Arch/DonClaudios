@@ -15,6 +15,13 @@ const envSchema = z.object({
   // APPWRITE_BUCKET_ID: z.string().min(1),
   // REDIS_URL: z.string().min(1),
   // FCM_KEY: z.string().min(1), if needed
+  IPROG_SMS_API_TOKEN: z.string().min(1).optional(),
+  IPROG_SMS_API_BASE_URL: z
+    .string()
+    .url()
+    .default('https://www.iprogsms.com/api/v1')
+    .optional(),
+  IPROG_SMS_PROVIDER: z.coerce.number().int().default(2),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.string().optional(),
   SMTP_USER: z.string().optional(),

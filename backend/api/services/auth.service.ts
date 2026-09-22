@@ -6,7 +6,7 @@ import {cashierRepository} from '../repositories/cashier.repository';
 import {adminRepository} from '../repositories/admin.repository';
 import {ApiError} from '../utils/error';
 import {emailService} from './email.service';
-import {verificationCodeEmailTemplate} from '../templates/verificationCodeEmail';
+import {smsService} from './sms.service';
 import {resetPasswordEmailTemplate} from '../templates/resetPasswordEmail';
 
 function generateVerificationCode() {
@@ -61,20 +61,18 @@ export const authService = {
         isVerified: false
       });
 
-      const emailTpl = verificationCodeEmailTemplate({
-        code: verificationCode,
-        expiresMinutes: 10,
-        recipientName: data.firstName
-      });
+      try {
+        await smsService.sendVerificationSms({
+          phoneNumber: customer.phoneNumber ?? data.phoneNumber,
+          code: verificationCode,
+          expiresMinutes: 10
+        });
+      } catch (smsError) {
+        await customerRepository.deleteById(customer.id).catch(() => {});
+        throw smsError;
+      }
 
-      await emailService.sendEmail({
-        to: data.email,
-        subject: emailTpl.subject,
-        text: emailTpl.text,
-        html: emailTpl.html
-      });
-
-      return {id: customer.id, email: customer.email};
+      return {id: customer.id, phoneNumber: customer.phoneNumber};
     } catch (err: any) {
       const code = err?.code;
       const rawMessage = String(err?.message ?? '');
@@ -115,8 +113,8 @@ export const authService = {
     }
   },
 
-  async verify(email: string, code: string) {
-    const customer = await customerRepository.findByEmail(email);
+  async verify(phoneNumber: string, code: string) {
+    const customer = await customerRepository.findByPhoneNumber(phoneNumber);
 
     if (
       !customer ||
@@ -137,39 +135,32 @@ export const authService = {
       );
     }
 
-    await customerRepository.markVerified(email);
+    await customerRepository.markVerified(phoneNumber);
   },
 
-  async resendVerification(email: string) {
-    const customer = await customerRepository.findByEmail(email);
+  async resendVerification(phoneNumber: string) {
+    const customer = await customerRepository.findByPhoneNumber(phoneNumber);
     if (!customer) {
       throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
     }
 
     if (customer.isVerified) {
-      throw new ApiError(400, 'ALREADY_VERIFIED', 'Email already verified');
+      throw new ApiError(400, 'ALREADY_VERIFIED', 'Account already verified');
     }
 
     const verificationCode = generateVerificationCode();
     const verificationExpiry = getVerificationExpiry(10);
 
     await customerRepository.setVerificationCode(
-      email,
+      phoneNumber,
       verificationCode,
       verificationExpiry
     );
 
-    const emailTpl = verificationCodeEmailTemplate({
+    await smsService.sendVerificationSms({
+      phoneNumber: customer.phoneNumber ?? phoneNumber,
       code: verificationCode,
-      expiresMinutes: 10,
-      recipientName: customer.firstName
-    });
-
-    await emailService.sendEmail({
-      to: email,
-      subject: emailTpl.subject,
-      text: emailTpl.text,
-      html: emailTpl.html
+      expiresMinutes: 10
     });
   },
 
