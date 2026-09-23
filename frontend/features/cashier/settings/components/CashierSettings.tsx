@@ -12,6 +12,7 @@ import {
 } from '@/lib/hooks/auth/useProfile';
 import {uploadProfileImage} from '@/lib/api/uploadApi';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
+import {validatePassword} from '@/lib/utils/passwordRules';
 import {Camera, Check, Pencil} from 'lucide-react';
 import {cn} from '@/lib/utils';
 
@@ -65,8 +66,11 @@ export function CashierSettings() {
       setFormError('Please enter your current password.');
       return;
     }
-    if (pw.newPassword.length < 8) {
-      setFormError('New password must be at least 8 characters.');
+    const newPasswordCheck = validatePassword(pw.newPassword);
+    if (!newPasswordCheck.valid) {
+      setFormError(
+        `New password must include: ${newPasswordCheck.unmet[0]}.`
+      );
       return;
     }
     if (pw.newPassword !== pw.confirmPassword) {

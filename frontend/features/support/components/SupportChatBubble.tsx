@@ -1,7 +1,8 @@
 'use client';
 
 import {useEffect, useRef, useState} from 'react';
-import {MessageCircle, X} from 'lucide-react';
+import Image from 'next/image';
+import {X} from 'lucide-react';
 import {toast} from 'sonner';
 import SupportChatPanel from './SupportChatPanel';
 import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
@@ -134,7 +135,25 @@ export default function SupportChatBubble() {
         className="relative flex h-14 w-14 items-center justify-center rounded-full bg-[#2d4a35] text-white shadow-lg transition-transform hover:scale-105"
         aria-label="Open support chat"
       >
-        {open ? <X size={22} /> : <MessageCircle size={24} />}
+        {open ? (
+          <Image
+            src="/assets/no_support.png"
+            alt="Close support chat"
+            width={56}
+            height={56}
+            className="h-full w-full rounded-full object-cover"
+            priority
+          />
+        ) : (
+          <Image
+            src="/assets/don_support.png"
+            alt="Chat with DonClaudio's"
+            width={56}
+            height={56}
+            className="h-full w-full rounded-full object-cover"
+            priority
+          />
+        )}
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#f08080] px-1.5 text-xs font-bold text-white">
             {unreadCount}

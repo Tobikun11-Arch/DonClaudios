@@ -34,7 +34,7 @@ export default function ContactEditor({
           <Input
             value={email}
             onChange={e => onChange('email', e.target.value)}
-            placeholder="support@donclaudio.com"
+            placeholder="donclaudioslechonhouse@gmail.com"
           />
         </div>
       </div>

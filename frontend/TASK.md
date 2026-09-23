@@ -1,37 +1,17 @@
 MUHAI TASKS:
 Guest Ordering / Security
-1. Guest phone number verification via OTP is valid for 30 days from the date of successful verification, scoped to phone number + device/session identifier. After 30 days, or if ordering from a new device/browser, OTP re-verification is required. Order submission is blocked until OTP is confirmed. - checking
+1. Guest phone number verification via OTP is valid for 30 days from the date of successful verification, scoped to phone number + device/session identifier. After 30 days, or if ordering from a new device/browser, OTP re-verification is required. Order submission is blocked until OTP is confirmed. - ✔
 2. User sign up - instead of verification of email it will verify their phone number using text - ✔
 3. sign-in email/phone number - ✔
 4. no same phone number - ✔
 
 Security:
-1. Password uppercase and special symbol - use the dynacore erp as reference - building
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Delivery / Pricing
-1. Make sure delivery fee calculation is based on distance (km) between store and delivery address - before proposal
+1. Password uppercase and special symbol - use the dynacore erp as reference - ✔
 
 Reservations
 1. Add SMS/text notification to the owner (Ate Sheena's phone) specifically for reservation-type orders (e.g., whole lechon for events), since email/response delays were a pain point.
    Categorize which items count as "reservation-priority" (large/made-to-order items) vs. regular in-store orders. - so the reservation
    notificaiton will go through to ate sheena phone is the medium or large only
-
-UX
-1. Lazy loading no more no cards show while loading and loading... text
 
 Menu / Product Details
 1. Add allergen information/tags to menu items.
@@ -48,6 +28,12 @@ Order Management Dashboard
 1. Decide on and keep either the Pending/Confirmed/Preparing/Ready - Dropdown instead and also add filter icon for date 
 2. Add an automatic trigger/notification when an order stays too long in "Preparing" status past an estimated time (auto-flag overdue orders instead of manual estimation calls).
 3. Add a standard/default estimated waiting time per item, auto-added when an item is added to an order. - from ate sheena
+
+Delivery / Pricing
+1. Make sure delivery fee calculation is based on distance (km) between store and delivery address - before proposal
+
+UX
+1. Lazy loading no more no cards show while loading and loading... text
 
 Feedback
 Add automatic filtering/rejection of feedback using a word-filter API (auto-reject inappropriate submissions) instead of manual reject/approve.

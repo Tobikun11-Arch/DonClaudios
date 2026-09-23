@@ -1,10 +1,25 @@
 import {z} from 'zod';
+import {PASSWORD_RULES} from '../utils/passwordRules';
+
+const passwordSchema = z
+  .string()
+  .min(1, 'Password is required')
+  .superRefine((value, ctx) => {
+    for (const rule of PASSWORD_RULES) {
+      if (!rule.test(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Password must include: ${rule.label}`
+        });
+      }
+    }
+  });
 
 export const registerDto = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   email: z.string().email(),
-  password: z.string().min(8),
+  password: passwordSchema,
   phoneNumber: z.string().min(1).optional(),
   address: z.string().min(1).optional()
 });
@@ -20,7 +35,7 @@ export const resendVerificationDto = z.object({
 
 export const loginDto = z.object({
   email: z.string().min(1),
-  password: z.string().min(8)
+  password: z.string().min(1)
 });
 
 export const refreshDto = z.object({
@@ -34,7 +49,7 @@ export const forgotPasswordDto = z.object({
 export const resetPasswordDto = z.object({
   email: z.string().email(),
   code: z.string().length(6),
-  newPassword: z.string().min(8)
+  newPassword: passwordSchema
 });
 
 export const updateProfileDto = z.object({
@@ -59,7 +74,7 @@ export const updateProfileDto = z.object({
 
 export const changePasswordDto = z.object({
   currentPassword: z.string().min(1),
-  newPassword: z.string().min(8)
+  newPassword: passwordSchema
 });
 
 export type RegisterDto = z.infer<typeof registerDto>;

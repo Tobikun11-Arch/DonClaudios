@@ -1,11 +1,13 @@
 'use client';
 
-import {useState} from 'react';
+import {useMemo, useState} from 'react';
 import Link from 'next/link';
 import {Eye, EyeOff, UserPlus, MapPin} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
+import PasswordStrengthChecklist from '@/components/PasswordStrengthChecklist';
+import {validatePassword} from '@/lib/utils/passwordRules';
 import LocationPicker from '@/features/order/components/LocationPicker';
 import {useRouter} from 'next/navigation';
 import {registerCustomer} from '@/lib/api/authApi';
@@ -25,6 +27,13 @@ export default function SignUpPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
 
+  const passwordCheck = useMemo(
+    () => validatePassword(password),
+    [password]
+  );
+  const passwordValid = passwordCheck.valid;
+  const passwordsMatch = confirmPassword.length === 0 || password === confirmPassword;
+
   const handleAddressInteract = () => {
     setShowAutoLocate(true);
   };
@@ -38,8 +47,8 @@ export default function SignUpPage() {
       return;
     }
 
-    if (password.length < 8) {
-      setErrorMessage('Password must be at least 8 characters.');
+    if (!passwordCheck.valid) {
+      setErrorMessage('Your password does not meet all requirements.');
       return;
     }
 
@@ -197,6 +206,7 @@ export default function SignUpPage() {
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
+          <PasswordStrengthChecklist value={password} />
         </div>
 
         <div className="space-y-2">
@@ -216,7 +226,7 @@ export default function SignUpPage() {
           type="submit"
           className="w-full bg-[#3c5e45]"
           size="lg"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !passwordValid || !passwordsMatch}
         >
           <UserPlus size={18} />
           {isSubmitting ? 'Creating account...' : 'Create Account'}
