@@ -7,6 +7,7 @@ import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {useChangePasswordMutation, useSessionsQuery} from '@/lib/hooks/auth/useProfile';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
+import {validatePassword} from '@/lib/utils/passwordRules';
 import {Monitor} from 'lucide-react';
 
 function PasswordField({
@@ -53,8 +54,11 @@ export function SecurityTab() {
       setFormError('Please enter your current password.');
       return;
     }
-    if (form.newPassword.length < 8) {
-      setFormError('New password must be at least 8 characters.');
+    const newPasswordCheck = validatePassword(form.newPassword);
+    if (!newPasswordCheck.valid) {
+      setFormError(
+        `New password must include: ${newPasswordCheck.unmet[0]}.`
+      );
       return;
     }
     if (form.newPassword !== form.confirmPassword) {
