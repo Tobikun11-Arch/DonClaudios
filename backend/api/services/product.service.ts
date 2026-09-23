@@ -1,5 +1,9 @@
 import {ApiError} from '../utils/error';
 import {productRepository} from '../repositories/product.repository';
+import {
+  type ProductAllergen,
+  type ProductIngredient
+} from '../models/Product.model';
 
 export const productService = {
   async list() {
@@ -23,6 +27,8 @@ export const productService = {
       stock: number;
       description?: string;
       imageUrl?: string;
+      ingredients?: ProductIngredient[];
+      allergens?: ProductAllergen[];
       isAvailable?: boolean;
     }
   ) {
@@ -42,6 +48,8 @@ export const productService = {
       stock?: number;
       description?: string;
       imageUrl?: string;
+      ingredients?: ProductIngredient[];
+      allergens?: ProductAllergen[];
       isAvailable?: boolean;
     }
   ) {

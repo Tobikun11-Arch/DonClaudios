@@ -3,11 +3,15 @@
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
+import {isBulkProductCategory} from '@/lib/ingredients/allergens';
+import {type ProductAllergen, type ProductIngredient} from '@/lib/types/product';
 import {cn} from '@/lib/utils';
 import {Upload} from 'lucide-react';
 import Image from 'next/image';
 import {type DragEvent, type FormEvent} from 'react';
 import {type ProductFormState} from '@/lib/types/products';
+import {AllergenChecklist} from './AllergenChecklist';
+import {IngredientChipsInput} from './IngredientChipsInput';
 import {Modal} from './Modal';
 
 interface Props {
@@ -23,7 +27,7 @@ interface Props {
   onSubmit: (e: FormEvent) => void;
   onFormChange: (
     field: keyof ProductFormState,
-    value: string | boolean
+    value: string | boolean | ProductIngredient[] | ProductAllergen[]
   ) => void;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDrop: (e: DragEvent<HTMLButtonElement>) => void;
@@ -169,6 +173,39 @@ export function ProductFormModal({
             placeholder="Short description"
           />
         </div>
+
+        {isBulkProductCategory(form.category) ? (
+          <div className="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3 text-xs text-gray-500">
+            Ingredient and allergen tags are skipped for whole Lechon and
+            Cochinillo items.
+          </div>
+        ) : (
+          <>
+            <div className="space-y-1.5">
+              <Label>Ingredients</Label>
+              <IngredientChipsInput
+                ingredients={form.ingredients}
+                onChange={value => onFormChange('ingredients', value)}
+                disabled={isDisabled}
+              />
+              <p className="text-xs text-gray-500">
+                Type an ingredient and press Enter. At least 1 is required.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Allergens</Label>
+              <AllergenChecklist
+                value={form.allergens}
+                onChange={value => onFormChange('allergens', value)}
+                disabled={isDisabled}
+              />
+              <p className="text-xs text-gray-500">
+                Optional. Leave empty for &quot;No known allergens&quot;.
+              </p>
+            </div>
+          </>
+        )}
 
         {formError && (
           <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-xl px-4 py-3">

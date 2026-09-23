@@ -1,3 +1,25 @@
+export type ProductIngredient = {
+  name: string;
+  iconKey: string;
+};
+
+export const ALLERGEN_VALUES = [
+  'peanut',
+  'tree_nut',
+  'shellfish',
+  'fish',
+  'egg',
+  'dairy',
+  'soy',
+  'gluten',
+  'sesame',
+  'pork',
+  'beef',
+  'spicy'
+] as const;
+
+export type ProductAllergen = (typeof ALLERGEN_VALUES)[number];
+
 export type Product = {
   _id: string;
   name: string;
@@ -6,6 +28,8 @@ export type Product = {
   stock: number;
   description?: string;
   imageUrl?: string;
+  ingredients?: ProductIngredient[];
+  allergens?: ProductAllergen[];
   isAvailable: boolean;
   createdBy: string;
   createdAt?: string;
@@ -27,6 +51,8 @@ export type CreateProductBody = {
   stock: number;
   description?: string;
   imageUrl?: string;
+  ingredients?: ProductIngredient[];
+  allergens?: ProductAllergen[];
   isAvailable?: boolean;
 };
 

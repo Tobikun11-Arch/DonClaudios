@@ -1,7 +1,12 @@
 import {uploadProductImage} from '@/lib/api/uploadApi';
+import {isBulkProductCategory} from '@/lib/ingredients/allergens';
 import {emptyProductForm, type ProductFormState} from '@/lib/types/products';
+import {
+  type Product,
+  type ProductAllergen,
+  type ProductIngredient
+} from '@/lib/types/product';
 import {type DragEvent, useEffect, useState} from 'react';
-import {Product} from '@/lib/types/product';
 
 export function useProductForm() {
   const [form, setForm] = useState<ProductFormState>(emptyProductForm);
@@ -35,6 +40,8 @@ export function useProductForm() {
       stock: String(data.stock ?? ''),
       description: data.description ?? '',
       imageUrl: data.imageUrl ?? '',
+      ingredients: data.ingredients ?? [],
+      allergens: data.allergens ?? [],
       isAvailable: data.isAvailable ?? true
     });
     setPreviewUrl(data.imageUrl ?? null);
@@ -92,7 +99,26 @@ export function useProductForm() {
       setFormError('Please select a product image before saving.');
       return null;
     }
-    return {price, stock};
+    if (
+      !isBulkProductCategory(form.category) &&
+      form.ingredients.length === 0
+    ) {
+      setFormError('Add at least 1 ingredient.');
+      return null;
+    }
+    return {
+      price,
+      stock,
+      ingredients: form.ingredients,
+      allergens: form.allergens,
+      isBulkCategory: isBulkProductCategory(form.category)
+    } as {
+      price: number;
+      stock: number;
+      ingredients: ProductIngredient[];
+      allergens: ProductAllergen[];
+      isBulkCategory: boolean;
+    };
   };
 
   const uploadImageIfNeeded = async (): Promise<string | undefined> => {

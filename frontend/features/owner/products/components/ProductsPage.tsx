@@ -164,6 +164,8 @@ export default function ProductsPage() {
           stock,
           description: form.description.trim() || undefined,
           imageUrl,
+          ingredients: validated.isBulkCategory ? [] : validated.ingredients,
+          allergens: validated.isBulkCategory ? [] : validated.allergens,
           isAvailable: form.isAvailable
         });
       } else {
@@ -177,6 +179,8 @@ export default function ProductsPage() {
             stock,
             description: form.description.trim() || undefined,
             imageUrl,
+            ingredients: validated.isBulkCategory ? [] : validated.ingredients,
+            allergens: validated.isBulkCategory ? [] : validated.allergens,
             isAvailable: form.isAvailable
           }
         });

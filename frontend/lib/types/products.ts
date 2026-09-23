@@ -1,3 +1,5 @@
+import {type ProductAllergen, type ProductIngredient} from '@/lib/types/product';
+
 export type ProductFormState = {
   name: string;
   category: string;
@@ -5,6 +7,8 @@ export type ProductFormState = {
   stock: string;
   description: string;
   imageUrl: string;
+  ingredients: ProductIngredient[];
+  allergens: ProductAllergen[];
   isAvailable: boolean;
 };
 
@@ -15,5 +19,7 @@ export const emptyProductForm: ProductFormState = {
   stock: '',
   description: '',
   imageUrl: '',
+  ingredients: [],
+  allergens: [],
   isAvailable: true
 };
