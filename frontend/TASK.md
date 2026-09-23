@@ -1,12 +1,4 @@
 MUHAI TASKS:
-Guest Ordering / Security
-1. Guest phone number verification via OTP is valid for 30 days from the date of successful verification, scoped to phone number + device/session identifier. After 30 days, or if ordering from a new device/browser, OTP re-verification is required. Order submission is blocked until OTP is confirmed. - ✔
-2. User sign up - instead of verification of email it will verify their phone number using text - ✔
-3. sign-in email/phone number - ✔
-4. no same phone number - ✔
-
-Security:
-1. Password uppercase and special symbol - use the dynacore erp as reference - ✔
 
 Reservations
 1. Add SMS/text notification to the owner (Ate Sheena's phone) specifically for reservation-type orders (e.g., whole lechon for events), since email/response delays were a pain point.
@@ -23,6 +15,7 @@ Menu / Product Details
 
 Inventory
 1. Populate/build out the currently near-empty inventory section (still just a placeholder/fill-in UI).
+2. How food deduct every customer buy example the kare kare
 
 Order Management Dashboard
 1. Decide on and keep either the Pending/Confirmed/Preparing/Ready - Dropdown instead and also add filter icon for date 
@@ -30,7 +23,7 @@ Order Management Dashboard
 3. Add a standard/default estimated waiting time per item, auto-added when an item is added to an order. - from ate sheena
 
 Delivery / Pricing
-1. Make sure delivery fee calculation is based on distance (km) between store and delivery address - before proposal
+1. free if order is lechon around tanza but food theres 60-80 but it was lalamove delivery (idk if i will integrate this)
 
 UX
 1. Lazy loading no more no cards show while loading and loading... text
@@ -63,8 +56,8 @@ Reporting
 Add a Sales/Reporting section to the dashboard (currently missing) — needs monthly reports.
 Make reports downloadable and printable.
 
-General
-Continue building out and polishing the overall UI (described as still "pangit"/unfinished in places) before the formal proposal.
+
+- LECHON Loading ICON animation
 
 
 
