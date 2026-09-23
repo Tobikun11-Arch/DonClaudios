@@ -34,9 +34,7 @@ import {Button} from '@/components/ui/button';
 
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
 
-import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
-
-import StoreClosedOverlay from '@/shared/components/StoreClosedOverlay';
+import StoreClosedModal from '@/shared/components/StoreClosedModal';
 
 export default function OrderSlot() {
   const {data, isLoading, isError} = useProductsQuery();
@@ -48,8 +46,6 @@ export default function OrderSlot() {
   const cartQuery = useCustomerCartQuery(true);
 
   const ordersQuery = useMyOrdersQuery();
-
-  const storeStatusQuery = useStoreStatusQuery();
 
   const cartItems = useMemo(
     () => cartQuery.data?.cart?.items ?? [],
@@ -213,13 +209,8 @@ export default function OrderSlot() {
 
   return (
     <div className="w-full max-w-6xl mx-auto">
-      {storeStatusQuery.data?.status.isOpen === false ? (
-        <div className="pt-8">
-          <StoreClosedOverlay status={storeStatusQuery.data.status} />
-        </div>
-      ) : (
-        <>
-          <div className="flex justify-start gap-2 mb-4">
+      <StoreClosedModal />
+      <div className="flex justify-start gap-2 mb-4">
             <Button
               asChild
               type="button"
@@ -390,8 +381,6 @@ export default function OrderSlot() {
               </div>
             </div>
           </section>
-        </>
-      )}
     </div>
   );
 }

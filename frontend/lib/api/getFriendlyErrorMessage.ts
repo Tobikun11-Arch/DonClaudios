@@ -71,6 +71,8 @@ export function getFriendlyErrorMessage(
         return 'Please enter a valid Philippine mobile number.';
       case 'USER_NOT_FOUND':
         return 'User not found.';
+      case 'STORE_CLOSED':
+        return error.message || 'Store is currently closed.';
       case 'NETWORK_ERROR':
         return 'Network error. Please check your connection and try again.';
       default:

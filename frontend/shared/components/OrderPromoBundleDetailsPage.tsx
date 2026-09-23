@@ -16,14 +16,10 @@ import {
 import {useCartUiStore} from '@/app/store/cartUiStore';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
-import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 
 export default function OrderPromoBundleDetailsPage({id}: {id: string}) {
   const promoQuery = usePromoQuery(id);
   const productsQuery = useProductsQuery();
-
-  const storeStatusQuery = useStoreStatusQuery();
-  const storeClosed = storeStatusQuery.data?.status.isOpen === false;
 
   const promosQuery = usePublicPromosQuery();
   const promos = useMemo(
@@ -246,7 +242,7 @@ export default function OrderPromoBundleDetailsPage({id}: {id: string}) {
 
                   <Button
                     type="button"
-                    disabled={!promo || unitPrice <= 0 || storeClosed}
+                    disabled={!promo || unitPrice <= 0}
                     onClick={() => {
                       if (!promo || unitPrice <= 0) return;
                       if (isCustomerRoute) {
@@ -276,10 +272,7 @@ export default function OrderPromoBundleDetailsPage({id}: {id: string}) {
                     }}
                     className="flex-1 h-12 rounded-full bg-[#3c5e45] text-white "
                   >
-                    Add to Cart -{' '}
-                    <span className="font-bold">
-                      {storeClosed ? 'Store is Closed' : `₱${total}.00`}
-                    </span>
+                    Add to Cart - <span className="font-bold">₱{total}.00</span>
                   </Button>
                 </div>
               </div>
