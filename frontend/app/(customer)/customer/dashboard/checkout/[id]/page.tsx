@@ -19,6 +19,7 @@ import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {useLocationStore} from '@/app/store/locationStore';
 import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
+import LocationPicker from '@/features/order/components/LocationPicker';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
 import {
@@ -28,6 +29,7 @@ import {
 } from '@/lib/hooks/cart/useCustomerCart';
 import {useCreateCustomerOrderMutation} from '@/lib/hooks/orders/useCustomerOrder';
 import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
+import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 import {cn} from '@/lib/utils';
 
 const STORE = {
@@ -122,6 +124,15 @@ export default function CustomerCheckoutPage() {
   const [paymentError, setPaymentError] = useState('');
   const [checkoutError, setCheckoutError] = useState('');
 
+  const storeStatusQuery = useStoreStatusQuery();
+  const isStoreClosed = storeStatusQuery.data?.status.isOpen === false;
+  const storeClosedReason = storeStatusQuery.data?.status.isOpen === false
+    ? storeStatusQuery.data.status.isManuallyClosed &&
+      storeStatusQuery.data.status.manualCloseReason
+      ? storeStatusQuery.data.status.manualCloseReason
+      : storeStatusQuery.data.status.reason
+    : '';
+
   const subtotal = useMemo(() => {
     if (promos.length === 0) {
       return items.reduce((sum, i) => sum + i.price * i.quantity, 0);
@@ -182,12 +193,18 @@ export default function CustomerCheckoutPage() {
 
   const handleCheckout = async () => {
     if (items.length === 0) return;
+
+    setCheckoutError('');
+
+    if (isStoreClosed) {
+      setCheckoutError(storeClosedReason || 'Store is currently closed.');
+      return;
+    }
+
     if (!paymentMethod) {
       setPaymentError('Please select a payment method.');
       return;
     }
-
-    setCheckoutError('');
 
     try {
       const created = await createOrderMutation.mutateAsync({
@@ -248,12 +265,17 @@ export default function CustomerCheckoutPage() {
       className="w-full h-12 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
       disabled={
         items.length === 0 ||
+        isStoreClosed ||
         createOrderMutation.isPending ||
         clearCartMutation.isPending
       }
       onClick={handleCheckout}
     >
-      {createOrderMutation.isPending ? 'Placing order...' : 'Place order'}
+      {createOrderMutation.isPending
+        ? 'Placing order...'
+        : isStoreClosed
+          ? 'Store is Closed'
+          : 'Place order'}
     </Button>
   );
 
@@ -424,6 +446,20 @@ export default function CustomerCheckoutPage() {
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
                     title="Delivery location map preview"
+                  />
+                </div>
+              ) : null}
+
+              {orderType === 'Delivery' && !location?.lat ? (
+                <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4">
+                  <p className="mb-3 text-xs font-semibold text-gray-700">
+                    Set your delivery location
+                  </p>
+                  <LocationPicker
+                    onConfirm={loc => {
+                      setLocation(loc);
+                      setAddress(loc.address);
+                    }}
                   />
                 </div>
               ) : null}

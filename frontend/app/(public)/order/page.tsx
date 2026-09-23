@@ -1,6 +1,5 @@
 'use client';
 
-import LocationPicker from '@/features/order/components/LocationPicker';
 import {useEffect, useMemo, useState} from 'react';
 import Image from 'next/image';
 import {Input} from '@/components/ui/input';
@@ -8,7 +7,6 @@ import {Search, History} from 'lucide-react';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import type {Product} from '@/lib/types/product';
 import MenuCard from '@/shared/components/MenuCard';
-import {useLocationStore} from '@/app/store/locationStore';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import type {Promo} from '@/lib/types/promo';
 import Link from 'next/link';
@@ -17,8 +15,7 @@ import {
   getBundleBadge,
   getPromoBadgeForProduct
 } from '@/lib/utils/promoPricing';
-import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
-import StoreClosedOverlay from '@/shared/components/StoreClosedOverlay';
+import StoreClosedModal from '@/shared/components/StoreClosedModal';
 import {getGuestOrderHistory, subscribeGuestOrderHistory} from '@/lib/orders/orderHistoryStorage';
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
 
@@ -315,35 +312,10 @@ function ProductsSection() {
 }
 
 export default function OrderPage() {
-  const savedLocation = useLocationStore(s => s.location);
-
-  const setSavedLocation = useLocationStore(s => s.setLocation);
-
-  const storeStatusQuery = useStoreStatusQuery();
-
-  const shouldShowLocationPicker = !savedLocation;
-
-  const isStoreClosed = storeStatusQuery.data?.status.isOpen === false;
-
   return (
     <div className="min-h-screen">
-      {isStoreClosed ? (
-        <div className="pt-12">
-          {storeStatusQuery.data?.status ? (
-            <StoreClosedOverlay status={storeStatusQuery.data.status} />
-          ) : null}
-        </div>
-      ) : shouldShowLocationPicker ? (
-        <div className="flex items-center justify-center min-h-screen p-4">
-          <LocationPicker
-            onConfirm={loc => {
-              setSavedLocation(loc);
-            }}
-          />
-        </div>
-      ) : (
-        <ProductsSection />
-      )}
+      <StoreClosedModal />
+      <ProductsSection />
     </div>
   );
 }

@@ -27,9 +27,11 @@ import {
 import {useCartStore, getCartSubtotal} from '@/app/store/cartStore';
 import {useLocationStore} from '@/app/store/locationStore';
 import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
+import LocationPicker from '@/features/order/components/LocationPicker';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
 import {useCreateGuestOrderMutation} from '@/lib/hooks/orders/useGuestOrder';
+import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 import {
   getGuestOtpStatus,
   sendGuestOtp,
@@ -148,6 +150,17 @@ export default function CheckoutGuestPage() {
   const total = subtotal + deliveryFee;
 
   const createOrderMutation = useCreateGuestOrderMutation();
+
+  const storeStatusQuery = useStoreStatusQuery();
+  const isStoreClosed = storeStatusQuery.data?.status.isOpen === false;
+  const storeClosedReason = storeStatusQuery.data?.status.isOpen === false
+    ? storeStatusQuery.data.status.isManuallyClosed &&
+      storeStatusQuery.data.status.manualCloseReason
+      ? storeStatusQuery.data.status.manualCloseReason
+      : storeStatusQuery.data.status.reason
+    : '';
+
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   const mapPreviewSrc =
     location && location.lat != null && location.lng != null
@@ -282,6 +295,15 @@ export default function CheckoutGuestPage() {
   const handleCheckout = async () => {
     if (items.length === 0) return;
 
+    setCheckoutError(null);
+
+    if (isStoreClosed) {
+      setCheckoutError(
+        storeClosedReason || 'Store is currently closed.'
+      );
+      return;
+    }
+
     const nextErrors: typeof errors = {};
     if (!firstName.trim()) nextErrors.firstName = 'First name is required.';
     if (!lastName.trim()) nextErrors.lastName = 'Last name is required.';
@@ -314,33 +336,46 @@ export default function CheckoutGuestPage() {
       };
     });
 
-    const created = await createOrderMutation.mutateAsync({
-      guestInfo: {
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        phoneNumber: mobileNumber.trim(),
-        address: address.trim().length ? address.trim() : undefined
-      },
-      orderType:
-        orderType === 'Delivery'
-          ? 'delivery'
-          : orderType === 'Pick-up'
-            ? 'pickup'
-            : 'reservation',
-      items: orderItems,
-      totalAmount: total,
-      riderNotes: notesToRider.trim().length ? notesToRider.trim() : undefined,
-      paymentMethod:
-        paymentMethod === 'GCash'
-          ? 'gcash'
-          : paymentMethod === 'Cash'
-            ? 'cash'
-            : undefined,
-      changeFor: changeFor.trim().length ? changeFor.trim() : undefined
-    });
+    let created;
+    try {
+      created = await createOrderMutation.mutateAsync({
+        guestInfo: {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          phoneNumber: mobileNumber.trim(),
+          address: address.trim().length ? address.trim() : undefined
+        },
+        orderType:
+          orderType === 'Delivery'
+            ? 'delivery'
+            : orderType === 'Pick-up'
+              ? 'pickup'
+              : 'reservation',
+        items: orderItems,
+        totalAmount: total,
+        riderNotes: notesToRider.trim().length
+          ? notesToRider.trim()
+          : undefined,
+        paymentMethod:
+          paymentMethod === 'GCash'
+            ? 'gcash'
+            : paymentMethod === 'Cash'
+              ? 'cash'
+              : undefined,
+        changeFor: changeFor.trim().length ? changeFor.trim() : undefined
+      });
+    } catch (error) {
+      setCheckoutError(
+        getFriendlyErrorMessage(
+          error,
+          'Failed to place your order. Please try again.'
+        )
+      );
+      return;
+    }
 
     const orderId = created?.order?._id;
-    if (orderId) {
+    if (orderId && created) {
       saveGuestOrderHistoryEntry({
         _id: orderId,
         orderType:
@@ -376,12 +411,30 @@ export default function CheckoutGuestPage() {
       <Button
         type="button"
         className="w-full h-12 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
-        disabled={items.length === 0 || !phoneVerified || createOrderMutation.isPending}
+        disabled={
+          items.length === 0 ||
+          !phoneVerified ||
+          isStoreClosed ||
+          createOrderMutation.isPending
+        }
         onClick={handleCheckout}
       >
-        {createOrderMutation.isPending ? 'Placing order...' : 'Place order'}
+        {createOrderMutation.isPending
+          ? 'Placing order...'
+          : isStoreClosed
+            ? 'Store is Closed'
+            : 'Place order'}
       </Button>
-      {!phoneVerified && mobileNumber.trim() ? (
+      {isStoreClosed ? (
+        <p className="text-center text-xs font-medium text-[#c30010]">
+          {storeClosedReason || 'Store is currently closed.'} You can still add
+          items to your cart.
+        </p>
+      ) : checkoutError ? (
+        <p className="text-center text-xs font-medium text-[#c30010]">
+          {checkoutError}
+        </p>
+      ) : !phoneVerified && mobileNumber.trim() ? (
         <p className="text-center text-xs font-medium text-gray-500">
           Verify your phone number to place your order.
         </p>
@@ -514,6 +567,20 @@ export default function CheckoutGuestPage() {
                       loading="lazy"
                       referrerPolicy="no-referrer-when-downgrade"
                       title="Delivery location map preview"
+                    />
+                  </div>
+                ) : null}
+
+                {orderType === 'Delivery' && !location?.lat ? (
+                  <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4">
+                    <p className="mb-3 text-xs font-semibold text-gray-700">
+                      Set your delivery location
+                    </p>
+                    <LocationPicker
+                      onConfirm={loc => {
+                        setLocation(loc);
+                        setAddress(loc.address);
+                      }}
                     />
                   </div>
                 ) : null}
