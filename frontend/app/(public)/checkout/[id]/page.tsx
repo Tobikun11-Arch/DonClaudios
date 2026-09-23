@@ -673,7 +673,7 @@ export default function CheckoutGuestPage() {
                     setOtpMessage(null);
                     setOtpError(null);
                   }}
-                  placeholder="+63"
+                  placeholder="09xx xxx xxxx"
                   className="mt-2"
                 />
                 {errors.mobileNumber ? (
