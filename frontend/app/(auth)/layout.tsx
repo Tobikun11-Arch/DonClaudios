@@ -18,7 +18,7 @@ const AuthLayout = ({children}: AuthLayoutProps) => {
   useEffect(() => {
     if (!isSuccess) return;
     router.replace(getDashboardPath(data.user.type));
-  }, [data, isSuccess, router]);
+  }, [data, isSuccess, router]);  
 
   if (isLoading || isFetching) return <Loading/>;
 

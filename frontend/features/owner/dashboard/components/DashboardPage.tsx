@@ -14,6 +14,8 @@ import {TopProductsTable} from './TopProductsTable';
 import {LowStockAlert} from './LowStockAlert';
 import OwnerNotificationBell from '@/features/owner/notifications/components/OwnerNotificationBell';
 
+import SplashGate from '@/shared/components/SplashGate';
+
 export default function DashboardPage() {
   const summaryQuery = useDashboardSummaryQuery();
   const salesTrendQuery = useSalesTrendQuery(7);
@@ -21,10 +23,19 @@ export default function DashboardPage() {
   const topProductsQuery = useTopProductsQuery(5);
   const lowStockQuery = useLowStockQuery(10);
 
+  const ready = [
+    summaryQuery,
+    salesTrendQuery,
+    inventoryQuery,
+    topProductsQuery,
+    lowStockQuery
+  ].every(q => !q.isLoading && !q.isFetching);
+
   const cards = summaryQuery.data?.cards ?? [];
 
   return (
     <div className="space-y-5">
+      <SplashGate ready={ready} />
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-[1.5rem] font-bold text-[#1A1A1A]">Dashboard</h1>
