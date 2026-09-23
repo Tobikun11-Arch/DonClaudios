@@ -17,6 +17,7 @@ import {getCategoryByName, stockUnitLabel} from '@/lib/categories/categoryUtils'
 import {ALLERGEN_LABELS} from '@/lib/ingredients/allergens';
 import {ingredientIconByKey} from '@/lib/ingredients/ingredientIcons';
 import type {Product} from '@/lib/types/product';
+import type {Category} from '@/lib/types/category';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 function stockClass(stock: number) {
@@ -80,6 +81,79 @@ function ProductDetails({product}: {product: Product}) {
   );
 }
 
+function CashierProductCard({
+  product,
+  menuCategories
+}: {
+  product: Product;
+  menuCategories: Category[];
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const unitLabel = stockUnitLabel(
+    product.stockUnit ||
+      getCategoryByName(menuCategories, product.category)?.stockUnit
+  );
+
+  return (
+    <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-4">
+      <div className="flex items-start justify-between gap-2">
+        {product.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className="h-16 w-16 rounded-xl object-cover"
+          />
+        ) : (
+          <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-[#e9f5ee] text-[#2d4a35]">
+            <Package className="h-6 w-6" />
+          </div>
+        )}
+        <span
+          className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${stockClass(product.stock)}`}
+        >
+          {product.stock > 0
+            ? `${product.stock}${unitLabel ? ` ${unitLabel}` : ''} in stock`
+            : 'Sold out'}
+        </span>
+      </div>
+      <p className="mt-3 font-bold text-gray-900">{product.name}</p>
+      <p className="text-xs text-gray-500">
+        {product.category}{unitLabel ? ` · ${unitLabel}` : ''}
+      </p>
+      <p className="mt-2 text-sm font-semibold text-[#2d4a35]">
+        ₱{product.price}.00
+      </p>
+      {!product.isAvailable && (
+        <p className="mt-2 text-[11px] font-bold text-red-600">
+          NOT AVAILABLE
+        </p>
+      )}
+      <div className="mt-3">
+        <button
+          type="button"
+          onClick={() => setExpanded(v => !v)}
+          aria-expanded={expanded}
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-200 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50"
+        >
+          {expanded ? (
+            <>
+              <ChevronUp className="h-3.5 w-3.5" />
+              Hide details
+            </>
+          ) : (
+            <>
+              <ChevronDown className="h-3.5 w-3.5" />
+              More details
+            </>
+          )}
+        </button>
+        {expanded && <ProductDetails product={product} />}
+      </div>
+    </div>
+  );
+}
+
 export function CashierMenuStock() {
   const [view, setView] = useState<'products' | 'promos'>('products');
   const [query, setQuery] = useState('');
@@ -92,7 +166,6 @@ export function CashierMenuStock() {
   const products = productsQuery.data?.products ?? [];
   const promos = promosQuery.data?.promos ?? [];
   const menuCategories = categoriesQuery.data?.categories ?? [];
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const categories = useMemo(
     () => ['all', ...Array.from(new Set(products.map(p => p.category)))],
@@ -198,79 +271,14 @@ export function CashierMenuStock() {
             <p className="text-sm text-gray-500">No products found.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
-            {visibleProducts.map(product => {
-              const unitLabel = stockUnitLabel(
-                product.stockUnit ||
-                  getCategoryByName(
-                    menuCategories,
-                    product.category
-                  )?.stockUnit
-              );
-              const isExpanded = expandedId === product._id;
-              return (
-              <div
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4 items-start">
+            {visibleProducts.map(product => (
+              <CashierProductCard
                 key={product._id}
-                className="flex flex-col rounded-2xl border border-gray-200 bg-white p-4"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  {product.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={product.imageUrl}
-                      alt={product.name}
-                      className="h-16 w-16 rounded-xl object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-[#e9f5ee] text-[#2d4a35]">
-                      <Package className="h-6 w-6" />
-                    </div>
-                  )}
-                  <span
-                    className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${stockClass(product.stock)}`}
-                  >
-                    {product.stock > 0
-                      ? `${product.stock}${unitLabel ? ` ${unitLabel}` : ''} in stock`
-                      : 'Sold out'}
-                  </span>
-                </div>
-                <p className="mt-3 font-bold text-gray-900">{product.name}</p>
-                <p className="text-xs text-gray-500">
-                  {product.category}{unitLabel ? ` · ${unitLabel}` : ''}
-                </p>
-                <p className="mt-2 text-sm font-semibold text-[#2d4a35]">
-                  ₱{product.price}.00
-                </p>
-                {!product.isAvailable && (
-                  <p className="mt-2 text-[11px] font-bold text-red-600">
-                    NOT AVAILABLE
-                  </p>
-                )}
-                <div className="mt-auto pt-3">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpandedId(isExpanded ? null : product._id)
-                    }
-                    className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-200 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50"
-                  >
-                    {isExpanded ? (
-                      <>
-                        <ChevronUp className="h-3.5 w-3.5" />
-                        Hide details
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="h-3.5 w-3.5" />
-                        More details
-                      </>
-                    )}
-                  </button>
-                  {isExpanded && <ProductDetails product={product} />}
-                </div>
-              </div>
-              );
-            })}
+                product={product}
+                menuCategories={menuCategories}
+              />
+            ))}
           </div>
         )
       ) : promosQuery.isLoading ? (
