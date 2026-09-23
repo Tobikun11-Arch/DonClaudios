@@ -1,6 +1,7 @@
 import {uploadProductImage} from '@/lib/api/uploadApi';
-import {isBulkProductCategory} from '@/lib/ingredients/allergens';
+import {isCateringCategory, getCategoryByName} from '@/lib/categories/categoryUtils';
 import {emptyProductForm, type ProductFormState} from '@/lib/types/products';
+import {type Category} from '@/lib/types/category';
 import {
   type Product,
   type ProductAllergen,
@@ -8,7 +9,7 @@ import {
 } from '@/lib/types/product';
 import {type DragEvent, useEffect, useState} from 'react';
 
-export function useProductForm() {
+export function useProductForm(categories: Category[] = []) {
   const [form, setForm] = useState<ProductFormState>(emptyProductForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -87,6 +88,10 @@ export function useProductForm() {
       setFormError('Category is required');
       return null;
     }
+    if (!getCategoryByName(categories, form.category)) {
+      setFormError('Pick a category from the list before saving.');
+      return null;
+    }
     if (Number.isNaN(price) || price < 0) {
       setFormError('Price is invalid');
       return null;
@@ -99,10 +104,8 @@ export function useProductForm() {
       setFormError('Please select a product image before saving.');
       return null;
     }
-    if (
-      !isBulkProductCategory(form.category) &&
-      form.ingredients.length === 0
-    ) {
+    const isBulkCategory = isCateringCategory(categories, form.category);
+    if (!isBulkCategory && form.ingredients.length === 0) {
       setFormError('Add at least 1 ingredient.');
       return null;
     }
@@ -111,7 +114,7 @@ export function useProductForm() {
       stock,
       ingredients: form.ingredients,
       allergens: form.allergens,
-      isBulkCategory: isBulkProductCategory(form.category)
+      isBulkCategory
     } as {
       price: number;
       stock: number;

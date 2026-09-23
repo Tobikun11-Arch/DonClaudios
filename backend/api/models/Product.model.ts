@@ -1,4 +1,5 @@
 import mongoose, {Schema} from 'mongoose';
+import {STOCK_UNITS, type StockUnit} from './Category.model';
 
 export const ALLERGEN_VALUES = [
   'peanut',
@@ -27,6 +28,7 @@ export interface ProductDocument extends mongoose.Document {
   category: string;
   price: number;
   stock: number;
+  stockUnit?: StockUnit;
   description?: string;
   imageUrl?: string;
   isAvailable: boolean;
@@ -49,6 +51,7 @@ const ProductSchema = new Schema<ProductDocument>(
     category: {type: String, required: true, trim: true},
     price: {type: Number, required: true, min: 0},
     stock: {type: Number, required: true, min: 0},
+    stockUnit: {type: String, enum: [...STOCK_UNITS]},
     description: {type: String},
     imageUrl: {type: String},
     ingredients: {type: [ProductIngredientSchema], default: []},

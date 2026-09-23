@@ -3,7 +3,15 @@
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
-import {isBulkProductCategory} from '@/lib/ingredients/allergens';
+import {
+  CATEGORY_TYPE_LABELS,
+  STOCK_UNIT_HINTS,
+  getCategoryByName,
+  isCateringCategory,
+  stockUnitLabel
+} from '@/lib/categories/categoryUtils';
+import {type Category} from '@/lib/types/category';
+import {type IngredientItem} from '@/lib/types/ingredient';
 import {type ProductAllergen, type ProductIngredient} from '@/lib/types/product';
 import {cn} from '@/lib/utils';
 import {Upload} from 'lucide-react';
@@ -23,6 +31,11 @@ interface Props {
   isDragging: boolean;
   submitStatus: 'idle' | 'uploading' | 'submitting';
   isPending: boolean;
+  categories: Category[];
+  categoriesLoading?: boolean;
+  ingredientLibrary: IngredientItem[];
+  ingredientLibraryLoading: boolean;
+  onAddIngredientToLibrary?: (name: string) => Promise<IngredientItem | null>;
   onClose: () => void;
   onSubmit: (e: FormEvent) => void;
   onFormChange: (
@@ -44,6 +57,11 @@ export function ProductFormModal({
   isDragging,
   submitStatus,
   isPending,
+  categories,
+  categoriesLoading = false,
+  ingredientLibrary,
+  ingredientLibraryLoading,
+  onAddIngredientToLibrary,
   onClose,
   onSubmit,
   onFormChange,
@@ -53,6 +71,10 @@ export function ProductFormModal({
   onDragLeave
 }: Props) {
   const isDisabled = submitStatus !== 'idle' || isPending;
+  const selectedCategory = getCategoryByName(categories, form.category);
+  const legacyCategory =
+    form.category && !selectedCategory ? form.category : null;
+  const bulk = isCateringCategory(categories, form.category);
 
   return (
     <Modal
@@ -135,12 +157,47 @@ export function ProductFormModal({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="category">Category</Label>
-            <Input
+            <select
               id="category"
               value={form.category}
               onChange={e => onFormChange('category', e.target.value)}
-              placeholder="e.g. Lechon"
-            />
+              disabled={isDisabled || categoriesLoading}
+              className={cn(
+                'h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-2.5 text-base shadow-xs outline-none transition-[color,box-shadow]',
+                'focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
+                'disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
+              )}
+            >
+              {categoriesLoading ? (
+                <option value="">Loading categories...</option>
+              ) : (
+                <>
+                  <option value="">{legacyCategory ? 'Choose a category' : 'Select a category'}</option>
+                  {legacyCategory && (
+                    <option value={form.category} disabled>
+                      {form.category} (not in your list — pick one below)
+                    </option>
+                  )}
+                  {categories.map(c => (
+                    <option key={c._id} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
+            {!categoriesLoading && selectedCategory && (
+              <p className="text-xs text-gray-500">
+                {CATEGORY_TYPE_LABELS[selectedCategory.type]} · stock tracked
+                in {STOCK_UNIT_HINTS[selectedCategory.stockUnit]}
+              </p>
+            )}
+            {legacyCategory && (
+              <p className="text-xs text-amber-700">
+                &quot;{legacyCategory}&quot; is not in your category list. Pick
+                a category above to keep this product working.
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="price">Price</Label>
@@ -154,13 +211,32 @@ export function ProductFormModal({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="stock">Stock</Label>
-            <Input
-              id="stock"
-              inputMode="numeric"
-              value={form.stock}
-              onChange={e => onFormChange('stock', e.target.value)}
-              placeholder="e.g. 10"
-            />
+            <div className="relative">
+              <Input
+                id="stock"
+                inputMode="numeric"
+                value={form.stock}
+                onChange={e => onFormChange('stock', e.target.value)}
+                placeholder="0"
+                className="pr-16"
+              />
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">
+                {selectedCategory
+                  ? stockUnitLabel(selectedCategory.stockUnit)
+                  : legacyCategory
+                    ? 'unit?'
+                    : categoriesLoading
+                      ? '...'
+                      : 'unit'}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500">
+              {selectedCategory
+                ? `Unit is locked to ${STOCK_UNIT_HINTS[selectedCategory.stockUnit]} for "${selectedCategory.name}".`
+                : legacyCategory
+                  ? 'This legacy category has no unit. Reassign above to fix stock units.'
+                  : 'Choose a category to lock the stock unit.'}
+            </p>
           </div>
         </div>
 
@@ -174,10 +250,10 @@ export function ProductFormModal({
           />
         </div>
 
-        {isBulkProductCategory(form.category) ? (
+        {bulk ? (
           <div className="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3 text-xs text-gray-500">
-            Ingredient and allergen tags are skipped for whole Lechon and
-            Cochinillo items.
+            Ingredient and allergen tags are skipped for catering / by-weight
+            items.
           </div>
         ) : (
           <>
@@ -186,10 +262,15 @@ export function ProductFormModal({
               <IngredientChipsInput
                 ingredients={form.ingredients}
                 onChange={value => onFormChange('ingredients', value)}
+                library={ingredientLibrary}
+                isLibraryLoading={ingredientLibraryLoading}
+                onAddToLibrary={onAddIngredientToLibrary}
                 disabled={isDisabled}
               />
               <p className="text-xs text-gray-500">
-                Type an ingredient and press Enter. At least 1 is required.
+                Search the ingredient library and select to add. At least 1 is
+                required. Not in the library? Type it and choose &quot;Add as
+                new ingredient&quot;.
               </p>
             </div>
 

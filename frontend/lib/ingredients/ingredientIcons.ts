@@ -9,6 +9,7 @@ import {
   Citrus,
   Coffee,
   Cookie,
+  Droplet,
   Drumstick,
   Egg,
   Fish,
@@ -35,6 +36,20 @@ interface IngredientIconEntry {
 }
 
 const ENTRIES: IngredientIconEntry[] = [
+  {
+    key: 'condiment',
+    Icon: Droplet,
+    keywords: [
+      'vinegar',
+      'sukang',
+      'oil',
+      'olive',
+      'sauce',
+      'sarsa',
+      'dressing',
+      'salsa'
+    ]
+  },
   {key: 'egg', Icon: Egg, keywords: ['egg', 'itlog']},
   {
     key: 'beef',
@@ -220,3 +235,8 @@ export function ingredientIconByKey(iconKey?: string): LucideIcon {
   if (!iconKey) return FALLBACK_INGREDIENT_ICON;
   return BY_KEY.get(iconKey)?.Icon ?? FALLBACK_INGREDIENT_ICON;
 }
+
+export const INGREDIENT_ICON_OPTIONS: {key: string; Icon: LucideIcon}[] = [
+  ...ENTRIES.map(e => ({key: e.key, Icon: e.Icon})),
+  {key: FALLBACK_INGREDIENT_ICON_KEY, Icon: FALLBACK_INGREDIENT_ICON}
+];

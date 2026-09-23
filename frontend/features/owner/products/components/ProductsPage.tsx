@@ -6,6 +6,15 @@ import {
   useProductsQuery,
   useUpdateProductMutation
 } from '@/lib/hooks/products/useProducts';
+import {
+  useCreateIngredientMutation,
+  useDeleteIngredientMutation,
+  useIngredientsQuery,
+  useUpdateIngredientMutation
+} from '@/lib/hooks/ingredients/useIngredients';
+import {useCategoriesQuery} from '@/lib/hooks/categories/useCategories';
+import {matchIngredientIcon} from '@/lib/ingredients/ingredientIcons';
+import {type IngredientItem} from '@/lib/types/ingredient';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {Plus, Package} from 'lucide-react';
 import {type FormEvent, useMemo, useState} from 'react';
@@ -17,12 +26,18 @@ import {ProductCard, ProductCardSkeleton} from './ProductCard';
 import {ProductFormModal} from './ProductFormModal';
 import {DeleteProductModal} from './DeleteProductModal';
 import {ImageCropModal} from './ImageCropModal';
+import {IngredientLibraryBanner} from './IngredientLibraryBanner';
 
 export default function ProductsPage() {
   const productsQuery = useProductsQuery();
   const createMutation = useCreateProductMutation();
   const updateMutation = useUpdateProductMutation();
   const deleteMutation = useDeleteProductMutation();
+  const ingredientsQuery = useIngredientsQuery();
+  const createIngredientMutation = useCreateIngredientMutation();
+  const updateIngredientMutation = useUpdateIngredientMutation();
+  const deleteIngredientMutation = useDeleteIngredientMutation();
+  const categoriesQuery = useCategoriesQuery();
 
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All Products');
@@ -34,6 +49,11 @@ export default function ProductsPage() {
   const [deletingName, setDeletingName] = useState('');
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [cropOpen, setCropOpen] = useState(false);
+
+  const menuCategories = useMemo(
+    () => categoriesQuery.data?.categories ?? [],
+    [categoriesQuery.data?.categories]
+  );
 
   const {
     form,
@@ -51,11 +71,22 @@ export default function ProductsPage() {
     onDrop,
     validateAndGetPayload,
     uploadImageIfNeeded
-  } = useProductForm();
+  } = useProductForm(menuCategories);
 
   const products = useMemo(
     () => productsQuery.data?.products ?? [],
     [productsQuery.data?.products]
+  );
+
+  const legacyCategoryProducts = useMemo(
+    () =>
+      products.filter(
+        p =>
+          !menuCategories.some(
+            c => c.name.trim().toLowerCase() === p.category.trim().toLowerCase()
+          )
+      ),
+    [menuCategories, products]
   );
 
   const categories = useMemo(() => {
@@ -86,6 +117,46 @@ export default function ProductsPage() {
         return a.name.localeCompare(b.name);
       });
   }, [activeCategory, products, query]);
+
+  const ingredientLibrary = useMemo(
+    () => ingredientsQuery.data?.ingredients ?? [],
+    [ingredientsQuery.data?.ingredients]
+  );
+
+  const pendingIngredients = useMemo(
+    () => ingredientLibrary.filter(item => item.status === 'pending'),
+    [ingredientLibrary]
+  );
+
+  const onAddIngredientToLibrary = async (
+    name: string
+  ): Promise<IngredientItem | null> => {
+    const {iconKey} = matchIngredientIcon(name);
+    try {
+      const {ingredient} = await createIngredientMutation.mutateAsync({
+        name: name.trim(),
+        iconKey,
+        status: iconKey === 'other' ? 'pending' : 'active'
+      });
+      return ingredient;
+    } catch {
+      return {name: name.trim(), iconKey} as IngredientItem;
+    }
+  };
+
+  const onApproveIngredient = async (
+    item: IngredientItem,
+    iconKey: string
+  ) => {
+    await updateIngredientMutation.mutateAsync({
+      id: item._id,
+      body: {iconKey, status: 'active'}
+    });
+  };
+
+  const onDeleteSuggestion = async (item: IngredientItem) => {
+    await deleteIngredientMutation.mutateAsync(item._id);
+  };
 
   const openCreate = () => {
     setMode('create');
@@ -208,6 +279,35 @@ export default function ProductsPage() {
         onAdd={openCreate}
       />
 
+      {!categoriesQuery.isLoading && legacyCategoryProducts.length > 0 && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm font-semibold text-amber-900">
+            {legacyCategoryProducts.length}{' '}
+            {legacyCategoryProducts.length === 1
+              ? 'product uses a legacy category'
+              : 'products use legacy categories'}{' '}
+            not in your category list.
+          </p>
+          <p className="text-xs text-amber-800 mt-1">
+            Open each product below and pick a category from the list (e.g.{' '}
+            {legacyCategoryProducts
+              .map(p => `"${p.category}"`)
+              .slice(0, 3)
+              .join(', ')}
+            ) so stock units and tagging rules keep working. Old categories can
+            be added or renamed in Settings &gt; Menu Categories.
+          </p>
+        </div>
+      )}
+
+      <IngredientLibraryBanner
+        pending={pendingIngredients}
+        busyId={updateIngredientMutation.isPending ? updateIngredientMutation.variables?.id : null}
+        isDeletingId={deleteIngredientMutation.isPending ? deleteIngredientMutation.variables : null}
+        onApprove={onApproveIngredient}
+        onDelete={onDeleteSuggestion}
+      />
+
       <ProductsFilters
         query={query}
         onQueryChange={setQuery}
@@ -282,6 +382,11 @@ export default function ProductsPage() {
         isDragging={isDragging}
         submitStatus={submitStatus}
         isPending={createMutation.isPending || updateMutation.isPending}
+        categories={menuCategories}
+        categoriesLoading={categoriesQuery.isLoading}
+        ingredientLibrary={ingredientLibrary}
+        ingredientLibraryLoading={ingredientsQuery.isLoading}
+        onAddIngredientToLibrary={onAddIngredientToLibrary}
         onClose={onCloseModal}
         onSubmit={onSubmit}
         onFormChange={(field, value) => setForm(v => ({...v, [field]: value}))}

@@ -7,12 +7,14 @@ import {ProfileTab} from './ProfileTab';
 import {SecurityTab} from './SecurityTab';
 import {TeamTab} from './TeamTab';
 import {StoreStatusTab} from './StoreStatusTab';
+import {MenuCategoriesTab} from './MenuCategoriesTab';
 
-type TabId = 'profile' | 'store' | 'security' | 'team';
+type TabId = 'profile' | 'store' | 'categories' | 'security' | 'team';
 
 const TABS: {id: TabId; label: string}[] = [
   {id: 'profile', label: 'Profile & Business Info'},
   {id: 'store', label: 'Store Status'},
+  {id: 'categories', label: 'Menu Categories'},
   {id: 'security', label: 'Security'},
   {id: 'team', label: 'Team'}
 ];
@@ -61,6 +63,7 @@ export function SettingsPage() {
       <div className="mt-6">
         {active === 'profile' && <ProfileTab />}
         {active === 'store' && <StoreStatusTab />}
+        {active === 'categories' && <MenuCategoriesTab />}
         {active === 'security' && <SecurityTab />}
         {active === 'team' && <TeamTab />}
       </div>

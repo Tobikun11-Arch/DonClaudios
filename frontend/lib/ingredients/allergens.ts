@@ -18,10 +18,3 @@ export const ALLERGEN_LABELS: Record<ProductAllergen, string> = {
 export const ALLERGEN_OPTIONS = (
   Object.keys(ALLERGEN_LABELS) as ProductAllergen[]
 ).map(key => ({value: key, label: ALLERGEN_LABELS[key]}));
-
-const BULK_CATEGORIES = ['lechon', 'cochinillo'];
-
-export function isBulkProductCategory(category: string): boolean {
-  const normalized = category.trim().toLowerCase();
-  return BULK_CATEGORIES.some(key => normalized === key);
-}

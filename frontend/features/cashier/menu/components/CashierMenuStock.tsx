@@ -1,15 +1,83 @@
 'use client';
 
 import {useMemo, useState} from 'react';
-import {Package, Ticket, Search, Tag} from 'lucide-react';
+import {
+  Package,
+  Ticket,
+  Search,
+  Tag,
+  ChevronDown,
+  ChevronUp,
+  AlertTriangle
+} from 'lucide-react';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
+import {useCategoriesQuery} from '@/lib/hooks/categories/useCategories';
+import {getCategoryByName, stockUnitLabel} from '@/lib/categories/categoryUtils';
+import {ALLERGEN_LABELS} from '@/lib/ingredients/allergens';
+import {ingredientIconByKey} from '@/lib/ingredients/ingredientIcons';
+import type {Product} from '@/lib/types/product';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 function stockClass(stock: number) {
   if (stock <= 0) return 'bg-red-50 text-red-700 border-red-200';
   if (stock <= 5) return 'bg-amber-50 text-amber-700 border-amber-200';
   return 'bg-green-50 text-green-700 border-green-200';
+}
+
+function ProductDetails({product}: {product: Product}) {
+  const ingredients = product.ingredients ?? [];
+  const allergens = product.allergens ?? [];
+
+  return (
+    <div className="mt-3 border-t border-gray-100 pt-3 space-y-3">
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+          Ingredients
+        </p>
+        {ingredients.length === 0 ? (
+          <p className="mt-1 text-xs text-gray-400">No ingredients listed.</p>
+        ) : (
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {ingredients.map((ingredient, index) => {
+              const Icon = ingredientIconByKey(ingredient.iconKey);
+              return (
+                <span
+                  key={`${ingredient.name}-${index}`}
+                  className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-[#f5f3ee] px-2 py-0.5 text-[11px] font-medium text-gray-700"
+                >
+                  <Icon className="h-3 w-3 text-[#5b6b5e] shrink-0" />
+                  {ingredient.name}
+                </span>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+          Allergens
+        </p>
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {allergens.length === 0 ? (
+            <span className="rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">
+              No known allergens
+            </span>
+          ) : (
+            allergens.map(allergen => (
+              <span
+                key={allergen}
+                className="inline-flex items-center gap-1 rounded-full border border-red-300 bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-[#c30010]"
+              >
+                <AlertTriangle className="h-3 w-3 shrink-0" />
+                Contains: {ALLERGEN_LABELS[allergen]}
+              </span>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function CashierMenuStock() {
@@ -19,9 +87,12 @@ export function CashierMenuStock() {
 
   const productsQuery = useProductsQuery();
   const promosQuery = usePublicPromosQuery();
+  const categoriesQuery = useCategoriesQuery();
 
   const products = productsQuery.data?.products ?? [];
   const promos = promosQuery.data?.promos ?? [];
+  const menuCategories = categoriesQuery.data?.categories ?? [];
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const categories = useMemo(
     () => ['all', ...Array.from(new Set(products.map(p => p.category)))],
@@ -128,10 +199,19 @@ export function CashierMenuStock() {
           </div>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
-            {visibleProducts.map(product => (
+            {visibleProducts.map(product => {
+              const unitLabel = stockUnitLabel(
+                product.stockUnit ||
+                  getCategoryByName(
+                    menuCategories,
+                    product.category
+                  )?.stockUnit
+              );
+              const isExpanded = expandedId === product._id;
+              return (
               <div
                 key={product._id}
-                className="rounded-2xl border border-gray-200 bg-white p-4"
+                className="flex flex-col rounded-2xl border border-gray-200 bg-white p-4"
               >
                 <div className="flex items-start justify-between gap-2">
                   {product.imageUrl ? (
@@ -149,11 +229,15 @@ export function CashierMenuStock() {
                   <span
                     className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${stockClass(product.stock)}`}
                   >
-                    {product.stock > 0 ? `${product.stock} in stock` : 'Sold out'}
+                    {product.stock > 0
+                      ? `${product.stock}${unitLabel ? ` ${unitLabel}` : ''} in stock`
+                      : 'Sold out'}
                   </span>
                 </div>
                 <p className="mt-3 font-bold text-gray-900">{product.name}</p>
-                <p className="text-xs text-gray-500">{product.category}</p>
+                <p className="text-xs text-gray-500">
+                  {product.category}{unitLabel ? ` · ${unitLabel}` : ''}
+                </p>
                 <p className="mt-2 text-sm font-semibold text-[#2d4a35]">
                   ₱{product.price}.00
                 </p>
@@ -162,8 +246,31 @@ export function CashierMenuStock() {
                     NOT AVAILABLE
                   </p>
                 )}
+                <div className="mt-auto pt-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedId(isExpanded ? null : product._id)
+                    }
+                    className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-200 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50"
+                  >
+                    {isExpanded ? (
+                      <>
+                        <ChevronUp className="h-3.5 w-3.5" />
+                        Hide details
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-3.5 w-3.5" />
+                        More details
+                      </>
+                    )}
+                  </button>
+                  {isExpanded && <ProductDetails product={product} />}
+                </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )
       ) : promosQuery.isLoading ? (

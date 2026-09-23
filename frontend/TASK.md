@@ -1,10 +1,12 @@
 MUHAI TASKS:
 
 Menu / Product Details
-1. Add allergen information/tags to menu items.
-2. Add ingredient lists to menu items (visible to both cashier/counter side and customer/guest side) — needed so customers can, e.g., know to remove peanuts from kare-kare. 
+1. Add allergen information/tags to menu items. - ✔
+2. Add ingredient lists to menu items (visible to both cashier/counter side and customer/guest side) — needed so customers can, e.g., know to remove peanuts from kare-kare. - ...
 3. Get the missing gram/weight measurements per dish from Ate Sheena (still pending, needs follow-up).
-   Add categories in Settings (drop-down) that reflect on the front-end menu (e.g., drinks, lechon, etc.), including stock tracking that differs by category (grams for lechon vs. simple stock count for drinks). - add units when adding product as admin
+   Add categories in Settings (drop-down) that reflect on the front-end menu (e.g., drinks, lechon, etc.), including stock tracking that differs by category (grams for lechon vs. simple stock count for drinks). - add units when adding product as admin - ...
+4. NEW UI of /order/productID to not look plain
+5. NEW UI of /order 
 
 
 Inventory

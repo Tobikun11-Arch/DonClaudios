@@ -26,6 +26,7 @@ export type Product = {
   category: string;
   price: number;
   stock: number;
+  stockUnit?: string;
   description?: string;
   imageUrl?: string;
   ingredients?: ProductIngredient[];

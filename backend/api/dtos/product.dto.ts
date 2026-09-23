@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {STOCK_UNITS} from '../models/Category.model';
 
 export const ALLERGEN_VALUES = [
   'peanut',
@@ -27,6 +28,7 @@ export const createProductDto = z.object({
   category: z.string().min(1),
   price: z.coerce.number().min(0),
   stock: z.coerce.number().int().min(0),
+  stockUnit: z.enum(STOCK_UNITS).optional(),
   description: z.string().optional(),
   imageUrl: z.string().url().optional(),
   ingredients: z.array(productIngredient).max(50).optional(),
