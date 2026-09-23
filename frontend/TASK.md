@@ -1,12 +1,4 @@
 MUHAI TASKS:
-Guest Ordering / Security
-1. Guest phone number verification via OTP is valid for 30 days from the date of successful verification, scoped to phone number + device/session identifier. After 30 days, or if ordering from a new device/browser, OTP re-verification is required. Order submission is blocked until OTP is confirmed. - ✔
-2. User sign up - instead of verification of email it will verify their phone number using text - ✔
-3. sign-in email/phone number - ✔
-4. no same phone number - ✔
-
-Security:
-1. Password uppercase and special symbol - use the dynacore erp as reference - ✔
 
 Reservations
 1. Add SMS/text notification to the owner (Ate Sheena's phone) specifically for reservation-type orders (e.g., whole lechon for events), since email/response delays were a pain point.
