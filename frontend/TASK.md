@@ -9,6 +9,11 @@ Menu / Product Details
 5. NEW UI of /order 
 
 
+
+IF shop is closed customer can browse and add to cart but cant place order 
+
+
+
 Inventory
 1. Populate/build out the currently near-empty inventory section (still just a placeholder/fill-in UI).
 2. How food deduct every customer buy example the kare kare
