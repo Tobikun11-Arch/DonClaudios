@@ -1,13 +1,15 @@
 'use client';
 
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {useParams, useRouter} from 'next/navigation';
 import Image from 'next/image';
 import {
+  BadgeCheck,
   Banknote,
   ChevronDown,
   ChevronLeft,
   CreditCard,
+  Loader2,
   MapPin,
   Minus,
   Plus,
@@ -16,12 +18,24 @@ import {
 } from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+  InputOTPSeparator
+} from '@/components/ui/input-otp';
 import {useCartStore, getCartSubtotal} from '@/app/store/cartStore';
 import {useLocationStore} from '@/app/store/locationStore';
 import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
 import {useCreateGuestOrderMutation} from '@/lib/hooks/orders/useGuestOrder';
+import {
+  getGuestOtpStatus,
+  sendGuestOtp,
+  verifyGuestOtp
+} from '@/lib/api/orderApi';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {saveGuestOrderHistoryEntry} from '@/lib/orders/orderHistoryStorage';
 import {cn} from '@/lib/utils';
 
@@ -98,6 +112,14 @@ export default function CheckoutGuestPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [codeSentAt, setCodeSentAt] = useState<number | null>(null);
+  const [now, setNow] = useState<number>(Date.now());
+  const [otpMessage, setOtpMessage] = useState<string | null>(null);
+  const [otpError, setOtpError] = useState<string | null>(null);
   const [errors, setErrors] = useState<{
     firstName?: string;
     lastName?: string;
@@ -169,6 +191,94 @@ export default function CheckoutGuestPage() {
     setErrors(current => ({...current, paymentMethod: undefined}));
   };
 
+  const isLikelyValidPhone = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    return (
+      (digits.startsWith('63') && digits.length === 12) ||
+      (digits.startsWith('0') && digits.length === 11)
+    );
+  };
+
+  useEffect(() => {
+    if (!isLikelyValidPhone(mobileNumber)) {
+      setPhoneVerified(false);
+      return;
+    }
+
+    setPhoneVerified(false);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await getGuestOtpStatus(mobileNumber.trim());
+        if (res.verified) {
+          setPhoneVerified(true);
+          setOtpMessage('Your phone number is already verified.');
+        }
+      } catch {
+        // ignore status check failures
+      }
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [mobileNumber]);
+
+  useEffect(() => {
+    if (!codeSentAt) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [codeSentAt]);
+
+  const cooldownLeft = codeSentAt
+    ? Math.max(0, 60 - Math.floor((now - codeSentAt) / 1000))
+    : 0;
+
+  const handleSendOtp = async () => {
+    const phone = mobileNumber.trim();
+    if (!phone) {
+      setErrors(current => ({...current, mobileNumber: 'Mobile number is required.'}));
+      return;
+    }
+    setIsSendingOtp(true);
+    setOtpError(null);
+    setOtpMessage(null);
+    try {
+      const res = await sendGuestOtp(phone);
+      if (res.alreadyVerified) {
+        setPhoneVerified(true);
+        setOtpMessage('Your phone number is already verified.');
+      } else {
+        setCodeSentAt(Date.now());
+        setOtpMessage(
+          'A 6-digit code was sent to your phone. It expires in 5 minutes.'
+        );
+      }
+    } catch (error) {
+      setOtpError(
+        getFriendlyErrorMessage(error, 'Failed to send the code. Try again.')
+      );
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const phone = mobileNumber.trim();
+    if (!phone || otpCode.length !== 6) return;
+    setIsVerifyingOtp(true);
+    setOtpError(null);
+    setOtpMessage(null);
+    try {
+      await verifyGuestOtp(phone, otpCode);
+      setPhoneVerified(true);
+      setOtpMessage('Your phone number has been verified.');
+    } catch (error) {
+      setOtpError(
+        getFriendlyErrorMessage(error, 'Verification failed. Try again.')
+      );
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
   const handleCheckout = async () => {
     if (items.length === 0) return;
 
@@ -177,6 +287,9 @@ export default function CheckoutGuestPage() {
     if (!lastName.trim()) nextErrors.lastName = 'Last name is required.';
     if (!mobileNumber.trim()) {
       nextErrors.mobileNumber = 'Mobile number is required.';
+    } else if (!phoneVerified) {
+      nextErrors.mobileNumber =
+        'Please verify your phone number before placing the order.';
     }
     if (!paymentMethod) {
       nextErrors.paymentMethod = 'Please select a payment method.';
@@ -259,14 +372,21 @@ export default function CheckoutGuestPage() {
   };
 
   const checkoutButton = (
-    <Button
-      type="button"
-      className="w-full h-12 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
-      disabled={items.length === 0 || createOrderMutation.isPending}
-      onClick={handleCheckout}
-    >
-      {createOrderMutation.isPending ? 'Placing order...' : 'Place order'}
-    </Button>
+    <div className="space-y-2">
+      <Button
+        type="button"
+        className="w-full h-12 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
+        disabled={items.length === 0 || !phoneVerified || createOrderMutation.isPending}
+        onClick={handleCheckout}
+      >
+        {createOrderMutation.isPending ? 'Placing order...' : 'Place order'}
+      </Button>
+      {!phoneVerified && mobileNumber.trim() ? (
+        <p className="text-center text-xs font-medium text-gray-500">
+          Verify your phone number to place your order.
+        </p>
+      ) : null}
+    </div>
   );
 
   return (
@@ -547,6 +667,11 @@ export default function CheckoutGuestPage() {
                       ...current,
                       mobileNumber: undefined
                     }));
+                    setPhoneVerified(false);
+                    setOtpCode('');
+                    setCodeSentAt(null);
+                    setOtpMessage(null);
+                    setOtpError(null);
                   }}
                   placeholder="+63"
                   className="mt-2"
@@ -556,6 +681,89 @@ export default function CheckoutGuestPage() {
                     {errors.mobileNumber}
                   </p>
                 ) : null}
+
+                <div className="mt-3 space-y-3">
+                  {!phoneVerified ? (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full"
+                        disabled={
+                          isSendingOtp || !mobileNumber.trim() || cooldownLeft > 0
+                        }
+                        onClick={handleSendOtp}
+                      >
+                        {isSendingOtp ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                        ) : null}
+                        {cooldownLeft > 0
+                          ? `Resend in ${cooldownLeft}s`
+                          : otpMessage
+                            ? 'Resend code'
+                            : 'Send code'}
+                      </Button>
+
+                      {codeSentAt ? (
+                        <div>
+                          <div className="flex justify-center">
+                            <InputOTP
+                              maxLength={6}
+                              value={otpCode}
+                              onChange={(value: string) =>
+                                setOtpCode(
+                                  value.replace(/\D/g, '').slice(0, 6)
+                                )
+                              }
+                              disabled={isVerifyingOtp}
+                              autoComplete="one-time-code"
+                            >
+                              <InputOTPGroup>
+                                <InputOTPSlot index={0} />
+                                <InputOTPSlot index={1} />
+                                <InputOTPSlot index={2} />
+                              </InputOTPGroup>
+                              <InputOTPSeparator />
+                              <InputOTPGroup>
+                                <InputOTPSlot index={3} />
+                                <InputOTPSlot index={4} />
+                                <InputOTPSlot index={5} />
+                              </InputOTPGroup>
+                            </InputOTP>
+                          </div>
+                          <Button
+                            type="button"
+                            className="mt-3 w-full rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
+                            disabled={otpCode.length !== 6 || isVerifyingOtp}
+                            onClick={handleVerifyOtp}
+                          >
+                            {isVerifyingOtp ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                            ) : null}
+                            Verify
+                          </Button>
+                        </div>
+                      ) : null}
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-semibold text-emerald-700">
+                      <BadgeCheck className="h-5 w-5 shrink-0 text-emerald-600" />
+                      Phone verified
+                    </div>
+                  )}
+
+                  {otpMessage ? (
+                    <p className="text-xs font-medium text-emerald-600">
+                      {otpMessage}
+                    </p>
+                  ) : null}
+                  {otpError ? (
+                    <p className="text-xs font-medium text-red-600">
+                      {otpError}
+                    </p>
+                  ) : null}
+                </div>
               </div>
             </div>
 

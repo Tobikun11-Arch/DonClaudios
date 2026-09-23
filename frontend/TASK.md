@@ -1,9 +1,22 @@
 MUHAI TASKS:
 Guest Ordering / Security
-1. Add phone number OTP verification for guest orders — customer's number must be verified before the order is accepted (can't proceed until OTP is entered). 
-2. User sign up - instead of verification of email it will verify their phone number using text - DONE
-3. sign-in email/phone number - DONE
-4. no same phone number - DONE
+1. Guest phone number verification via OTP is valid for 30 days from the date of successful verification, scoped to phone number + device/session identifier. After 30 days, or if ordering from a new device/browser, OTP re-verification is required. Order submission is blocked until OTP is confirmed. - checking
+2. User sign up - instead of verification of email it will verify their phone number using text - ✔
+3. sign-in email/phone number - ✔
+4. no same phone number - ✔
+
+Security:
+1. Password uppercase and special symbol - use the dynacore erp as reference - building
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -12,25 +25,29 @@ Guest Ordering / Security
 Delivery / Pricing
 1. Make sure delivery fee calculation is based on distance (km) between store and delivery address - before proposal
 
-Menu / Product Details
-1. Add allergen information/tags to menu items.
-2. Add ingredient lists to menu items (visible to both cashier/counter side and customer/guest side) — needed so customers can, e.g., know to remove peanuts from kare-kare.
-3. Get the missing gram/weight measurements per dish from Ate Sheena (still pending, needs follow-up).
-   Add categories in Settings (drop-down) that reflect on the front-end menu (e.g., drinks, lechon, etc.), including stock tracking that differs by category (grams for lechon vs. simple stock count for drinks).
-
-Order Management Dashboard
-1. Decide on and keep either the Pending/Confirmed/Preparing/Ready flow or the Active/All tabs — leaning toward keeping both/retaining flexibility for the store to decide.
-2. Add an automatic trigger/notification when an order stays too long in "Preparing" status past an estimated time (auto-flag overdue orders instead of manual estimation calls).
-3. Add a standard/default estimated waiting time per item, auto-added when an item is added to an order. - from ate sheena
-
 Reservations
 1. Add SMS/text notification to the owner (Ate Sheena's phone) specifically for reservation-type orders (e.g., whole lechon for events), since email/response delays were a pain point.
    Categorize which items count as "reservation-priority" (large/made-to-order items) vs. regular in-store orders. - so the reservation
    notificaiton will go through to ate sheena phone is the medium or large only
 
-Admin Panel / Appearance Settings
-Make sure all homepage elements (colors, icons, pictures, location, etc.) are dynamic and editable via a simple interface — not manual/code-level editing, since the client isn't technical.
-Move/consolidate the appearance editor into Settings tab for easier access.
+UX
+1. Lazy loading no more no cards show while loading and loading... text
+
+Menu / Product Details
+1. Add allergen information/tags to menu items.
+2. Add ingredient lists to menu items (visible to both cashier/counter side and customer/guest side) — needed so customers can, e.g., know to remove peanuts from kare-kare.
+3. Get the missing gram/weight measurements per dish from Ate Sheena (still pending, needs follow-up).
+   Add categories in Settings (drop-down) that reflect on the front-end menu (e.g., drinks, lechon, etc.), including stock tracking that differs by category (grams for lechon vs. simple stock count for drinks).
+4. New UI for customer account while ordering
+5. add units when adding product as admin
+
+Inventory
+1. Populate/build out the currently near-empty inventory section (still just a placeholder/fill-in UI).
+
+Order Management Dashboard
+1. Decide on and keep either the Pending/Confirmed/Preparing/Ready - Dropdown instead and also add filter icon for date 
+2. Add an automatic trigger/notification when an order stays too long in "Preparing" status past an estimated time (auto-flag overdue orders instead of manual estimation calls).
+3. Add a standard/default estimated waiting time per item, auto-added when an item is added to an order. - from ate sheena
 
 Feedback
 Add automatic filtering/rejection of feedback using a word-filter API (auto-reject inappropriate submissions) instead of manual reject/approve.
@@ -47,13 +64,14 @@ Rename "Team" tab to "Cashier" (or "Cashier account") — current naming was unc
 Support Chat
 Simplify the support/inquiry chat notification UI — make it more accessible (chat/messenger-style with a close button) rather than the current design.
 
+Admin Panel / Appearance Settings
+Make sure all homepage elements (colors, icons, pictures, location, etc.) are dynamic and editable via a simple interface — not manual/code-level editing, since the client isn't technical.
+Move/consolidate the appearance editor into Settings tab for easier access.
+
 Store Status
 Move "Store Status" (open/close) control into Settings for easier access.
 Add a clear alert/notification on the website (landing page and "Order Now" page) when the store is currently closed — a real dialog/prompt, not just a subtle "currently closed" tag, since users tend to miss subtle indicators.
 When store is closed, customers should still be able to view the menu (marked unavailable) but not place orders.
-
-Inventory
-Populate/build out the currently near-empty inventory section (still just a placeholder/fill-in UI).
 
 Reporting
 Add a Sales/Reporting section to the dashboard (currently missing) — needs monthly reports.
@@ -62,7 +80,13 @@ Make reports downloadable and printable.
 General
 Continue building out and polishing the overall UI (described as still "pangit"/unfinished in places) before the formal proposal.
 
-PRIORITY TASKS: 5. Every completed order the receipt will send to customer email 8. admin must power to end or delete the conversation from reviews if bad happens like a troll customer 4. Progress order UI - Interactive; admin or cashier can update status, e.g., "on the way" or "already delivered." and borj problem like cancelling 6. Dashboard dropdown for report (that summarize in dashboard) (prototype) 13. Change ui of menu ui and slug ui per product - development gc reference
+
+
+
+
+
+PRIORITY TASKS: 
+5. Every completed order the receipt will send to customer email 8. admin must power to end or delete the conversation from reviews if bad happens like a troll customer 4. Progress order UI - Interactive; admin or cashier can update status, e.g., "on the way" or "already delivered." and borj problem like cancelling 6. Dashboard dropdown for report (that summarize in dashboard) (prototype) 13. Change ui of menu ui and slug ui per product - development gc reference
 
 7. connect the online offline of cashier using poll
 8. Payment system - UI and functionality.

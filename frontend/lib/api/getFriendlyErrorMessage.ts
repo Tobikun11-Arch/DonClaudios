@@ -59,6 +59,16 @@ export function getFriendlyErrorMessage(
         return 'Invalid verification code.';
       case 'EXPIRED_CODE':
         return 'Verification code expired or invalid. Please request a new code.';
+      case 'PHONE_NOT_VERIFIED':
+        return 'Please verify your phone number before placing the order.';
+      case 'RESEND_COOLDOWN':
+        return 'Please wait a moment before requesting another code.';
+      case 'ATTEMPT_LIMIT':
+        return 'Too many incorrect attempts. Please request a new code.';
+      case 'RESEND_LIMIT':
+        return 'Too many code requests. Please try again later.';
+      case 'INVALID_PHONE':
+        return 'Please enter a valid Philippine mobile number.';
       case 'USER_NOT_FOUND':
         return 'User not found.';
       case 'NETWORK_ERROR':

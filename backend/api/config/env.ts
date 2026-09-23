@@ -22,6 +22,8 @@ const envSchema = z.object({
     .default('https://www.iprogsms.com/api/v1')
     .optional(),
   IPROG_SMS_PROVIDER: z.coerce.number().int().default(2),
+  GUEST_OTP_CODE_MINUTES: z.coerce.number().int().min(1).default(5),
+  GUEST_OTP_VERIFIED_DAYS: z.coerce.number().int().min(1).default(30),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.string().optional(),
   SMTP_USER: z.string().optional(),

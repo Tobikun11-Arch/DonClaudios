@@ -8,6 +8,12 @@ import {
   optionalAuth
 } from '../middleware/auth';
 import {ApiError} from '../utils/error';
+import {validate} from '../middleware/validation';
+import {guestOtpLimiter} from '../middleware/rateLimit';
+import {
+  guestOtpSendDto,
+  guestOtpVerifyDto
+} from '../dtos/order.dto';
 import type {Request, Response, NextFunction} from 'express';
 
 const router = Router();
@@ -22,6 +28,24 @@ function requireStaff(req: Request, _res: Response, next: NextFunction) {
 router.post('/me', requireAuth, orderController.createCustomerOrder);
 router.get('/me', requireAuth, orderController.listMyOrders);
 router.post('/guest', orderController.createGuestOrder);
+
+router.get(
+  '/guest/otp/status',
+  guestOtpLimiter,
+  orderController.checkGuestOtpStatus
+);
+router.post(
+  '/guest/otp',
+  guestOtpLimiter,
+  validate(guestOtpSendDto),
+  orderController.sendGuestOtp
+);
+router.post(
+  '/guest/otp/verify',
+  guestOtpLimiter,
+  validate(guestOtpVerifyDto),
+  orderController.verifyGuestOtp
+);
 
 router.get(
   '/customer/track/:id',

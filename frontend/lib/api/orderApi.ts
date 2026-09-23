@@ -262,3 +262,32 @@ export async function cancelTrackedOrder(
   );
   return res.data;
 }
+
+export type GuestOtpStatusResponse = {
+  verified: boolean;
+  message: string;
+};
+
+export async function sendGuestOtp(phoneNumber: string) {
+  const res = await httpClient.post<{message: string; alreadyVerified?: boolean}>(
+    '/orders/guest/otp',
+    {phoneNumber}
+  );
+  return res.data;
+}
+
+export async function verifyGuestOtp(phoneNumber: string, code: string) {
+  const res = await httpClient.post<{message: string}>(
+    '/orders/guest/otp/verify',
+    {phoneNumber, code}
+  );
+  return res.data;
+}
+
+export async function getGuestOtpStatus(phoneNumber: string) {
+  const res = await httpClient.get<GuestOtpStatusResponse>(
+    '/orders/guest/otp/status',
+    {params: {phoneNumber}}
+  );
+  return res.data;
+}

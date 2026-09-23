@@ -9,6 +9,7 @@ import {cashierRepository} from '../repositories/cashier.repository';
 import {customerRepository} from '../repositories/customer.repository';
 import {sendOrderReceiptEmail} from '../services/receipt.service';
 import {storeStatusService} from '../services/storeStatus.service';
+import {guestOtpService} from '../services/guestOtp.service';
 import type {PaymentMethod} from '../models/Transaction.model';
 import type {OrderStatus} from '../models/Order.model';
 import type {CashierDocument} from '../models/Cashier.model';
@@ -478,6 +479,49 @@ export const orderController = {
     }
   },
 
+  async sendGuestOtp(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await guestOtpService.sendOtp(req.body.phoneNumber);
+      if (result.alreadyVerified) {
+        return res.status(200).json({
+          message: 'Phone number already verified',
+          alreadyVerified: true
+        });
+      }
+      res.status(200).json({message: 'Verification code sent'});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async verifyGuestOtp(req: Request, res: Response, next: NextFunction) {
+    try {
+      await guestOtpService.verifyOtp(req.body.phoneNumber, req.body.code);
+      res.status(200).json({message: 'Phone number verified'});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async checkGuestOtpStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const phoneNumber =
+        typeof req.query.phoneNumber === 'string' ? req.query.phoneNumber : '';
+      if (!isNonEmptyString(phoneNumber)) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'phoneNumber is required');
+      }
+      const verified = await guestOtpService.isPhoneVerified(phoneNumber);
+      res.status(200).json({
+        verified,
+        message: verified
+          ? 'Phone number verified'
+          : 'Phone number not verified'
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async createGuestOrder(req: Request, res: Response, next: NextFunction) {
     try {
       await assertStoreOpen();
@@ -504,6 +548,17 @@ export const orderController = {
       }
       if (!isNonEmptyString(guestInfo.phoneNumber)) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'phoneNumber is required');
+      }
+
+      const phoneVerified = await guestOtpService.isPhoneVerified(
+        guestInfo.phoneNumber
+      );
+      if (!phoneVerified) {
+        throw new ApiError(
+          409,
+          'PHONE_NOT_VERIFIED',
+          'Verify your phone number before placing the order'
+        );
       }
 
       const validOrderTypes = ['pickup', 'delivery', 'reservation'] as const;

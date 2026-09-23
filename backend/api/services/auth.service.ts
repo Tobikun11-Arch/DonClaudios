@@ -8,14 +8,10 @@ import {ApiError} from '../utils/error';
 import {emailService} from './email.service';
 import {smsService} from './sms.service';
 import {resetPasswordEmailTemplate} from '../templates/resetPasswordEmail';
-
-function generateVerificationCode() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-function getVerificationExpiry(minutes: number) {
-  return new Date(Date.now() + minutes * 60 * 1000);
-}
+import {
+  generateVerificationCode,
+  getVerificationExpiry
+} from '../utils/verification';
 
 export const authService = {
   async register(data: {
