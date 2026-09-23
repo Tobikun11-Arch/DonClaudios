@@ -10,5 +10,8 @@ export const productRepository = {
   updateById: (id: string, data: Partial<ProductDocument>) =>
     ProductModel.findByIdAndUpdate(id, data, {new: true}).exec(),
 
-  deleteById: (id: string) => ProductModel.findByIdAndDelete(id).exec()
+  deleteById: (id: string) => ProductModel.findByIdAndDelete(id).exec(),
+
+  countByCategory: (category: string) =>
+    ProductModel.countDocuments({category}).exec()
 };

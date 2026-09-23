@@ -3,6 +3,7 @@
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {getStockStatus, stockStatusConfig} from '../utils/stockStatus';
+import {stockUnitLabel} from '@/lib/categories/categoryUtils';
 import {Package, Search, Plus, Minus, History, Loader2} from 'lucide-react';
 import Image from 'next/image';
 import type {Product} from '@/lib/types/product';
@@ -162,6 +163,11 @@ export function InventoryTable({
                         <span className="font-extrabold text-gray-900">
                           {p.stock}
                         </span>
+                        {p.stockUnit && (
+                          <span className="ml-1 text-xs font-medium text-gray-400">
+                            {stockUnitLabel(p.stockUnit)}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3.5 text-center hidden md:table-cell">
                         <span

@@ -6,7 +6,9 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch index.ts",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "seed:ingredients": "tsx scripts/seedIngredients.ts",
+    "seed:categories": "tsx scripts/seedCategories.ts"
   },
   "keywords": [],
   "author": "",

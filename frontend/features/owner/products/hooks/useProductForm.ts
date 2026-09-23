@@ -1,9 +1,15 @@
 import {uploadProductImage} from '@/lib/api/uploadApi';
+import {isCateringCategory, getCategoryByName} from '@/lib/categories/categoryUtils';
 import {emptyProductForm, type ProductFormState} from '@/lib/types/products';
+import {type Category} from '@/lib/types/category';
+import {
+  type Product,
+  type ProductAllergen,
+  type ProductIngredient
+} from '@/lib/types/product';
 import {type DragEvent, useEffect, useState} from 'react';
-import {Product} from '@/lib/types/product';
 
-export function useProductForm() {
+export function useProductForm(categories: Category[] = []) {
   const [form, setForm] = useState<ProductFormState>(emptyProductForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -35,6 +41,8 @@ export function useProductForm() {
       stock: String(data.stock ?? ''),
       description: data.description ?? '',
       imageUrl: data.imageUrl ?? '',
+      ingredients: data.ingredients ?? [],
+      allergens: data.allergens ?? [],
       isAvailable: data.isAvailable ?? true
     });
     setPreviewUrl(data.imageUrl ?? null);
@@ -80,6 +88,10 @@ export function useProductForm() {
       setFormError('Category is required');
       return null;
     }
+    if (!getCategoryByName(categories, form.category)) {
+      setFormError('Pick a category from the list before saving.');
+      return null;
+    }
     if (Number.isNaN(price) || price < 0) {
       setFormError('Price is invalid');
       return null;
@@ -92,7 +104,24 @@ export function useProductForm() {
       setFormError('Please select a product image before saving.');
       return null;
     }
-    return {price, stock};
+    const isBulkCategory = isCateringCategory(categories, form.category);
+    if (!isBulkCategory && form.ingredients.length === 0) {
+      setFormError('Add at least 1 ingredient.');
+      return null;
+    }
+    return {
+      price,
+      stock,
+      ingredients: form.ingredients,
+      allergens: form.allergens,
+      isBulkCategory
+    } as {
+      price: number;
+      stock: number;
+      ingredients: ProductIngredient[];
+      allergens: ProductAllergen[];
+      isBulkCategory: boolean;
+    };
   };
 
   const uploadImageIfNeeded = async (): Promise<string | undefined> => {

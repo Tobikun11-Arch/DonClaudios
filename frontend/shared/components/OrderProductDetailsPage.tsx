@@ -18,6 +18,8 @@ import {
 } from '@/lib/utils/promoPricing';
 import {useCustomerCartQuery} from '@/lib/hooks/cart/useCustomerCart';
 import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
+import {AllergenBadges} from './AllergenBadges';
+import {IngredientGrid} from './IngredientGrid';
 
 export default function OrderProductDetailsPage({id}: {id: string}) {
   const productQuery = useProductQuery(id);
@@ -202,6 +204,9 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                   {product.description}
                 </p>
               )}
+
+              <AllergenBadges allergens={product.allergens ?? []} />
+              <IngredientGrid ingredients={product.ingredients ?? []} />
 
               <div className="mt-8">
                 <Label className="text-sm font-semibold text-gray-900">

@@ -14,6 +14,8 @@ import notificationRoutes from './notification.routes';
 import rewardRoutes from './reward.routes';
 import supportRoutes from './support.routes';
 import storeStatusRoutes from './storeStatus.routes';
+import ingredientRoutes from './ingredient.routes';
+import categoryRoutes from './category.routes';
 
 const router = Router();
 
@@ -32,5 +34,7 @@ router.use('/notifications', notificationRoutes);
 router.use('/rewards', rewardRoutes);
 router.use('/support', supportRoutes);
 router.use('/store-status', storeStatusRoutes);
+router.use('/ingredients', ingredientRoutes);
+router.use('/categories', categoryRoutes);
 
 export default router;

@@ -21,7 +21,7 @@ export function Modal({open, title, children, onClose}: Props) {
         <div
           onClick={e => e.stopPropagation()}
           className="w-full sm:max-w-2xl bg-white shadow-xl border border-gray-100 rounded-t-2xl sm:rounded-2xl
-          h-full sm:h-auto flex flex-col"
+          h-full sm:h-auto sm:max-h-[90vh] flex flex-col"
         >
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
             <div className="flex items-center gap-3">
@@ -36,7 +36,7 @@ export function Modal({open, title, children, onClose}: Props) {
               </div>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-5">{children}</div>
+          <div className="flex-1 min-h-0 overflow-y-auto p-5">{children}</div>
         </div>
       </div>
     </div>

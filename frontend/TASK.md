@@ -1,17 +1,13 @@
 MUHAI TASKS:
 
-Reservations
-1. Add SMS/text notification to the owner (Ate Sheena's phone) specifically for reservation-type orders (e.g., whole lechon for events), since email/response delays were a pain point.
-   Categorize which items count as "reservation-priority" (large/made-to-order items) vs. regular in-store orders. - so the reservation
-   notificaiton will go through to ate sheena phone is the medium or large only
-
 Menu / Product Details
-1. Add allergen information/tags to menu items.
-2. Add ingredient lists to menu items (visible to both cashier/counter side and customer/guest side) — needed so customers can, e.g., know to remove peanuts from kare-kare.
+1. Add allergen information/tags to menu items. - ✔
+2. Add ingredient lists to menu items (visible to both cashier/counter side and customer/guest side) — needed so customers can, e.g., know to remove peanuts from kare-kare. - ...
 3. Get the missing gram/weight measurements per dish from Ate Sheena (still pending, needs follow-up).
-   Add categories in Settings (drop-down) that reflect on the front-end menu (e.g., drinks, lechon, etc.), including stock tracking that differs by category (grams for lechon vs. simple stock count for drinks).
-4. New UI for customer account while ordering
-5. add units when adding product as admin
+   Add categories in Settings (drop-down) that reflect on the front-end menu (e.g., drinks, lechon, etc.), including stock tracking that differs by category (grams for lechon vs. simple stock count for drinks). - add units when adding product as admin - ...
+4. NEW UI of /order/productID to not look plain
+5. NEW UI of /order 
+
 
 Inventory
 1. Populate/build out the currently near-empty inventory section (still just a placeholder/fill-in UI).
@@ -21,6 +17,31 @@ Order Management Dashboard
 1. Decide on and keep either the Pending/Confirmed/Preparing/Ready - Dropdown instead and also add filter icon for date 
 2. Add an automatic trigger/notification when an order stays too long in "Preparing" status past an estimated time (auto-flag overdue orders instead of manual estimation calls).
 3. Add a standard/default estimated waiting time per item, auto-added when an item is added to an order. - from ate sheena
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Reservations
+1. Add SMS/text notification to the owner (Ate Sheena's phone) specifically for reservation-type orders (e.g., whole lechon for events), since email/response delays were a pain point.
+   Categorize which items count as "reservation-priority" (large/made-to-order items) vs. regular in-store orders. - so the reservation
+   notificaiton will go through to ate sheena phone is the medium or large only
 
 Delivery / Pricing
 1. free if order is lechon around tanza but food theres 60-80 but it was lalamove delivery (idk if i will integrate this)

@@ -1,5 +1,6 @@
 import {Button} from '@/components/ui/button';
 import {Card, CardContent} from '@/components/ui/card';
+import {stockUnitLabel} from '@/lib/categories/categoryUtils';
 import {cn} from '@/lib/utils';
 import {Package, Pencil, Trash2} from 'lucide-react';
 import Image from 'next/image';
@@ -54,7 +55,7 @@ export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
             <p className="text-sm font-extrabold text-gray-900">
               {formatPeso(p.price)}
             </p>
-            <p className="text-xs text-gray-500">Stock: {p.stock}</p>
+            <p className="text-xs text-gray-500">Stock: {p.stock}{p.stockUnit ? ` ${stockUnitLabel(p.stockUnit)}` : ''}</p>
           </div>
         </div>
 
