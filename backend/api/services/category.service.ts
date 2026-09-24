@@ -8,6 +8,7 @@ type CategoryInput = {
   name?: string;
   type?: CategoryType;
   stockUnit?: StockUnit;
+  imageUrl?: string | null;
   key?: string;
 };
 

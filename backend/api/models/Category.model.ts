@@ -14,6 +14,7 @@ export interface CategoryDocument extends mongoose.Document {
   type: CategoryType;
   stockUnit: StockUnit;
   sortOrder: number;
+  imageUrl?: string | null;
   createdBy?: mongoose.Types.ObjectId;
 }
 
@@ -32,6 +33,7 @@ const CategorySchema = new Schema<CategoryDocument>(
       required: true
     },
     sortOrder: {type: Number, default: 0},
+    imageUrl: {type: String, default: null},
     createdBy: {type: Schema.Types.ObjectId, ref: 'Admin'}
   },
   {timestamps: true}

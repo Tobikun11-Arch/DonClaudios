@@ -3,13 +3,17 @@
 import {useEffect, useMemo, useState} from 'react';
 import Image from 'next/image';
 import {Input} from '@/components/ui/input';
-import {Search, History} from 'lucide-react';
+import {Search, History, SlidersHorizontal} from 'lucide-react';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
-import type {Product} from '@/lib/types/product';
-import MenuCard from '@/shared/components/MenuCard';
+import MenuCategoryCard from '@/shared/components/MenuCategoryCard';
+import FeaturedMenuItemCard from '@/shared/components/FeaturedMenuItemCard';
+import MenuCardSkeleton from '@/shared/components/MenuCardSkeleton';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
+import {usePublicCategoriesQuery} from '@/lib/hooks/categories/useCategories';
 import type {Promo} from '@/lib/types/promo';
 import Link from 'next/link';
+import {useCartStore} from '@/app/store/cartStore';
+import {useCartUiStore} from '@/app/store/cartUiStore';
 
 import {
   getBundleBadge,
@@ -22,6 +26,7 @@ import type {OrderHistoryEntry} from '@/lib/api/orderApi';
 function ProductsSection() {
   const {data, isLoading, isError} = useProductsQuery();
   const promosQuery = usePublicPromosQuery();
+  const publicCategoriesQuery = usePublicCategoriesQuery();
   const [guestOrders, setGuestOrders] = useState<OrderHistoryEntry[]>([]);
 
   useEffect(() => {
@@ -42,6 +47,14 @@ function ProductsSection() {
     () => promosQuery.data?.promos ?? [],
     [promosQuery.data?.promos]
   );
+
+  const categoryImageMap = useMemo(() => {
+    const map: Record<string, string | undefined> = {};
+    for (const c of publicCategoriesQuery.data?.categories ?? []) {
+      map[c.name] = c.imageUrl ?? undefined;
+    }
+    return map;
+  }, [publicCategoriesQuery.data]);
 
   const availableProducts = useMemo(() => {
     return products.filter(p => p.isAvailable && p.stock > 0);
@@ -65,21 +78,46 @@ function ProductsSection() {
       )
     ).sort((a, b) => a.localeCompare(b));
 
+    const rice = categories.find(c => /rice/i.test(c)) ?? null;
+
     return [
-      {id: 'featured', label: 'Featured', category: null as string | null},
+      ...(rice
+        ? [
+            {
+              id: rice.toLowerCase().replace(/\s+/g, ''),
+              label: rice,
+              category: rice
+            }
+          ]
+        : []),
       ...(promoBundles.length > 0
         ? [{id: 'promoBundles', label: 'Promo Bundles', category: null}]
         : []),
-      ...categories.map(category => ({
-        id: category.toLowerCase().replace(/\s+/g, ''),
-        label: category,
-        category
-      }))
+      ...categories
+        .filter(c => c !== rice)
+        .map(category => ({
+          id: category.toLowerCase().replace(/\s+/g, ''),
+          label: category,
+          category
+        }))
     ];
   }, [availableProducts, promoBundles.length]);
 
-  const [activeTab, setActiveTab] = useState('featured');
+  const defaultTabId = useMemo(() => {
+    return (
+      tabs.find(t => t.category && /rice/i.test(t.category))?.id ??
+      tabs.find(t => t.category)?.id ??
+      tabs[0]?.id ??
+      ''
+    );
+  }, [tabs]);
+
+  const [activeTab, setActiveTab] = useState('');
   const [query, setQuery] = useState('');
+
+  const resolvedActiveTab = tabs.some(t => t.id === activeTab)
+    ? activeTab
+    : defaultTabId;
 
   const activeOrderCount = useMemo(
     () =>
@@ -90,18 +128,13 @@ function ProductsSection() {
     [guestOrders]
   );
 
-  const featuredItems = useMemo(() => {
-    return availableProducts.slice(0, 5);
-  }, [availableProducts]);
-
   const activeCategory = useMemo(() => {
-    if (activeTab === 'featured') return null;
-    if (activeTab === 'promoBundles') return null;
-    return tabs.find(t => t.id === activeTab)?.category ?? null;
-  }, [activeTab, tabs]);
+    if (resolvedActiveTab === 'promoBundles') return null;
+    return tabs.find(t => t.id === resolvedActiveTab)?.category ?? null;
+  }, [resolvedActiveTab, tabs]);
 
   const visibleItems = useMemo(() => {
-    if (activeTab === 'promoBundles') {
+    if (resolvedActiveTab === 'promoBundles') {
       const normalizedQuery = query.trim().toLowerCase();
 
       const filtered = normalizedQuery
@@ -125,10 +158,9 @@ function ProductsSection() {
       }));
     }
 
-    const sourceItems: Product[] =
-      activeTab === 'featured'
-        ? featuredItems
-        : availableProducts.filter(p => p.category === activeCategory);
+    const sourceItems = availableProducts.filter(
+      p => p.category === activeCategory
+    );
 
     const normalizedQuery = query.trim().toLowerCase();
 
@@ -154,16 +186,33 @@ function ProductsSection() {
   }, [
     activeCategory,
 
-    activeTab,
-
     availableProducts,
-
-    featuredItems,
 
     promoBundles,
 
-    query
+    query,
+
+    resolvedActiveTab
   ]);
+
+  const addItem = useCartStore(s => s.addItem);
+  const openCart = useCartUiStore(s => s.open);
+
+  const handleAdd = (item: {
+    id: string;
+    name: string;
+    price: number;
+    imageUrl?: string;
+  }) => {
+    addItem({
+      productId: item.id,
+      name: item.name,
+      price: item.price,
+      imageUrl: item.imageUrl,
+      qty: 1
+    });
+    openCart();
+  };
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4">
@@ -215,96 +264,90 @@ function ProductsSection() {
       </div>
 
       <section className="mb-10">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="w-full md:w-64">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            aria-label="Filters"
+            className="shrink-0 grid place-items-center w-11 h-11 rounded-xl bg-[#2d4a35] text-white hover:bg-[#3c5e45] transition-colors"
+          >
+            <SlidersHorizontal size={20} />
+          </button>
 
-              <Input
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="Search menu"
-                aria-label="Search menu"
-                className="pl-9"
-              />
-            </div>
+          <div className="relative flex-1 md:max-w-md">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#999999]" />
+            <Input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search"
+              aria-label="Search"
+              className="pl-11 h-11 rounded-full border-0 bg-[#F5F5F5] text-gray-800 focus-visible:ring-2 focus-visible:ring-[#2d4a35]/40"
+            />
           </div>
+        </div>
 
-          <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-4 px-4 pb-2">
-            {tabs.map(tab => {
-              const isActive = tab.id === activeTab;
-
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={
-                    'shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ' +
-                    (isActive
-                      ? 'bg-[#c30010] text-white'
-                      : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50')
-                  }
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
+        <div className="mt-5 flex gap-4 overflow-x-auto scrollbar-none -mx-4 px-4 md:flex-wrap md:overflow-visible md:mx-0 md:px-0">
+          {tabs.map(tab => (
+            <MenuCategoryCard
+              key={tab.id}
+              label={tab.label}
+              imageUrl={categoryImageMap[tab.label]}
+              active={tab.id === resolvedActiveTab}
+              onClick={() => setActiveTab(tab.id)}
+            />
+          ))}
         </div>
 
         <div className="mt-8">
           <h2 className="text-[22px] font-bold text-gray-900">
-            {activeTab === 'featured'
-              ? 'Featured'
-              : (tabs.find(t => t.id === activeTab)?.label ?? 'Products')}
+            {tabs.find(t => t.id === resolvedActiveTab)?.label ?? 'Products'}
           </h2>
 
-          <p className="text-sm text-gray-500 mt-0.5 mb-4">
-            {activeTab === 'featured'
-              ? 'Discover your favorites!'
-              : 'Browse items'}
-          </p>
+          <p className="text-sm text-gray-500 mt-0.5 mb-24">Browse items</p>
 
-          {(isLoading || isError) && (
-            <div className="text-sm text-gray-500">
-              {isLoading ? 'Loading products...' : 'Failed to load products.'}
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array.from({length: 5}).map((_, i) => (
+                <MenuCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : isError ? (
+            <div className="text-sm text-gray-500">Failed to load products.</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {visibleItems.map(item => (
+                <FeaturedMenuItemCard
+                  key={item.id}
+                  id={item.id}
+                  name={item.name}
+                  price={item.price}
+                  imageUrl={item.imageUrl}
+                  note={item.note}
+                  basePath="order"
+                  href={item.href}
+                  badge={
+                    resolvedActiveTab === 'promoBundles'
+                      ? {
+                          label: getBundleBadge()?.label ?? 'BUNDLE',
+
+                          variant: 'bundle'
+                        }
+                      : (() => {
+                          const b = getPromoBadgeForProduct({
+                            promos,
+
+                            productId: item.id
+                          });
+
+                          return b
+                            ? {label: b.label, variant: 'promo'}
+                            : undefined;
+                        })()
+                  }
+                  onAdd={() => handleAdd(item)}
+                />
+              ))}
             </div>
           )}
-
-          <div className="flex gap-4 overflow-x-auto scrollbar-none -mx-4 px-4 pb-2">
-            {visibleItems.map(item => (
-              <MenuCard
-                key={item.id}
-                id={item.id}
-                name={item.name}
-                price={item.price}
-                imageUrl={item.imageUrl}
-                note={item.note}
-                basePath="order"
-                href={item.href}
-                badge={
-                  activeTab === 'promoBundles'
-                    ? {
-                        label: getBundleBadge()?.label ?? 'BUNDLE',
-
-                        variant: 'bundle'
-                      }
-                    : (() => {
-                        const b = getPromoBadgeForProduct({
-                          promos,
-
-                          productId: item.id
-                        });
-
-                        return b
-                          ? {label: b.label, variant: 'promo'}
-                          : undefined;
-                      })()
-                }
-              />
-            ))}
-          </div>
         </div>
       </section>
     </div>

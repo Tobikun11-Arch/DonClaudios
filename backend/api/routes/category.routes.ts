@@ -8,6 +8,8 @@ const router = Router();
 
 router.get('/', requireAuth, categoryController.list);
 
+router.get('/public', categoryController.list);
+
 router.post(
   '/',
   requireAuth,

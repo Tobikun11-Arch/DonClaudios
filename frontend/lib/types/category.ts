@@ -9,6 +9,7 @@ export type Category = {
   type: CategoryType;
   stockUnit: StockUnit;
   sortOrder: number;
+  imageUrl?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -21,6 +22,7 @@ export type CreateCategoryBody = {
   name: string;
   type: CategoryType;
   stockUnit: StockUnit;
+  imageUrl?: string | null;
 };
 
 export type CreateCategoryResponse = {

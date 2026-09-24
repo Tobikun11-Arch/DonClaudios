@@ -1,6 +1,7 @@
 'use client';
 
-import {useState} from 'react';
+import {useRef, useState} from 'react';
+import Image from 'next/image';
 import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
@@ -22,8 +23,19 @@ import type {
   StockUnit
 } from '@/lib/types/category';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
-import {Loader2, Pencil, Plus, Trash2, X} from 'lucide-react';
+import {ImageCropModal} from '@/features/owner/products/components/ImageCropModal';
+import {uploadCategoryImage} from '@/lib/api/uploadApi';
+import {
+  Loader2,
+  Pencil,
+  Plus,
+  Trash2,
+  Upload,
+  X
+} from 'lucide-react';
 import {cn} from '@/lib/utils';
+
+const CATEGORY_PLACEHOLDER = '/assets/category_placeholder.svg';
 
 const TYPE_OPTIONS: {value: CategoryType; label: string}[] = [
   {value: 'catering', label: 'Sold by weight / catering'},
@@ -57,6 +69,63 @@ function Field({
 const selectClass =
   'h-9 w-full rounded-md border border-input bg-transparent px-2.5 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50';
 
+function CategoryImagePicker({
+  preview,
+  onChoose,
+  onRemove,
+  uploading
+}: {
+  preview: string | null;
+  onChoose: () => void;
+  onRemove: () => void;
+  uploading: boolean;
+}) {
+  return (
+    <div>
+      <Label>Image (optional)</Label>
+      <div className="mt-1.5 flex items-center gap-3">
+        <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+          <Image
+            src={preview ?? CATEGORY_PLACEHOLDER}
+            alt="Category image"
+            fill
+            sizes="112px"
+            className="object-cover"
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onChoose}
+            disabled={uploading}
+          >
+            {uploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" />
+            )}
+            {preview ? 'Change' : 'Upload'}
+          </Button>
+          {preview ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onRemove}
+              disabled={uploading}
+            >
+              <X className="h-4 w-4" />
+              Remove
+            </Button>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function MenuCategoriesTab() {
   const categoriesQuery = useCategoriesQuery();
   const createMutation = useCreateCategoryMutation();
@@ -71,48 +140,137 @@ export function MenuCategoriesTab() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [categoryImage, setCategoryImage] = useState<string | null>(null);
+  const [removeImage, setRemoveImage] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [cropOpen, setCropOpen] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const isBusy =
     createMutation.isPending ||
     updateMutation.isPending ||
-    deleteMutation.isPending;
+    deleteMutation.isPending ||
+    imageUploading;
 
   const resetForm = () => {
     setName('');
     setType('in_store');
     setStockUnit('piece');
     setEditingId(null);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(null);
+    setImageFile(null);
+    setCategoryImage(null);
+    setRemoveImage(false);
   };
 
-  const handleCreate = () => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose an image file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be under 5MB.');
+      return;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    setCropSrc(objectUrl);
+    setCropOpen(true);
+    e.target.value = '';
+  };
+
+  const handleCropDone = (blob: Blob) => {
+    setCropOpen(false);
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
+
+    const croppedFile = new File([blob], 'category-image.jpg', {
+      type: 'image/jpeg'
+    });
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(URL.createObjectURL(croppedFile));
+    setImageFile(croppedFile);
+  };
+
+  const handleCropCancel = () => {
+    setCropOpen(false);
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
+  };
+
+  const handleRemoveImage = () => {
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(null);
+    setImageFile(null);
+    setCategoryImage(null);
+    setRemoveImage(true);
+  };
+
+  const uploadImageIfNeeded = async (): Promise<
+    string | null | undefined
+  > => {
+    if (removeImage) return null;
+    if (imageFile) {
+      setImageUploading(true);
+      try {
+        const {imageUrl} = await uploadCategoryImage(imageFile);
+        return imageUrl;
+      } finally {
+        setImageUploading(false);
+      }
+    }
+    return undefined;
+  };
+
+  const handleCreate = async () => {
     if (!name.trim()) {
       toast.error('Enter a category name.');
       return;
     }
-    createMutation.mutate(
-      {name: name.trim(), type, stockUnit},
-      {
-        onError: err =>
-          toast.error(getFriendlyErrorMessage(err, 'Failed to add category')),
-        onSuccess: () => {
-          toast.success(`Category "${name.trim()}" added.`);
-          resetForm();
+    try {
+      const imageUrl = await uploadImageIfNeeded();
+      createMutation.mutate(
+        {name: name.trim(), type, stockUnit, imageUrl: imageUrl ?? undefined},
+        {
+          onError: err =>
+            toast.error(getFriendlyErrorMessage(err, 'Failed to add category')),
+          onSuccess: () => {
+            toast.success(`Category "${name.trim()}" added.`);
+            resetForm();
+          }
         }
-      }
-    );
+      );
+    } catch (err) {
+      toast.error(
+        getFriendlyErrorMessage(err, 'Failed to upload category image')
+      );
+    }
   };
 
-  const handleUpdate = (id: string) => {
-    updateMutation.mutate(
-      {id, body: {name: name.trim(), type, stockUnit}},
-      {
-        onError: err =>
-          toast.error(getFriendlyErrorMessage(err, 'Failed to update category')),
-        onSuccess: () => {
-          toast.success('Category updated.');
-          resetForm();
+  const handleUpdate = async (id: string) => {
+    try {
+      const imageUrl = await uploadImageIfNeeded();
+      updateMutation.mutate(
+        {id, body: {name: name.trim(), type, stockUnit, imageUrl}},
+        {
+          onError: err =>
+            toast.error(getFriendlyErrorMessage(err, 'Failed to update category')),
+          onSuccess: () => {
+            toast.success('Category updated.');
+            resetForm();
+          }
         }
-      }
-    );
+      );
+    } catch (err) {
+      toast.error(
+        getFriendlyErrorMessage(err, 'Failed to upload category image')
+      );
+    }
   };
 
   const handleDelete = (cat: Category) => {
@@ -136,10 +294,22 @@ export function MenuCategoriesTab() {
     setType(cat.type);
     setStockUnit(cat.stockUnit);
     setConfirmingId(null);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(null);
+    setImageFile(null);
+    setCategoryImage(cat.imageUrl ?? null);
+    setRemoveImage(false);
   };
 
   return (
     <div className="space-y-6">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
       <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
         <h2 className="text-lg font-bold text-[#2d4a35]">Menu Categories</h2>
         <p className="mt-1 text-sm text-gray-500">
@@ -194,6 +364,14 @@ export function MenuCategoriesTab() {
                     ))}
                   </select>
                 </Field>
+              </div>
+              <div className="mt-4">
+                <CategoryImagePicker
+                  preview={imagePreview ?? categoryImage}
+                  onChoose={() => fileInputRef.current?.click()}
+                  onRemove={handleRemoveImage}
+                  uploading={imageUploading}
+                />
               </div>
               <div className="mt-4 flex items-center gap-2">
                 <Button
@@ -268,6 +446,14 @@ export function MenuCategoriesTab() {
                 </Field>
               </div>
               <div className="mt-4">
+                <CategoryImagePicker
+                  preview={imagePreview}
+                  onChoose={() => fileInputRef.current?.click()}
+                  onRemove={handleRemoveImage}
+                  uploading={imageUploading}
+                />
+              </div>
+              <div className="mt-4">
                 <Button
                   type="button"
                   onClick={handleCreate}
@@ -311,25 +497,36 @@ export function MenuCategoriesTab() {
                 key={cat._id}
                 className="flex items-center justify-between gap-3 py-3"
               >
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-gray-900">
-                    {cat.name}
-                  </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2">
-                    <span
-                      className={cn(
-                        'rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide',
-                        cat.type === 'catering'
-                          ? 'border-amber-300 bg-amber-50 text-amber-800'
-                          : 'border-green-300 bg-green-50 text-green-700'
-                      )}
-                    >
-                      {CATEGORY_TYPE_SHORT[cat.type]}
-                    </span>
-                    <span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-bold text-gray-600 uppercase tracking-wide">
-                      {STOCK_UNIT_LABELS[cat.stockUnit]} ·{' '}
-                      {STOCK_UNIT_HINTS[cat.stockUnit]}
-                    </span>
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="h-12 w-16 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-gray-100">
+                    <Image
+                      src={cat.imageUrl || CATEGORY_PLACEHOLDER}
+                      alt={cat.name}
+                      width={64}
+                      height={48}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-gray-900">
+                      {cat.name}
+                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <span
+                        className={cn(
+                          'rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide',
+                          cat.type === 'catering'
+                            ? 'border-amber-300 bg-amber-50 text-amber-800'
+                            : 'border-green-300 bg-green-50 text-green-700'
+                        )}
+                      >
+                        {CATEGORY_TYPE_SHORT[cat.type]}
+                      </span>
+                      <span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-bold text-gray-600 uppercase tracking-wide">
+                        {STOCK_UNIT_LABELS[cat.stockUnit]} ·{' '}
+                        {STOCK_UNIT_HINTS[cat.stockUnit]}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
@@ -369,6 +566,14 @@ export function MenuCategoriesTab() {
           products keep whatever category text they were saved with.
         </p>
       </div>
+
+      <ImageCropModal
+        open={cropOpen}
+        src={cropSrc ?? ''}
+        aspect={16 / 9}
+        onCancel={handleCropCancel}
+        onCropDone={handleCropDone}
+      />
     </div>
   );
 }

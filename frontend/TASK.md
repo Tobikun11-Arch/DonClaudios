@@ -1,12 +1,4 @@
 MUHAI TASKS:
-
-Menu / Product Details
-4. NEW UI of /order/productID to not look plain
-5. NEW UI of /order 
-
-
-
-
 Inventory
 1. Populate/build out the currently near-empty inventory section (still just a placeholder/fill-in UI).
 2. How food deduct every customer buy example the kare kare
@@ -17,8 +9,11 @@ Order Management Dashboard
 3. Add a standard/default estimated waiting time per item, auto-added when an item is added to an order. - from ate sheena
 
 
+Support Chat
+2. Simplify the support/inquiry chat notification UI — make it more accessible (chat/messenger-style with a close button) rather than the current design.
 
-
+Feedback
+1. Add automatic filtering/rejection of feedback using a word-filter API (auto-reject inappropriate submissions) instead of manual reject/approve.
 
 
 
@@ -44,11 +39,6 @@ Reservations
 Delivery / Pricing
 1. free if order is lechon around tanza but food theres 60-80 but it was lalamove delivery (idk if i will integrate this)
 
-UX
-1. Lazy loading no more no cards show while loading and loading... text
-
-Feedback
-Add automatic filtering/rejection of feedback using a word-filter API (auto-reject inappropriate submissions) instead of manual reject/approve.
 
 Rewards/Loyalty System
 Finalize a rewards system design: points based on amount spent (not fixed items like "whole lechon"), similar to Starbucks' model — needs to avoid making the business lose money.
@@ -56,27 +46,33 @@ Make points-per-peso ratio editable/configurable in admin settings (not hardcode
 Set up redemption flow: customer downloads/screenshots redemption confirmation, redeems in-store (delivery redemption also possible).
 Display reward benefits during account registration.
 
-Team/Roles
-Rename "Team" tab to "Cashier" (or "Cashier account") — current naming was unclear/undecided.
-
-Support Chat
-Simplify the support/inquiry chat notification UI — make it more accessible (chat/messenger-style with a close button) rather than the current design.
-
-Admin Panel / Appearance Settings
-Make sure all homepage elements (colors, icons, pictures, location, etc.) are dynamic and editable via a simple interface — not manual/code-level editing, since the client isn't technical.
-Move/consolidate the appearance editor into Settings tab for easier access.
-
-Store Status
-Move "Store Status" (open/close) control into Settings for easier access.
-Add a clear alert/notification on the website (landing page and "Order Now" page) when the store is currently closed — a real dialog/prompt, not just a subtle "currently closed" tag, since users tend to miss subtle indicators.
-When store is closed, customers should still be able to view the menu (marked unavailable) but not place orders.
 
 Reporting
 Add a Sales/Reporting section to the dashboard (currently missing) — needs monthly reports.
 Make reports downloadable and printable.
 
 
-- LECHON Loading ICON animation
+Admin Panel / Appearance Settings
+Make sure all homepage elements (colors, icons, pictures, location, etc.) are dynamic and editable via a simple interface — not manual/code-level editing, since the client isn't technical.
+Move/consolidate the appearance editor into Settings tab for easier access.
+
+
+
+
+
+
+Proposal suggestions:
+2 Dashboard dropdown for report (that summarize in dashboard) - prio
+3 Apk for cashier pos - prio
+5 Transactions done by cashiers - prio
+6 Sales report detailed 
+
+
+
+
+
+
+
 
 
 
@@ -132,14 +128,6 @@ additional if only possible:
 3. customer support, floating circle in left bottom and if click it can chat to donclaudios cashier or owner can answer it, it also have faq for customer
 4. reservation/event calendar for owner/admin
 
-Proposal suggestions:
-1 Security confirmation call
-2 Dashboard dropdown for report (that summarize in dashboard)
-3 Apk for cashier pos
-4 Id per order of customer
-5 Transactions done by cashiers
-6 Sales report detailed
-7 No more admin
-8 Receipt printer that connected to apk
+
 
 Need to clarify to owner that if the pos will be used it must register to BIR

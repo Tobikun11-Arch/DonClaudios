@@ -17,6 +17,7 @@ import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
+import {usePublicCategoriesQuery} from '@/lib/hooks/categories/useCategories';
 import {
   useCounterOrdersQuery,
   useCreateCounterOrderMutation,
@@ -43,7 +44,8 @@ const PAYMENT_METHODS = [
 ] as const;
 
 export default function CounterOrder() {
-  const {data: productsData, isLoading, isFetching} = useProductsQuery();
+  const {data: productsData, isLoading, isError} = useProductsQuery();
+  const publicCategoriesQuery = usePublicCategoriesQuery();
   const products = useMemo(
     () => productsData?.products ?? [],
     [productsData?.products]
@@ -52,6 +54,14 @@ export default function CounterOrder() {
     () => products.filter(p => p.isAvailable && p.stock > 0),
     [products]
   );
+
+  const categoryImageMap = useMemo(() => {
+    const map: Record<string, string | undefined> = {};
+    for (const c of publicCategoriesQuery.data?.categories ?? []) {
+      map[c.name] = c.imageUrl ?? undefined;
+    }
+    return map;
+  }, [publicCategoriesQuery.data]);
 
   const [cart, setCart] = useState<CartLine[]>([]);
   const [query, setQuery] = useState('');
@@ -204,7 +214,7 @@ export default function CounterOrder() {
 
   return (
     <div className="flex h-full flex-col gap-4 p-4 md:p-6 lg:flex-row">
-      <SplashGate ready={!isLoading && !isFetching} />
+      <SplashGate ready={productsData !== undefined || isError} />
       <div className="flex-1 overflow-auto rounded-2xl border border-gray-200 bg-white p-4">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -244,12 +254,23 @@ export default function CounterOrder() {
               type="button"
               onClick={() => setActiveCategory(category)}
               className={
-                'shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ' +
+                'shrink-0 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ' +
                 (activeCategory === category
                   ? 'bg-[#c30010] text-white'
                   : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50')
               }
             >
+              {categoryImageMap[category] ? (
+                <span className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full bg-gray-100">
+                  <Image
+                    src={categoryImageMap[category]!}
+                    alt=""
+                    fill
+                    sizes="24px"
+                    className="object-cover"
+                  />
+                </span>
+              ) : null}
               {category}
             </button>
           ))}

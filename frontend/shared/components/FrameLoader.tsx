@@ -3,7 +3,7 @@
 import {useEffect, useState} from 'react';
 import Image from 'next/image';
 
-const FRAMES = [
+const DEFAULT_FRAMES = [
   'frame_01.png',
   'frame_02.png',
   'frame_03.png',
@@ -15,17 +15,27 @@ const FADE_MS = 300;
 
 export default function FrameLoader({
   size = 160,
+  frames = DEFAULT_FRAMES,
+  framesDir = '/assets/loading',
+  intervalMs = FRAME_MS,
   className = ''
 }: {
   size?: number;
+  frames?: string[];
+  framesDir?: string;
+  intervalMs?: number;
   className?: string;
 }) {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    const id = setInterval(() => setIndex(i => (i + 1) % FRAMES.length), FRAME_MS);
+    if (frames.length < 1) return;
+    const id = setInterval(
+      () => setIndex(i => (i + 1) % frames.length),
+      intervalMs
+    );
     return () => clearInterval(id);
-  }, []);
+  }, [frames.length, intervalMs]);
 
   return (
     <div
@@ -36,10 +46,10 @@ export default function FrameLoader({
       }}
       aria-hidden
     >
-      {FRAMES.map((src, i) => (
+      {frames.map((src, i) => (
         <Image
-          key={src}
-          src={`/assets/loading/${src}`}
+          key={`${framesDir}/${src}`}
+          src={`${framesDir}/${src}`}
           alt=""
           fill
           priority
