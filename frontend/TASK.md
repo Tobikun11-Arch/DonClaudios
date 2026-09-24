@@ -2,7 +2,7 @@ MUHAI TASKS:
 
 Menu / Product Details
 4. NEW UI of /order 
-5. NEW UI of /order/productID to not look plain
+5. NEW UI of /order/productID to not look plain - lazy loading while loading
 
 
 

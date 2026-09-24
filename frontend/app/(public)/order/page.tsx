@@ -3,13 +3,16 @@
 import {useEffect, useMemo, useState} from 'react';
 import Image from 'next/image';
 import {Input} from '@/components/ui/input';
-import {Search, History} from 'lucide-react';
+import {Search, History, SlidersHorizontal} from 'lucide-react';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import type {Product} from '@/lib/types/product';
-import MenuCard from '@/shared/components/MenuCard';
+import MenuCategoryCard from '@/shared/components/MenuCategoryCard';
+import FeaturedMenuItemCard from '@/shared/components/FeaturedMenuItemCard';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import type {Promo} from '@/lib/types/promo';
 import Link from 'next/link';
+import {useCartStore} from '@/app/store/cartStore';
+import {useCartUiStore} from '@/app/store/cartUiStore';
 
 import {
   getBundleBadge,
@@ -165,6 +168,25 @@ function ProductsSection() {
     query
   ]);
 
+  const addItem = useCartStore(s => s.addItem);
+  const openCart = useCartUiStore(s => s.open);
+
+  const handleAdd = (item: {
+    id: string;
+    name: string;
+    price: number;
+    imageUrl?: string;
+  }) => {
+    addItem({
+      productId: item.id,
+      name: item.name,
+      price: item.price,
+      imageUrl: item.imageUrl,
+      qty: 1
+    });
+    openCart();
+  };
+
   return (
     <div className="w-full max-w-6xl mx-auto px-4">
       <div className="w-full rounded-2xl overflow-hidden mb-10 mt-12 bg-[#3c5e45]">
@@ -215,42 +237,36 @@ function ProductsSection() {
       </div>
 
       <section className="mb-10">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="w-full md:w-64">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            aria-label="Filters"
+            className="shrink-0 grid place-items-center w-11 h-11 rounded-xl bg-[#2d4a35] text-white hover:bg-[#3c5e45] transition-colors"
+          >
+            <SlidersHorizontal size={20} />
+          </button>
 
-              <Input
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="Search menu"
-                aria-label="Search menu"
-                className="pl-9"
-              />
-            </div>
+          <div className="relative flex-1 md:max-w-md">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#999999]" />
+            <Input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search"
+              aria-label="Search"
+              className="pl-11 h-11 rounded-full border-0 bg-[#F5F5F5] text-gray-800 focus-visible:ring-2 focus-visible:ring-[#2d4a35]/40"
+            />
           </div>
+        </div>
 
-          <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-4 px-4 pb-2">
-            {tabs.map(tab => {
-              const isActive = tab.id === activeTab;
-
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={
-                    'shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ' +
-                    (isActive
-                      ? 'bg-[#c30010] text-white'
-                      : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50')
-                  }
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
+        <div className="mt-5 flex gap-4 overflow-x-auto scrollbar-none -mx-4 px-4 md:flex-wrap md:overflow-visible md:mx-0 md:px-0">
+          {tabs.map(tab => (
+            <MenuCategoryCard
+              key={tab.id}
+              label={tab.label}
+              active={tab.id === activeTab}
+              onClick={() => setActiveTab(tab.id)}
+            />
+          ))}
         </div>
 
         <div className="mt-8">
@@ -260,7 +276,7 @@ function ProductsSection() {
               : (tabs.find(t => t.id === activeTab)?.label ?? 'Products')}
           </h2>
 
-          <p className="text-sm text-gray-500 mt-0.5 mb-4">
+          <p className="text-sm text-gray-500 mt-0.5 mb-24">
             {activeTab === 'featured'
               ? 'Discover your favorites!'
               : 'Browse items'}
@@ -272,9 +288,9 @@ function ProductsSection() {
             </div>
           )}
 
-          <div className="flex gap-4 overflow-x-auto scrollbar-none -mx-4 px-4 pb-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {visibleItems.map(item => (
-              <MenuCard
+              <FeaturedMenuItemCard
                 key={item.id}
                 id={item.id}
                 name={item.name}
@@ -302,6 +318,7 @@ function ProductsSection() {
                           : undefined;
                       })()
                 }
+                onAdd={() => handleAdd(item)}
               />
             ))}
           </div>
