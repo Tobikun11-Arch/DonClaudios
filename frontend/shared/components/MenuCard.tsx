@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
+import {useEffect, useRef, useState} from 'react';
 
 function MenuCard({
   id,
@@ -25,8 +28,20 @@ function MenuCard({
 }) {
   const linkHref = href ?? `/${basePath}/${encodeURIComponent(id)}`;
 
+  const noteRef = useRef<HTMLParagraphElement | null>(null);
+  const [truncated, setTruncated] = useState(false);
+
+  useEffect(() => {
+    const el = noteRef.current;
+    if (!el) return;
+    const rafId = requestAnimationFrame(() => {
+      setTruncated(el.scrollHeight > el.clientHeight + 2);
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [note]);
+
   return (
-    <Link href={linkHref} className="shrink-0">
+    <Link href={linkHref} className="shrink-0 block">
       <div className="w-64 bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden hover:shadow-sm transition-shadow">
         <div className="relative w-full h-48 overflow-hidden">
           <Image
@@ -57,11 +72,23 @@ function MenuCard({
             {name}
           </p>
 
-          {note && (
-            <p className="text-[11px] text-gray-400 mt-1 line-clamp-2">
-              {note}
-            </p>
-          )}
+          <div className="relative mt-1 h-8">
+            {note ? (
+              <>
+                <p
+                  ref={noteRef}
+                  className="text-[11px] text-gray-400 leading-4 line-clamp-2 pr-1"
+                >
+                  {note}
+                </p>
+                {truncated && (
+                  <span className="absolute bottom-0 right-0 pl-3 text-[11px] font-semibold text-[#2d4a35] bg-gradient-to-l from-white via-white/90 to-transparent">
+                    See more
+                  </span>
+                )}
+              </>
+            ) : null}
+          </div>
 
           <p className="text-[15px] font-bold text-gray-900 mt-3">
             ₱{price}.00

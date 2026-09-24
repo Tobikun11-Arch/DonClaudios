@@ -64,17 +64,10 @@ Admin Panel / Appearance Settings
 Make sure all homepage elements (colors, icons, pictures, location, etc.) are dynamic and editable via a simple interface — not manual/code-level editing, since the client isn't technical.
 Move/consolidate the appearance editor into Settings tab for easier access.
 
-Store Status
-Move "Store Status" (open/close) control into Settings for easier access.
-Add a clear alert/notification on the website (landing page and "Order Now" page) when the store is currently closed — a real dialog/prompt, not just a subtle "currently closed" tag, since users tend to miss subtle indicators.
-When store is closed, customers should still be able to view the menu (marked unavailable) but not place orders.
-
 Reporting
 Add a Sales/Reporting section to the dashboard (currently missing) — needs monthly reports.
 Make reports downloadable and printable.
 
-
-- LECHON Loading ICON animation
 
 
 
