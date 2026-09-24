@@ -29,7 +29,7 @@ export default function DashboardPage() {
     inventoryQuery,
     topProductsQuery,
     lowStockQuery
-  ].every(q => !q.isLoading && !q.isFetching);
+  ].every(q => q.data !== undefined || q.isError);
 
   const cards = summaryQuery.data?.cards ?? [];
 

@@ -1,8 +1,8 @@
 MUHAI TASKS:
 
 Menu / Product Details
-4. NEW UI of /order/productID to not look plain
-5. NEW UI of /order 
+4. NEW UI of /order 
+5. NEW UI of /order/productID to not look plain
 
 
 
@@ -44,8 +44,6 @@ Reservations
 Delivery / Pricing
 1. free if order is lechon around tanza but food theres 60-80 but it was lalamove delivery (idk if i will integrate this)
 
-UX
-1. Lazy loading no more no cards show while loading and loading... text
 
 Feedback
 Add automatic filtering/rejection of feedback using a word-filter API (auto-reject inappropriate submissions) instead of manual reject/approve.

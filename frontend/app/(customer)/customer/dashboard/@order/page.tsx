@@ -39,7 +39,7 @@ import StoreClosedModal from '@/shared/components/StoreClosedModal';
 import SplashGate from '@/shared/components/SplashGate';
 
 export default function OrderSlot() {
-  const {data, isLoading, isFetching, isError} = useProductsQuery();
+  const {data, isLoading, isError} = useProductsQuery();
 
   const promosQuery = usePublicPromosQuery();
 
@@ -212,7 +212,7 @@ export default function OrderSlot() {
   return (
     <div className="w-full max-w-6xl mx-auto">
       <StoreClosedModal />
-      <SplashGate ready={!isLoading && !isFetching} />
+      <SplashGate ready={data !== undefined || isError} />
       <div className="flex justify-start gap-2 mb-4">
             <Button
               asChild

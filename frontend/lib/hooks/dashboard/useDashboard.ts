@@ -23,7 +23,8 @@ export function useDashboardSummaryQuery(days?: number) {
     queryKey: dashboardSummaryKey,
     queryFn: () => getDashboardSummary(days),
     refetchOnWindowFocus: false,
-    staleTime: 30_000
+    staleTime: 30_000,
+    gcTime: 60 * 60 * 1000
   });
 }
 
@@ -32,7 +33,8 @@ export function useSalesTrendQuery(days?: number) {
     queryKey: salesTrendKey(days),
     queryFn: () => getSalesTrend(days),
     refetchOnWindowFocus: false,
-    staleTime: 30_000
+    staleTime: 30_000,
+    gcTime: 60 * 60 * 1000
   });
 }
 
@@ -41,7 +43,8 @@ export function useInventoryByCategoryQuery() {
     queryKey: inventoryByCategoryKey,
     queryFn: getInventoryByCategory,
     refetchOnWindowFocus: false,
-    staleTime: 30_000
+    staleTime: 30_000,
+    gcTime: 60 * 60 * 1000
   });
 }
 
@@ -50,7 +53,8 @@ export function useTopProductsQuery(limit?: number) {
     queryKey: topProductsKey(limit),
     queryFn: () => getTopProducts(limit),
     refetchOnWindowFocus: false,
-    staleTime: 30_000
+    staleTime: 30_000,
+    gcTime: 60 * 60 * 1000
   });
 }
 
@@ -59,6 +63,7 @@ export function useLowStockQuery(threshold?: number) {
     queryKey: lowStockKey(threshold),
     queryFn: () => getLowStock(threshold),
     refetchOnWindowFocus: false,
-    staleTime: 30_000
+    staleTime: 30_000,
+    gcTime: 60 * 60 * 1000
   });
 }

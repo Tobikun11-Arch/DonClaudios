@@ -43,7 +43,7 @@ const PAYMENT_METHODS = [
 ] as const;
 
 export default function CounterOrder() {
-  const {data: productsData, isLoading, isFetching} = useProductsQuery();
+  const {data: productsData, isLoading, isError} = useProductsQuery();
   const products = useMemo(
     () => productsData?.products ?? [],
     [productsData?.products]
@@ -204,7 +204,7 @@ export default function CounterOrder() {
 
   return (
     <div className="flex h-full flex-col gap-4 p-4 md:p-6 lg:flex-row">
-      <SplashGate ready={!isLoading && !isFetching} />
+      <SplashGate ready={productsData !== undefined || isError} />
       <div className="flex-1 overflow-auto rounded-2xl border border-gray-200 bg-white p-4">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
