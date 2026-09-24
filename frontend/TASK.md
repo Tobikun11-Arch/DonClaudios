@@ -2,7 +2,7 @@ MUHAI TASKS:
 
 Menu / Product Details
 4. NEW UI of /order 
-5. NEW UI of /order/productID to not look plain - lazy loading while loading
+   - in owner settings adding category need to upload an image of category for representation in menu - 
 
 
 
@@ -17,8 +17,14 @@ Order Management Dashboard
 3. Add a standard/default estimated waiting time per item, auto-added when an item is added to an order. - from ate sheena
 
 
+Team/Roles
+1. Rename "Team" tab to "Cashier" (or "Cashier account") — current naming was unclear/undecided.
 
+Support Chat
+2. Simplify the support/inquiry chat notification UI — make it more accessible (chat/messenger-style with a close button) rather than the current design.
 
+Feedback
+1. Add automatic filtering/rejection of feedback using a word-filter API (auto-reject inappropriate submissions) instead of manual reject/approve.
 
 
 
@@ -45,28 +51,38 @@ Delivery / Pricing
 1. free if order is lechon around tanza but food theres 60-80 but it was lalamove delivery (idk if i will integrate this)
 
 
-Feedback
-Add automatic filtering/rejection of feedback using a word-filter API (auto-reject inappropriate submissions) instead of manual reject/approve.
-
 Rewards/Loyalty System
 Finalize a rewards system design: points based on amount spent (not fixed items like "whole lechon"), similar to Starbucks' model — needs to avoid making the business lose money.
 Make points-per-peso ratio editable/configurable in admin settings (not hardcoded).
 Set up redemption flow: customer downloads/screenshots redemption confirmation, redeems in-store (delivery redemption also possible).
 Display reward benefits during account registration.
 
-Team/Roles
-Rename "Team" tab to "Cashier" (or "Cashier account") — current naming was unclear/undecided.
 
-Support Chat
-Simplify the support/inquiry chat notification UI — make it more accessible (chat/messenger-style with a close button) rather than the current design.
+Reporting
+Add a Sales/Reporting section to the dashboard (currently missing) — needs monthly reports.
+Make reports downloadable and printable.
+
 
 Admin Panel / Appearance Settings
 Make sure all homepage elements (colors, icons, pictures, location, etc.) are dynamic and editable via a simple interface — not manual/code-level editing, since the client isn't technical.
 Move/consolidate the appearance editor into Settings tab for easier access.
 
-Reporting
-Add a Sales/Reporting section to the dashboard (currently missing) — needs monthly reports.
-Make reports downloadable and printable.
+
+
+
+
+
+Proposal suggestions:
+2 Dashboard dropdown for report (that summarize in dashboard) - prio
+3 Apk for cashier pos - prio
+5 Transactions done by cashiers - prio
+6 Sales report detailed 
+
+
+
+
+
+
 
 
 
@@ -123,14 +139,6 @@ additional if only possible:
 3. customer support, floating circle in left bottom and if click it can chat to donclaudios cashier or owner can answer it, it also have faq for customer
 4. reservation/event calendar for owner/admin
 
-Proposal suggestions:
-1 Security confirmation call
-2 Dashboard dropdown for report (that summarize in dashboard)
-3 Apk for cashier pos
-4 Id per order of customer
-5 Transactions done by cashiers
-6 Sales report detailed
-7 No more admin
-8 Receipt printer that connected to apk
+
 
 Need to clarify to owner that if the pos will be used it must register to BIR

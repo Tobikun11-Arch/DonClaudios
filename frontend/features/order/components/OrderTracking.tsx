@@ -4,6 +4,7 @@ import {useState, useSyncExternalStore} from 'react';
 import Image from 'next/image';
 import {X, XCircle, Clock, AlertTriangle} from 'lucide-react';
 import {Button} from '@/components/ui/button';
+import FrameLoader from '@/shared/components/FrameLoader';
 import {useCancelTrackedOrderMutation, useTrackOrderQuery} from '@/lib/hooks/orders/useTrackOrder';
 import {getGuestOrderHistory} from '@/lib/orders/orderHistoryStorage';
 import type {OrderHistoryEntry, OrderHistoryItem} from '@/lib/api/orderApi';
@@ -168,9 +169,18 @@ export default function OrderTracking({
         }
       >
         {query.isLoading && !order ? (
-          <div className="rounded-2xl bg-white shadow p-10 grid place-items-center">
-            <div className="h-8 w-8 rounded-full border-4 border-[#3c5e45]/20 border-t-[#3c5e45] animate-spin" />
-            <p className="mt-4 text-sm text-gray-500">Loading your order...</p>
+          <div className="py-10 grid place-items-center">
+            <FrameLoader
+              framesDir="/assets/order-loading"
+              frames={[
+                'frame_01.png',
+                'frame_02.png',
+                'frame_03.png',
+                'frame_04.png',
+                'frame_05.png'
+              ]}
+              size={160}
+            />
           </div>
         ) : query.isError || !order ? (
           <div className="rounded-2xl bg-white shadow p-10 text-center">

@@ -19,6 +19,7 @@ import {
 import {useCustomerCartQuery} from '@/lib/hooks/cart/useCustomerCart';
 import {AllergenBadges} from './AllergenBadges';
 import {IngredientGrid} from './IngredientGrid';
+import ProductDetailSkeleton from './ProductDetailSkeleton';
 
 export default function OrderProductDetailsPage({id}: {id: string}) {
   const productQuery = useProductQuery(id);
@@ -127,9 +128,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
           <h1 className="text-lg font-bold text-gray-900">Product details</h1>
         </div>
 
-        {productQuery.isLoading && (
-          <div className="mt-8 text-sm text-gray-500">Loading product...</div>
-        )}
+        {productQuery.isLoading && <ProductDetailSkeleton />}
 
         {productQuery.isError && (
           <div className="mt-8 text-sm text-gray-500">
