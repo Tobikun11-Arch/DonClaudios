@@ -1,12 +1,4 @@
 MUHAI TASKS:
-
-Menu / Product Details
-4. NEW UI of /order 
-   - in owner settings adding category need to upload an image of category for representation in menu - 
-
-
-
-
 Inventory
 1. Populate/build out the currently near-empty inventory section (still just a placeholder/fill-in UI).
 2. How food deduct every customer buy example the kare kare
@@ -16,9 +8,6 @@ Order Management Dashboard
 2. Add an automatic trigger/notification when an order stays too long in "Preparing" status past an estimated time (auto-flag overdue orders instead of manual estimation calls).
 3. Add a standard/default estimated waiting time per item, auto-added when an item is added to an order. - from ate sheena
 
-
-Team/Roles
-1. Rename "Team" tab to "Cashier" (or "Cashier account") — current naming was unclear/undecided.
 
 Support Chat
 2. Simplify the support/inquiry chat notification UI — make it more accessible (chat/messenger-style with a close button) rather than the current design.

@@ -19,6 +19,8 @@ import MenuCardSkeleton from '@/shared/components/MenuCardSkeleton';
 
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 
+import {usePublicCategoriesQuery} from '@/lib/hooks/categories/useCategories';
+
 import type {Promo} from '@/lib/types/promo';
 
 import {
@@ -47,6 +49,8 @@ export default function OrderSlot() {
 
   const promosQuery = usePublicPromosQuery();
 
+  const publicCategoriesQuery = usePublicCategoriesQuery();
+
   const openCart = useCartUiStore(s => s.open);
 
   const cartQuery = useCustomerCartQuery(true);
@@ -66,6 +70,14 @@ export default function OrderSlot() {
 
     [promosQuery.data?.promos]
   );
+
+  const categoryImageMap = useMemo(() => {
+    const map: Record<string, string | undefined> = {};
+    for (const c of publicCategoriesQuery.data?.categories ?? []) {
+      map[c.name] = c.imageUrl ?? undefined;
+    }
+    return map;
+  }, [publicCategoriesQuery.data]);
 
   const cartUniqueCount = cartItems.length;
 
@@ -349,6 +361,7 @@ export default function OrderSlot() {
             <MenuCategoryCard
               key={tab.id}
               label={tab.label}
+              imageUrl={categoryImageMap[tab.label]}
               active={tab.id === resolvedActiveTab}
               onClick={() => setActiveTab(tab.id)}
             />

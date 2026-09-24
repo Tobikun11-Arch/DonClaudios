@@ -14,6 +14,11 @@ export async function listCategories() {
   return res.data;
 }
 
+export async function listPublicCategories() {
+  const res = await httpClient.get<ListCategoriesResponse>('/categories/public');
+  return res.data;
+}
+
 export async function createCategory(body: CreateCategoryBody) {
   const res = await httpClient.post<CreateCategoryResponse>('/categories', body);
   return res.data;

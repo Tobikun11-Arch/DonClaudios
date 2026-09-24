@@ -5,18 +5,18 @@ import {cn} from '@/lib/utils';
 import OwnerNotificationBell from '@/features/owner/notifications/components/OwnerNotificationBell';
 import {ProfileTab} from './ProfileTab';
 import {SecurityTab} from './SecurityTab';
-import {TeamTab} from './TeamTab';
+import {CashierTab} from './CashierTab';
 import {StoreStatusTab} from './StoreStatusTab';
 import {MenuCategoriesTab} from './MenuCategoriesTab';
 
-type TabId = 'profile' | 'store' | 'categories' | 'security' | 'team';
+type TabId = 'profile' | 'store' | 'categories' | 'security' | 'cashier';
 
 const TABS: {id: TabId; label: string}[] = [
   {id: 'profile', label: 'Profile & Business Info'},
   {id: 'store', label: 'Store Status'},
   {id: 'categories', label: 'Menu Categories'},
   {id: 'security', label: 'Security'},
-  {id: 'team', label: 'Team'}
+  {id: 'cashier', label: 'Cashier'}
 ];
 
 export function SettingsPage() {
@@ -28,7 +28,7 @@ export function SettingsPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-[#2d4a35]">Settings</h1>
           <p className="text-sm text-gray-500">
-            Manage your profile, business, security, and team.
+            Manage your profile, business, security, and cashier.
           </p>
         </div>
         <OwnerNotificationBell />
@@ -65,7 +65,7 @@ export function SettingsPage() {
         {active === 'store' && <StoreStatusTab />}
         {active === 'categories' && <MenuCategoriesTab />}
         {active === 'security' && <SecurityTab />}
-        {active === 'team' && <TeamTab />}
+        {active === 'cashier' && <CashierTab />}
       </div>
     </div>
   );

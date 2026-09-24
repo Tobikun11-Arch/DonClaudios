@@ -44,6 +44,14 @@ router.post(
 );
 
 router.post(
+  '/category-image',
+  requireAuth,
+  requireAdmin,
+  upload.single('file'),
+  uploadController.uploadCategoryImage
+);
+
+router.post(
   '/review-image',
   requireAuth,
   requireCustomer,

@@ -6,10 +6,12 @@ const CATEGORY_PLACEHOLDER = '/assets/category_placeholder.svg';
 
 function MenuCategoryCard({
   label,
+  imageUrl,
   active,
   onClick
 }: {
   label: string;
+  imageUrl?: string | null;
   active: boolean;
   onClick: () => void;
 }) {
@@ -27,7 +29,11 @@ function MenuCategoryCard({
     >
       <div className="w-full h-[70px] rounded-xl overflow-hidden bg-gray-100">
         <Image
-          src={CATEGORY_PLACEHOLDER}
+          src={
+            imageUrl && imageUrl.length > 0
+              ? imageUrl
+              : CATEGORY_PLACEHOLDER
+          }
           alt={label}
           width={96}
           height={70}

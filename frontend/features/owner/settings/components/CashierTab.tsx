@@ -1,5 +1,5 @@
 import CashiersPageContent from '@/features/owner/cashiers/components/CashiersPage';
 
-export function TeamTab() {
+export function CashierTab() {
   return <CashiersPageContent />;
 }

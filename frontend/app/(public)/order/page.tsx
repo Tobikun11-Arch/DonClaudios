@@ -9,6 +9,7 @@ import MenuCategoryCard from '@/shared/components/MenuCategoryCard';
 import FeaturedMenuItemCard from '@/shared/components/FeaturedMenuItemCard';
 import MenuCardSkeleton from '@/shared/components/MenuCardSkeleton';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
+import {usePublicCategoriesQuery} from '@/lib/hooks/categories/useCategories';
 import type {Promo} from '@/lib/types/promo';
 import Link from 'next/link';
 import {useCartStore} from '@/app/store/cartStore';
@@ -25,6 +26,7 @@ import type {OrderHistoryEntry} from '@/lib/api/orderApi';
 function ProductsSection() {
   const {data, isLoading, isError} = useProductsQuery();
   const promosQuery = usePublicPromosQuery();
+  const publicCategoriesQuery = usePublicCategoriesQuery();
   const [guestOrders, setGuestOrders] = useState<OrderHistoryEntry[]>([]);
 
   useEffect(() => {
@@ -45,6 +47,14 @@ function ProductsSection() {
     () => promosQuery.data?.promos ?? [],
     [promosQuery.data?.promos]
   );
+
+  const categoryImageMap = useMemo(() => {
+    const map: Record<string, string | undefined> = {};
+    for (const c of publicCategoriesQuery.data?.categories ?? []) {
+      map[c.name] = c.imageUrl ?? undefined;
+    }
+    return map;
+  }, [publicCategoriesQuery.data]);
 
   const availableProducts = useMemo(() => {
     return products.filter(p => p.isAvailable && p.stock > 0);
@@ -280,6 +290,7 @@ function ProductsSection() {
             <MenuCategoryCard
               key={tab.id}
               label={tab.label}
+              imageUrl={categoryImageMap[tab.label]}
               active={tab.id === resolvedActiveTab}
               onClick={() => setActiveTab(tab.id)}
             />

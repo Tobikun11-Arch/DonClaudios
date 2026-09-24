@@ -125,7 +125,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="text-lg font-bold text-gray-900">Product details</h1>
+          <h1 className="text-lg font-bold text-gray-900">Back</h1>
         </div>
 
         {productQuery.isLoading && <ProductDetailSkeleton />}
