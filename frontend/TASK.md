@@ -2,6 +2,7 @@ MUHAI TASKS:
 Inventory
 1. Populate/build out the currently near-empty inventory section (still just a placeholder/fill-in UI).
 2. How food deduct every customer buy example the kare kare
+3. fix the unclosable modal
 
 Order Management Dashboard
 1. Decide on and keep either the Pending/Confirmed/Preparing/Ready - Dropdown instead and also add filter icon for date 

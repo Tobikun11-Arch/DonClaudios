@@ -8,7 +8,7 @@ export type StockMovement = {
   previousStock: number;
   newStock: number;
   note?: string;
-  performedBy: {_id: string; firstName: string; lastName: string} | string;
+  performedBy: {_id: string; firstName: string; lastName: string} | string | null;
   createdAt: string;
   updatedAt: string;
 };
