@@ -2,10 +2,6 @@ MUHAI TASKS:
 Inventory
 1. research Inventory tab ui
 
-
-Support Chat
-2. Simplify the support/inquiry chat notification UI — make it more accessible (chat/messenger-style with a close button) rather than the current design.
-
 Feedback
 1. Add automatic filtering/rejection of feedback using a word-filter API (auto-reject inappropriate submissions) instead of manual reject/approve.
 
@@ -16,7 +12,7 @@ Order Management Dashboard
 
 
 
- 
+HOT FIX ERROR
 hotfix - https://don-claudios.vercel.app/order-history
 Order not found
 We couldn't find this order. Please check the link or the phone number you entered.
