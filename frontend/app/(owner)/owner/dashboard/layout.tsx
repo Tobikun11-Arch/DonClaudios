@@ -17,10 +17,10 @@ import {
   LogOut,
   MoreHorizontal,
   X,
-  ChevronRight,
-  Headset
+  ChevronRight
 } from 'lucide-react';
 import {Toaster} from 'sonner';
+import OwnerSupportChatBubble from '@/features/owner/support/components/OwnerSupportChatBubble';
 
 const PRIMARY_TABS = [
   {
@@ -47,12 +47,6 @@ const PRIMARY_TABS = [
 ];
 
 const DRAWER_ITEMS = [
-  {
-    label: 'Support Chats',
-    tab: 'support',
-    icon: Headset,
-    href: '/owner/dashboard?tab=support'
-  },
   {
     label: 'Promos',
     tab: 'promos',
@@ -89,7 +83,6 @@ type DashboardLayoutProps = {
   cashiers?: React.ReactNode;
   appearance?: React.ReactNode;
   reviews?: React.ReactNode;
-  support?: React.ReactNode;
 };
 
 export default function DashboardLayout({
@@ -99,8 +92,7 @@ export default function DashboardLayout({
   promos,
   cashiers,
   appearance,
-  reviews: reviewsSlot,
-  support
+  reviews: reviewsSlot
 }: DashboardLayoutProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -143,8 +135,7 @@ export default function DashboardLayout({
     promos,
     cashiers,
     appearance,
-    reviews: reviewsSlot,
-    support
+    reviews: reviewsSlot
   };
 
   const handleLogout = async () => {
@@ -393,7 +384,7 @@ export default function DashboardLayout({
           transition-opacity duration-300
           ${
             drawerOpen
-              ? 'z-60 opacity-100 pointer-events-auto'
+              ? 'z-[110] opacity-100 pointer-events-auto'
               : '-z-10 opacity-0 pointer-events-none'
           }
         `}
@@ -408,7 +399,7 @@ export default function DashboardLayout({
           pb-[env(safe-area-inset-bottom,16px)]
           ${
             drawerOpen
-              ? 'z-70 translate-y-0 pointer-events-auto'
+              ? 'z-[120] translate-y-0 pointer-events-auto'
               : '-z-10 translate-y-full pointer-events-none'
           }
         `}
@@ -479,6 +470,7 @@ export default function DashboardLayout({
       </div>
 
       <Toaster position="top-right" richColors duration={2500} visibleToasts={4} />
+      <OwnerSupportChatBubble />
     </div>
   );
 }

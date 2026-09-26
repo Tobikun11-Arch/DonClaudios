@@ -365,7 +365,7 @@ export default function CustomerCartDrawer({
 
       {orderDetailsOpen ? (
         <div
-          className="fixed inset-0 z-[90] bg-black/40 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[110] bg-black/40 flex items-center justify-center p-4"
           onClick={cancelOrderDetails}
           role="dialog"
           aria-modal="true"

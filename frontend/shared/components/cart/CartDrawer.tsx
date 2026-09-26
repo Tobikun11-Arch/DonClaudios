@@ -143,7 +143,7 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[80] bg-black/40"
+      className="fixed inset-0 z-[110] bg-black/40"
       onClick={close}
       role="dialog"
       aria-modal="true"
@@ -319,7 +319,7 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
 
       {orderDetailsOpen ? (
         <div
-          className="fixed inset-0 z-[90] bg-black/40 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[120] bg-black/40 flex items-center justify-center p-4"
           onClick={cancelOrderDetails}
           role="dialog"
           aria-modal="true"

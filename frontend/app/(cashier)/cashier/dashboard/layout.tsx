@@ -351,7 +351,7 @@ export default function DashboardLayout({
           transition-opacity duration-300
           ${
             drawerOpen
-              ? 'z-60 opacity-100 pointer-events-auto'
+              ? 'z-[110] opacity-100 pointer-events-auto'
               : '-z-10 opacity-0 pointer-events-none'
           }
         `}
@@ -365,7 +365,7 @@ export default function DashboardLayout({
           pb-[env(safe-area-inset-bottom,16px)]
           ${
             drawerOpen
-              ? 'z-70 translate-y-0 pointer-events-auto'
+              ? 'z-[120] translate-y-0 pointer-events-auto'
               : '-z-10 translate-y-full pointer-events-none'
           }
         `}

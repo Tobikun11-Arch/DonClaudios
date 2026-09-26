@@ -1,13 +1,6 @@
 MUHAI TASKS:
 Inventory
-1. Populate/build out the currently near-empty inventory section (still just a placeholder/fill-in UI).
-2. How food deduct every customer buy example the kare kare
-3. fix the unclosable modal
-
-Order Management Dashboard
-1. Decide on and keep either the Pending/Confirmed/Preparing/Ready - Dropdown instead and also add filter icon for date 
-2. Add an automatic trigger/notification when an order stays too long in "Preparing" status past an estimated time (auto-flag overdue orders instead of manual estimation calls).
-3. Add a standard/default estimated waiting time per item, auto-added when an item is added to an order. - from ate sheena
+1. research Inventory tab ui
 
 
 Support Chat
@@ -16,6 +9,19 @@ Support Chat
 Feedback
 1. Add automatic filtering/rejection of feedback using a word-filter API (auto-reject inappropriate submissions) instead of manual reject/approve.
 
+Order Management Dashboard
+1. Decide on and keep either the Pending/Confirmed/Preparing/Ready - Dropdown instead and also add filter icon for date 
+2. Add an automatic trigger/notification when an order stays too long in "Preparing" status past an estimated time (auto-flag overdue orders instead of manual estimation calls).
+3. Add a standard/default estimated waiting time per item, auto-added when an item is added to an order. - from ate sheena
+
+
+
+ 
+hotfix - https://don-claudios.vercel.app/order-history
+Order not found
+We couldn't find this order. Please check the link or the phone number you entered.
+
+guest customer only
 
 
 
@@ -26,20 +32,9 @@ Feedback
 
 
 
-
-
-
-
-
-
-Reservations
-1. Add SMS/text notification to the owner (Ate Sheena's phone) specifically for reservation-type orders (e.g., whole lechon for events), since email/response delays were a pain point.
-   Categorize which items count as "reservation-priority" (large/made-to-order items) vs. regular in-store orders. - so the reservation
-   notificaiton will go through to ate sheena phone is the medium or large only
-
-Delivery / Pricing
-1. free if order is lechon around tanza but food theres 60-80 but it was lalamove delivery (idk if i will integrate this)
-
+Reporting
+Add a Sales/Reporting section to the dashboard (currently missing) — needs monthly reports.
+Make reports downloadable and printable.
 
 Rewards/Loyalty System
 Finalize a rewards system design: points based on amount spent (not fixed items like "whole lechon"), similar to Starbucks' model — needs to avoid making the business lose money.
@@ -48,10 +43,16 @@ Set up redemption flow: customer downloads/screenshots redemption confirmation, 
 Display reward benefits during account registration.
 
 
-Reporting
-Add a Sales/Reporting section to the dashboard (currently missing) — needs monthly reports.
-Make reports downloadable and printable.
 
+Reservations
+1. Add SMS/text notification to the owner (Ate Sheena's phone) specifically for reservation-type orders (e.g., whole lechon for events), since email/response delays were a pain point.
+   Categorize which items count as "reservation-priority" (large/made-to-order items) vs. regular in-store orders. - so the reservation
+   notificaiton will go through to ate sheena phone is the medium or large only
+
+
+
+Delivery / Pricing
+1. free if order is lechon around tanza but food theres 60-80 but it was lalamove delivery (idk if i will integrate this)
 
 Admin Panel / Appearance Settings
 Make sure all homepage elements (colors, icons, pictures, location, etc.) are dynamic and editable via a simple interface — not manual/code-level editing, since the client isn't technical.
