@@ -11,6 +11,10 @@ import {
   useSupportMyQuery
 } from '@/lib/hooks/support/useSupport';
 import {getGuestSessionId} from '@/lib/support/guestSessionStorage';
+import {
+  supportBubbleClass,
+  supportPanelHeightCustomerClass
+} from '@/lib/support/supportBubblePosition';
 import type {NormalizedApiError} from '@/lib/api/types';
 
 export default function SupportChatBubble() {
@@ -93,9 +97,11 @@ export default function SupportChatBubble() {
     : null;
 
   return (
-    <div className="fixed bottom-5 right-5 z-[100] flex flex-col items-end">
+    <div className={supportBubbleClass}>
       {open && (
-        <div className="mb-3 flex h-[480px] w-[calc(100vw-2.5rem)] max-w-[360px] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
+        <div
+          className={`${supportPanelHeightCustomerClass} mb-3 flex w-[calc(100vw-2.5rem)] max-w-[360px] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl`}
+        >
           <div className="flex shrink-0 items-center justify-between border-b border-gray-100 bg-[#2d4a35] px-4 py-3 text-white">
             <div>
               <p className="text-sm font-bold leading-tight">

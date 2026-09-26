@@ -1,7 +1,7 @@
 'use client';
 
 import {useMovementsQuery} from '@/lib/hooks/inventory/useInventory';
-import {Package, History, Loader2} from 'lucide-react';
+import {Package, History, Loader2, X} from 'lucide-react';
 import type {StockMovement} from '@/lib/types/inventory';
 
 interface Props {
@@ -20,7 +20,10 @@ const typeLabels: Record<string, {label: string; color: string}> = {
 
 function MovementRow({m}: {m: StockMovement}) {
   const performer =
-    typeof m.performedBy === 'object'
+    m.performedBy &&
+    typeof m.performedBy === 'object' &&
+    m.performedBy.firstName &&
+    m.performedBy.lastName
       ? `${m.performedBy.firstName} ${m.performedBy.lastName}`
       : 'System';
 
@@ -80,16 +83,13 @@ export function MovementHistoryModal({
   const movements = data?.movements ?? [];
 
   return (
-    <div className="fixed inset-0 z-100">
-      <div
-        className="absolute inset-0 bg-black/40"
-        onClick={onClose}
-        role="button"
-        tabIndex={0}
-        aria-label="Close modal"
-      />
+    <div className="fixed inset-0 z-100" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/40" aria-hidden="true" />
       <div className="absolute inset-0 flex items-end sm:items-center justify-center p-0 sm:p-6">
-        <div className="w-full sm:max-w-lg bg-white shadow-xl border border-gray-100 rounded-t-2xl sm:rounded-2xl flex flex-col max-h-[80vh]">
+        <div
+          className="w-full sm:max-w-lg bg-white shadow-xl border border-gray-100 rounded-t-2xl sm:rounded-2xl flex flex-col max-h-[80vh]"
+          onClick={e => e.stopPropagation()}
+        >
           <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 shrink-0">
             <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
               <History className="h-5 w-5" />
@@ -100,6 +100,14 @@ export function MovementHistoryModal({
               </p>
               <p className="text-xs text-gray-500">{productName}</p>
             </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close movement history"
+              className="ml-auto text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-5">

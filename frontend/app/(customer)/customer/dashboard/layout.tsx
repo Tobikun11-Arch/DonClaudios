@@ -273,7 +273,7 @@ export default function DashboardLayout({
       </aside>
 
       <main className="relative flex-1 overflow-y-auto bg-gray-50 pb-24 md:pb-0">
-        <div className="pointer-events-none absolute top-3 right-4 z-30">
+        <div className="pointer-events-none absolute top-3 right-4 z-[110]">
           <div className="pointer-events-auto">
             <CustomerNotificationBell />
           </div>
