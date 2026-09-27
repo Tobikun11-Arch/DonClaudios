@@ -1,6 +1,6 @@
 'use client';
 
-import {useRef, useState} from 'react';
+import {useMemo, useRef, useState} from 'react';
 import Image from 'next/image';
 import {Star, Send, MessageCircle, ImagePlus, X} from 'lucide-react';
 import {toast} from 'sonner';
@@ -12,6 +12,7 @@ import {
   useReviewEligibilityQuery
 } from '@/lib/hooks/reviews/useReviews';
 import {uploadReviewImage} from '@/lib/api/uploadApi';
+import {scanComment} from '@/lib/utils/profanityFilter';
 import type {Review, ReviewMessage} from '@/lib/types/review';
 import type {NormalizedApiError} from '@/lib/api/types';
 import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
@@ -132,6 +133,7 @@ export default function CustomerReviews() {
   const reviews = data?.reviews ?? [];
   const remainingCount = eligibilityData?.remainingCount ?? 0;
   const canReview = remainingCount > 0;
+  const profanityHint = useMemo(() => scanComment(comment), [comment]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -180,6 +182,14 @@ export default function CustomerReviews() {
       toast.error('Please write your review.');
       return;
     }
+    if (profanityHint.hasMatch) {
+      toast.error(
+        profanityHint.severe
+          ? 'Please remove inappropriate language before submitting.'
+          : 'Please reword your review. Rude or insulting words are not accepted.'
+      );
+      return;
+    }
 
     const uploadedUrls: string[] = [];
     try {
@@ -190,12 +200,18 @@ export default function CustomerReviews() {
           uploadedUrls.push(imageUrl);
         }
       }
-      await createMutation.mutateAsync({
+      const {review} = await createMutation.mutateAsync({
         rating,
         comment,
         images: uploadedUrls
       });
-      toast.success('Review submitted! It will appear after approval.');
+      if (review?.isAutoRejected) {
+        toast.error(
+          'Your review was not published because it contained inappropriate language. Please edit it and submit again.'
+        );
+      } else {
+        toast.success('Review submitted! It will appear after approval.');
+      }
       setRating(0);
       setComment('');
       setImages(prev => {
@@ -207,6 +223,10 @@ export default function CustomerReviews() {
       const code = err?.code;
       if (code === 'REVIEW_NOT_ELIGIBLE') {
         toast.error('You can only leave one review per completed order.');
+      } else if (code === 'PROFANITY_DETECTED') {
+        toast.error(
+          err?.message ?? 'Please remove inappropriate language before submitting.'
+        );
       } else {
         toast.error(err?.message ?? 'Failed to submit review.');
       }
@@ -268,7 +288,14 @@ export default function CustomerReviews() {
       removeTemp();
     } catch (error) {
       removeTemp();
-      toast.error((error as NormalizedApiError)?.message ?? 'Failed to send reply.');
+      const err = error as NormalizedApiError;
+      setReplyingId(review._id);
+      setDrafts(prev => ({...prev, [review._id]: text}));
+      toast.error(
+        err?.code === 'PROFANITY_DETECTED'
+          ? (err?.message ?? 'Please remove inappropriate language.')
+          : (err?.message ?? 'Failed to send reply.')
+      );
     }
   };
 
@@ -325,8 +352,24 @@ export default function CustomerReviews() {
                 rows={4}
                 maxLength={1000}
                 placeholder="Tell us about your experience..."
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e]"
+                className={`w-full rounded-xl border px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e] ${
+                  profanityHint.hasMatch
+                    ? 'border-red-300 focus:ring-red-200'
+                    : 'border-gray-200'
+                }`}
               />
+              {profanityHint.hasMatch ? (
+                <p className="mt-2 text-xs font-medium text-red-600">
+                  {profanityHint.severe
+                    ? 'This review will be blocked. Please remove the inappropriate language.'
+                    : 'This review will be held for review. Please reword any rude or insulting words.'}
+                </p>
+              ) : (
+                <p className="mt-2 text-xs text-gray-400">
+                  Please keep it respectful. Rude or insulting words are
+                  automatically held or blocked.
+                </p>
+              )}
             </div>
 
             {/* Images */}
@@ -452,6 +495,34 @@ export default function CustomerReviews() {
                     ? new Date(review.createdAt).toLocaleDateString()
                     : ''}
                 </p>
+
+                {review.status === 'rejected' && (
+                  <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+                    <p className="font-semibold">Not published</p>
+                    <p className="mt-1">
+                      {review.moderation &&
+                      review.moderation.action !== 'allow' ? (
+                        <>
+                          This review was held back because it contained
+                          inappropriate language. Write a new review for this
+                          order above — the blocked version is only visible to
+                          the store owner.
+                        </>
+                      ) : (
+                        <>
+                          This review was not published. Please contact us if
+                          you think this is a mistake.
+                        </>
+                      )}
+                    </p>
+                  </div>
+                )}
+
+                {review.status === 'pending' && (
+                  <p className="mt-3 text-xs font-medium text-amber-600">
+                    Pending approval — not visible to other customers yet.
+                  </p>
+                )}
 
                 {messages.length > 0 && (
                   <div className="mt-5 space-y-2.5">

@@ -1,8 +1,10 @@
+import mongoose from 'mongoose';
 import {OrderModel} from '../models/Order.model';
 import {
   ReviewDocument,
   ReviewMessage,
   ReviewModel,
+  ReviewModerationAction,
   ReviewStatus
 } from '../models/Review.model';
 
@@ -25,7 +27,13 @@ listApproved: () =>
       OrderModel.find({customerId, isGuest: false, orderStatus: 'completed'})
         .sort({createdAt: 1})
         .exec(),
-      ReviewModel.find({customerId, orderId: {$ne: null}})
+      // $ne true also matches legacy reviews saved before moderation existed,
+      // which have no isAutoRejected field at all.
+      ReviewModel.find({
+        customerId,
+        orderId: {$ne: null},
+        isAutoRejected: {$ne: true}
+      })
         .select('orderId')
         .exec()
     ]);
@@ -38,10 +46,38 @@ listApproved: () =>
     return orders.filter(order => !reviewedIds.has(String(order._id)));
   },
 
+  // An auto-rejected review must not burn the customer's one-review-per-order
+  // slot, so it is cleared before the resubmission is stored. This also keeps
+  // the {customerId, orderId} unique index satisfied.
+  deleteAutoRejectedForOrder: (customerId: string, orderId: string) =>
+    ReviewModel.deleteOne({customerId, orderId, isAutoRejected: true}).exec(),
+
   create: (data: Partial<ReviewDocument>) => ReviewModel.create(data),
 
-  updateStatus: (id: string, status: ReviewStatus) =>
-    ReviewModel.findByIdAndUpdate(id, {status}, {new: true}).exec(),
+  updateStatus: (
+    id: string,
+    status: ReviewStatus,
+    moderation?: {
+      action: ReviewModerationAction;
+      isAutoRejected?: boolean;
+      moderatedBy: mongoose.Types.ObjectId;
+    }
+  ) =>
+    ReviewModel.findByIdAndUpdate(
+      id,
+      {
+        status,
+        isAutoRejected: moderation?.isAutoRejected ?? false,
+        moderatedAt: new Date(),
+        ...(moderation
+          ? {
+              moderatedBy: moderation.moderatedBy,
+              'moderation.action': moderation.action
+            }
+          : {moderatedBy: null})
+      },
+      {new: true}
+    ).exec(),
 
   addReply: (id: string, reply: string, adminId: string) =>
     ReviewModel.findByIdAndUpdate(

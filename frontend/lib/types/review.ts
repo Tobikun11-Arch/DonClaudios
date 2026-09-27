@@ -2,6 +2,14 @@ export type ReviewStatus = 'pending' | 'approved' | 'rejected';
 
 export type ReviewAuthorType = 'customer' | 'admin';
 
+export type ReviewModerationAction = 'allow' | 'auto_reject' | 'manual';
+
+export interface ReviewModeration {
+  action: ReviewModerationAction;
+  score: number;
+  matchedWords: string[];
+}
+
 export interface ReviewMessage {
   _id: string;
   authorType: ReviewAuthorType;
@@ -27,6 +35,9 @@ export interface Review {
   profilePhoto?: string | null;
   reply?: string | null;
   replyDate?: string | null;
+  moderation?: ReviewModeration | null;
+  isAutoRejected?: boolean;
+  moderatedAt?: string | null;
   messages: ReviewMessage[];
   createdAt: string;
   updatedAt: string;

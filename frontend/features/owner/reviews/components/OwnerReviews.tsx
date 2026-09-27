@@ -2,7 +2,7 @@
 
 import {useMemo, useRef, useState} from 'react';
 import Image from 'next/image';
-import {Star, Send, Mail, MailOpen} from 'lucide-react';
+import {Star, Send, Mail, MailOpen, ShieldAlert} from 'lucide-react';
 import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
 import {
@@ -15,7 +15,7 @@ import type {NormalizedApiError} from '@/lib/api/types';
 import OwnerNotificationBell from '@/features/owner/notifications/components/OwnerNotificationBell';
 import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
 
-type Filter = 'all' | ReviewStatus;
+type Filter = 'all' | 'flagged' | ReviewStatus;
 
 function Stars({rating}: {rating: number}) {
   return (
@@ -51,6 +51,39 @@ function statusBadge(status: ReviewStatus) {
 function formatDate(value?: string) {
   if (!value) return '';
   return new Date(value).toLocaleString();
+}
+
+// True for any review the word filter held back and the owner has not published
+// yet. Approving clears it, rejecting keeps it so the record stays auditable.
+function isFlagged(review: Review): boolean {
+  return (
+    review.status !== 'approved' &&
+    review.moderation != null &&
+    review.moderation.action !== 'allow'
+  );
+}
+function AutoBlockedNotice({review}: {review: Review}) {
+  const matched = review.moderation?.matchedWords ?? [];
+  const handled = review.moderation?.action === 'manual';
+  return (
+    <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+      <p className="flex items-center gap-1.5 font-semibold">
+        <ShieldAlert size={14} />
+        Auto-blocked by the word filter
+      </p>
+      <p className="mt-1">
+        Matched: {matched.length > 0 ? matched.join(', ') : 'flagged words'}
+        {review.moderatedAt
+          ? ` • ${formatDate(review.moderatedAt)}`
+          : ''}
+      </p>
+      <p className="mt-1">
+        {handled
+          ? 'You already rejected this one. It stays here for the record.'
+          : 'Approve it if the language is acceptable, otherwise reject it. The customer can resubmit for the same order.'}
+      </p>
+    </div>
+  );
 }
 
 function MessageBubble({
@@ -116,8 +149,12 @@ export default function OwnerReviews() {
 
   const reviews = useMemo(
     () =>
-      (data?.reviews ?? []).filter(
-        review => filter === 'all' || review.status === filter
+      (data?.reviews ?? []).filter(review =>
+        filter === 'all'
+          ? true
+          : filter === 'flagged'
+            ? isFlagged(review)
+            : review.status === filter
       ),
     [data, filter]
   );
@@ -128,7 +165,8 @@ export default function OwnerReviews() {
       all: all.length,
       pending: all.filter(r => r.status === 'pending').length,
       approved: all.filter(r => r.status === 'approved').length,
-      rejected: all.filter(r => r.status === 'rejected').length
+      rejected: all.filter(r => r.status === 'rejected').length,
+      flagged: all.filter(isFlagged).length
     };
   }, [data]);
 
@@ -154,7 +192,11 @@ export default function OwnerReviews() {
     try {
       await updateStatus.mutateAsync({id: review._id, body: {status}});
       toast.success(
-        status === 'approved' ? 'Review approved.' : 'Review rejected.'
+        status === 'approved'
+          ? isFlagged(review)
+            ? 'Auto-blocked review approved and published.'
+            : 'Review approved.'
+          : 'Review rejected.'
       );
     } catch (error) {
       toast.error((error as NormalizedApiError)?.message ?? 'Failed to update review.');
@@ -201,6 +243,7 @@ export default function OwnerReviews() {
   const tabs: {key: Filter; label: string; count: number}[] = [
     {key: 'all', label: 'All', count: counts.all},
     {key: 'pending', label: 'Pending', count: counts.pending},
+    {key: 'flagged', label: 'Flagged', count: counts.flagged},
     {key: 'approved', label: 'Approved', count: counts.approved},
     {key: 'rejected', label: 'Rejected', count: counts.rejected}
   ];
@@ -263,6 +306,12 @@ export default function OwnerReviews() {
                     <div className="flex items-center gap-3">
                       <Stars rating={review.rating} />
                       {statusBadge(review.status)}
+                      {isFlagged(review) && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+                          <ShieldAlert size={12} />
+                          Auto-blocked
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm font-bold text-gray-900 mt-3">
                       {review.customerName}
@@ -287,6 +336,7 @@ export default function OwnerReviews() {
                         ))}
                       </div>
                     )}
+                    {isFlagged(review) && <AutoBlockedNotice review={review} />}
                   </div>
 
                   <div className="flex md:flex-col gap-2 shrink-0">
@@ -297,7 +347,7 @@ export default function OwnerReviews() {
                         className="bg-green-600 hover:bg-green-700 text-white"
                         size="sm"
                       >
-                        Approve
+                        {isFlagged(review) ? 'Approve anyway' : 'Approve'}
                       </Button>
                     )}
                     {review.status !== 'rejected' && (

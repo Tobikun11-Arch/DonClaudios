@@ -73,6 +73,13 @@ export function getFriendlyErrorMessage(
         return 'User not found.';
       case 'STORE_CLOSED':
         return error.message || 'Store is currently closed.';
+      case 'PROFANITY_DETECTED':
+        return (
+          error.message ||
+          'Please remove inappropriate language before submitting.'
+        );
+      case 'REVIEW_NOT_ELIGIBLE':
+        return 'You can only leave one review per completed order.';
       case 'NETWORK_ERROR':
         return 'Network error. Please check your connection and try again.';
       default:
