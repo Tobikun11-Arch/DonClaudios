@@ -2,23 +2,11 @@ MUHAI TASKS:
 Inventory
 1. research Inventory tab ui
 
-Feedback
-1. Add automatic filtering/rejection of feedback using a word-filter API (auto-reject inappropriate submissions) instead of manual reject/approve.
 
 Order Management Dashboard
 1. Decide on and keep either the Pending/Confirmed/Preparing/Ready - Dropdown instead and also add filter icon for date 
-2. Add an automatic trigger/notification when an order stays too long in "Preparing" status past an estimated time (auto-flag overdue orders instead of manual estimation calls).
+2. Add an automatic trigger/notification when an order stays too long in "Preparing" status past an estimated time (auto-flag overdue    orders instead of manual estimation calls).
 3. Add a standard/default estimated waiting time per item, auto-added when an item is added to an order. - from ate sheena
-
-
-
-HOT FIX ERROR
-hotfix - https://don-claudios.vercel.app/order-history
-Order not found
-We couldn't find this order. Please check the link or the phone number you entered.
-
-guest customer only
-
 
 
 
@@ -49,7 +37,7 @@ Reservations
 
 Delivery / Pricing
 1. free if order is lechon around tanza but food theres 60-80 but it was lalamove delivery (idk if i will integrate this)
-
+ 
 Admin Panel / Appearance Settings
 Make sure all homepage elements (colors, icons, pictures, location, etc.) are dynamic and editable via a simple interface — not manual/code-level editing, since the client isn't technical.
 Move/consolidate the appearance editor into Settings tab for easier access.

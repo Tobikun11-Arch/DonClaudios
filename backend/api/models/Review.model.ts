@@ -4,6 +4,14 @@ export type ReviewStatus = 'pending' | 'approved' | 'rejected';
 
 export type ReviewAuthorType = 'customer' | 'admin';
 
+export type ReviewModerationAction = 'allow' | 'auto_reject' | 'manual';
+
+export interface ReviewModeration {
+  action: ReviewModerationAction;
+  score: number;
+  matchedWords: string[];
+}
+
 export interface ReviewMessage {
   authorType: ReviewAuthorType;
   senderName: string;
@@ -27,6 +35,10 @@ export interface ReviewDocument extends mongoose.Document {
   reply?: string | null;
   replyDate?: Date | null;
   repliedBy?: mongoose.Types.ObjectId | null;
+  moderation?: ReviewModeration | null;
+  isAutoRejected?: boolean;
+  moderatedBy?: mongoose.Types.ObjectId | null;
+  moderatedAt?: Date | null;
   messages: ReviewMessage[];
 }
 
@@ -55,6 +67,17 @@ const ReviewSchema = new Schema<ReviewDocument>(
     reply: {type: String, default: null, trim: true},
     replyDate: {type: Date, default: null},
     repliedBy: {type: Schema.Types.ObjectId, ref: 'Admin', default: null},
+    moderation: {
+      type: {
+        action: {type: String, enum: ['allow', 'auto_reject', 'manual']},
+        score: {type: Number, default: 0},
+        matchedWords: {type: [String], default: []}
+      },
+      default: null
+    },
+    isAutoRejected: {type: Boolean, default: false},
+    moderatedBy: {type: Schema.Types.ObjectId, ref: 'Admin', default: null},
+    moderatedAt: {type: Date, default: null},
     messages: [
       {
         authorType: {type: String, enum: ['customer', 'admin'], required: true},
@@ -68,6 +91,7 @@ const ReviewSchema = new Schema<ReviewDocument>(
 );
 
 ReviewSchema.index({status: 1, createdAt: -1});
+ReviewSchema.index({status: 1, isAutoRejected: 1, createdAt: -1});
 ReviewSchema.index({customerId: 1, createdAt: -1});
 ReviewSchema.index(
   {customerId: 1, orderId: 1},

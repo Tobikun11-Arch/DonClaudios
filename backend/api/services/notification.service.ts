@@ -28,7 +28,7 @@ export const notificationService = {
 
   async createForCustomer(data: {
     customerId: string;
-    type: 'review_reply' | 'review_requested' | 'order_message' | 'order_status' | 'support_message';
+    type: 'review_reply' | 'review_auto_rejected' | 'review_requested' | 'order_message' | 'order_status' | 'support_message';
     title: string;
     message: string;
     reviewId?: string;

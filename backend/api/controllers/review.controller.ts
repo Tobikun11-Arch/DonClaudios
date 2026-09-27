@@ -59,9 +59,13 @@ export const reviewController = {
 
   async updateStatus(req: Request, res: Response, next: NextFunction) {
     try {
+      if (!req.auth) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+      }
       const review = await reviewService.updateStatusById(
         req.params.id,
-        req.body.status
+        req.body.status,
+        req.auth.userId
       );
       res.status(200).json({review});
     } catch (error) {

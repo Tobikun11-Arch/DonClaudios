@@ -3,6 +3,7 @@ import mongoose, {Schema} from 'mongoose';
 export type NotificationType =
   | 'review_reply'
   | 'review_submitted'
+  | 'review_auto_rejected'
   | 'review_requested'
   | 'order_message'
   | 'low_stock'
@@ -50,7 +51,7 @@ const NotificationSchema = new Schema<NotificationDocument>(
     },
     type: {
       type: String,
-      enum: ['review_reply', 'review_submitted', 'review_requested', 'order_message', 'low_stock', 'order_status', 'new_order', 'support_message'],
+      enum: ['review_reply', 'review_submitted', 'review_auto_rejected', 'review_requested', 'order_message', 'low_stock', 'order_status', 'new_order', 'support_message'],
       required: true
     },
     title: {type: String, required: true},

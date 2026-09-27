@@ -1,4 +1,5 @@
 import {ApiError} from '../utils/error';
+import {scanText} from '../utils/profanityFilter';
 import {reviewRepository} from '../repositories/review.repository';
 import {customerRepository} from '../repositories/customer.repository';
 import {adminRepository} from '../repositories/admin.repository';
@@ -58,6 +59,20 @@ export const reviewService = {
       throw new ApiError(400, 'VALIDATION_ERROR', 'Comment is required');
     }
 
+    // Server-side moderation. The frontend only shows a warning, so this is the
+    // enforcement point. Severe language is blocked outright and nothing is
+    // stored; a single mild insult is stored but auto-rejected and flagged.
+    const scan = scanText(data.comment);
+    if (scan.action === 'block') {
+      throw new ApiError(
+        422,
+        'PROFANITY_DETECTED',
+        'Please remove inappropriate language before submitting your review.',
+        {matchedWords: scan.terms}
+      );
+    }
+    const isAutoRejected = scan.action === 'auto_reject';
+
     const images = (data.images ?? [])
       .map(url => ({url, alt: ''}))
       .slice(0, 3);
@@ -87,6 +102,19 @@ export const reviewService = {
 
     const targetOrder = unreviewedOrders[0];
 
+    if (isAutoRejected) {
+      // A blocked submission must not consume the customer's one-review-per-order
+      // slot, so clear the previous attempt before storing the new one.
+      try {
+        await reviewRepository.deleteAutoRejectedForOrder(
+          customerId,
+          String(targetOrder._id)
+        );
+      } catch (error) {
+        console.error('Failed to clear previous auto-rejected review', error);
+      }
+    }
+
     let created;
     try {
       created = await reviewRepository.create({
@@ -95,7 +123,14 @@ export const reviewService = {
         rating: data.rating,
         comment: data.comment,
         orderId: targetOrder._id as any,
-        images
+        images,
+        status: isAutoRejected ? 'rejected' : 'pending',
+        isAutoRejected,
+        moderation: {
+          action: isAutoRejected ? 'auto_reject' : 'allow',
+          score: scan.score,
+          matchedWords: scan.terms
+        }
       });
     } catch (error) {
       const isDuplicate = (error as {code?: number})?.code === 11000;
@@ -107,6 +142,24 @@ export const reviewService = {
         );
       }
       throw error;
+    }
+
+    if (isAutoRejected) {
+      try {
+        await notificationService.createForCustomer({
+          customerId: String(customer._id),
+          type: 'review_auto_rejected',
+          title: 'Review not published',
+          message:
+            'Your review was not published because it contained inappropriate language. Please edit it and submit again.',
+          reviewId: String(created._id),
+          orderId: String(targetOrder._id),
+          link: '/customer/dashboard?tab=reviews'
+        });
+      } catch (error) {
+        console.error('Failed to notify customer about blocked review', error);
+      }
+      return created;
     }
 
     try {
@@ -134,7 +187,11 @@ export const reviewService = {
     return created;
   },
 
-  async updateStatusById(reviewId: string, status: 'pending' | 'approved' | 'rejected') {
+  async updateStatusById(
+    reviewId: string,
+    status: 'pending' | 'approved' | 'rejected',
+    actorId?: string
+  ) {
     const review = await reviewRepository.findById(reviewId);
     if (!review) {
       throw new ApiError(404, 'REVIEW_NOT_FOUND', 'Review not found');
@@ -144,8 +201,15 @@ export const reviewService = {
       throw new ApiError(400, 'INVALID_STATUS', 'Status must be approved or rejected');
     }
 
-    const updated = await reviewRepository.updateStatus(reviewId, status);
-    return updated;
+    // An owner decision always wins over an automatic block, but the matched
+    // words stay on the record for the audit trail.
+    return reviewRepository.updateStatus(
+      reviewId,
+      status,
+      actorId
+        ? {action: 'manual', isAutoRejected: false, moderatedBy: actorId as any}
+        : undefined
+    );
   },
 
   async replyToReview(
@@ -217,6 +281,14 @@ export const reviewService = {
   ) {
     if (!reply.trim()) {
       throw new ApiError(400, 'VALIDATION_ERROR', 'Reply is required');
+    }
+
+    if (scanText(reply).action === 'block') {
+      throw new ApiError(
+        422,
+        'PROFANITY_DETECTED',
+        'Please remove inappropriate language before sending your reply.'
+      );
     }
 
     const review = await reviewRepository.findById(reviewId);

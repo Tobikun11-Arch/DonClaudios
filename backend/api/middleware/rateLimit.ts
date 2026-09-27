@@ -27,3 +27,13 @@ export const guestOtpLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false
 });
+
+// Keyed by IP like the other limiters, so the ceiling is generous enough for
+// several walk-in customers sharing one network. It only exists to stop a
+// single source from spamming submissions.
+export const reviewLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false
+});
