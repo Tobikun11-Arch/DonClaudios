@@ -14,7 +14,7 @@ import {useNotificationSound} from '@/lib/hooks/notifications/useNotificationSou
 import type {Notification} from '@/lib/types/notification';
 import type {NormalizedApiError} from '@/lib/api/types';
 
-export default function OwnerNotificationBell() {
+export default function OwnerNotificationBell({alert = false}: {alert?: boolean}) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -102,6 +102,9 @@ export default function OwnerNotificationBell() {
           <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#f08080] px-1.5 text-xs font-bold text-white">
             {unreadCount}
           </span>
+        )}
+        {alert && unreadCount === 0 && (
+          <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#f08080]" />
         )}
       </button>
 

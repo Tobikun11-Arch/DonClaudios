@@ -1,8 +1,4 @@
 MUHAI TASKS:
-Inventory
-1. research Inventory tab ui
-
-
 Order Management Dashboard
 1. Decide on and keep either the Pending/Confirmed/Preparing/Ready - Dropdown instead and also add filter icon for date 
 2. Add an automatic trigger/notification when an order stays too long in "Preparing" status past an estimated time (auto-flag overdue    orders instead of manual estimation calls).
