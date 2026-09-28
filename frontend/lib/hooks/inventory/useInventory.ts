@@ -29,6 +29,8 @@ export function useRestockMutation() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({queryKey: productsQueryKey});
       await queryClient.invalidateQueries({queryKey: ['movements']});
+      await queryClient.invalidateQueries({queryKey: ['dashboard', 'inventory-by-category']});
+      await queryClient.invalidateQueries({queryKey: ['dashboard', 'low-stock']});
     }
   });
 }
@@ -41,6 +43,8 @@ export function useAdjustMutation() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({queryKey: productsQueryKey});
       await queryClient.invalidateQueries({queryKey: ['movements']});
+      await queryClient.invalidateQueries({queryKey: ['dashboard', 'inventory-by-category']});
+      await queryClient.invalidateQueries({queryKey: ['dashboard', 'low-stock']});
     }
   });
 }

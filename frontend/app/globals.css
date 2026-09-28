@@ -17,6 +17,21 @@ html, body {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+  .subtle-scrollbar {
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(203 213 225 / 0.8) transparent;
+  }
+  .subtle-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .subtle-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .subtle-scrollbar::-webkit-scrollbar-thumb {
+    background: rgb(203 213 225 / 0.8);
+    border-radius: 9999px;
+  }
 }
 
 @theme inline {
@@ -144,6 +159,19 @@ html, body {
 .ring-highlight {
   animation: ring-highlight-pulse 2.5s ease-out;
   border-radius: 1rem;
+}
+
+@keyframes drawer-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.drawer-in-right {
+  animation: drawer-in-right 0.22s ease-out;
 }
 
 @layer base {

@@ -8,6 +8,8 @@ import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
 import OrderChatThread from '@/features/order/components/OrderChatThread';
 import {Modal} from '@/features/owner/cashiers/components/Modal';
 import {Button} from '@/components/ui/button';
+import {OrderDateFilter} from './OrderDateFilter';
+import type {DateRange} from './OrderDateFilter';
 import {useAllOrdersQuery, useUpdateOrderStatusMutation, useSendCashierOrderMessageMutation} from '@/lib/hooks/orders/useCashierOrder';
 import {useAdminOrderMessagesQuery} from '@/lib/hooks/orders/useOrderMessage';
 import type {OrderHistoryEntry, OrderHistoryItem} from '@/lib/api/orderApi';
@@ -81,8 +83,12 @@ export function statusChipClass(status: string) {
 export function CashierOrders() {
   const {data, isLoading, isError} = useAllOrdersQuery();
   const updateStatusMutation = useUpdateOrderStatusMutation();
-  const [statusFilter, setStatusFilter] = useState<string>('active');
+  const [manualFilter, setManualFilter] = useState<{key: string | null; value: string}>({
+    key: null,
+    value: 'pending'
+  });
   const [cancellingOrder, setCancellingOrder] = useState<OrderHistoryEntry | null>(null);
+  const [dateRange, setDateRange] = useState<DateRange>({from: null, to: null});
 
   const orders = data?.orders ?? [];
   const {highlightId, isOpenChat} = useScrollToHighlight();
@@ -95,13 +101,35 @@ export function CashierOrders() {
     if (isOpenChat && highlightId) setExpandedId(highlightId);
   }
 
+  const highlightKey = highlightId ?? null;
+  const highlightedOrder = highlightId ? orders.find(o => o._id === highlightId) : undefined;
+  const statusFilter =
+    manualFilter.key === highlightKey
+      ? manualFilter.value
+      : (highlightedOrder?.orderStatus ?? manualFilter.value);
+
+  const handleStatusFilterChange = (value: string) =>
+    setManualFilter({key: highlightKey, value});
+
+  const ordersInRange = useMemo(() => {
+    if (dateRange.from === null && dateRange.to === null) return orders;
+    const {from, to} = dateRange;
+    return orders.filter(order => {
+      const ts = new Date(order.createdAt ?? '').getTime();
+      if (Number.isNaN(ts)) return false;
+      if (from !== null && ts < from) return false;
+      if (to !== null && ts > to) return false;
+      return true;
+    });
+  }, [orders, dateRange]);
+
   const visibleOrders = useMemo(() => {
-    if (statusFilter === 'all') return orders;
+    if (statusFilter === 'all') return ordersInRange;
     if (statusFilter === 'active') {
-      return orders.filter(o => STATUS_FLOW.includes(o.orderStatus as never));
+      return ordersInRange.filter(o => STATUS_FLOW.includes(o.orderStatus as never));
     }
-    return orders.filter(o => o.orderStatus === statusFilter);
-  }, [orders, statusFilter]);
+    return ordersInRange.filter(o => o.orderStatus === statusFilter);
+  }, [ordersInRange, statusFilter]);
 
   const handleNextStatus = async (order: OrderHistoryEntry) => {
     const idx = STATUS_FLOW.indexOf(order.orderStatus as never);
@@ -131,12 +159,14 @@ export function CashierOrders() {
 
   const countFor = (status: string) =>
     status === 'active'
-      ? orders.filter(o => STATUS_FLOW.includes(o.orderStatus as never)).length
+      ? ordersInRange.filter(o => STATUS_FLOW.includes(o.orderStatus as never)).length
       : status === 'all'
-        ? orders.length
-        : orders.filter(o => o.orderStatus === status).length;
+        ? ordersInRange.length
+        : ordersInRange.filter(o => o.orderStatus === status).length;
 
   const filters = ['active', ...ORDER_STATUSES, 'all'];
+  const filterLabel = (f: string) =>
+    f === 'active' ? 'Active' : f === 'all' ? 'All' : formatStatus(f);
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -150,33 +180,31 @@ export function CashierOrders() {
         </div>
       </div>
 
-      <div className="-mx-1 overflow-x-auto scrollbar-hide border-b border-gray-200 px-1 sm:mx-0 sm:px-0 mb-5">
-        <div className="flex min-w-max gap-1">
-          {filters.map(f => {
-            const active = statusFilter === f;
-            const label = f === 'active' ? 'Active' : f === 'all' ? 'All' : formatStatus(f);
-            return (
-              <button
-                key={f}
-                type="button"
-                onClick={() => setStatusFilter(f)}
-                className={`
-                  relative shrink-0 flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-colors
-                  ${active ? 'bg-[#2d4a35] text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}
-                `}
-              >
-                {label}
-                <span
-                  className={`text-xs font-bold rounded-full px-1.5 min-w-5 text-center ${
-                    active ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
-                  }`}
-                >
-                  {countFor(f)}
-                </span>
-              </button>
-            );
-          })}
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        <label
+          htmlFor="order-status-filter"
+          className="text-sm font-semibold text-gray-600"
+        >
+          Status
+        </label>
+        <div className="relative">
+          <select
+            id="order-status-filter"
+            value={statusFilter}
+            onChange={e => handleStatusFilterChange(e.target.value)}
+            className="appearance-none rounded-full border border-gray-200 bg-white py-2 pl-4 pr-10 text-sm font-semibold text-[#2d4a35] transition-colors hover:bg-gray-50 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
+          >
+            {filters.map(f => (
+              <option key={f} value={f}>
+                {filterLabel(f)} ({countFor(f)})
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+          />
         </div>
+        <OrderDateFilter value={dateRange} onChange={setDateRange} />
       </div>
 
       {isLoading ? (
@@ -191,7 +219,9 @@ export function CashierOrders() {
         <div className="rounded-2xl bg-white shadow p-10 text-center">
           <Package className="mx-auto h-10 w-10 text-gray-300 mb-3" />
           <p className="text-sm text-gray-500">
-            No orders match this status.
+            {dateRange.from !== null || dateRange.to !== null
+              ? 'No orders match this status within the selected date range.'
+              : 'No orders match this status.'}
           </p>
         </div>
       ) : (

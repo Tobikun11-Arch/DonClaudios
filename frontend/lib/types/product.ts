@@ -32,7 +32,7 @@ export type Product = {
   ingredients?: ProductIngredient[];
   allergens?: ProductAllergen[];
   isAvailable: boolean;
-  createdBy: string;
+  createdBy: string | {firstName: string; lastName: string} | null;
   createdAt?: string;
   updatedAt?: string;
 };
