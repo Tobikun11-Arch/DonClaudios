@@ -25,8 +25,7 @@ import {
   StockByCategoryPanel,
   type CategoryStockEntry
 } from './StockByCategoryPanel';
-import {FastestMoversPanel, type FastMover} from './FastestMoversPanel';
-import {RecentActivityPanel} from './RecentActivityPanel';
+import {FeaturedActivityPanel, type FastMover} from './FeaturedActivityPanel';
 import {type SortOption} from './InventoryToolbar';
 import OwnerNotificationBell from '@/features/owner/notifications/components/OwnerNotificationBell';
 import type {Product} from '@/lib/types/product';
@@ -336,7 +335,7 @@ export default function InventoryPage() {
   const isLoadingFirst = productsQuery.isLoading && !productsQuery.data;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-24 md:pb-28">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-[1.75rem] font-extrabold text-[#2d4a35]">
@@ -397,37 +396,29 @@ export default function InventoryPage() {
           />
         </section>
 
-        <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-1">
-          <div className="order-3 xl:order-1">
-            <StockByCategoryPanel
-              data={stockByCategory}
-              isLoading={productsQuery.isLoading}
-              isError={productsQuery.isError}
-              onRetry={() => productsQuery.refetch()}
-            />
-          </div>
-          <div className="order-1 xl:order-2">
-            <FastestMoversPanel
-              items={fastMovers}
-              isLoading={topProductsQuery.isLoading}
-              isError={topProductsQuery.isError}
-              onRetry={() => topProductsQuery.refetch()}
-            />
-          </div>
-          <div className="order-2 xl:order-3">
-            <RecentActivityPanel
-              movements={movementsQuery.data?.movements ?? []}
-              resolveName={resolveName}
-              resolveUnit={resolveUnit}
-              isLoading={movementsQuery.isLoading}
-              isError={movementsQuery.isError}
-              onRetry={() => movementsQuery.refetch()}
-              onOpenAll={() =>
-                setDrawer({product: null, mode: 'activity', scrollTo: null})
-              }
-            />
-          </div>
-        </section>
+        <div className="min-w-0 space-y-6">
+          <StockByCategoryPanel
+            data={stockByCategory}
+            isLoading={productsQuery.isLoading}
+            isError={productsQuery.isError}
+            onRetry={() => productsQuery.refetch()}
+          />
+          <FeaturedActivityPanel
+            movers={fastMovers}
+            movements={movementsQuery.data?.movements ?? []}
+            moversLoading={topProductsQuery.isLoading}
+            moversError={topProductsQuery.isError}
+            movementsLoading={movementsQuery.isLoading}
+            movementsError={movementsQuery.isError}
+            resolveName={resolveName}
+            resolveUnit={resolveUnit}
+            onRetryMovers={() => topProductsQuery.refetch()}
+            onRetryMovements={() => movementsQuery.refetch()}
+            onOpenAllActivity={() =>
+              setDrawer({product: null, mode: 'activity', scrollTo: null})
+            }
+          />
+        </div>
       </div>
 
       <StockChangeDialog

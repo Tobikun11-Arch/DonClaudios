@@ -124,11 +124,7 @@ export function ActivityRow({
       </div>
 
       <div className="text-right shrink-0 ml-3">
-        <p
-          className={`text-sm font-extrabold ${
-            isPositive ? 'text-green-600' : 'text-red-600'
-          }`}
-        >
+        <p className={`text-sm font-extrabold ${info.badgeClass}`}>
           {isPositive ? '+' : '−'}
           {Math.abs(m.quantity)}
           {unit}

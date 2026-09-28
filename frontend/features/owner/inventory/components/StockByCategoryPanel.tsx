@@ -84,16 +84,16 @@ export function StockByCategoryPanel({data, isLoading, isError, onRetry}: Props)
         )}
 
         {!isLoading && !isError && data.length > 0 && (
-          <div className="flex items-center gap-4">
-            <div className="relative h-36 w-36 shrink-0">
+          <div className="flex flex-col items-center">
+            <div className="relative h-32 w-32 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={data}
                     cx="50%"
                     cy="50%"
-                    innerRadius={46}
-                    outerRadius={66}
+                    innerRadius={38}
+                    outerRadius={56}
                     dataKey="count"
                     nameKey="category"
                     stroke="none"
@@ -104,15 +104,18 @@ export function StockByCategoryPanel({data, isLoading, isError, onRetry}: Props)
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
-              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <p className="text-xs font-bold text-gray-900 leading-tight text-center max-w-[76px] truncate">
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-1">
+                <p
+                  className="max-w-[72px] truncate text-center text-[11px] font-bold leading-tight text-gray-900"
+                  title={dominant?.category ?? ''}
+                >
                   {dominant?.category ?? ''}
                 </p>
-                <p className="text-[11px] text-gray-400">Most stocked</p>
+                <p className="text-[10px] text-gray-400">Most stocked</p>
               </div>
             </div>
 
-            <div className="min-w-0 flex-1 space-y-2">
+            <div className="mt-4 w-full space-y-2">
               {data.map((entry, idx) => {
                 const share = total > 0 ? Math.round((entry.count / total) * 100) : 0;
                 return (
@@ -121,7 +124,10 @@ export function StockByCategoryPanel({data, isLoading, isError, onRetry}: Props)
                       className="h-2.5 w-2.5 shrink-0 rounded-full"
                       style={{backgroundColor: colorFor(idx)}}
                     />
-                    <span className="min-w-0 flex-1 truncate text-sm text-gray-700">
+                    <span
+                      className="min-w-0 flex-1 truncate text-sm text-gray-700"
+                      title={entry.category}
+                    >
                       {entry.category}
                     </span>
                     <span className="shrink-0 text-sm font-bold tabular-nums text-gray-900">
