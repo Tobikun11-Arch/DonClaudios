@@ -14,8 +14,8 @@ export type OrderStatus =
    pending → order placed
    confirmed → accepted
    preparing → being made
-   ready → finished, waiting for pickup
-   on_the_way → courier picked it up
+   ready → finished, waiting for pickup (counter orders only)
+   on_the_way → courier picked it up (delivery only)
    completed → delivered 
    cancelled → stopped
      */

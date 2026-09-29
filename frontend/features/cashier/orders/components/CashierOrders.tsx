@@ -26,7 +26,28 @@ export const ORDER_STATUSES = [
   'cancelled'
 ] as const;
 
-export const STATUS_FLOW = ['pending', 'confirmed', 'preparing', 'ready', 'on_the_way', 'completed'] as const;
+export const STATUS_FLOW = [
+  'pending',
+  'confirmed',
+  'preparing',
+  'on_the_way',
+  'completed'
+] as const;
+export const COUNTER_PICKUP_FLOW = [
+  'pending',
+  'confirmed',
+  'preparing',
+  'ready',
+  'completed'
+] as const;
+const ACTIVE_STATUSES = [
+  'pending',
+  'confirmed',
+  'preparing',
+  'ready',
+  'on_the_way'
+] as const;
+export const ORDER_TYPES = ['delivery', 'pickup', 'reservation'] as const;
 export const CANCELLABLE = ['pending', 'confirmed', 'preparing'] as const;
 export const STATUS_LABELS: Record<string, string> = {
   pending: 'Pending',
@@ -37,6 +58,20 @@ export const STATUS_LABELS: Record<string, string> = {
   completed: 'Completed',
   cancelled: 'Cancelled'
 };
+
+export function statusFlowFor(orderType: string): readonly string[] {
+  return orderType === 'delivery' ? STATUS_FLOW : COUNTER_PICKUP_FLOW;
+}
+
+export function nextStatusFor(
+  orderType: string,
+  orderStatus: string
+): string | null {
+  const flow = statusFlowFor(orderType);
+  const idx = flow.indexOf(orderStatus);
+  if (idx < 0 || idx >= flow.length - 1) return null;
+  return flow[idx + 1];
+}
 
 export function formatStatus(status: string) {
   return STATUS_LABELS[status] ?? status;
@@ -88,6 +123,7 @@ export function CashierOrders() {
     key: null,
     value: 'pending'
   });
+  const [orderTypeFilter, setOrderTypeFilter] = useState<string>('all');
   const [cancellingOrder, setCancellingOrder] = useState<OrderHistoryEntry | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>({from: null, to: null});
 
@@ -128,20 +164,23 @@ export function CashierOrders() {
   }, [orders, dateRange]);
 
   const visibleOrders = useMemo(() => {
-    if (statusFilter === 'all') return ordersInRange;
-    if (statusFilter === 'overdue') {
-      return ordersInRange.filter(o => o.prepTiming?.isOverdue);
-    }
-    if (statusFilter === 'active') {
-      return ordersInRange.filter(o => STATUS_FLOW.includes(o.orderStatus as never));
-    }
-    return ordersInRange.filter(o => o.orderStatus === statusFilter);
-  }, [ordersInRange, statusFilter]);
+    const base =
+      statusFilter === 'all'
+        ? ordersInRange
+        : statusFilter === 'overdue'
+          ? ordersInRange.filter(o => o.prepTiming?.isOverdue)
+          : statusFilter === 'active'
+            ? ordersInRange.filter(o =>
+                ACTIVE_STATUSES.includes(o.orderStatus as (typeof ACTIVE_STATUSES)[number])
+              )
+            : ordersInRange.filter(o => o.orderStatus === statusFilter);
+    if (orderTypeFilter === 'all') return base;
+    return base.filter(o => o.orderType === orderTypeFilter);
+  }, [ordersInRange, statusFilter, orderTypeFilter]);
 
   const handleNextStatus = async (order: OrderHistoryEntry) => {
-    const idx = STATUS_FLOW.indexOf(order.orderStatus as never);
-    if (idx < 0 || idx >= STATUS_FLOW.length - 1) return;
-    const next = STATUS_FLOW[idx + 1];
+    const next = nextStatusFor(order.orderType, order.orderStatus);
+    if (!next) return;
     try {
       await updateStatusMutation.mutateAsync({orderId: order._id, status: next});
       toast.success(`Order marked as ${formatStatus(next)}.`);
@@ -166,10 +205,17 @@ export function CashierOrders() {
 
   const countFor = (status: string) =>
     status === 'active'
-      ? ordersInRange.filter(o => STATUS_FLOW.includes(o.orderStatus as never)).length
+      ? ordersInRange.filter(o =>
+          ACTIVE_STATUSES.includes(o.orderStatus as (typeof ACTIVE_STATUSES)[number])
+        ).length
       : status === 'all'
         ? ordersInRange.length
         : ordersInRange.filter(o => o.orderStatus === status).length;
+
+  const typeCountFor = (type: string) =>
+    type === 'all'
+      ? ordersInRange.length
+      : ordersInRange.filter(o => o.orderType === type).length;
 
   const overdueCount = useMemo(
     () => ordersInRange.filter(o => o.prepTiming?.isOverdue).length,
@@ -222,6 +268,30 @@ export function CashierOrders() {
             className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
           />
         </div>
+        <label
+          htmlFor="order-type-filter"
+          className="text-sm font-semibold text-gray-600"
+        >
+          Order type
+        </label>
+        <div className="relative">
+          <select
+            id="order-type-filter"
+            value={orderTypeFilter}
+            onChange={e => setOrderTypeFilter(e.target.value)}
+            className="appearance-none rounded-full border border-gray-200 bg-white py-2 pl-4 pr-10 text-sm font-semibold text-[#2d4a35] transition-colors hover:bg-gray-50 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
+          >
+            <option value="all">All types ({typeCountFor('all')})</option>
+            {ORDER_TYPES.map(t => (
+              <option key={t} value={t}>
+                {orderTypeLabel(t)} ({typeCountFor(t)})
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+          />
+        </div>
         <OrderDateFilter value={dateRange} onChange={setDateRange} />
       </div>
 
@@ -238,8 +308,8 @@ export function CashierOrders() {
           <Package className="mx-auto h-10 w-10 text-gray-300 mb-3" />
           <p className="text-sm text-gray-500">
             {dateRange.from !== null || dateRange.to !== null
-              ? 'No orders match this status within the selected date range.'
-              : 'No orders match this status.'}
+              ? 'No orders match these filters within the selected date range.'
+              : 'No orders match these filters.'}
           </p>
         </div>
       ) : (
@@ -338,8 +408,8 @@ function OrderCard({
   const sendMutation = useSendCashierOrderMessageMutation();
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  const statusIdx = STATUS_FLOW.indexOf(order.orderStatus as never);
-  const canAdvance = statusIdx >= 0 && statusIdx < STATUS_FLOW.length - 1;
+  const nextStatus = nextStatusFor(order.orderType, order.orderStatus);
+  const canAdvance = nextStatus !== null;
 
   const handleSend = async (text: string) => {
     try {
@@ -599,7 +669,7 @@ function OrderCard({
             >
               {statusUpdating
                 ? 'Updating...'
-                : `Mark ${formatStatus(STATUS_FLOW[statusIdx + 1])}`}
+                : `Mark ${formatStatus(nextStatus)}`}
             </button>
             {CANCELLABLE.includes(order.orderStatus as (typeof CANCELLABLE)[number]) && (
               <button

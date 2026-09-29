@@ -36,7 +36,6 @@ function getSteps(orderType: OrderType): Step[] {
     return [
       {status: 'confirmed', label: 'Order Confirmed'},
       {status: 'preparing', label: 'Preparing your order'},
-      {status: 'ready', label: 'Ready'},
       {status: 'on_the_way', label: 'On the Way'},
       {status: 'completed', label: 'Order Completed'}
     ];

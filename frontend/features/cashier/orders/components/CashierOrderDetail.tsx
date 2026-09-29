@@ -17,7 +17,7 @@ import {useAdminOrderMessagesQuery} from '@/lib/hooks/orders/useOrderMessage';
 import type {OrderHistoryItem, OrderHistoryEntry} from '@/lib/api/orderApi';
 import type {NormalizedApiError} from '@/lib/api/types';
 import {
-  STATUS_FLOW,
+  nextStatusFor,
   CANCELLABLE,
   formatStatus,
   orderTypeLabel,
@@ -65,13 +65,13 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
   }
 
   const order: OrderHistoryEntry = data.order;
-  const statusIdx = STATUS_FLOW.indexOf(order.orderStatus as never);
-  const canAdvance = statusIdx >= 0 && statusIdx < STATUS_FLOW.length - 1;
+  const nextStatus = nextStatusFor(order.orderType, order.orderStatus);
+  const canAdvance = nextStatus !== null;
   const canCancel = CANCELLABLE.includes(order.orderStatus as (typeof CANCELLABLE)[number]);
 
   const advance = async () => {
-    if (statusIdx < 0 || statusIdx >= STATUS_FLOW.length - 1) return;
-    const next = STATUS_FLOW[statusIdx + 1];
+    if (!nextStatus) return;
+    const next = nextStatus;
     try {
       await updateStatusMutation.mutateAsync({orderId, status: next});
       toast.success(`Order marked as ${formatStatus(next)}.`);
@@ -145,7 +145,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
                 disabled={isUpdating}
                 className="rounded-xl bg-[#2d4a35] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#3a5c44] disabled:opacity-50"
               >
-                {isUpdating ? 'Updating...' : `Mark ${formatStatus(STATUS_FLOW[statusIdx + 1])}`}
+                {isUpdating ? 'Updating...' : `Mark ${formatStatus(nextStatus)}`}
               </button>
             )}
             {canCancel && (

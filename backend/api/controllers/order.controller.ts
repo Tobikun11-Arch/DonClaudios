@@ -972,6 +972,22 @@ export const orderController = {
         throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
       }
 
+      if (status === 'ready' && order.orderType === 'delivery') {
+        throw new ApiError(
+          400,
+          'VALIDATION_ERROR',
+          'Delivery orders use "on_the_way" instead of "ready"'
+        );
+      }
+
+      if (status === 'on_the_way' && order.orderType !== 'delivery') {
+        throw new ApiError(
+          400,
+          'VALIDATION_ERROR',
+          'Only delivery orders can be marked as on the way'
+        );
+      }
+
       if (status !== 'cancelled' && !order.stockDeducted) {
         await stockMovementService.deductOrderStock(String(order._id));
         await orderRepository.updateStockDeducted(String(order._id), true);
