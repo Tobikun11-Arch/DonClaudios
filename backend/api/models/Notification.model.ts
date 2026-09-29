@@ -9,6 +9,8 @@ export type NotificationType =
   | 'low_stock'
   | 'order_status'
   | 'new_order'
+  | 'order_overdue'
+  | 'order_delayed'
   | 'support_message';
 export type NotificationTarget = 'customer' | 'admin' | 'cashier';
 
@@ -51,7 +53,7 @@ const NotificationSchema = new Schema<NotificationDocument>(
     },
     type: {
       type: String,
-      enum: ['review_reply', 'review_submitted', 'review_auto_rejected', 'review_requested', 'order_message', 'low_stock', 'order_status', 'new_order', 'support_message'],
+      enum: ['review_reply', 'review_submitted', 'review_auto_rejected', 'review_requested', 'order_message', 'low_stock', 'order_status', 'new_order', 'order_overdue', 'order_delayed', 'support_message'],
       required: true
     },
     title: {type: String, required: true},

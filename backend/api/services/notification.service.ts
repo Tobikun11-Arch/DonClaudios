@@ -28,7 +28,7 @@ export const notificationService = {
 
   async createForCustomer(data: {
     customerId: string;
-    type: 'review_reply' | 'review_auto_rejected' | 'review_requested' | 'order_message' | 'order_status' | 'support_message';
+    type: 'review_reply' | 'review_auto_rejected' | 'review_requested' | 'order_message' | 'order_status' | 'order_delayed' | 'support_message';
     title: string;
     message: string;
     reviewId?: string;
@@ -93,7 +93,7 @@ export const notificationService = {
 
   async createForCashier(data: {
     cashierId: string;
-    type: 'order_message' | 'order_status' | 'new_order';
+    type: 'order_message' | 'order_status' | 'new_order' | 'order_overdue';
     title: string;
     message: string;
     orderId?: string;

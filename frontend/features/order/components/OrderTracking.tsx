@@ -7,6 +7,11 @@ import {Button} from '@/components/ui/button';
 import FrameLoader from '@/shared/components/FrameLoader';
 import {useCancelTrackedOrderMutation, useTrackOrderQuery} from '@/lib/hooks/orders/useTrackOrder';
 import {getGuestOrderHistory} from '@/lib/orders/orderHistoryStorage';
+import {
+  formatMinutes,
+  OVERDUE_GRACE_MINUTES,
+  useOrderPrepCountdown
+} from '@/lib/hooks/useOrderPrepCountdown';
 import type {OrderHistoryEntry, OrderHistoryItem} from '@/lib/api/orderApi';
 
 const STORE_NAME = "DonClaudio's Lechon House";
@@ -31,7 +36,6 @@ function getSteps(orderType: OrderType): Step[] {
     return [
       {status: 'confirmed', label: 'Order Confirmed'},
       {status: 'preparing', label: 'Preparing your order'},
-      {status: 'ready', label: 'Ready'},
       {status: 'on_the_way', label: 'On the Way'},
       {status: 'completed', label: 'Order Completed'}
     ];
@@ -264,6 +268,69 @@ function PhoneGate({
   );
 }
 
+function CustomerEtaPanel({order}: {order: OrderHistoryEntry}) {
+  const {estimate, remaining, isRunning, isOverdue, hasEstimate} =
+    useOrderPrepCountdown(order.prepTiming);
+
+  if (!hasEstimate || order.orderType === 'reservation') return null;
+
+  if (order.orderStatus === 'cancelled' || order.orderStatus === 'completed') {
+    return (
+      <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+        <p className="text-sm font-semibold text-gray-700">
+          This order took about {formatMinutes(estimate as number)} to prepare.
+        </p>
+      </div>
+    );
+  }
+
+  if (isOverdue) {
+    return (
+      <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+        <p className="text-sm font-bold text-amber-800">
+          Your order is taking longer than usual
+        </p>
+        <p className="mt-1 text-sm text-amber-700">
+          We expected it in about {formatMinutes((estimate as number) + OVERDUE_GRACE_MINUTES)}{' '}
+          and the kitchen is still working on it. Sorry for the wait — you can
+          follow the live status below, and our team is aware.
+        </p>
+      </div>
+    );
+  }
+
+  if (isRunning && remaining !== null) {
+    return (
+      <div className="mt-5 rounded-xl border border-[#3c5e45]/20 bg-[#3c5e45]/5 px-4 py-3">
+        <p className="text-sm font-bold text-[#2d4a35]">
+          Ready in about {formatMinutes(remaining)}
+        </p>
+        <p className="mt-1 text-sm text-[#2d4a35]/80">
+          Started preparing at{' '}
+          {order.prepTiming?.preparingAt
+            ? new Date(order.prepTiming.preparingAt).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+              })
+            : 'a moment ago'}
+          . We&apos;ll let you know when it&apos;s on the way.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-5 rounded-xl border border-gray-200 bg-white px-4 py-3">
+      <p className="text-sm font-semibold text-gray-900">
+        Estimated prep time: {formatMinutes(estimate as number)}
+      </p>
+      <p className="mt-1 text-sm text-gray-500">
+        The countdown starts once the kitchen begins preparing your order.
+      </p>
+    </div>
+  );
+}
+
 function StatusTrackerCard({order}: {order: OrderHistoryEntry}) {
   const steps = getSteps(order.orderType as OrderType);
   const statusIndex = steps.findIndex(s => s.status === order.orderStatus);
@@ -295,6 +362,8 @@ function StatusTrackerCard({order}: {order: OrderHistoryEntry}) {
           </p>
         </div>
       )}
+
+      <CustomerEtaPanel order={order} />
 
       <div className="mt-6 flex flex-col">
         {steps.map((step, i) => {

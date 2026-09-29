@@ -4,6 +4,7 @@ import {useRef, useState, type ReactNode} from 'react';
 import {toast} from 'sonner';
 import {Input} from '@/components/ui/input';
 import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
+import {FALLBACK_PREP_MINUTES} from '@/lib/hooks/useDefaultPrepMinutes';
 import {useUpdateProfileMutation} from '@/lib/hooks/auth/useProfile';
 import {uploadProfileImage} from '@/lib/api/uploadApi';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
@@ -288,6 +289,22 @@ export function ProfileTab() {
     }
   ];
 
+  const prepFields: FieldDef[] = [
+    {
+      label: 'Default prep time (minutes)',
+      value: String(user.defaultPrepMinutes ?? FALLBACK_PREP_MINUTES),
+      save: v => {
+        const parsed = Number(v);
+        if (!Number.isInteger(parsed) || parsed < 1 || parsed > 1440) {
+          toast.error('Enter a whole number of minutes between 1 and 1440.');
+          return;
+        }
+        persist({defaultPrepMinutes: parsed});
+      },
+      placeholder: String(FALLBACK_PREP_MINUTES)
+    }
+  ];
+
   return (
     <div className="space-y-6">
       <Section
@@ -331,6 +348,27 @@ export function ProfileTab() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {businessFields.map(f => (
+            <InlineField
+              key={`${f.label}-${businessEditing}`}
+              field={f}
+              editing={businessEditing}
+            />
+          ))}
+        </div>
+      </Section>
+
+      <Section
+        title="Kitchen Prep Times"
+        editing={businessEditing}
+        onToggleEdit={() => setBusinessEditing(e => !e)}
+      >
+        <p className="mb-5 text-sm text-gray-500">
+          Used when a product has no prep time of its own. Each order is
+          estimated by its slowest item, and cashiers are alerted if an order
+          stays in Preparing longer than that.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {prepFields.map(f => (
             <InlineField
               key={`${f.label}-${businessEditing}`}
               field={f}

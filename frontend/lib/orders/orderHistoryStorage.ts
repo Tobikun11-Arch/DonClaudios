@@ -44,6 +44,15 @@ export function updateGuestOrderHistoryEntry(updated: {
   if (typeof window === 'undefined') return;
 
   const current = readStoredOrders();
+  const existing = current.find(order => order._id === updated._id);
+  if (
+    !existing ||
+    (existing.orderStatus === updated.orderStatus &&
+      existing.cancelReason === updated.cancelReason)
+  ) {
+    return;
+  }
+
   const next = current.map(order =>
     order._id === updated._id
       ? {...order, orderStatus: updated.orderStatus, cancelReason: updated.cancelReason}

@@ -14,6 +14,7 @@ import {type Category} from '@/lib/types/category';
 import {type IngredientItem} from '@/lib/types/ingredient';
 import {type ProductAllergen, type ProductIngredient} from '@/lib/types/product';
 import {cn} from '@/lib/utils';
+import {useDefaultPrepMinutes} from '@/lib/hooks/useDefaultPrepMinutes';
 import {Upload} from 'lucide-react';
 import Image from 'next/image';
 import {type DragEvent, type FormEvent} from 'react';
@@ -71,6 +72,7 @@ export function ProductFormModal({
   onDragLeave
 }: Props) {
   const isDisabled = submitStatus !== 'idle' || isPending;
+  const defaultPrepMinutes = useDefaultPrepMinutes();
   const selectedCategory = getCategoryByName(categories, form.category);
   const legacyCategory =
     form.category && !selectedCategory ? form.category : null;
@@ -238,6 +240,34 @@ export function ProductFormModal({
                   : 'Choose a category to lock the stock unit.'}
             </p>
           </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="prepTimeMinutes">Prep time</Label>
+          <div className="relative">
+            <Input
+              id="prepTimeMinutes"
+              inputMode="numeric"
+              value={form.prepTimeMinutes}
+              onChange={e => onFormChange('prepTimeMinutes', e.target.value)}
+              placeholder={String(defaultPrepMinutes)}
+              className="pr-14"
+            />
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">
+              min
+            </span>
+          </div>
+          <p className="text-xs text-gray-500">
+            How long the kitchen takes to make this. An order is estimated by its
+            slowest item, and cashiers get alerted if it runs past that.
+            {form.prepTimeMinutes.trim() === '' && (
+              <>
+                {' '}
+                Leave blank to use the store default of {defaultPrepMinutes}{' '}
+                min.
+              </>
+            )}
+          </p>
         </div>
 
         <div className="space-y-1.5">

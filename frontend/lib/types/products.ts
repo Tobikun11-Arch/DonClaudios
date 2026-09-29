@@ -7,6 +7,7 @@ export type ProductFormState = {
   stock: string;
   description: string;
   imageUrl: string;
+  prepTimeMinutes: string;
   ingredients: ProductIngredient[];
   allergens: ProductAllergen[];
   isAvailable: boolean;
@@ -19,6 +20,7 @@ export const emptyProductForm: ProductFormState = {
   stock: '',
   description: '',
   imageUrl: '',
+  prepTimeMinutes: '',
   ingredients: [],
   allergens: [],
   isAvailable: true

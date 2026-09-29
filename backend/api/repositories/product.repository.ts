@@ -3,6 +3,11 @@ import {ProductDocument, ProductModel} from '../models/Product.model';
 export const productRepository = {
   findById: (id: string) => ProductModel.findById(id).exec(),
 
+  findByIds: (ids: string[]) =>
+    ProductModel.find({_id: {$in: ids}})
+      .select('prepTimeMinutes')
+      .exec(),
+
   listPublic: () =>
     ProductModel.find({})
       .populate('createdBy', 'firstName lastName')

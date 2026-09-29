@@ -45,6 +45,7 @@ export const productService = {
       stockUnit?: StockUnit;
       description?: string;
       imageUrl?: string;
+      prepTimeMinutes?: number;
       ingredients?: ProductIngredient[];
       allergens?: ProductAllergen[];
       isAvailable?: boolean;
@@ -69,6 +70,7 @@ export const productService = {
       stockUnit?: StockUnit;
       description?: string;
       imageUrl?: string;
+      prepTimeMinutes?: number;
       ingredients?: ProductIngredient[];
       allergens?: ProductAllergen[];
       isAvailable?: boolean;

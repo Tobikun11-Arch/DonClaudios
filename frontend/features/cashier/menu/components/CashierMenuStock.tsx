@@ -8,7 +8,8 @@ import {
   Tag,
   ChevronDown,
   ChevronUp,
-  AlertTriangle
+  AlertTriangle,
+  Clock
 } from 'lucide-react';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
@@ -120,6 +121,12 @@ function CashierProductCard({
       <p className="mt-3 font-bold text-gray-900">{product.name}</p>
       <p className="text-xs text-gray-500">
         {product.category}{unitLabel ? ` · ${unitLabel}` : ''}
+      </p>
+      <p className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+        <Clock size={10} />
+        {product.prepTimeMinutes != null
+          ? `~${product.prepTimeMinutes} min prep`
+          : 'No prep time set'}
       </p>
       <p className="mt-2 text-sm font-semibold text-[#2d4a35]">
         ₱{product.price}.00

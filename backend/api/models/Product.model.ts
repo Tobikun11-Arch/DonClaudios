@@ -31,6 +31,7 @@ export interface ProductDocument extends mongoose.Document {
   stockUnit?: StockUnit;
   description?: string;
   imageUrl?: string;
+  prepTimeMinutes?: number;
   isAvailable: boolean;
   ingredients: ProductIngredient[];
   allergens: ProductAllergen[];
@@ -54,6 +55,7 @@ const ProductSchema = new Schema<ProductDocument>(
     stockUnit: {type: String, enum: [...STOCK_UNITS]},
     description: {type: String},
     imageUrl: {type: String},
+    prepTimeMinutes: {type: Number, min: 0, max: 1440, default: null},
     ingredients: {type: [ProductIngredientSchema], default: []},
     allergens: {type: [String], enum: [...ALLERGEN_VALUES], default: []},
     isAvailable: {type: Boolean, default: true},

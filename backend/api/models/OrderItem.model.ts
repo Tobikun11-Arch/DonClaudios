@@ -5,6 +5,7 @@ export interface OrderItemDocument extends mongoose.Document {
   productId: mongoose.Types.ObjectId;
   quantity: number;
   price: number;
+  prepTimeMinutes?: number;
   specialRequest?: string;
 }
 
@@ -14,6 +15,7 @@ const OrderItemSchema = new Schema<OrderItemDocument>(
     productId: {type: Schema.Types.ObjectId, ref: 'Product', required: true},
     quantity: {type: Number, required: true},
     price: {type: Number, required: true},
+    prepTimeMinutes: {type: Number, min: 0, max: 1440, default: null},
     specialRequest: {type: String}
   },
   {timestamps: true}

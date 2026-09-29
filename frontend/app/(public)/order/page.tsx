@@ -20,27 +20,14 @@ import {
   getPromoBadgeForProduct
 } from '@/lib/utils/promoPricing';
 import StoreClosedModal from '@/shared/components/StoreClosedModal';
-import {getGuestOrderHistory, subscribeGuestOrderHistory} from '@/lib/orders/orderHistoryStorage';
-import type {OrderHistoryEntry} from '@/lib/api/orderApi';
+import {useGuestOrders} from '@/lib/hooks/orders/useGuestOrders';
 
 function ProductsSection() {
   const {data, isLoading, isError} = useProductsQuery();
   const promosQuery = usePublicPromosQuery();
   const publicCategoriesQuery = usePublicCategoriesQuery();
-  const [guestOrders, setGuestOrders] = useState<OrderHistoryEntry[]>([]);
+  const guestOrders = useGuestOrders();
 
-  useEffect(() => {
-    const unsubscribe = subscribeGuestOrderHistory(() =>
-      setGuestOrders(getGuestOrderHistory())
-    );
-    const rafId = requestAnimationFrame(() =>
-      setGuestOrders(getGuestOrderHistory())
-    );
-    return () => {
-      unsubscribe();
-      cancelAnimationFrame(rafId);
-    };
-  }, []);
   const products = useMemo(() => data?.products ?? [], [data?.products]);
 
   const promos = useMemo(

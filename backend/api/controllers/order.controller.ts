@@ -10,8 +10,13 @@ import {customerRepository} from '../repositories/customer.repository';
 import {sendOrderReceiptEmail} from '../services/receipt.service';
 import {storeStatusService} from '../services/storeStatus.service';
 import {guestOtpService} from '../services/guestOtp.service';
+import {
+  buildPrepSnapshot,
+  evaluateOrderTiming,
+  type OrderPrepTiming
+} from '../services/prepTime.service';
 import type {PaymentMethod} from '../models/Transaction.model';
-import type {OrderStatus} from '../models/Order.model';
+import type {OrderStatus, OrderDocument} from '../models/Order.model';
 import type {CashierDocument} from '../models/Cashier.model';
 
 async function notifyCashiersOfNewOrder(orderId: string, totalAmount: number) {
@@ -79,6 +84,64 @@ function normalizeChangeFor(value: unknown): string | undefined {
   return value.trim();
 }
 
+/**
+ * Fires the "running late" alert. Guarded by an atomic latch on the order so
+ * that however many cashiers poll (and however fast), exactly one alert is
+ * ever produced. The cashier alert and the customer notice share that claim.
+ */
+async function notifyOverdueOrder(
+  order: OrderDocument,
+  timing: OrderPrepTiming
+) {
+  const now = new Date();
+  const claim = await orderRepository.claimOverdueNotification(
+    String(order._id),
+    now
+  );
+  if (claim.modifiedCount !== 1) return;
+
+  const orderCode = String(order._id).slice(-6).toUpperCase();
+  const estimated = timing.estimatedPrepMinutes ?? 0;
+  const lateBy = Math.max(1, Math.abs(timing.minutesRemaining ?? 0));
+
+  try {
+    const cashiers = (await cashierRepository.listAll()) as
+      | (CashierDocument & {_id: unknown})[]
+      | null;
+    for (const cashier of cashiers ?? []) {
+      try {
+        await notificationService.createForCashier({
+          cashierId: String(cashier._id),
+          type: 'order_overdue',
+          title: 'Order running late',
+          message: `Order #${orderCode} has been in Preparing for ${lateBy + estimated - 5} min (expected ${estimated} min).`,
+          orderId: String(order._id),
+          link: '/cashier/dashboard?tab=orders'
+        });
+      } catch (error) {
+        console.error('Failed to create overdue cashier notification', error);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to notify cashiers of overdue order', error);
+  }
+
+  if (order.customerId) {
+    try {
+      await notificationService.createForCustomer({
+        customerId: String(order.customerId),
+        type: 'order_delayed',
+        title: "We're running a little behind",
+        message: `We're sorry — order #${orderCode} is taking longer than usual to prepare. The kitchen is working on it now and we appreciate your patience!`,
+        orderId: String(order._id),
+        link: '/customer/dashboard?tab=history'
+      });
+    } catch (error) {
+      console.error('Failed to create delayed customer notification', error);
+    }
+  }
+}
+
 async function assertStoreOpen() {
   const status = await storeStatusService.getStoreStatus();
   if (!status.isOpen) {
@@ -136,19 +199,38 @@ export const orderController = {
         transactions.map(t => [String(t.orderId), t.paymentMethod])
       );
 
-      res.json({
-        orders: orders.map(order => {
-          const customerName = order.customerId
-            ? nameByCustomerId.get(String(order.customerId))
-            : undefined;
-          return {
-            ...order.toObject(),
-            customerName,
-            paymentMethod: paymentMethodByOrderId.get(String(order._id)),
-            items: itemsByOrderId[String(order._id)] ?? []
-          };
-        })
+      const now = new Date();
+      const overdueOrders: Array<{
+        order: OrderDocument;
+        timing: OrderPrepTiming;
+      }> = [];
+
+      const enriched = orders.map(order => {
+        const timing = evaluateOrderTiming(order, now);
+        if (timing.isOverdue) {
+          overdueOrders.push({order, timing});
+        }
+        const customerName = order.customerId
+          ? nameByCustomerId.get(String(order.customerId))
+          : undefined;
+        return {
+          ...order.toObject(),
+          customerName,
+          paymentMethod: paymentMethodByOrderId.get(String(order._id)),
+          items: itemsByOrderId[String(order._id)] ?? [],
+          prepTiming: timing
+        };
       });
+
+      // The dashboard polls every 5s, so this is our "scheduler". The atomic
+      // latch inside keeps it to one alert per overdue run.
+      for (const {order, timing} of overdueOrders) {
+        notifyOverdueOrder(order, timing).catch(error =>
+          console.error('Failed to process overdue order', error)
+        );
+      }
+
+      res.json({orders: enriched});
     } catch (error) {
       next(error);
     }
@@ -183,7 +265,8 @@ export const orderController = {
           ...order.toObject(),
           customerName,
           paymentMethod: transaction?.paymentMethod,
-          items
+          items,
+          prepTiming: evaluateOrderTiming(order)
         }
       });
     } catch (error) {
@@ -245,7 +328,8 @@ export const orderController = {
           ...order.toObject(),
           customerName,
           paymentMethod: transaction?.paymentMethod,
-          items
+          items,
+          prepTiming: evaluateOrderTiming(order)
         }
       });
     } catch (error) {
@@ -351,11 +435,13 @@ export const orderController = {
         transactions.map(t => [String(t.orderId), t.paymentMethod])
       );
 
+      const now = new Date();
       res.json({
         orders: orders.map(order => ({
           ...order.toObject(),
           paymentMethod: paymentMethodByOrderId.get(String(order._id)),
-          items: itemsByOrderId[String(order._id)] ?? []
+          items: itemsByOrderId[String(order._id)] ?? [],
+          prepTiming: evaluateOrderTiming(order, now)
         }))
       });
     } catch (error) {
@@ -396,6 +482,12 @@ export const orderController = {
       ]);
       const customerProfile = customerList[0];
 
+      const productIds = items
+        .map((i: any) => i.productId)
+        .filter(isNonEmptyString);
+      const {itemPreps, estimatedPrepMinutes, estimatedReadyAt} =
+        await buildPrepSnapshot(productIds, orderType);
+
       const offeredName = isNonEmptyString(contactInfo?.firstName)
         ? contactInfo.firstName
         : undefined;
@@ -423,10 +515,13 @@ export const orderController = {
         deliveryFee: safeDeliveryFee,
         riderNotes: isNonEmptyString(riderNotes) ? riderNotes : undefined,
         changeFor: normalizeChangeFor(changeFor),
+        statusHistory: [{status: 'pending', at: new Date()}],
+        estimatedPrepMinutes,
+        estimatedReadyAt,
         isOnline: true
       });
 
-      const orderItems = items.map((i: any) => {
+      const orderItems = items.map((i: any, index: number) => {
         const safeQty = Math.max(1, Number(i.quantity ?? i.qty ?? 1));
         const safePrice = Number(i.price);
 
@@ -447,6 +542,7 @@ export const orderController = {
           productId: i.productId,
           quantity: safeQty,
           price: safePrice,
+          prepTimeMinutes: itemPreps[index] ?? null,
           specialRequest: isNonEmptyString(i.specialRequest)
             ? i.specialRequest
             : isNonEmptyString(i.instructions)
@@ -578,6 +674,12 @@ export const orderController = {
       const safeDeliveryFee =
         orderType === 'delivery' && items.length > 0 ? 49 : 0;
 
+      const productIds = items
+        .map((i: any) => i.productId)
+        .filter(isNonEmptyString);
+      const {itemPreps, estimatedPrepMinutes, estimatedReadyAt} =
+        await buildPrepSnapshot(productIds, orderType);
+
       const order = await orderRepository.create({
         customerId: null,
         isGuest: true,
@@ -594,10 +696,13 @@ export const orderController = {
         deliveryFee: safeDeliveryFee,
         riderNotes: isNonEmptyString(riderNotes) ? riderNotes : undefined,
         changeFor: normalizeChangeFor(changeFor),
+        statusHistory: [{status: 'pending', at: new Date()}],
+        estimatedPrepMinutes,
+        estimatedReadyAt,
         isOnline: true
       });
 
-      const orderItems = items.map((i: any) => {
+      const orderItems = items.map((i: any, index: number) => {
         const safeQty = Math.max(1, Number(i.quantity ?? i.qty ?? 1));
         const safePrice = Number(i.price);
 
@@ -618,6 +723,7 @@ export const orderController = {
           productId: i.productId,
           quantity: safeQty,
           price: safePrice,
+          prepTimeMinutes: itemPreps[index] ?? null,
           specialRequest: isNonEmptyString(i.specialRequest)
             ? i.specialRequest
             : isNonEmptyString(i.instructions)
@@ -827,7 +933,11 @@ export const orderController = {
         await orderRepository.updateStockDeducted(String(order._id), false);
       }
 
-      await orderRepository.updateStatus(String(order._id), 'cancelled');
+      await orderRepository.updateStatusWithHistory(
+        String(order._id),
+        'cancelled',
+        new Date()
+      );
 
       const updated = await orderRepository.findById(req.params.id);
       res.status(200).json({order: updated});
@@ -862,6 +972,22 @@ export const orderController = {
         throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
       }
 
+      if (status === 'ready' && order.orderType === 'delivery') {
+        throw new ApiError(
+          400,
+          'VALIDATION_ERROR',
+          'Delivery orders use "on_the_way" instead of "ready"'
+        );
+      }
+
+      if (status === 'on_the_way' && order.orderType !== 'delivery') {
+        throw new ApiError(
+          400,
+          'VALIDATION_ERROR',
+          'Only delivery orders can be marked as on the way'
+        );
+      }
+
       if (status !== 'cancelled' && !order.stockDeducted) {
         await stockMovementService.deductOrderStock(String(order._id));
         await orderRepository.updateStockDeducted(String(order._id), true);
@@ -879,7 +1005,11 @@ export const orderController = {
         await orderRepository.updateStockDeducted(String(order._id), false);
       }
 
-      await orderRepository.updateStatus(req.params.id, status);
+      await orderRepository.updateStatusWithHistory(
+        req.params.id,
+        status,
+        new Date()
+      );
 
       const updated = await orderRepository.findById(req.params.id);
 
