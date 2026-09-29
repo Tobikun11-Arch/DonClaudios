@@ -1,5 +1,6 @@
 'use client';
 
+import {useEffect} from 'react';
 import {
   cancelTrackedOrder,
   getTrackedOrder
@@ -19,7 +20,7 @@ const trackOrderKey = (orderId: string, phoneNumber?: string) =>
 
 export function useTrackOrderQuery(orderId: string, phoneNumber?: string) {
   const enabled = !!orderId && phoneNumber !== '';
-  return useQuery({
+  const query = useQuery({
     queryKey: trackOrderKey(orderId, phoneNumber),
     queryFn: () => getTrackedOrder(orderId, phoneNumber),
     enabled,
@@ -38,6 +39,20 @@ export function useTrackOrderQuery(orderId: string, phoneNumber?: string) {
     },
     staleTime: 1000
   });
+
+  const trackedId = query.data?.order?._id;
+  const trackedStatus = query.data?.order?.orderStatus;
+  const trackedCancelReason = query.data?.order?.cancelReason;
+  useEffect(() => {
+    if (!trackedId || !trackedStatus) return;
+    updateGuestOrderHistoryEntry({
+      _id: trackedId,
+      orderStatus: trackedStatus,
+      cancelReason: trackedCancelReason
+    });
+  }, [trackedId, trackedStatus, trackedCancelReason]);
+
+  return query;
 }
 
 export function useCancelTrackedOrderMutation(
