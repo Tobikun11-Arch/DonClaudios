@@ -3,78 +3,115 @@ import {OrderModel} from '../models/Order.model';
 import {ProductModel} from '../models/Product.model';
 import {CustomerModel} from '../models/Customer.model';
 import {OrderItemModel} from '../models/OrderItem.model';
+import {
+  buildBuckets,
+  bucketExpression,
+  countManilaDays,
+  manilaDayStartUtc,
+  normalizePreset,
+  percentDelta,
+  resolveRange
+} from '../utils/dateRange';
 
-function startOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
+/**
+ * Every state an order can be in that still represents money taken. `cancelled`
+ * is the only exclusion. Previously this list also contained `delivered`, which
+ * is not a valid OrderStatus and could therefore never match anything.
+ */
+/**
+ * Every non-cancelled state. This is value *placed*, not money collected:
+ * nothing in the order flow closes an abandoned order, so old rows linger here
+ * indefinitely. Use REALIZED_STATUSES for anything presented as revenue.
+ */
+export const REVENUE_STATUSES = [
+  'pending', 'confirmed', 'preparing', 'ready', 'on_the_way', 'completed'
+] as const;
 
-function daysAgo(n: number): Date {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return startOfDay(d);
-}
+/** The only state where money has actually been collected. */
+export const REALIZED_STATUSES = ['completed'] as const;
 
-function startOfWeek(): Date {
-  const d = new Date();
-  const day = d.getDay();
-  d.setDate(d.getDate() - day);
-  return startOfDay(d);
+/** Open orders past this age are abandoned, not pending. */
+const STALE_OPEN_DAYS = 7;
+
+const REVENUE_MATCH = REVENUE_STATUSES as unknown as string[];
+const REALIZED_MATCH = REALIZED_STATUSES as unknown as string[];
+const OPEN_MATCH = ['pending', 'confirmed', 'preparing', 'ready', 'on_the_way'] as unknown as string[];
+
+function manilaWeekStart(): Date {
+  const start = manilaDayStartUtc(new Date());
+  const shifted = new Date(start.getTime() + 8 * 60 * 60 * 1000);
+  return new Date(start.getTime() - shifted.getUTCDay() * 24 * 60 * 60 * 1000);
 }
 
 export const dashboardController = {
-  async summary(_req: Request, res: Response, next: NextFunction) {
+  async summary(req: Request, res: Response, next: NextFunction) {
     try {
-      const todayStart = startOfDay(new Date());
-      const yesterdayStart = daysAgo(1);
-      const todayEnd = new Date(todayStart.getTime() + 86400000);
-      const yesterdayEnd = todayStart;
-      const sevenDaysAgo = daysAgo(6);
-      const weekStart = startOfWeek();
+      const range = resolveRange({preset: normalizePreset(req.query.days)});
+      const days = countManilaDays(range.from, range.to);
 
-      const [todaySalesResult] = await OrderModel.aggregate([
-        {$match: {createdAt: {$gte: todayStart, $lt: todayEnd}, orderStatus: {$ne: 'cancelled'}}},
-        {$group: {_id: null, total: {$sum: '$totalAmount'}}}
+      const todayStart = manilaDayStartUtc(new Date());
+      const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
+      const weekStart = manilaWeekStart();
+
+      const revenueBetween = (from: Date, to: Date, statuses: string[]) =>
+        OrderModel.aggregate([
+          {$match: {createdAt: {$gte: from, $lt: to}, orderStatus: {$in: statuses}}},
+          {$group: {_id: null, total: {$sum: '$totalAmount'}, count: {$sum: 1}}}
+        ]).then(rows => ({total: rows[0]?.total ?? 0, count: rows[0]?.count ?? 0}));
+
+      // Cards report collected revenue. The placed-but-unfulfilled remainder is
+      // carried in `openValue`/`stuckOrders` so the two always reconcile.
+      const [today, yesterday, rangeCollected, prevCollected, rangeOpen, rangePlaced] =
+        await Promise.all([
+          revenueBetween(todayStart, range.to, REALIZED_MATCH),
+          revenueBetween(yesterdayStart, todayStart, REALIZED_MATCH),
+          revenueBetween(range.from, range.to, REALIZED_MATCH),
+          revenueBetween(range.prevFrom, range.prevTo, REALIZED_MATCH),
+          revenueBetween(range.from, range.to, OPEN_MATCH),
+          revenueBetween(range.from, range.to, REVENUE_MATCH)
+        ]);
+
+      // Stuck orders are all-time on purpose: a queue that only grows is the
+      // problem, and scoping it to the selected range would hide it.
+      const staleCutoff = new Date(Date.now() - STALE_OPEN_DAYS * 86400000);
+      const stuck = await OrderModel.aggregate([
+        {$match: {orderStatus: {$in: OPEN_MATCH}, createdAt: {$lt: staleCutoff}}},
+        {$group: {_id: null, count: {$sum: 1}, total: {$sum: '$totalAmount'}, oldest: {$min: '$createdAt'}}}
+      ]).then(rows => ({
+        count: rows[0]?.count ?? 0,
+        total: rows[0]?.total ?? 0,
+        oldestDays: rows[0]?.oldest
+          ? Math.floor((Date.now() - new Date(rows[0].oldest).getTime()) / 86400000)
+          : null
+      }));
+
+      const [productsInStock, totalCustomers, newThisWeek] = await Promise.all([
+        ProductModel.countDocuments({stock: {$gt: 0}, isAvailable: true}),
+        CustomerModel.countDocuments(),
+        CustomerModel.countDocuments({createdAt: {$gte: weekStart}})
       ]);
-
-      const [yesterdaySalesResult] = await OrderModel.aggregate([
-        {$match: {createdAt: {$gte: yesterdayStart, $lt: yesterdayEnd}, orderStatus: {$ne: 'cancelled'}}},
-        {$group: {_id: null, total: {$sum: '$totalAmount'}}}
-      ]);
-
-      const [weeklyRevenueResult] = await OrderModel.aggregate([
-        {$match: {createdAt: {$gte: sevenDaysAgo}, orderStatus: {$ne: 'cancelled'}}},
-        {$group: {_id: null, total: {$sum: '$totalAmount'}}}
-      ]);
-
-      const todaySales = todaySalesResult?.total ?? 0;
-      const yesterdaySales = yesterdaySalesResult?.total ?? 0;
-      const totalRevenue = weeklyRevenueResult?.total ?? 0;
-
-      const delta = yesterdaySales > 0 ? Math.round(((todaySales - yesterdaySales) / yesterdaySales) * 100 * 10) / 10 : 0;
-
-      const productsInStock = await ProductModel.countDocuments({stock: {$gt: 0}, isAvailable: true});
-
-      const totalCustomers = await CustomerModel.countDocuments();
-      const newThisWeek = await CustomerModel.countDocuments({createdAt: {$gte: weekStart}});
-
-      const daysParam = parseInt(_req.query.days as string) || 7;
 
       res.status(200).json({
+        range: {preset: range.preset, label: range.label, days, granularity: range.granularity},
         cards: [
           {
             key: 'todaySales',
             label: "Today's Sales",
-            value: todaySales,
-            delta,
-            deltaLabel: 'vs yesterday'
+            value: today.total,
+            delta: percentDelta(today.total, yesterday.total) ?? 0,
+            deltaLabel: 'vs yesterday',
+            context: today.count > 0 ? `${today.count} completed` : 'No completed orders yet'
           },
           {
             key: 'totalRevenue',
-            label: 'Total Revenue',
-            value: totalRevenue,
-            context: `Last ${daysParam} days`
+            label: 'Revenue Collected',
+            value: rangeCollected.total,
+            delta: percentDelta(rangeCollected.total, prevCollected.total) ?? 0,
+            deltaLabel: `vs previous ${days}d`,
+            context:
+              rangeOpen.total > 0
+                ? `+${rangeOpen.total.toLocaleString()} still open`
+                : 'Nothing left open'
           },
           {
             key: 'productsInStock',
@@ -88,7 +125,19 @@ export const dashboardController = {
             value: totalCustomers,
             context: `+${newThisWeek} this week`
           }
-        ]
+        ],
+        // Lets the dashboard show the split without a second round trip.
+        valueSplit: {
+          collected: rangeCollected.total,
+          collectedOrders: rangeCollected.count,
+          open: rangeOpen.total,
+          openOrders: rangeOpen.count,
+          placed: rangePlaced.total,
+          stuckOrders: stuck.count,
+          stuckValue: stuck.total,
+          oldestStuckDays: stuck.oldestDays,
+          staleAfterDays: STALE_OPEN_DAYS
+        }
       });
     } catch (error) {
       next(error);
@@ -97,39 +146,43 @@ export const dashboardController = {
 
   async salesTrend(req: Request, res: Response, next: NextFunction) {
     try {
-      const days = parseInt(req.query.days as string) || 7;
-      const startDate = daysAgo(days - 1);
+      const range = resolveRange({preset: normalizePreset(req.query.days)});
+      const granularity = range.granularity;
 
       const results = await OrderModel.aggregate([
-        {$match: {createdAt: {$gte: startDate}, orderStatus: {$ne: 'cancelled'}}},
+        {$match: {createdAt: {$gte: range.from, $lt: range.to}, orderStatus: {$in: REVENUE_MATCH}}},
         {
           $group: {
-            _id: {$dateToString: {format: '%Y-%m-%d', date: '$createdAt'}},
-            revenue: {$sum: '$totalAmount'}
+            _id: bucketExpression('createdAt', granularity),
+            revenue: {
+              $sum: {$cond: [{$in: ['$orderStatus', REALIZED_MATCH]}, '$totalAmount', 0]}
+            },
+            orders: {$sum: {$cond: [{$in: ['$orderStatus', REALIZED_MATCH]}, 1, 0]}},
+            openRevenue: {
+              $sum: {$cond: [{$in: ['$orderStatus', OPEN_MATCH]}, '$totalAmount', 0]}
+            }
           }
         },
         {$sort: {_id: 1}}
       ]);
 
-      const dateMap = new Map<string, number>();
-      for (let i = 0; i < days; i++) {
-        const d = new Date(startDate);
-        d.setDate(d.getDate() + i);
-        const key = d.toISOString().slice(0, 10);
-        dateMap.set(key, 0);
-      }
-      for (const r of results) {
-        if (dateMap.has(r._id)) {
-          dateMap.set(r._id, r.revenue);
-        }
+      const byBucket = new Map<string, {revenue: number; orders: number; openRevenue: number}>();
+      for (const row of results) {
+        byBucket.set(row._id as string, {
+          revenue: row.revenue as number,
+          orders: row.orders as number,
+          openRevenue: row.openRevenue as number
+        });
       }
 
-      const daysArray = Array.from(dateMap.entries()).map(([date, revenue]) => ({
+      const days = buildBuckets(range.from, range.to, granularity).map(date => ({
         date,
-        revenue
+        revenue: byBucket.get(date)?.revenue ?? 0,
+        orders: byBucket.get(date)?.orders ?? 0,
+        openRevenue: byBucket.get(date)?.openRevenue ?? 0
       }));
 
-      res.status(200).json({days: daysArray});
+      res.status(200).json({days, granularity});
     } catch (error) {
       next(error);
     }
@@ -143,11 +196,7 @@ export const dashboardController = {
         {$sort: {count: -1}}
       ]);
 
-      const categories = results.map(r => ({
-        category: r._id,
-        count: r.count
-      }));
-
+      const categories = results.map(r => ({category: r._id, count: r.count}));
       const dominant = categories.length > 0 ? categories[0] : {category: '', count: 0};
 
       res.status(200).json({categories, dominant});
@@ -159,9 +208,11 @@ export const dashboardController = {
   async topProducts(req: Request, res: Response, next: NextFunction) {
     try {
       const limit = parseInt(req.query.limit as string) || 5;
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
+      // Default to the current calendar month. `normalizePreset` falls back to
+      // '7d' for an empty value, so the default has to be applied before it.
+      const range = resolveRange({
+        preset: normalizePreset(req.query.range ?? 'thisMonth')
+      });
 
       const results = await OrderItemModel.aggregate([
         {
@@ -174,9 +225,11 @@ export const dashboardController = {
         },
         {$unwind: '$order'},
         {
+          // Completed orders only, so "top products" reflects what was actually
+          // sold rather than what was requested and then abandoned.
           $match: {
-            'order.orderStatus': {$in: ['completed', 'delivered', 'confirmed', 'ready', 'on_the_way']},
-            'order.createdAt': {$gte: startOfMonth}
+            'order.orderStatus': {$in: REALIZED_MATCH},
+            'order.createdAt': {$gte: range.from, $lt: range.to}
           }
         },
         {$group: {_id: '$productId', unitsSold: {$sum: '$quantity'}, revenue: {$sum: {$multiply: ['$quantity', '$price']}}}},
@@ -202,7 +255,7 @@ export const dashboardController = {
         revenue: r.revenue
       }));
 
-      res.status(200).json({products});
+      res.status(200).json({products, range: {preset: range.preset, label: range.label}});
     } catch (error) {
       next(error);
     }

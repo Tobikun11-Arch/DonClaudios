@@ -1,9 +1,10 @@
-Reporting
-Add a Sales/Reporting section to the dashboard (currently missing) — needs monthly reports.
-Make reports downloadable and printable.
+1. Reduce the card in Report it was  10 its so many and some of them is redundant to other tab 
+2. maybe we can remove the /backend/scripts in git 
+3. Orders tab - Instead of horizontal tab per status it must dropdown same with type of order they can in right part of search in the corner 
+
 
 Rewards/Loyalty System
-Finalize a rewards system design: points based on amount spent (not fixed items like "whole lechon"), similar to Starbucks' model — needs to avoid making the business lose money.
+1. Finalize a rewards system design: points based on amount spent (not fixed items like "whole lechon"), similar to Starbucks' model — needs to avoid making the business lose money.
 Make points-per-peso ratio editable/configurable in admin settings (not hardcoded).
 Set up redemption flow: customer downloads/screenshots redemption confirmation, redeems in-store (delivery redemption also possible).
 Display reward benefits during account registration.

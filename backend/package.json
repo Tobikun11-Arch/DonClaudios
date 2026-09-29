@@ -32,6 +32,7 @@
     "node-appwrite": "^22.1.2",
     "nodemailer": "^6.9.15",
     "nodemon": "^3.1.14",
+    "pdfkit": "^0.20.2",
     "pino": "^10.3.1",
     "zod": "^3.24.1"
   },
@@ -42,6 +43,7 @@
     "@types/jsonwebtoken": "^9.0.7",
     "@types/multer": "^1.4.12",
     "@types/nodemailer": "^6.4.17",
+    "@types/pdfkit": "^0.17.6",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.5",
     "typescript": "^5.9.3"
