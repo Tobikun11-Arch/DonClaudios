@@ -2,7 +2,7 @@ import {Button} from '@/components/ui/button';
 import {Card, CardContent} from '@/components/ui/card';
 import {stockUnitLabel} from '@/lib/categories/categoryUtils';
 import {cn} from '@/lib/utils';
-import {Package, Pencil, Trash2} from 'lucide-react';
+import {Package, Pencil, Trash2, Clock} from 'lucide-react';
 import Image from 'next/image';
 import {formatPeso} from '../utils/formatPeso';
 import {Product} from '@/lib/types/product';
@@ -31,7 +31,7 @@ export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
             <Package className="h-10 w-10" />
           </div>
         )}
-        <div className="absolute top-3 left-3">
+        <div className="absolute top-3 left-3 flex flex-col items-start gap-1">
           <span
             className={cn(
               'text-[11px] font-bold px-3 py-1 rounded-full border',
@@ -41,6 +41,10 @@ export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
             )}
           >
             {p.isAvailable ? 'AVAILABLE' : 'NOT AVAILABLE'}
+          </span>
+          <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-amber-200 bg-amber-50 text-amber-700">
+            <Clock size={11} />
+            {p.prepTimeMinutes != null ? `~${p.prepTimeMinutes} min` : 'No time set'}
           </span>
         </div>
       </div>

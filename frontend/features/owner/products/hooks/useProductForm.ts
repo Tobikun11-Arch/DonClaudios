@@ -41,6 +41,8 @@ export function useProductForm(categories: Category[] = []) {
       stock: String(data.stock ?? ''),
       description: data.description ?? '',
       imageUrl: data.imageUrl ?? '',
+      prepTimeMinutes:
+        data.prepTimeMinutes == null ? '' : String(data.prepTimeMinutes),
       ingredients: data.ingredients ?? [],
       allergens: data.allergens ?? [],
       isAvailable: data.isAvailable ?? true
@@ -80,6 +82,18 @@ export function useProductForm(categories: Category[] = []) {
   const validateAndGetPayload = (mode: 'create' | 'edit') => {
     const price = Number(form.price);
     const stock = Number(form.stock);
+    const prepTime = form.prepTimeMinutes.trim();
+    const prepTimeMinutes = prepTime === '' ? null : Number(prepTime);
+    if (prepTimeMinutes !== null) {
+      if (!Number.isInteger(prepTimeMinutes) || prepTimeMinutes < 0) {
+        setFormError('Prep time is invalid');
+        return null;
+      }
+      if (prepTimeMinutes > 1440) {
+        setFormError('Prep time must be 1440 minutes (24 hours) or less');
+        return null;
+      }
+    }
     if (!form.name.trim()) {
       setFormError('Name is required');
       return null;
@@ -112,12 +126,14 @@ export function useProductForm(categories: Category[] = []) {
     return {
       price,
       stock,
+      prepTimeMinutes,
       ingredients: form.ingredients,
       allergens: form.allergens,
       isBulkCategory
     } as {
       price: number;
       stock: number;
+      prepTimeMinutes: number | null;
       ingredients: ProductIngredient[];
       allergens: ProductAllergen[];
       isBulkCategory: boolean;

@@ -29,6 +29,7 @@ export type Product = {
   stockUnit?: string;
   description?: string;
   imageUrl?: string;
+  prepTimeMinutes?: number | null;
   ingredients?: ProductIngredient[];
   allergens?: ProductAllergen[];
   isAvailable: boolean;
@@ -52,6 +53,7 @@ export type CreateProductBody = {
   stock: number;
   description?: string;
   imageUrl?: string;
+  prepTimeMinutes?: number | null;
   ingredients?: ProductIngredient[];
   allergens?: ProductAllergen[];
   isAvailable?: boolean;

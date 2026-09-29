@@ -31,6 +31,7 @@ export const createProductDto = z.object({
   stockUnit: z.enum(STOCK_UNITS).optional(),
   description: z.string().optional(),
   imageUrl: z.string().url().optional(),
+  prepTimeMinutes: z.coerce.number().int().min(0).max(1440).optional(),
   ingredients: z.array(productIngredient).max(50).optional(),
   allergens: z
     .array(z.enum(ALLERGEN_VALUES))

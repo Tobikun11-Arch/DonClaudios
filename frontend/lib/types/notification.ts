@@ -6,6 +6,8 @@ export type NotificationType =
   | 'low_stock'
   | 'order_status'
   | 'new_order'
+  | 'order_overdue'
+  | 'order_delayed'
   | 'support_message';
 export type NotificationTarget = 'customer' | 'admin' | 'cashier';
 

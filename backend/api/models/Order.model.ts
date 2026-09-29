@@ -28,6 +28,11 @@ export interface GuestInfo {
   email?: string;
 }
 
+export interface OrderStatusEntry {
+  status: OrderStatus;
+  at: Date;
+}
+
 export interface OrderDocument extends mongoose.Document {
   customerId?: mongoose.Types.ObjectId | null;
   isGuest: boolean;
@@ -40,6 +45,10 @@ export interface OrderDocument extends mongoose.Document {
   changeFor?: string;
   cancelReason?: string;
   orderStatus: OrderStatus;
+  statusHistory: OrderStatusEntry[];
+  estimatedPrepMinutes?: number | null;
+  estimatedReadyAt?: Date | null;
+  overdueNotifiedAt?: Date | null;
   isOnline: boolean;
   stockDeducted: boolean;
   createdAt: Date;
@@ -53,6 +62,26 @@ const GuestInfoSchema = new Schema<GuestInfo>(
     phoneNumber: {type: String, required: true},
     address: {type: String},
     email: {type: String}
+  },
+  {_id: false}
+);
+
+const OrderStatusEntrySchema = new Schema<OrderStatusEntry>(
+  {
+    status: {
+      type: String,
+      enum: [
+        'pending',
+        'confirmed',
+        'preparing',
+        'ready',
+        'on_the_way',
+        'completed',
+        'cancelled'
+      ],
+      required: true
+    },
+    at: {type: Date, required: true, default: Date.now}
   },
   {_id: false}
 );
@@ -90,6 +119,10 @@ const OrderSchema = new Schema<OrderDocument>(
       ],
       default: 'pending'
     },
+    statusHistory: {type: [OrderStatusEntrySchema], default: []},
+    estimatedPrepMinutes: {type: Number, default: null},
+    estimatedReadyAt: {type: Date, default: null},
+    overdueNotifiedAt: {type: Date, default: null},
     stockDeducted: {type: Boolean, default: false},
     isOnline: {type: Boolean, default: true}
   },
@@ -98,6 +131,7 @@ const OrderSchema = new Schema<OrderDocument>(
 
 OrderSchema.index({customerId: 1, createdAt: -1});
 OrderSchema.index({orderStatus: 1, createdAt: -1});
+OrderSchema.index({orderStatus: 1, overdueNotifiedAt: 1});
 
 export const OrderModel = mongoose.model<OrderDocument>(
   'Order',

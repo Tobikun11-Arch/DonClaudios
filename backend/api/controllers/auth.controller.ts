@@ -76,6 +76,7 @@ export const authController = {
           businessType: admin?.businessType,
           closingTime: admin?.closingTime,
           advanceCloseMinutes: admin?.advanceCloseMinutes,
+          defaultPrepMinutes: admin?.defaultPrepMinutes,
           isManuallyClosed: admin?.isManuallyClosed,
           manualCloseReason: admin?.manualCloseReason
         }
@@ -128,6 +129,7 @@ export const authController = {
             businessType: updated.businessType,
             closingTime: updated.closingTime,
             advanceCloseMinutes: updated.advanceCloseMinutes,
+            defaultPrepMinutes: updated.defaultPrepMinutes,
             isManuallyClosed: updated.isManuallyClosed,
             manualCloseReason: updated.manualCloseReason
           }

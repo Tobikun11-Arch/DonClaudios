@@ -1,16 +1,3 @@
-MUHAI TASKS:
-Order Management Dashboard
-2. Add an automatic trigger/notification when an order stays too long in "Preparing" status past an estimated time (auto-flag overdue    orders instead of manual estimation calls).
-3. Add a standard/default estimated waiting time per item, auto-added when an item is added to an order. - from ate sheena
-
-
-
-
-
-
-
-
-
 Reporting
 Add a Sales/Reporting section to the dashboard (currently missing) — needs monthly reports.
 Make reports downloadable and printable.
@@ -40,6 +27,8 @@ Move/consolidate the appearance editor into Settings tab for easier access.
 
 
 
+
+Populate the donclaudios product/food
 
 
 Proposal suggestions:

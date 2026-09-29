@@ -41,6 +41,7 @@ type MeResponse = {
     businessType?: string;
     closingTime?: string;
     advanceCloseMinutes?: number;
+    defaultPrepMinutes?: number;
     isManuallyClosed?: boolean;
     manualCloseReason?: string;
   };
@@ -68,6 +69,7 @@ export type UpdateProfileBody = {
   businessType?: string;
   closingTime?: string;
   advanceCloseMinutes?: number;
+  defaultPrepMinutes?: number;
   isManuallyClosed?: boolean;
   manualCloseReason?: string;
 };

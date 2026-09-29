@@ -1,4 +1,5 @@
 import {OrderModel, OrderDocument} from '../models/Order.model';
+import type {OrderStatus} from '../models/Order.model';
 
 export const orderRepository = {
   findById: (id: string) => OrderModel.findById(id).exec(),
@@ -27,10 +28,46 @@ export const orderRepository = {
   updateStatus: (orderId: string, orderStatus: string) =>
     OrderModel.updateOne({_id: orderId}, {orderStatus}).exec(),
 
+  /**
+   * Records the transition AND resets the overdue latch. The latch is cleared
+   * whenever the order leaves `preparing` so that a re-prep can alert again.
+   */
+  updateStatusWithHistory: (
+    orderId: string,
+    orderStatus: OrderStatus,
+    at: Date
+  ) =>
+    OrderModel.updateOne(
+      {_id: orderId},
+      {
+        $set: {
+          orderStatus,
+          ...(orderStatus === 'preparing'
+            ? {overdueNotifiedAt: null}
+            : {})
+        },
+        $push: {statusHistory: {status: orderStatus, at}}
+      }
+    ).exec(),
+
+  /**
+   * Atomic idempotency latch. Exactly one caller can flip overdueNotifiedAt
+   * from null to a value, so concurrent 5s polls from several cashiers produce
+   * a single alert.
+   */
+  claimOverdueNotification: (orderId: string, at: Date) =>
+    OrderModel.updateOne(
+      {_id: orderId, overdueNotifiedAt: null},
+      {$set: {overdueNotifiedAt: at}}
+    ).exec(),
+
   cancel: (orderId: string, reason?: string) =>
     OrderModel.updateOne(
       {_id: orderId},
-      {orderStatus: 'cancelled', cancelReason: reason}
+      {
+        $set: {orderStatus: 'cancelled', cancelReason: reason},
+        $push: {statusHistory: {status: 'cancelled', at: new Date()}}
+      }
     ).exec(),
 
   updateStockDeducted: (orderId: string, stockDeducted: boolean) =>

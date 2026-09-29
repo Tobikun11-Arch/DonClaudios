@@ -60,9 +60,21 @@ export type OrderHistoryItem = {
       };
   quantity: number;
   price: number;
+  prepTimeMinutes?: number | null;
   specialRequest?: string;
   name?: string;
   imageUrl?: string;
+};
+
+/** Server-computed, request-time view of how the order is tracking. */
+export type OrderPrepTiming = {
+  preparingAt: string | null;
+  dueAt: string | null;
+  estimatedPrepMinutes: number | null;
+  isOverdue: boolean;
+  /** Positive = minutes left. Negative = minutes past due. */
+  minutesRemaining: number | null;
+  isRunning: boolean;
 };
 
 export type OrderHistoryEntry = {
@@ -76,6 +88,10 @@ export type OrderHistoryEntry = {
   isGuest: boolean;
   changeFor?: string;
   cancelReason?: string;
+  estimatedPrepMinutes?: number | null;
+  estimatedReadyAt?: string | null;
+  statusHistory?: Array<{status: string; at: string}>;
+  prepTiming?: OrderPrepTiming;
   guestInfo?: {
     firstName: string;
     lastName: string;

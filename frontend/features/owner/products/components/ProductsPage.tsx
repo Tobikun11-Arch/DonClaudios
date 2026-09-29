@@ -221,7 +221,7 @@ export default function ProductsPage() {
     setFormError(null);
     const validated = validateAndGetPayload(mode);
     if (!validated) return;
-    const {price, stock} = validated;
+    const {price, stock, prepTimeMinutes} = validated;
 
     try {
       const imageUrl = await uploadImageIfNeeded();
@@ -233,6 +233,7 @@ export default function ProductsPage() {
           category: form.category.trim(),
           price,
           stock,
+          prepTimeMinutes,
           description: form.description.trim() || undefined,
           imageUrl,
           ingredients: validated.isBulkCategory ? [] : validated.ingredients,
@@ -248,6 +249,7 @@ export default function ProductsPage() {
             category: form.category.trim(),
             price,
             stock,
+            prepTimeMinutes,
             description: form.description.trim() || undefined,
             imageUrl,
             ingredients: validated.isBulkCategory ? [] : validated.ingredients,

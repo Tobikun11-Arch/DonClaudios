@@ -3,13 +3,14 @@
 import {useMemo, useState} from 'react';
 import Image from 'next/image';
 import {toast} from 'sonner';
-import {MessageCircle, Package, ChevronRight, ChevronDown, ChevronUp, User, Phone, MapPin} from 'lucide-react';
+import {MessageCircle, Package, ChevronRight, ChevronDown, ChevronUp, User, Phone, MapPin, Clock} from 'lucide-react';
 import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
 import OrderChatThread from '@/features/order/components/OrderChatThread';
 import {Modal} from '@/features/owner/cashiers/components/Modal';
 import {Button} from '@/components/ui/button';
 import {OrderDateFilter} from './OrderDateFilter';
 import type {DateRange} from './OrderDateFilter';
+import {OrderPrepBadge, OrderEstimateLabel} from './OrderPrepBadge';
 import {useAllOrdersQuery, useUpdateOrderStatusMutation, useSendCashierOrderMessageMutation} from '@/lib/hooks/orders/useCashierOrder';
 import {useAdminOrderMessagesQuery} from '@/lib/hooks/orders/useOrderMessage';
 import type {OrderHistoryEntry, OrderHistoryItem} from '@/lib/api/orderApi';
@@ -103,10 +104,13 @@ export function CashierOrders() {
 
   const highlightKey = highlightId ?? null;
   const highlightedOrder = highlightId ? orders.find(o => o._id === highlightId) : undefined;
-  const statusFilter =
+  const resolvedFilter =
     manualFilter.key === highlightKey
       ? manualFilter.value
       : (highlightedOrder?.orderStatus ?? manualFilter.value);
+  // An overdue order should never hide behind a status dropdown selection.
+  const statusFilter =
+    highlightedOrder?.prepTiming?.isOverdue ? 'overdue' : resolvedFilter;
 
   const handleStatusFilterChange = (value: string) =>
     setManualFilter({key: highlightKey, value});
@@ -125,6 +129,9 @@ export function CashierOrders() {
 
   const visibleOrders = useMemo(() => {
     if (statusFilter === 'all') return ordersInRange;
+    if (statusFilter === 'overdue') {
+      return ordersInRange.filter(o => o.prepTiming?.isOverdue);
+    }
     if (statusFilter === 'active') {
       return ordersInRange.filter(o => STATUS_FLOW.includes(o.orderStatus as never));
     }
@@ -164,9 +171,20 @@ export function CashierOrders() {
         ? ordersInRange.length
         : ordersInRange.filter(o => o.orderStatus === status).length;
 
-  const filters = ['active', ...ORDER_STATUSES, 'all'];
-  const filterLabel = (f: string) =>
-    f === 'active' ? 'Active' : f === 'all' ? 'All' : formatStatus(f);
+  const overdueCount = useMemo(
+    () => ordersInRange.filter(o => o.prepTiming?.isOverdue).length,
+    [ordersInRange]
+  );
+
+  const filters = ['overdue', 'active', ...ORDER_STATUSES, 'all'];
+  const filterLabel = (f: string) => {
+    if (f === 'overdue') return 'Overdue';
+    if (f === 'active') return 'Active';
+    if (f === 'all') return 'All';
+    return formatStatus(f);
+  };
+  const filterCount = (f: string) =>
+    f === 'overdue' ? overdueCount : countFor(f);
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -196,7 +214,7 @@ export function CashierOrders() {
           >
             {filters.map(f => (
               <option key={f} value={f}>
-                {filterLabel(f)} ({countFor(f)})
+                {filterLabel(f)} ({filterCount(f)})
               </option>
             ))}
           </select>
@@ -369,7 +387,7 @@ function OrderCard({
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <p className="truncate text-sm font-bold text-gray-900">
                 {customerDisplay(order)}
               </p>
@@ -378,6 +396,10 @@ function OrderCard({
               >
                 {formatStatus(order.orderStatus)}
               </span>
+              <OrderPrepBadge
+                timing={order.prepTiming}
+                orderType={order.orderType}
+              />
             </div>
             <p className="mt-1 text-xs text-gray-400">
               Order #{String(order._id).slice(-6).toUpperCase()} •{' '}
@@ -391,6 +413,15 @@ function OrderCard({
             {order.createdAt && (
               <p className="mt-0.5 text-[11px] text-gray-400">
                 {new Date(order.createdAt).toLocaleString()}
+              </p>
+            )}
+            {order.prepTiming?.isOverdue && (
+              <p className="mt-1 text-[11px] font-semibold text-red-600">
+                Started preparing{' '}
+                {order.prepTiming.preparingAt
+                  ? new Date(order.prepTiming.preparingAt).toLocaleTimeString()
+                  : 'earlier'}
+                .
               </p>
             )}
           </div>
@@ -475,6 +506,12 @@ function OrderCard({
             <h3 className="mb-3 text-sm font-bold text-gray-900">
               Order Items
             </h3>
+            <div className="mb-3">
+              <OrderEstimateLabel
+                timing={order.prepTiming}
+                orderType={order.orderType}
+              />
+            </div>
             <div className="space-y-3">
               {items.map((item, index) => {
                 const imageUrl = getItemImage(item);
@@ -502,7 +539,20 @@ function OrderCard({
                       </p>
                       <p className="mt-1 text-xs text-gray-500">
                         Qty {item.quantity} • {money(item.price)} each
+                        {item.prepTimeMinutes != null && (
+                          <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+                            <Clock size={9} />~{item.prepTimeMinutes} min
+                          </span>
+                        )}
                       </p>
+                      {item.prepTimeMinutes != null &&
+                        order.prepTiming?.estimatedPrepMinutes != null &&
+                        item.prepTimeMinutes ===
+                          order.prepTiming.estimatedPrepMinutes && (
+                          <p className="mt-1 text-[10px] font-semibold text-amber-600">
+                            Slowest item — sets the order estimate
+                          </p>
+                        )}
                       {item.specialRequest && (
                         <p className="mt-1 rounded-lg bg-orange-50 px-2 py-1 text-xs text-orange-700">
                           Request: {item.specialRequest}
