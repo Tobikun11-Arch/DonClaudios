@@ -64,7 +64,7 @@ function StockTable({
         pickerLabel={`Select a product to see its ${valueLabel.toLowerCase()}`}
       />
       <div className="hidden overflow-x-auto sm:block">
-        <table className="w-full min-w-[460px]">
+        <table className="w-full min-w-[380px]">
           <thead>
             <tr className="border-t border-[#E5E7EB]">
               <th className="px-4 py-2.5 text-left text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
@@ -130,7 +130,9 @@ function WastageTable({
         pickerLabel="Select a product to see what was lost"
       />
       <div className="hidden overflow-x-auto sm:block">
-        <table className="w-full min-w-[420px]">
+        {/* "Value at menu price" is the widest header here, so the floor is
+            wider than StockTable's three shorter ones. */}
+        <table className="w-full min-w-[440px]">
           <thead>
             <tr className="border-t border-[#E5E7EB]">
               <th className="px-4 py-2.5 text-left text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
@@ -180,7 +182,11 @@ export function ProductsReportView({range}: {range: ReportRange}) {
       <ReportStatGrid columns={4}>
         <ReportStatTile
           label="Top Seller"
-          value={topSeller ? topSeller.label : '—'}
+          value={
+            // `truncate` cut long product names off with no way to read the
+            // rest; wrapping plus a `title` keeps the full name reachable.
+            topSeller ? <span title={topSeller.label}>{topSeller.label}</span> : '—'
+          }
           isLoading={healthQuery.isLoading}
           skeletonWidth="w-full"
           hint={
@@ -188,7 +194,7 @@ export function ProductsReportView({range}: {range: ReportRange}) {
               ? `${formatNumber(topSeller.units)} units sold · ${formatPeso(topSeller.revenue)}`
               : 'No sales in this period'
           }
-          valueClassName="truncate text-[1.05rem] leading-snug"
+          valueClassName="break-words text-[1.05rem] leading-snug"
         />
         <ReportStatTile
           label="Slow Movers"

@@ -27,7 +27,7 @@ function getColor(category: string, index: number): string {
 
 export function InventoryDonut({categories, dominant, isLoading, isError}: Props) {
   return (
-    <div className="bg-white border border-[#E5E7EB] rounded-xl p-4 px-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] w-[40%]">
+    <div className="bg-white border border-[#E5E7EB] rounded-xl p-4 px-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] w-full lg:w-[40%] lg:shrink-0">
       <div className="mb-4">
         <h3 className="text-[1rem] font-semibold text-[#1A1A1A]">
           Inventory by Category
@@ -48,7 +48,10 @@ export function InventoryDonut({categories, dominant, isLoading, isError}: Props
           No inventory data
         </div>
       ) : (
-        <div className="flex items-center gap-3">
+        /* The donut is a fixed 130px, so beside the legend it left very
+           little room for category names on a phone. Stacked below `sm` both
+           get full width; side by side from `sm` up, as before. */
+        <div className="flex flex-col items-center gap-3 sm:flex-row">
           <div className="relative w-[130px] h-[130px] shrink-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -76,7 +79,7 @@ export function InventoryDonut({categories, dominant, isLoading, isError}: Props
             </div>
           </div>
 
-          <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+          <div className="flex w-full flex-col gap-1.5 flex-1 min-w-0">
             {categories.map((entry, idx) => (
               <div key={entry.category} className="flex items-center gap-2">
                 <span

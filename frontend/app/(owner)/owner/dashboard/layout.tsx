@@ -310,7 +310,9 @@ export default function DashboardLayout({
         {tab === 'appearance' ? (
           <>{appearance}</>
         ) : (
-          <div className="px-6 py-6">
+          /* Phones cannot spare 48px of gutter, and every card
+             below is sized against this width. */
+          <div className="px-4 py-4 sm:px-6 sm:py-6">
             {tab && slotByTab[tab] ? slotByTab[tab] : children}
           </div>
         )}

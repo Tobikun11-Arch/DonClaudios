@@ -29,6 +29,18 @@ const ALIGN: Record<Column, string> = {
 const ALL_COLUMNS: Column[] = ['label', 'secondary', 'orders', 'units', 'revenue', 'share'];
 
 /**
+ * Scroll floor per column count. A flat 520px was applied to every table, so
+ * the three-column Overview cards (Top products, Top customers) sat in
+ * `lg:grid-cols-2` panes around 444px wide and scrolled sideways for nothing.
+ */
+const MIN_TABLE_WIDTH: Record<number, number> = {
+  3: 360,
+  4: 440,
+  5: 480,
+  6: 520
+};
+
+/**
  * One table shape for every dimension so the owner learns the layout once.
  * `secondary` (e.g. a product's category) and `units` are simply omitted for
  * dimensions that have no such concept.
@@ -124,7 +136,10 @@ export function ReportBreakdownTable({
         }
       />
       <div className="hidden overflow-x-auto sm:block">
-        <table className="w-full min-w-[520px]">
+        <table
+          className="w-full"
+          style={{minWidth: (MIN_TABLE_WIDTH[columns.length] ?? 520) + (rank ? 40 : 0)}}
+        >
           <thead>
             <tr className="border-t border-[#E5E7EB]">
               {rank && (

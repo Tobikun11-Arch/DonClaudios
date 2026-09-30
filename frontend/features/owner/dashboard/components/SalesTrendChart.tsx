@@ -60,6 +60,12 @@ export function SalesTrendChart({data, isLoading, isError}: Props) {
         <div className="h-[200px] flex items-center justify-center text-sm text-red-500">
           Failed to load sales data
         </div>
+      ) : data.length === 0 ? (
+        // Without this the card rendered an empty 200px chart frame instead of
+        // saying why, which is what `InventoryDonut` already did.
+        <div className="h-[200px] flex items-center justify-center text-sm text-[#6B7280]">
+          No sales in this period
+        </div>
       ) : (
         <ResponsiveContainer width="100%" height={200}>
           <AreaChart data={data} margin={{top: 5, right: 5, left: -20, bottom: 0}}>
