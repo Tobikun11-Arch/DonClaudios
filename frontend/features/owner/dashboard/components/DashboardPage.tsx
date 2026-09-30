@@ -1,6 +1,7 @@
 'use client';
 
-import {useState} from 'react';
+import {Suspense, useState} from 'react';
+import {useSearchParams} from 'next/navigation';
 import {BarChart3, LayoutGrid} from 'lucide-react';
 import {
   useDashboardSummaryQuery,
@@ -28,9 +29,15 @@ import type {ReportRange, ReportView} from '@/lib/types/report';
 
 type Mode = 'overview' | 'reports';
 
-export default function DashboardPage() {
-  const [mode, setMode] = useState<Mode>('overview');
-  const [view, setView] = useState<ReportView>('overview');
+function DashboardPageContent() {
+  // `?view=` is what every "Details →" link in the reports points at, so read it
+  // on mount to land on the requested sub-tab instead of the default.
+  const searchParams = useSearchParams();
+  const requestedView = searchParams.get('view');
+  const [mode, setMode] = useState<Mode>(requestedView ? 'reports' : 'overview');
+  const [view, setView] = useState<ReportView>(
+    requestedView && isValidView(requestedView) ? requestedView : 'overview'
+  );
   const [range, setRange] = useState<ReportRange>(DEFAULT_REPORT_RANGE);
   const meQuery = useMeQuery()
   const user = meQuery.data?.user;
@@ -147,6 +154,14 @@ export default function DashboardPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<SplashGate ready={false} />}>
+      <DashboardPageContent />
+    </Suspense>
   );
 }
 

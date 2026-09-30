@@ -10,7 +10,9 @@ import {
   formatPeso,
   ReportBody,
   ReportCard,
-  ReportNote
+  ReportNote,
+  ReportStatGrid,
+  ReportStatTile
 } from './reportPrimitives';
 import {ReportBreakdownTable, breakdownToCsvRows} from './ReportBreakdownTable';
 import {ReportExportBar} from './ReportExportBar';
@@ -40,7 +42,7 @@ function StockTable({
   emptyMessage: string;
 }) {
   return (
-    <ReportBody isLoading={isLoading} isError={isError} isEmpty={rows.length === 0} emptyMessage={emptyMessage} height={120}>
+    <ReportBody isLoading={isLoading} isError={isError} isEmpty={rows.length === 0} emptyMessage={emptyMessage} skeleton="rows">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[460px]">
           <thead>
@@ -88,81 +90,77 @@ export function ProductsReportView({range}: {range: ReportRange}) {
 
   const csvRows = useMemo(() => breakdownToCsvRows(breakdown?.rows ?? []), [breakdown?.rows]);
 
-  const tiles = [
-    {label: 'Top sellers', value: formatNumber(health?.topSellers.length ?? 0), hint: 'ranked list'},
-    {label: 'Slow movers', value: formatNumber(health?.slowMovers.length ?? 0), hint: '1 unit or less'},
-    {label: 'Dead stock', value: formatNumber(health?.deadStock.length ?? 0), hint: 'never sold'},
-    {label: 'Wastage', value: formatNumber(health?.wastage.units ?? 0), hint: 'units lost'}
-  ];
+  const topSeller = health?.topSellers[0];
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {tiles.map(tile => (
-          <div
-            key={tile.label}
-            className="rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
-          >
-            <p className="text-[0.68rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
-              {tile.label}
-            </p>
-            <p className="mt-1 text-[1.35rem] font-bold leading-none tabular-nums text-[#1A1A1A]">
-              {healthQuery.isLoading ? '—' : tile.value}
-            </p>
-            <p className="mt-1 text-[0.7rem] text-[#6B7280]">{tile.hint}</p>
-          </div>
-        ))}
-      </div>
-
-      <ReportCard
-        title="Stock value"
-        subtitle="Unsold stock valued at menu price"
-        action={
-          <ReportExportBar
-            view="products"
-            range={range}
-            rows={csvRows}
-            columns={[
-              {header: 'Name', value: r => r.name},
-              {header: 'Group', value: r => r.group},
-              {header: 'Orders', value: r => r.orders},
-              {header: 'Units', value: r => r.units},
-              {header: 'Revenue', value: r => r.revenue},
-              {header: 'Share %', value: r => r.sharePercent}
-            ]}
-          />
-        }
-      >
-        <div className="px-5 pb-5">
-          <p className="text-[1.75rem] font-bold leading-none tabular-nums text-[#1A1A1A]">
-            {healthQuery.isLoading ? '—' : formatPeso(health?.stockValue ?? 0)}
-          </p>
-          <ReportNote>
-            There is no purchase-cost data in the system, so this is the menu price of stock on
-            hand — a capital figure, not profit or margin.
-          </ReportNote>
-        </div>
-      </ReportCard>
+      <ReportStatGrid columns={4}>
+        <ReportStatTile
+          label="Top Seller"
+          value={topSeller ? topSeller.label : '—'}
+          isLoading={healthQuery.isLoading}
+          skeletonWidth="w-full"
+          hint={
+            topSeller
+              ? `${formatNumber(topSeller.units)} units sold · ${formatPeso(topSeller.revenue)}`
+              : 'No sales in this period'
+          }
+          valueClassName="truncate text-[1.05rem] leading-snug"
+        />
+        <ReportStatTile
+          label="Slow Movers"
+          value={formatNumber(health?.slowMovers.length ?? 0)}
+          hint="Sold 1 unit or fewer"
+          isLoading={healthQuery.isLoading}
+        />
+        <ReportStatTile
+          label="Dead Stock"
+          value={formatNumber(health?.deadStock.length ?? 0)}
+          hint="Never sold in this period"
+          isLoading={healthQuery.isLoading}
+        />
+        <ReportStatTile
+          label="Stock Value"
+          value={formatPeso(health?.stockValue ?? 0)}
+          hint="Unsold stock at menu price, not profit"
+          isLoading={healthQuery.isLoading}
+        />
+      </ReportStatGrid>
 
       <ReportCard
         title="Sales breakdown"
-        subtitle={breakdown?.note ?? 'Ranked by revenue'}
+        subtitle={breakdownQuery.isLoading ? undefined : breakdown?.note ?? 'Ranked by revenue'}
         action={
-          <div className="flex gap-1 rounded-full border border-gray-200 bg-white p-0.5">
-            {(['product', 'category'] as const).map(value => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setDimension(value)}
-                className={
-                  dimension === value
-                    ? 'rounded-full bg-[#2d4a35] px-3 py-1 text-[0.7rem] font-bold capitalize text-white'
-                    : 'rounded-full px-3 py-1 text-[0.7rem] font-bold capitalize text-gray-500 hover:bg-gray-50'
-                }
-              >
-                {value}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1 rounded-full border border-gray-200 bg-white p-0.5">
+              {(['product', 'category'] as const).map(value => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setDimension(value)}
+                  className={
+                    dimension === value
+                      ? 'rounded-full bg-[#2d4a35] px-3 py-1 text-[0.7rem] font-bold capitalize text-white'
+                      : 'rounded-full px-3 py-1 text-[0.7rem] font-bold capitalize text-gray-500 hover:bg-gray-50'
+                  }
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+            <ReportExportBar
+              view="products"
+              range={range}
+              rows={csvRows}
+              columns={[
+                {header: 'Name', value: r => r.name},
+                {header: 'Group', value: r => r.group},
+                {header: 'Orders', value: r => r.orders},
+                {header: 'Units', value: r => r.units},
+                {header: 'Revenue', value: r => r.revenue},
+                {header: 'Share %', value: r => r.sharePercent}
+              ]}
+            />
           </div>
         }
       >
@@ -214,9 +212,11 @@ export function ProductsReportView({range}: {range: ReportRange}) {
       <ReportCard
         title="Wastage and shrinkage"
         subtitle={
-          health && health.wastage.cost > 0
-            ? `${formatNumber(health.wastage.units)} units removed`
-            : 'Spoilage and stock adjustments'
+          healthQuery.isLoading
+            ? undefined
+            : health
+              ? `${formatNumber(health.wastage.units)} units removed · ${formatPeso(health.wastage.cost)}`
+              : 'Spoilage and stock adjustments'
         }
       >
         <ReportBody
@@ -224,7 +224,7 @@ export function ProductsReportView({range}: {range: ReportRange}) {
           isError={healthQuery.isError}
           isEmpty={(health?.wastage.byProduct.length ?? 0) === 0}
           emptyMessage="No spoilage or stock adjustments recorded"
-          height={120}
+          skeleton="rows"
         >
           <div className="overflow-x-auto">
             <table className="w-full min-w-[420px]">

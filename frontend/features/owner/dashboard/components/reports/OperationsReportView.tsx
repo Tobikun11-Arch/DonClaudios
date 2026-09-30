@@ -13,8 +13,7 @@ import {
 } from 'recharts';
 import {
   useReportBreakdownQuery,
-  useReportOperationsQuery,
-  useReportSummaryQuery
+  useReportOperationsQuery
 } from '@/lib/hooks/report/useReport';
 import {
   formatHour,
@@ -22,8 +21,9 @@ import {
   formatPeso,
   ReportBody,
   ReportCard,
-  ReportKpiGrid,
   ReportNote,
+  ReportStatGrid,
+  ReportStatTile,
   ShareBar,
   titleCaseStatus
 } from './reportPrimitives';
@@ -43,12 +43,9 @@ const FUNNEL_COLORS: Record<string, string> = {
 
 export function OperationsReportView({range}: {range: ReportRange}) {
   const opsQuery = useReportOperationsQuery(range);
-  const summaryQuery = useReportSummaryQuery(range);
   const cashierQuery = useReportBreakdownQuery(range, 'cashier', 12);
 
   const ops = opsQuery.data;
-  const summary = summaryQuery.data;
-  const kpis = summary?.kpis ?? [];
 
   const funnel = useMemo(
     () =>
@@ -72,37 +69,84 @@ export function OperationsReportView({range}: {range: ReportRange}) {
 
   return (
     <div className="space-y-4">
-      <ReportKpiGrid kpis={kpis.slice(0, 4)} />
+      <ReportStatGrid columns={4}>
+        <ReportStatTile
+          label="Open Orders"
+          value={formatNumber(ops?.live.open ?? 0)}
+          hint="Includes stuck orders"
+          isLoading={opsQuery.isLoading}
+        />
+        <ReportStatTile
+          label="In the Kitchen"
+          value={formatNumber(ops?.live.preparing ?? 0)}
+          hint="Currently cooking"
+          isLoading={opsQuery.isLoading}
+        />
+        <ReportStatTile
+          label="On-time Rate"
+          value={
+            ops
+              ? ops.fulfilment.measured >= 5
+                ? `${formatNumber(Math.round(ops.fulfilment.onTimeRate))}%`
+                : 'No data'
+              : '—'
+          }
+          hint={
+            ops
+              ? ops.fulfilment.measured >= 5
+                ? `${formatNumber(ops.fulfilment.measured)} orders measured`
+                : 'Prep times are not being recorded'
+              : undefined
+          }
+          tone={
+            ops && ops.fulfilment.measured >= 5 && ops.fulfilment.onTimeRate < 90
+              ? 'warning'
+              : 'default'
+          }
+          isLoading={opsQuery.isLoading}
+        />
+        <ReportStatTile
+          label="Stuck Orders"
+          value={formatNumber(ops?.staleOrders.count ?? 0)}
+          hint={
+            ops
+              ? ops.staleOrders.count
+                ? `${formatPeso(ops.staleOrders.value)} · oldest ${formatNumber(
+                    ops.staleOrders.oldestDays ?? 0
+                  )}d`
+                : `Nothing open ${formatNumber(ops.staleOrders.afterDays)}d+`
+              : undefined
+          }
+          tone={ops && ops.staleOrders.count > 0 ? 'danger' : 'default'}
+          isLoading={opsQuery.isLoading}
+        />
+      </ReportStatGrid>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        {[
-          {label: 'Open orders', value: ops?.live.open, hint: 'includes stuck'},
-          {label: 'In the kitchen', value: ops?.live.preparing, hint: 'actually cooking'},
-          {label: 'Deliveries today', value: ops?.live.deliveriesToday, hint: ''},
-          {label: 'Pickups today', value: ops?.live.pickupsToday, hint: ''},
-          {label: 'Reservations', value: ops?.live.reservationsOpen, hint: ''}
-        ].map(tile => (
-          <div
-            key={tile.label}
-            className="rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
-          >
-            <p className="text-[0.68rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
-              {tile.label}
-            </p>
-            <p className="mt-1 text-[1.35rem] font-bold leading-none tabular-nums text-[#1A1A1A]">
-              {opsQuery.isLoading ? '—' : formatNumber(tile.value ?? 0)}
-            </p>
-            {tile.hint && <p className="mt-1 text-[0.65rem] text-[#9CA3AF]">{tile.hint}</p>}
-          </div>
-        ))}
-      </div>
+      {!opsQuery.isLoading && (
+        <div className="rounded-lg border border-[#E5E7EB] bg-[#F7FAF6] px-4 py-2 text-[0.82rem] text-[#4B5563] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+          <span className="mr-1.5 font-semibold text-[#1A1A1A]">Today:</span>
+          <span>
+            Deliveries {formatNumber(ops?.live.deliveriesToday ?? 0)} · Pickups{' '}
+            {formatNumber(ops?.live.pickupsToday ?? 0)} · Reservations{' '}
+            {formatNumber(ops?.live.reservationsOpen ?? 0)}
+          </span>
+        </div>
+      )}
 
-      {ops && ops.staleOrders.count > 0 && (
+      {(!opsQuery.isLoading || ops?.staleOrders.count) && (
         <ReportCard
           title="Stuck orders"
-          subtitle={`Open ${formatNumber(ops.staleOrders.afterDays)}+ days, never completed or cancelled`}
+          subtitle={`Open ${formatNumber(ops?.staleOrders.afterDays ?? 0)}+ days, never completed or cancelled`}
         >
           <div className="grid grid-cols-1 gap-4 px-5 pb-5 sm:grid-cols-3">
+            {opsQuery.isLoading ? (
+              <div className="sm:col-span-3" aria-hidden="true">
+                <div className="h-3 w-32 animate-pulse rounded bg-[#E8EDE6]" />
+                <div className="mt-3 h-6 w-40 animate-pulse rounded bg-[#E8EDE6]" />
+                <div className="mt-3 h-3 w-full animate-pulse rounded bg-[#E8EDE6]" />
+              </div>
+            ) : ops ? (
+              <>
             <div className="rounded-lg border border-[#F0D9A8] bg-[#FDF8EE] px-3.5 py-3">
               <p className="text-[0.68rem] font-medium uppercase tracking-[0.08em] text-[#8A6A2B]">
                 Value at risk
@@ -146,14 +190,18 @@ export function OperationsReportView({range}: {range: ReportRange}) {
                   })}
               </div>
             </div>
+              </>
+            ) : null}
           </div>
-          <ReportNote>
-            These orders sit in the &ldquo;open&rdquo; count but are never counted as revenue, because
-            nothing closes them automatically. By type:{' '}
-            {ops.staleOrders.byType
-              .map(t => `${t.label} ${formatNumber(t.count)}`)
-              .join(' · ') || 'none'}.
-          </ReportNote>
+          {!opsQuery.isLoading && ops && (
+            <ReportNote>
+              These orders sit in the &ldquo;open&rdquo; count but are never counted as revenue, because
+              nothing closes them automatically. By type:{' '}
+              {ops.staleOrders.byType
+                .map(t => `${t.label} ${formatNumber(t.count)}`)
+                .join(' · ') || 'none'}.
+            </ReportNote>
+          )}
         </ReportCard>
       )}
 
@@ -194,21 +242,25 @@ export function OperationsReportView({range}: {range: ReportRange}) {
           subtitle="Prep time actually taken vs promised"
         >
           <div className="grid grid-cols-2 gap-3 px-5 pb-5">
-            {[
-              {label: 'On-time rate', value: ops ? `${formatNumber(Math.round(ops.fulfilment.onTimeRate))}%` : '—'},
-              {label: 'Orders measured', value: ops ? formatNumber(ops.fulfilment.measured) : '—'},
-              {label: 'Avg actual', value: ops ? `${formatNumber(ops.fulfilment.avgActualMinutes)} min` : '—'},
-              {label: 'Avg promised', value: ops ? `${formatNumber(ops.fulfilment.avgPromisedMinutes)} min` : '—'}
-            ].map(tile => (
-              <div key={tile.label} className="rounded-lg bg-[#F7FAF6] px-3 py-2.5">
-                <p className="text-[0.68rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
-                  {tile.label}
-                </p>
-                <p className="mt-0.5 text-[1.05rem] font-bold tabular-nums text-[#1A1A1A]">
-                  {tile.value}
-                </p>
-              </div>
-            ))}
+              {[
+                {label: 'On-time rate', value: ops ? `${formatNumber(Math.round(ops.fulfilment.onTimeRate))}%` : '—'},
+                {label: 'Orders measured', value: ops ? formatNumber(ops.fulfilment.measured) : '—'},
+                {label: 'Avg actual', value: ops ? `${formatNumber(ops.fulfilment.avgActualMinutes)} min` : '—'},
+                {label: 'Avg promised', value: ops ? `${formatNumber(ops.fulfilment.avgPromisedMinutes)} min` : '—'}
+              ].map(tile => (
+                <div key={tile.label} className="rounded-lg bg-[#F7FAF6] px-3 py-2.5">
+                  <p className="text-[0.68rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+                    {tile.label}
+                  </p>
+                  {opsQuery.isLoading ? (
+                    <div className="mt-1 h-4 w-16 animate-pulse rounded bg-[#E1E8DE]" aria-hidden="true" />
+                  ) : (
+                    <p className="mt-0.5 text-[1.05rem] font-bold tabular-nums text-[#1A1A1A]">
+                      {tile.value}
+                    </p>
+                  )}
+                </div>
+              ))}
             <p className="col-span-2 text-[0.72rem] leading-relaxed text-[#6B7280]">
               Measured from the kitchen-done status in the order timeline, so it only counts
               orders that were actually prepared in this window.
@@ -220,9 +272,11 @@ export function OperationsReportView({range}: {range: ReportRange}) {
       <ReportCard
         title="Cancellations"
         subtitle={
-          ops
-            ? `${formatNumber(ops.cancellations.cancelled)} of ${formatNumber(ops.cancellations.total)} orders · ${formatNumber(Math.round(ops.cancellations.rate * 10) / 10)}%`
-            : 'Loading…'
+          opsQuery.isLoading
+            ? undefined
+            : ops
+              ? `${formatNumber(ops.cancellations.cancelled)} of ${formatNumber(ops.cancellations.total)} orders · ${formatNumber(Math.round(ops.cancellations.rate * 10) / 10)}%`
+              : undefined
         }
       >
         <div className="px-5 pb-5">
@@ -259,7 +313,13 @@ export function OperationsReportView({range}: {range: ReportRange}) {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ReportCard
           title="Busiest hours"
-          subtitle={peakHour ? `Peak at ${formatHour(peakHour.hour)}` : 'Order volume by hour'}
+          subtitle={
+            opsQuery.isLoading
+              ? undefined
+              : peakHour
+                ? `Peak at ${formatHour(peakHour.hour)}`
+                : 'Order volume by hour'
+          }
         >
           <div className="px-2 pb-4">
             <ReportBody
