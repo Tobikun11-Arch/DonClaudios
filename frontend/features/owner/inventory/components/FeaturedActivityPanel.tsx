@@ -282,7 +282,7 @@ export function FeaturedActivityPanel({
   };
 
   return (
-    <div className="flex h-[500px] flex-col rounded-2xl border border-gray-100 bg-white p-5">
+    <div className="flex flex-col rounded-2xl border border-gray-100 bg-white p-5 min-h-[420px] max-h-[70vh]">
       <div
         role="tablist"
         aria-label="Fastest movers and recent activity"

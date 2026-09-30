@@ -173,7 +173,23 @@ export function OrderDateFilter({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-12 z-30 mt-1 w-80 rounded-2xl border border-gray-200 bg-white p-4 shadow-xl">
+        <>
+          <div
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+            className="fixed inset-0 z-[25] overscroll-contain bg-black/30 sm:hidden"
+          />
+          {/*
+            Bottom sheet below `sm`. `absolute left-0 w-80` needs 320px but only
+            ~288px is available inside the orders page padding, and
+            `overflow-x: hidden` clipped the overflow, so the date inputs on
+            the right of the panel were unreachable on a phone.
+          */}
+          <div
+            role="dialog"
+            aria-label="Filter orders by date"
+            className="fixed inset-x-3 bottom-24 z-[30] max-h-[70vh] overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 bg-white p-4 shadow-xl sm:absolute sm:bottom-auto sm:left-0 sm:right-auto sm:top-12 sm:mt-1 sm:w-80 sm:max-h-none sm:overflow-y-visible sm:overscroll-auto"
+          >
           <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
             Quick range
           </p>
@@ -239,6 +255,7 @@ export function OrderDateFilter({
             Done
           </button>
         </div>
+        </>
       )}
     </div>
   );

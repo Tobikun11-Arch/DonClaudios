@@ -14,6 +14,7 @@ import type {Review, ReviewMessage, ReviewStatus} from '@/lib/types/review';
 import type {NormalizedApiError} from '@/lib/api/types';
 import OwnerNotificationBell from '@/features/owner/notifications/components/OwnerNotificationBell';
 import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
+import {FilterPills} from '@/shared/components/FilterPills';
 
 type Filter = 'all' | 'flagged' | ReviewStatus;
 
@@ -262,21 +263,20 @@ export default function OwnerReviews() {
       </div>
 
       {/* Filter tabs */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setFilter(tab.key)}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-              filter === tab.key
-                ? 'bg-[#2d4a35] text-white'
-                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            {tab.label} ({tab.count})
-          </button>
-        ))}
-      </div>
+      {/*
+        Delegates to the shared `FilterPills`, which renders a native select
+        below `sm`. Five pills needed ~594px and stacked into three rows before
+        a single review was visible on a 288px-wide page. `FilterPills` only
+        prints `item.label`, so the counts are folded into the label here rather
+        than passed as a separate prop that would be silently dropped.
+      */}
+      <FilterPills
+        items={tabs.map(t => ({ key: t.key, label: `${t.label} (${t.count})` }))}
+        value={filter}
+        onChange={key => setFilter(key as Filter)}
+        ariaLabel="Review filter"
+        className="mb-6"
+      />
 
       {isLoading ? (
         <div className="rounded-2xl bg-white shadow p-5 text-sm text-gray-500">
@@ -300,10 +300,16 @@ export default function OwnerReviews() {
             const isReplying = replyingId === review._id;
             const draft = drafts[review._id] ?? '';
             return (
-              <div key={review._id} id={`review-${review._id}`} className="rounded-2xl bg-white shadow p-6">
+              <div key={review._id} id={`review-${review._id}`} className="rounded-2xl bg-white shadow p-4 sm:p-6">
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
+                  {/*
+                    `min-w-0` lets this column shrink below its longest
+                    unbreakable token so the comment text cannot push the
+                    shrink-0 Approve/Reject column off the edge, and the badge
+                    row wraps rather than clipping `Auto-blocked` at 320px.
+                  */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                       <Stars rating={review.rating} />
                       {statusBadge(review.status)}
                       {isFlagged(review) && (
@@ -313,13 +319,13 @@ export default function OwnerReviews() {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm font-bold text-gray-900 mt-3">
+                    <p className="text-sm font-bold text-gray-900 mt-3 break-words">
                       {review.customerName}
                     </p>
                     <p className="text-xs text-gray-400">
                       {formatDate(review.createdAt)}
                     </p>
-                    <p className="text-sm text-gray-700 mt-3">
+                    <p className="text-sm text-gray-700 mt-3 break-words">
                       &ldquo;{review.comment}&rdquo;
                     </p>
                     {review.images && review.images.length > 0 && (

@@ -14,10 +14,14 @@ export const supportBubbleClass =
   'bottom-[calc(env(safe-area-inset-bottom,10px)+4.5rem)] md:bottom-5';
 
 // `100dvh` rather than `vh` so mobile browser chrome does not push the panel
-// off-screen. The `7rem` reserve covers the lifted bubble offset plus the
-// `mb-3` gap and some breathing room at the top of the viewport.
+// off-screen. The `10.5rem` (168px) reserve covers the lifted bubble offset
+// (`4.5rem` nav + safe area) + the `h-14` (56px) bubble + the `mb-3` (12px)
+// gap = 138px, plus the panel's own 12px margin, leaving ~18px of headroom.
+// The previous `7rem` (112px) under-reserved by 38px, which on a 375x667 or
+// 320x568 phone clipped the panel header -- taking the title and the close
+// button off the top of the screen.
 export const supportPanelHeightCustomerClass =
-  'h-[min(480px,calc(100dvh-7rem))]';
+  'h-[min(480px,calc(100dvh-10.5rem))]';
 
 export const supportPanelHeightOwnerClass =
-  'h-[min(560px,calc(100dvh-7rem))]';
+  'h-[min(560px,calc(100dvh-10.5rem))]';

@@ -153,7 +153,7 @@ function InlineField({field, editing}: {field: FieldDef; editing: boolean}) {
   return (
     <div className="space-y-1">
       <div className="text-xs font-medium text-gray-500">{field.label}</div>
-      <div className="flex items-center gap-2 text-[15px] text-gray-800">
+      <div className="flex items-center gap-2 text-[15px] text-gray-800 break-words">
         {field.value || (
           <span className="text-gray-400">Not set</span>
         )}

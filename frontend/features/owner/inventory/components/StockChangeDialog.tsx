@@ -89,7 +89,7 @@ export function StockChangeDialog({
         aria-label="Close dialog"
       />
       <div className="absolute inset-0 flex items-end sm:items-center justify-center p-0 sm:p-6">
-        <div className="w-full sm:max-w-[440px] bg-white shadow-xl border border-gray-100 rounded-t-2xl sm:rounded-2xl flex flex-col">
+        <div className="w-full sm:max-w-[440px] max-h-[100dvh] sm:max-h-[90dvh] bg-white shadow-xl border border-gray-100 rounded-t-2xl sm:rounded-2xl flex flex-col">
           <div className="flex items-start gap-3 px-5 py-4 border-b border-gray-100">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-100">
               {product.imageUrl ? (
@@ -119,13 +119,18 @@ export function StockChangeDialog({
               onClick={onClose}
               disabled={isPending}
               aria-label="Close"
-              className="shrink-0 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600"
+              className="shrink-0 rounded-lg p-2.5 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          <div className="p-5 space-y-4">
+          {/*
+            `min-h-0` on the scrolling body is what lets it shrink inside the
+            flex column, so the header and the confirm button stay reachable on
+            a landscape phone instead of overflowing the capped panel.
+          */}
+          <div className="min-h-0 flex-1 overflow-y-auto p-5 space-y-4">
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-gray-700">
                 {isRemove ? 'Quantity to remove *' : 'Quantity to add *'}

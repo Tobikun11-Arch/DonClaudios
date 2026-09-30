@@ -108,7 +108,23 @@ export default function CashierNotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-50 w-80 sm:w-96 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
+        <>
+          <div
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+            className="fixed inset-0 z-[55] overscroll-contain bg-black/30 sm:hidden"
+          />
+          {/*
+            Bottom sheet below `sm`: the bell is flush right, so `absolute
+            right-0 w-80` grew leftward past the viewport on narrow phones and
+            `overflow-x: hidden` clipped it. Horizontal placement is rebuilt at
+            `sm` for the anchored popover.
+          */}
+          <div
+            role="dialog"
+            aria-label="Notifications"
+            className="fixed inset-x-3 bottom-24 z-[60] max-h-[70vh] overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 bg-white shadow-xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-12 sm:w-96 sm:max-h-none sm:overflow-y-visible sm:overscroll-auto"
+          >
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <div>
               <p className="text-sm font-bold text-gray-900">Notifications</p>
@@ -183,6 +199,7 @@ export default function CashierNotificationBell() {
             )}
           </div>
         </div>
+        </>
       )}
     </div>
   );

@@ -126,7 +126,7 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
         </span>
       </div>
 
-      <p className="text-sm text-gray-500 mb-5">
+      <p className="text-sm text-gray-500 mb-5 break-words">
         {isOpen
           ? `Ordering is available to customers until ${effectiveCloseTime}. The store closes at ${initial.closesAt}.`
           : isManuallyClosed
@@ -189,7 +189,7 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
       </div>
 
       <div className="mt-6 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div>
             <h3 className="text-sm font-semibold text-gray-800">
               {isManuallyClosed

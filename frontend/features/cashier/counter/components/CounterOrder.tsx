@@ -213,7 +213,7 @@ export default function CounterOrder() {
   };
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4 md:p-6 lg:flex-row">
+    <div className="flex min-h-full flex-col gap-4 p-4 md:p-6 lg:h-full lg:flex-row">
       <SplashGate ready={productsData !== undefined || isError} />
       <div className="flex-1 overflow-auto rounded-2xl border border-gray-200 bg-white p-4">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -235,7 +235,7 @@ export default function CounterOrder() {
           </div>
         </div>
 
-        <div className="mb-4 flex gap-2 overflow-x-auto scrollbar-none pb-1">
+        <div className="mb-4 flex gap-2 overflow-x-auto scrollbar-hide pb-1">
           <button
             type="button"
             onClick={() => setActiveCategory(null)}
@@ -326,7 +326,13 @@ export default function CounterOrder() {
         </div>
       </div>
 
-      <div className="flex h-full flex-col gap-4">
+      {/*
+        `lg:h-full` rather than `h-full`: below `lg` this column sits under
+        the menu grid inside the scrolling `main`, so `h-full` pinned it to the
+        viewport height and let `position: sticky` descendants resolve against
+        the wrong box. Below `lg` the columns grow with their own content.
+      */}
+      <div className="flex flex-col gap-4 lg:h-full">
         <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-4 lg:w-96">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900">
@@ -361,7 +367,7 @@ export default function CounterOrder() {
                     <button
                       type="button"
                       onClick={() => changeQty(line.productId, -1)}
-                      className="rounded-md border border-gray-200 p-1 text-gray-600 hover:bg-gray-50"
+                      className="grid h-9 w-9 place-items-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50"
                     >
                       <Minus className="h-3.5 w-3.5" />
                     </button>
@@ -371,14 +377,14 @@ export default function CounterOrder() {
                     <button
                       type="button"
                       onClick={() => changeQty(line.productId, 1)}
-                      className="rounded-md border border-gray-200 p-1 text-gray-600 hover:bg-gray-50"
+                      className="grid h-9 w-9 place-items-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50"
                     >
                       <Plus className="h-3.5 w-3.5" />
                     </button>
                     <button
                       type="button"
                       onClick={() => removeLine(line.productId)}
-                      className="ml-1 rounded-md p-1 text-red-500 hover:bg-red-50"
+                      className="ml-1 grid h-9 w-9 place-items-center rounded-md text-red-500 hover:bg-red-50"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -472,6 +478,14 @@ export default function CounterOrder() {
               </div>
             </div>
 
+            {/*
+            Below `lg` the menu grid renders above the order card, which pushed
+            "Place Order" roughly a full screen down past the `md:hidden` bottom
+            nav. Only the CTA sticks -- the customer-detail fields above it keep
+            scrolling normally. At `lg` the card sits beside the menu, so it
+            returns to static flow.
+          */}
+            <div className="sticky bottom-0 z-10 -mx-4 mt-1 bg-white px-4 py-3 lg:static lg:mx-0 lg:mt-4 lg:p-0">
             <Button
               type="button"
               className="w-full"
@@ -481,6 +495,7 @@ export default function CounterOrder() {
             >
               {createOrder.isPending ? 'Placing order...' : 'Place Order'}
             </Button>
+            </div>
           </div>
         </div>
 

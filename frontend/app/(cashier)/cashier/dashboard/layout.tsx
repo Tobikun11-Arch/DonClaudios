@@ -260,7 +260,7 @@ export default function DashboardLayout({
       </aside>
 
       <main className="flex-1 overflow-y-auto scrollbar-hide bg-gray-50 pb-24 md:pb-0">
-        <div className="px-6 py-6">
+        <div className="px-4 py-4 sm:px-6 sm:py-6">
           <div className="mb-6 flex items-center justify-between gap-3">
             <div>
               <h1 className="text-xl font-bold text-gray-900">Cashier Dashboard</h1>

@@ -264,7 +264,7 @@ export default function AppearancePreview() {
                 <span className="ml-1 text-xs sm:text-sm font-medium">Loved by locals in Tanza</span>
               </div>
 
-              <h2 className="text-5xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
+              <h2 className="text-5xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight break-words">
                 <EditableText
                   value={data.hero.title}
                   onSave={v => saveHero('title', v)}
@@ -360,7 +360,7 @@ export default function AppearancePreview() {
         >
         <div className="container mx-auto">
           <div className="max-w-2xl mb-12">
-            <h2 className="text-5xl font-bold mb-4" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 break-words" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>
               <EditableText
                 value={data.highlights.title}
                 onSave={v => saveHighlights('title', v)}
@@ -437,7 +437,7 @@ export default function AppearancePreview() {
         >
         <div className="container mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-5xl font-bold mb-4" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 break-words" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>
               <EditableText
                 value={data.promo.title}
                 onSave={v => save({promo: {...data!.promo, title: v}})}
@@ -474,7 +474,7 @@ export default function AppearancePreview() {
         <div className="container mx-auto max-w-6xl">
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="space-y-6">
-              <h2 className="text-5xl font-bold" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold break-words" style={{color: 'var(--dc-text, ' + data.colors.primary + ')'}}>
                 <EditableText
                   value={data.about.title}
                   onSave={v => saveAbout('title', v)}
@@ -491,7 +491,7 @@ export default function AppearancePreview() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
                 {data.about.stats.map((stat, i) => (
                   <div
                     key={i}

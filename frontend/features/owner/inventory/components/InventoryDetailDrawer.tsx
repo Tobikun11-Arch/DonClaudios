@@ -254,7 +254,13 @@ export function InventoryDetailDrawer({
                     </span>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-3 gap-2">
+                  {/*
+                    Three icon+text actions in three fixed columns gave ~88px
+                    per cell at 320px, while `Record spoilage` needs ~147px, so
+                    the third button was clipped by the drawer's own width.
+                    They stack below `sm` instead.
+                  */}
+                  <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
                     <Button
                       onClick={() => onRestock(product)}
                       className="bg-[#2d4a35] text-white hover:bg-[#24402c]"

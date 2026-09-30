@@ -72,7 +72,14 @@ export function IngredientLibraryBanner({
                     icon: {item.iconKey}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                {/*
+                    `flex-wrap` replaces `shrink-0`: the icon select plus
+                    Approve and Delete need ~289px, but only ~264px is
+                    available inside the row padding at 320px, and the banner's
+                    `overflow-hidden` clipped the Delete button with no way to
+                    scroll to it.
+                  */}
+                <div className="flex flex-wrap items-center gap-2">
                   <div className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2 py-1">
                     <PickIcon
                       className="h-4 w-4 text-gray-600"
