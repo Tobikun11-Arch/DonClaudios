@@ -4,47 +4,83 @@ import {useCallback, useMemo, useState} from 'react';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {toast} from 'sonner';
 import {listAllOrders, updateOrderStatus} from '@/lib/api/orderApi';
+import type {ListAllOrdersParams} from '@/lib/api/orderApi';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
 import type {ReportRange} from '@/lib/types/report';
 
+export const OWNER_ORDERS_PAGE_SIZE = 10;
 export const ownerOrdersKey = ['owner', 'orders'] as const;
 
-/** Today in Manila as `YYYY-MM-DD`; order `createdAt` is bucketed the same way. */
-function manilaDayKey(iso: string) {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Manila',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).format(new Date(iso));
-}
-
-function isWithinRange(createdAt: string | undefined, range: ReportRange) {
-  if (!createdAt) return false;
-  if (range.preset !== 'custom') return true;
-  const key = manilaDayKey(createdAt);
-  if (range.from && key < range.from) return false;
-  if (range.to && key > range.to) return false;
-  return true;
-}
-
+/**
+ * Orders are paginated server-side (`/orders/all?page&limit&status&type`).
+ * Status, order type and the date range are resolved by the backend so the
+ * page count and revenue stay consistent with the visible rows.
+ *
+ * Searching is intentionally different: you cannot paginate a text search that
+ * runs on fields the server does not index, so when a search term is present we
+ * fetch the whole (already status/type/range filtered) set in one page and let
+ * the client filter it. Once the search clears we return to bounded pages.
+ */
 export function useOwnerOrders(range: ReportRange) {
   const queryClient = useQueryClient();
+  const filters = useOrderFilters();
+  const [page, setPage] = useState(1);
+
+  const searching = filters.search.trim().length > 0;
+
+  // Resets to the first page when a filter or the date range changes. This is a
+  // render-time adjustment (React's sanctioned replacement for an effect), so
+  // React discards the in-progress render and commits with page 1 + the new
+  // params — no cascading fetch, no ref, no effect.
+  const filterKey = `${filters.status}|${filters.type}|${filters.search}|${range.preset}|${range.from ?? ''}|${range.to ?? ''}`;
+  const [appliedFilterKey, setAppliedFilterKey] = useState(filterKey);
+  if (appliedFilterKey !== filterKey) {
+    setAppliedFilterKey(filterKey);
+    setPage(1);
+  }
+
+  const params = useMemo<ListAllOrdersParams>(() => {
+    const next: ListAllOrdersParams = {
+      status: filters.status,
+      type: filters.type as 'pickup' | 'delivery' | 'reservation',
+      preset: range.preset,
+      withCounts: true
+    };
+    if (range.preset === 'custom') {
+      next.from = range.from;
+      next.to = range.to;
+    }
+    if (!searching) {
+      next.page = page;
+      next.limit = OWNER_ORDERS_PAGE_SIZE;
+    }
+    return next;
+  }, [filters.status, filters.type, searching, page, range]);
 
   const query = useQuery({
-    queryKey: ownerOrdersKey,
-    queryFn: listAllOrders,
+    queryKey: ['owner', 'orders', params],
+    queryFn: () => listAllOrders(params),
     staleTime: 20_000,
-    gcTime: 5 * 60 * 1000
+    gcTime: 5 * 60 * 1000,
+    // Keep the previous page's rows on screen ("lazy loading") while the next
+    // page loads, instead of flashing a skeleton on every navigation.
+    placeholderData: data => data
   });
 
-  // Client-side narrowing keeps the list instant and avoids a second request;
-  // `/orders/all` is already scoped to the owner and returns the full history.
-  const orders = useMemo(() => {
-    const all = query.data?.orders ?? [];
-    return all.filter(order => isWithinRange(order.createdAt, range));
-  }, [query.data?.orders, range]);
+  const orders = useMemo(
+    () => filterOrders(query.data?.orders ?? [], filters),
+    [query.data?.orders, filters]
+  );
+
+  const totalPages = searching ? 1 : Math.max(1, query.data?.totalPages ?? 1);
+
+  // Never strand the user on a page that no longer exists (e.g. a status update
+  // elsewhere shrank the results). Same render-time pattern as the filter reset.
+  if (!searching && page > totalPages) {
+    setPage(totalPages);
+  }
+  const effectivePage = Math.min(page, totalPages);
 
   const invalidate = useCallback(() => {
     queryClient.invalidateQueries({queryKey: ownerOrdersKey});
@@ -65,8 +101,19 @@ export function useOwnerOrders(range: ReportRange) {
   });
 
   return {
+    filters,
     orders,
+    page: effectivePage,
+    totalPages,
+    total: query.data?.total ?? 0,
+    revenue: query.data?.revenue ?? 0,
+    statusCounts: query.data?.counts?.status ?? {},
+    typeCounts: query.data?.counts?.type ?? {},
+    isSearching: searching,
+    setPage,
     isLoading: query.isLoading,
+    isPending: query.isPending,
+    isFetching: query.isFetching,
     isError: query.isError,
     error: query.error,
     refresh: invalidate,
@@ -75,15 +122,20 @@ export function useOwnerOrders(range: ReportRange) {
   };
 }
 
-/** Search helper shared by the table and the mobile card list. */
+/**
+ * Client-side filtering shared by the table and the mobile card list. The
+ * backend already narrows by status/type/range, so this mainly applies the text
+ * search (which also covers item names and the payment method — fields the
+ * order endpoint cannot search cheaply).
+ */
 export function filterOrders(
   orders: OrderHistoryEntry[],
   filters: {status: string; type: string; search: string}
 ) {
   const needle = filters.search.trim().toLowerCase();
   return orders.filter(order => {
-    if (filters.status !== 'all' && order.orderStatus !== filters.status) return false;
-    if (filters.type !== 'all' && order.orderType !== filters.type) return false;
+    if (order.orderStatus !== filters.status) return false;
+    if (order.orderType !== filters.type) return false;
     if (!needle) return true;
 
     const customer = order.customerName ?? [
@@ -119,8 +171,8 @@ export function orderCustomerName(order: OrderHistoryEntry) {
 }
 
 export function useOrderFilters() {
-  const [status, setStatus] = useState('all');
-  const [type, setType] = useState('all');
+  const [status, setStatus] = useState('pending');
+  const [type, setType] = useState('delivery');
   const [search, setSearch] = useState('');
   return {status, setStatus, type, setType, search, setSearch};
 }

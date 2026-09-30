@@ -132,6 +132,8 @@ const OrderSchema = new Schema<OrderDocument>(
 OrderSchema.index({customerId: 1, createdAt: -1});
 OrderSchema.index({orderStatus: 1, createdAt: -1});
 OrderSchema.index({orderStatus: 1, overdueNotifiedAt: 1});
+OrderSchema.index({orderSource: 1, createdAt: -1});
+OrderSchema.index({orderType: 1, createdAt: -1});
 
 export const OrderModel = mongoose.model<OrderDocument>(
   'Order',

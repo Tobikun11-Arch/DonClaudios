@@ -1,24 +1,18 @@
 'use client';
 
 import {useMemo, useState} from 'react';
-import {Search} from 'lucide-react';
+import {ChevronDown, ChevronLeft, ChevronRight, Loader2, Search} from 'lucide-react';
 import {cn} from '@/lib/utils';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
-import {ReportRangePicker, rangeLabel} from '@/features/owner/dashboard/components/reports/ReportRangePicker';
+import {ReportRangePicker} from '@/features/owner/dashboard/components/reports/ReportRangePicker';
 import {ReportExportBar} from '@/features/owner/dashboard/components/reports/ReportExportBar';
 import {
   formatNumber,
   formatPeso
 } from '@/features/owner/dashboard/components/reports/reportPrimitives';
-import {OrderStatusPill, OrderTypePill, ORDER_STATUSES} from './OrderPills';
+import {OrderStatusPill, OrderTypePill, ORDER_STATUSES, formatStatus} from './OrderPills';
 import {OrderDetailDrawer} from './OrderDetailDrawer';
-import {
-  filterOrders,
-  itemName,
-  orderCustomerName,
-  useOrderFilters,
-  useOwnerOrders
-} from '../hooks/useOwnerOrders';
+import {itemName, orderCustomerName, useOwnerOrders, OWNER_ORDERS_PAGE_SIZE} from '../hooks/useOwnerOrders';
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
 import type {ReportRange} from '@/lib/types/report';
 
@@ -54,20 +48,218 @@ function orderRow(order: OrderHistoryEntry) {
   };
 }
 
+/** Compact page-number window: 1 … 4 5 6 … 20. */
+function pageWindow(current: number, total: number): Array<number | '⋯'> {
+  if (total <= 7) return Array.from({length: total}, (_, i) => i + 1);
+  const pages: Array<number | '⋯'> = [];
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  pages.push(1);
+  if (start > 2) pages.push('⋯');
+  for (let p = start; p <= end; p++) pages.push(p);
+  if (end < total - 1) pages.push('⋯');
+  pages.push(total);
+  return pages;
+}
+
+/** Lazy-loading skeleton of the desktop table so the layout doesn't jump. */
+function OrdersTableSkeleton({rows = 6}: {rows?: number}) {
+  return (
+    <div className="hidden overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] lg:block">
+      <table className="w-full">
+        <thead>
+          <tr className="border-b border-[#E5E7EB] bg-[#F7FAF6]">
+            {['Order', 'Customer', 'Type', 'Status', 'Items', 'Total', ''].map(header => (
+              <th
+                key={header}
+                className={cn(
+                  'px-4 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[#6B7280]',
+                  header === 'Total' || header === '' ? 'text-right' : 'text-left'
+                )}
+              >
+                {header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({length: rows}).map((_, i) => (
+            <tr key={i} className="border-b border-[#E5E7EB] last:border-0">
+              <td className="px-4 py-3.5">
+                <div className="h-3.5 w-24 animate-pulse rounded bg-gray-100" />
+              </td>
+              <td className="px-4 py-3.5">
+                <div className="h-3.5 w-32 animate-pulse rounded bg-gray-100" />
+              </td>
+              <td className="px-4 py-3.5">
+                <div className="h-5 w-16 animate-pulse rounded-md bg-gray-100" />
+              </td>
+              <td className="px-4 py-3.5">
+                <div className="h-5 w-20 animate-pulse rounded-full bg-gray-100" />
+              </td>
+              <td className="px-4 py-3.5">
+                <div className="h-3.5 w-12 animate-pulse rounded bg-gray-100" />
+              </td>
+              <td className="px-4 py-3.5 text-right">
+                <div className="ml-auto h-3.5 w-16 animate-pulse rounded bg-gray-100" />
+              </td>
+              <td className="px-4 py-3.5 text-right">
+                <div className="ml-auto h-3.5 w-8 animate-pulse rounded bg-gray-100" />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function OrdersCardsSkeleton({rows = 4}: {rows?: number}) {
+  return (
+    <div className="space-y-2.5 lg:hidden">
+      {Array.from({length: rows}).map((_, i) => (
+        <div
+          key={i}
+          className="rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="h-3.5 w-24 animate-pulse rounded bg-gray-100" />
+              <div className="h-3 w-32 animate-pulse rounded bg-gray-100" />
+              <div className="h-3 w-44 animate-pulse rounded bg-gray-100" />
+            </div>
+            <div className="h-4 w-16 animate-pulse rounded bg-gray-100" />
+          </div>
+          <div className="mt-3 flex gap-1.5">
+            <div className="h-5 w-20 animate-pulse rounded-full bg-gray-100" />
+            <div className="h-5 w-16 animate-pulse rounded-md bg-gray-100" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function OrdersPagination({
+  page,
+  totalPages,
+  total,
+  onPageChange,
+  isFetching
+}: {
+  page: number;
+  totalPages: number;
+  total: number;
+  onPageChange: (page: number) => void;
+  isFetching: boolean;
+}) {
+  const from = (page - 1) * OWNER_ORDERS_PAGE_SIZE + 1;
+  const to = Math.min(page * OWNER_ORDERS_PAGE_SIZE, total);
+  const navClass = (active: boolean) =>
+    cn(
+      'flex h-8 min-w-8 items-center justify-center rounded-lg border px-2 text-xs font-semibold transition-colors',
+      active
+        ? 'border-[#2d4a35] bg-[#2d4a35] text-white'
+        : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+    );
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <p className="text-[0.75rem] text-[#6B7280]">
+        {isFetching ? (
+          <span className="inline-flex items-center gap-1.5">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-[#2d4a35]" />
+            Loading page {page}…
+          </span>
+        ) : (
+          <>
+            Showing{' '}
+            <span className="font-semibold text-[#1A1A1A]">
+              {formatNumber(from)}–{formatNumber(to)}
+            </span>{' '}
+            of <span className="font-semibold text-[#1A1A1A]">{formatNumber(total)}</span>
+          </>
+        )}
+      </p>
+
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => onPageChange(page - 1)}
+          disabled={page <= 1}
+          className={cn(navClass(false), 'disabled:cursor-not-allowed disabled:opacity-40')}
+          aria-label="Previous page"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+
+        {pageWindow(page, totalPages).map((entry, idx) =>
+          entry === '⋯' ? (
+            <span key={`ellipsis-${idx}`} className="px-1 text-xs text-gray-400">
+              ⋯
+            </span>
+          ) : (
+            <button
+              key={entry}
+              type="button"
+              onClick={() => onPageChange(entry)}
+              aria-current={entry === page ? 'page' : undefined}
+              className={navClass(entry === page)}
+            >
+              {entry}
+            </button>
+          )
+        )}
+
+        <button
+          type="button"
+          onClick={() => onPageChange(page + 1)}
+          disabled={page >= totalPages}
+          className={cn(navClass(false), 'disabled:cursor-not-allowed disabled:opacity-40')}
+          aria-label="Next page"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function OwnerOrdersPage() {
   const [range, setRange] = useState<ReportRange>({preset: '7d'});
-  const filters = useOrderFilters();
   const [selected, setSelected] = useState<OrderHistoryEntry | null>(null);
 
-  const {orders, isLoading, isError, error, updateStatus, isUpdatingStatus} = useOwnerOrders(range);
+  const {
+    filters,
+    orders,
+    page,
+    totalPages,
+    total,
+    revenue,
+    statusCounts,
+    typeCounts,
+    isSearching,
+    setPage,
+    isPending,
+    isFetching,
+    isError,
+    error,
+    updateStatus,
+    isUpdatingStatus
+  } = useOwnerOrders(range);
 
-  const visible = useMemo(() => filterOrders(orders, filters), [orders, filters]);
-
+  const visible = orders;
   const csvRows = useMemo(() => visible.map(orderRow), [visible]);
 
-  const revenue = visible
-    .filter(o => o.orderStatus !== 'cancelled')
-    .reduce((sum, o) => sum + o.totalAmount, 0);
+  // While a request is in flight we render skeleton rows, never the empty state,
+  // so there's no "No orders match these filters" flash before data lands.
+  const showSkeleton = visible.length === 0 && (isPending || isFetching);
+  const count = isSearching ? visible.length : total;
+  const shownRevenue = isSearching
+    ? visible
+        .filter(o => o.orderStatus !== 'cancelled')
+        .reduce((sum, o) => sum + o.totalAmount, 0)
+    : revenue;
 
   return (
     <div className="space-y-4">
@@ -75,9 +267,9 @@ export default function OwnerOrdersPage() {
         <div>
           <h1 className="text-[1.5rem] font-bold text-[#1A1A1A]">Orders</h1>
           <p className="text-[0.875rem] text-[#6B7280]">
-            {isLoading
+            {showSkeleton
               ? 'Loading orders…'
-              : `${formatNumber(visible.length)} order${visible.length === 1 ? '' : 's'} · ${formatPeso(revenue, revenue % 1 !== 0)} revenue`}
+              : `${formatNumber(count)} order${count === 1 ? '' : 's'} · ${formatPeso(shownRevenue, shownRevenue % 1 !== 0)} revenue`}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -91,8 +283,8 @@ export default function OwnerOrdersPage() {
         </div>
       </div>
 
-      <div className="space-y-3">
-        <div className="relative sm:max-w-xs">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 sm:max-w-xs">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
             type="search"
@@ -104,87 +296,87 @@ export default function OwnerOrdersPage() {
           />
         </div>
 
-        <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide">
-          {[{value: 'all', label: 'All'}, ...ORDER_STATUSES.map(s => ({value: s, label: s.replace(/_/g, ' ')}))].map(
-            option => {
-              const active = filters.status === option.value;
-              const count =
-                option.value === 'all'
-                  ? orders.length
-                  : orders.filter(o => o.orderStatus === option.value).length;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => filters.setStatus(option.value)}
-                  className={cn(
-                    'flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold capitalize transition-colors',
-                    active
-                      ? 'border-[#2d4a35] bg-[#2d4a35] text-white'
-                      : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
-                  )}
-                >
-                  {option.label}
-                  <span
-                    className={cn(
-                      'flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold',
-                      active ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-400'
-                    )}
-                  >
-                    {count}
-                  </span>
-                </button>
-              );
-            }
-          )}
+        <div className="relative shrink-0">
+          <select
+            id="order-status-filter"
+            value={filters.status}
+            onChange={e => filters.setStatus(e.target.value)}
+            aria-label="Filter by status"
+            className="appearance-none rounded-full border border-gray-200 bg-white py-2 pl-4 pr-9 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
+          >
+            {ORDER_STATUSES.map(status => (
+              <option key={status} value={status}>
+                {formatStatus(status)} ({statusCounts[status] ?? 0})
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         </div>
 
-        <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide">
-          {[
-            {value: 'all', label: 'All types'},
-            {value: 'pickup', label: 'Pickup'},
-            {value: 'delivery', label: 'Delivery'},
-            {value: 'reservation', label: 'Reservation'}
-          ].map(option => {
-            const active = filters.type === option.value;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => filters.setType(option.value)}
-                className={cn(
-                  'shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors',
-                  active
-                    ? 'border-[#2d4a35] bg-[#E8F0E3] text-[#2d4a35]'
-                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-                )}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {isError ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-8 text-center text-sm text-red-600">
           {getFriendlyErrorMessage(error, 'Failed to load orders')}
         </div>
-      ) : isLoading ? (
-        <div className="rounded-xl border border-[#E5E7EB] bg-white px-5 py-16 text-center text-sm text-[#6B7280]">
-          Loading orders…
-        </div>
+      ) : showSkeleton ? (
+        <>
+          <OrdersTableSkeleton />
+          <OrdersCardsSkeleton />
+        </>
       ) : visible.length === 0 ? (
-        <div className="rounded-xl border border-[#E5E7EB] bg-white px-5 py-16 text-center">
-          <p className="text-sm font-medium text-[#1A1A1A]">No orders match these filters</p>
-          <p className="mt-1 text-[0.8rem] text-[#6B7280]">
-            {rangeLabel(range)} · try a wider date range or clear the filters.
-          </p>
-        </div>
+        <>
+          {/* Desktop: keep the table header, show the character where the rows go */}
+          <div className="hidden overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] lg:block">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[#E5E7EB] bg-[#F7FAF6]">
+                  {['Order', 'Customer', 'Type', 'Status', 'Items', 'Total', ''].map(header => (
+                    <th
+                      key={header}
+                      className={cn(
+                        'px-4 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[#6B7280]',
+                        header === 'Total' || header === '' ? 'text-right' : 'text-left'
+                      )}
+                    >
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colSpan={7} className="px-5 py-12">
+                    <div className="flex items-center justify-center">
+                      <img
+                        src="/assets/table/table_1.png"
+                        alt=""
+                        className="h-44 w-44 object-contain sm:h-52 sm:w-52"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          {/* Mobile: centered character */}
+          <div className="flex items-center justify-center rounded-xl border border-[#E5E7EB] bg-white px-5 py-12 lg:hidden">
+            <img
+              src="/assets/table/table_1.png"
+              alt=""
+              className="h-44 w-44 object-contain"
+            />
+          </div>
+        </>
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] lg:block">
+          <div
+            className={cn(
+              'hidden overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-opacity lg:block',
+              isFetching && 'opacity-60'
+            )}
+          >
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[#E5E7EB] bg-[#F7FAF6]">
@@ -250,7 +442,12 @@ export default function OwnerOrdersPage() {
           </div>
 
           {/* Mobile cards */}
-          <ul className="space-y-2.5 lg:hidden">
+          <ul
+            className={cn(
+              'space-y-2.5 transition-opacity lg:hidden',
+              isFetching && 'opacity-60'
+            )}
+          >
             {visible.map(order => {
               const units = (order.items ?? []).reduce((sum, item) => sum + item.quantity, 0);
               return (
@@ -286,6 +483,16 @@ export default function OwnerOrdersPage() {
               );
             })}
           </ul>
+
+          {!isSearching && totalPages > 1 && (
+            <OrdersPagination
+              page={page}
+              totalPages={totalPages}
+              total={total}
+              onPageChange={setPage}
+              isFetching={isFetching && !showSkeleton}
+            />
+          )}
         </>
       )}
 

@@ -18,6 +18,8 @@ import {
 import type {PaymentMethod} from '../models/Transaction.model';
 import type {OrderStatus, OrderDocument} from '../models/Order.model';
 import type {CashierDocument} from '../models/Cashier.model';
+import {resolveRange} from '../utils/dateRange';
+import type {ListAllOrdersQuery} from '../dtos/order.dto';
 
 async function notifyCashiersOfNewOrder(orderId: string, totalAmount: number) {
   try {
@@ -168,9 +170,55 @@ const STATUS_LABELS: Record<string, string> = {
 export const orderController = {
   async listAllOrders(req: Request, res: Response, next: NextFunction) {
     try {
-      const orders = (await orderRepository.listAll()).filter(
-        order => order.orderSource !== 'in-store'
-      );
+      const query = (req as Request & {validatedQuery?: ListAllOrdersQuery})
+        .validatedQuery ?? {};
+
+      // Filters, count and range are all resolved server-side so the page,
+      // total and revenue stay consistent and the expensive item/customer
+      // enrichment only touches the orders actually being returned. The cashier
+      // polls this endpoint with no params and still gets the full queue.
+      const hasRange =
+        query.preset !== undefined || query.from !== undefined || query.to !== undefined;
+      const range = hasRange
+        ? resolveRange({
+            preset: query.preset ?? (query.from && query.to ? 'custom' : '7d'),
+            from: query.from,
+            to: query.to
+          })
+        : undefined;
+
+      const filter: Record<string, unknown> = {orderSource: {$ne: 'in-store'}};
+      if (range) filter.createdAt = {$gte: range.from, $lt: range.to};
+      if (query.status) filter.orderStatus = query.status;
+      if (query.type) filter.orderType = query.type;
+
+      const paginated = query.page !== undefined && query.limit !== undefined;
+      const page = paginated ? query.page! : 1;
+      const limit = paginated ? query.limit! : 0;
+
+      const [total, revenueRows, orders, facet] = await Promise.all([
+        orderRepository.countByFilter(filter),
+        orderRepository.sumRevenue(filter),
+        orderRepository.listPaginated(filter, page, limit),
+        // Counts ignore the status/type filter so every dropdown option shows
+        // its own total. Only requested by the owner page (keeps the cashier
+        // poll lean). Base filter keeps the selected date range.
+        query.withCounts === 'true'
+          ? orderRepository.countsByFilter({orderSource: {$ne: 'in-store'}, ...(range ? {createdAt: {$gte: range.from, $lt: range.to}} : {})})
+          : Promise.resolve(undefined)
+      ]);
+      const totalPages = paginated ? Math.max(1, Math.ceil(total / limit)) : 1;
+      const counts = facet?.[0]
+        ? {
+            status: Object.fromEntries(
+              (facet[0].status ?? []).map(entry => [entry._id, entry.count])
+            ),
+            type: Object.fromEntries(
+              (facet[0].type ?? []).map(entry => [entry._id, entry.count])
+            )
+          }
+        : undefined;
+
       const orderIds = orders.map(order => String(order._id));
       const items = await orderItemRepository.listByOrderIds(orderIds);
       const itemsByOrderId = items.reduce<Record<string, typeof items>>(
@@ -230,7 +278,15 @@ export const orderController = {
         );
       }
 
-      res.json({orders: enriched});
+      res.json({
+        orders: enriched,
+        total,
+        page,
+        limit: paginated ? limit : total,
+        totalPages,
+        revenue: revenueRows[0]?.revenue ?? 0,
+        ...(counts ? {counts} : {})
+      });
     } catch (error) {
       next(error);
     }

@@ -1,6 +1,6 @@
 1. Reduce the card in Report it was  10 its so many and some of them is redundant to other tab 
 2. maybe we can remove the /backend/scripts in git 
-3. Orders tab - Instead of horizontal tab per status it must dropdown same with type of order they can in right part of search in the corner 
+
 
 
 Rewards/Loyalty System

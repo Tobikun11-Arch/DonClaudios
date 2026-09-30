@@ -1,5 +1,6 @@
 import {OrderModel, OrderDocument} from '../models/Order.model';
 import type {OrderStatus} from '../models/Order.model';
+import type {FilterQuery} from 'mongoose';
 
 export const orderRepository = {
   findById: (id: string) => OrderModel.findById(id).exec(),
@@ -8,6 +9,43 @@ export const orderRepository = {
     OrderModel.find({customerId}).sort({createdAt: -1}).exec(),
 
   listAll: () => OrderModel.find({}).sort({createdAt: -1}).exec(),
+
+  /**
+   * Bounded, newest-first page of orders. `limit` of 0 disables the limit so
+   * callers without `page`/`limit` (the cashier poll) get the full queue.
+   */
+  listPaginated: (filter: Record<string, unknown>, page: number, limit: number) => {
+    const query = OrderModel.find(filter as FilterQuery<OrderDocument>).sort({createdAt: -1});
+    if (limit > 0) {
+      query.skip((page - 1) * limit).limit(limit);
+    }
+    return query.exec();
+  },
+
+  countByFilter: (filter: Record<string, unknown>) =>
+    OrderModel.countDocuments(filter as FilterQuery<OrderDocument>).exec(),
+
+  /** Sum of `totalAmount` over the filter, excluding cancelled orders. */
+  sumRevenue: (filter: Record<string, unknown>) =>
+    OrderModel.aggregate<{_id: null; revenue: number}>([
+      {$match: {...filter, orderStatus: {$ne: 'cancelled'}}},
+      {$group: {_id: null, revenue: {$sum: '$totalAmount'}}}
+    ]).exec(),
+
+  /** Per-status and per-type counts over the (range-scoped) filter. */
+  countsByFilter: (filter: Record<string, unknown>) =>
+    OrderModel.aggregate<{
+      status: Array<{_id: string; count: number}>;
+      type: Array<{_id: string; count: number}>;
+    }>([
+      {$match: filter as FilterQuery<OrderDocument>},
+      {
+        $facet: {
+          status: [{$group: {_id: '$orderStatus', count: {$sum: 1}}}],
+          type: [{$group: {_id: '$orderType', count: {$sum: 1}}}]
+        }
+      }
+    ]).exec(),
 
   listByIds: (orderIds: string[]) =>
     OrderModel.find({_id: {$in: orderIds}}).exec(),
