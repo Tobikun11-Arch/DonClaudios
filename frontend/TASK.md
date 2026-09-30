@@ -13,6 +13,10 @@ Reservations
 
 
 
+
+
+
+
 Delivery / Pricing
 1. free if order is lechon around tanza but food theres 60-80 but it was lalamove delivery (idk if i will integrate this)
  
