@@ -116,32 +116,54 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
     >
       {children}
 
-      {/* Paint icon button */}
-      {(hovered || open) && (
-        <button
-          ref={btnRef}
-          onClick={toggle}
-          className={cn(
-            'absolute top-4 right-4 z-40 p-2.5 rounded-full shadow-lg transition-all duration-200',
-            open
-              ? 'bg-[#3c5e45] text-white scale-110'
-              : 'bg-white/90 text-[#3c5e45] hover:bg-white hover:scale-105'
-          )}
-          title={`Customize ${SECTION_LABELS[sectionId]} section`}
-        >
-          <Paintbrush className="w-4 h-4" />
-          {hasCustom && !open && (
-            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-white" />
-          )}
-        </button>
-      )}
+      {/*
+        Paint icon button.
+
+        Always in the DOM so touch devices can reach it: the panel used to be
+        gated on `hovered || open`, and a phone never fires hover, so the editor
+        was unreachable on mobile. Below `sm` it stays plainly visible; from
+        `sm` up it keeps the original hover-reveal so section previews stay
+        clean. Tailwind emits `opacity-*` in ascending order, so the
+        `sm:opacity-100` win over `sm:opacity-0` does not depend on class order.
+      */}
+      <button
+        ref={btnRef}
+        onClick={toggle}
+        className={cn(
+          'absolute top-4 right-4 z-40 p-2.5 rounded-full shadow-lg transition-all duration-200',
+          'opacity-100 sm:pointer-events-none sm:opacity-0',
+          hovered && 'sm:pointer-events-auto sm:opacity-100',
+          open
+            ? 'bg-[#3c5e45] text-white scale-110 sm:pointer-events-auto sm:opacity-100'
+            : 'bg-white/90 text-[#3c5e45] hover:bg-white hover:scale-105'
+        )}
+        title={`Customize ${SECTION_LABELS[sectionId]} section`}
+      >
+        <Paintbrush className="w-4 h-4" />
+        {hasCustom && !open && (
+          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-white" />
+        )}
+      </button>
 
       {/* Editor panel */}
       {open && (
-        <div
-          ref={panelRef}
-          className="absolute top-4 right-16 z-50 bg-white rounded-xl shadow-2xl border border-gray-200 w-72 overflow-hidden"
-        >
+        <>
+          <div
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+            className="fixed inset-0 z-[55] overscroll-contain bg-black/30 sm:hidden"
+          />
+          {/*
+            Bottom sheet below `sm`. The `absolute right-16 w-72` panel is fine
+            on a desktop section preview but overflowed the left edge on a
+            phone, where `overflow-x: hidden` clipped it unreachably.
+          */}
+          <div
+            ref={panelRef}
+            role="dialog"
+            aria-label={`Customize ${SECTION_LABELS[sectionId]} section`}
+            className="fixed inset-x-3 bottom-24 z-[60] max-h-[70vh] overflow-y-auto overscroll-contain rounded-xl border border-gray-200 bg-white shadow-2xl sm:absolute sm:bottom-auto sm:left-auto sm:right-16 sm:top-4 sm:z-50 sm:max-h-none sm:w-72 sm:overflow-y-visible sm:overscroll-auto"
+          >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
             <h4 className="text-sm font-bold text-gray-800">
@@ -308,7 +330,8 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
               OK
             </button>
           </div>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

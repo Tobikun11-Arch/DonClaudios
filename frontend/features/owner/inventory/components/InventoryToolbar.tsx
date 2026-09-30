@@ -4,6 +4,7 @@ import {useEffect, useRef, useState} from 'react';
 import {ChevronDown, Search} from 'lucide-react';
 import {Input} from '@/components/ui/input';
 import {cn} from '@/lib/utils';
+import {FilterPills} from '@/shared/components/FilterPills';
 import type {StockStatus} from '../utils/stockStatus';
 
 export const SORT_OPTIONS = [
@@ -79,7 +80,23 @@ export function InventoryDropdown({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-10 z-30 mt-1 w-56 overflow-hidden rounded-xl border border-gray-200 bg-white p-1 shadow-xl">
+        <>
+          <div
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+            className="fixed inset-0 z-[55] overscroll-contain bg-black/30 sm:hidden"
+          />
+          {/*
+            Below `sm` this is a bottom sheet. `absolute right-0 w-56` extended
+            leftward from a trigger that sits at the left of the toolbar, so it
+            hung off the left edge and `overflow-x: hidden` clipped it. Every
+            horizontal property is overridden at `sm` to rebuild the popover.
+          */}
+          <div
+            role="dialog"
+            aria-label={current}
+            className="fixed inset-x-3 bottom-24 z-[60] max-h-[70vh] overflow-y-auto overscroll-contain rounded-xl border border-gray-200 bg-white p-1 shadow-xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-10 sm:z-30 sm:mt-1 sm:max-h-none sm:w-56 sm:overflow-y-visible sm:overscroll-auto"
+          >
           <button
             type="button"
             onClick={() => {
@@ -113,7 +130,8 @@ export function InventoryDropdown({
               {option.label}
             </button>
           ))}
-        </div>
+          </div>
+        </>
       )}
     </div>
   );
@@ -173,42 +191,19 @@ export function InventoryToolbar({
         </div>
       </div>
 
-      <div className="flex gap-1.5 overflow-x-auto pb-0.5">
-        {STATUS_OPTIONS.map(opt => {
-          const active = statusFilter === opt.value;
-          const isProblem =
-            opt.value === 'low_stock' || opt.value === 'out_of_stock';
-          return (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => onStatusFilterChange(opt.value)}
-              className={cn(
-                'shrink-0 flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-colors',
-                active
-                  ? 'bg-[#2d4a35] text-white border-[#2d4a35]'
-                  : isProblem && counts[opt.value] > 0
-                    ? 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
-                    : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
-              )}
-            >
-              {opt.label}
-              <span
-                className={cn(
-                  'flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold',
-                  active
-                    ? 'bg-white/20 text-white'
-                    : counts[opt.value] > 0
-                      ? 'bg-[#e9f5ee] text-[#2d4a35]'
-                      : 'bg-gray-100 text-gray-400'
-                )}
-              >
-                {counts[opt.value]}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      {/*
+        Status chips overflowed a phone and forced sideways scrolling. Pills on
+        `sm`+, the shared dropdown below it, with counts folded into each label.
+      */}
+      <FilterPills
+        ariaLabel="Stock status"
+        items={STATUS_OPTIONS.map(opt => ({
+          key: opt.value,
+          label: `${opt.label} (${counts[opt.value]})`
+        }))}
+        value={statusFilter}
+        onChange={v => onStatusFilterChange(v as 'all' | StockStatus)}
+      />
     </div>
   );
 }

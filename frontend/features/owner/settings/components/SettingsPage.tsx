@@ -2,6 +2,7 @@
 
 import {useState} from 'react';
 import {cn} from '@/lib/utils';
+import {FilterSelect} from '@/shared/components/FilterPills';
 import OwnerNotificationBell from '@/features/owner/notifications/components/OwnerNotificationBell';
 import {ProfileTab} from './ProfileTab';
 import {SecurityTab} from './SecurityTab';
@@ -34,7 +35,12 @@ export function SettingsPage() {
         <OwnerNotificationBell />
       </div>
 
-      <div className="-mx-1 overflow-x-auto scrollbar-hide border-b border-gray-200 px-1 sm:mx-0 sm:px-0">
+      {/*
+        Below `sm` the five tab labels overflow a phone, and the row scrolled
+        sideways behind a hidden scrollbar — invisible but scrollable. Swap in
+        the shared dropdown there and keep the underline tabs from `sm` up.
+      */}
+      <div className="hidden overflow-x-auto border-b border-gray-200 sm:block">
         <div className="flex min-w-max gap-6">
           {TABS.map(tab => {
             const isActive = active === tab.id;
@@ -59,6 +65,14 @@ export function SettingsPage() {
           })}
         </div>
       </div>
+
+      <FilterSelect
+        className="sm:hidden"
+        ariaLabel="Settings section"
+        value={active}
+        onChange={v => setActive(v as TabId)}
+        options={TABS.map(tab => ({value: tab.id, label: tab.label}))}
+      />
 
       <div className="mt-6">
         {active === 'profile' && <ProfileTab />}
