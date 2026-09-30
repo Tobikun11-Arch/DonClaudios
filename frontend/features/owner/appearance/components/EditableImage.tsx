@@ -74,7 +74,7 @@ export default function EditableImage({
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className="pointer-events-auto flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/95 text-[#3c5e45] shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 font-semibold text-sm"
+          className="pointer-events-auto flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/95 text-[#3c5e45] shadow-lg opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity duration-200 font-semibold text-sm"
           title="Change image"
         >
           {uploading ? (
@@ -94,7 +94,7 @@ export default function EditableImage({
         <button
           type="button"
           onClick={() => onRemove?.()}
-          className="absolute top-2 right-2 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1.5 rounded-full bg-white/90 shadow text-gray-500 hover:text-red-600"
+          className="absolute top-2 right-2 z-30 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity duration-200 grid h-9 w-9 place-items-center rounded-full bg-white/90 shadow text-gray-500 hover:text-red-600"
           title="Reset to default"
         >
           <X className="w-4 h-4" />

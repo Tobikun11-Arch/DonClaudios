@@ -91,9 +91,9 @@ export function PromoCard({promo, onEdit, onDelete}: Props) {
       </div>
 
       <div className="p-4 space-y-2">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="font-extrabold text-gray-900 leading-tight">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="font-extrabold text-gray-900 leading-tight line-clamp-2 break-words">
               {promo.title}
             </p>
             <p className="text-xs text-gray-500 mt-0.5">{promoTypeLabel}</p>

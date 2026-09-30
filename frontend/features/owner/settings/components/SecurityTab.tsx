@@ -45,6 +45,7 @@ export function SecurityTab() {
 
   const changePasswordMutation = useChangePasswordMutation();
   const sessionsQuery = useSessionsQuery();
+  const sessions = sessionsQuery.data?.sessions ?? [];
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -153,35 +154,41 @@ export function SecurityTab() {
           </div>
         ) : (
           <div className="space-y-2">
-            {(sessionsQuery.data?.sessions ?? []).map((s, i) => (
+            {sessions.length === 0 && (
+              <p className="text-sm text-gray-500">
+                No other active sessions.
+              </p>
+            )}
+            {sessions.map((s, i) => (
               <div
                 key={i}
-                className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3"
+                className="flex flex-col gap-0.5 rounded-xl border border-gray-200 px-4 py-3 sm:flex-row sm:items-center sm:gap-3"
               >
-                <div className="w-9 h-9 rounded-full bg-[#e9f5ee] text-[#2d4a35] flex items-center justify-center shrink-0">
-                  <Monitor className="h-4 w-4" />
+                <div className="flex items-center gap-3 sm:contents">
+                  <div className="w-9 h-9 shrink-0 rounded-full bg-[#e9f5ee] text-[#2d4a35] flex items-center justify-center">
+                    <Monitor className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-gray-900">
+                      {s.device}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {s.location}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">
-                    {s.device}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">
-                    {s.location}
-                  </p>
-                </div>
-                <div className="text-right shrink-0">
+                {/*
+                  `shrink-0` on this timestamp left only 19px for the device and
+                  location column at 320px, crushing "This device" to a single
+                  character. It moves to its own line below `sm` instead.
+                */}
+                <div className="pl-12 text-left sm:pl-0 sm:text-right">
                   <p className="text-xs text-gray-400">
                     {new Date(s.lastActive).toLocaleString()}
                   </p>
                 </div>
               </div>
             ))}
-
-            <div className="pt-2 flex justify-end">
-              <Button type="button" variant="outline" size="sm">
-                Log out of other devices
-              </Button>
-            </div>
           </div>
         )}
       </div>

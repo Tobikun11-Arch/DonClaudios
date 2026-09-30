@@ -72,7 +72,7 @@ export function InventorySummaryCards({
   onMenu
 }: Props) {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <SummaryCard
         icon={Package}
         iconTile="bg-[#e9f5ee] text-[#2d4a35]"

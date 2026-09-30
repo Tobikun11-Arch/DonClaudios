@@ -2,7 +2,8 @@
 
 import {useEffect, useRef, useState} from 'react';
 import {useRouter} from 'next/navigation';
-import {Bell, BellRing, CheckCheck, Trash2, Mail, MailOpen} from 'lucide-react';
+import Link from 'next/link';
+import {Bell, BellRing, CheckCheck, Trash2, Mail, MailOpen, ChevronRight} from 'lucide-react';
 import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
 import {
@@ -129,7 +130,23 @@ export default function CustomerNotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-[120] w-80 sm:w-96 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
+        <>
+          <div
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+            className="fixed inset-0 z-[115] overscroll-contain bg-black/30 sm:hidden"
+          />
+          {/*
+            Bottom sheet below `sm`: the bell is flush right, so `absolute
+            right-0 w-80` grew leftward past the viewport on narrow phones and
+            `overflow-x: hidden` clipped it. Horizontal placement is rebuilt at
+            `sm` for the anchored popover.
+          */}
+          <div
+            role="dialog"
+            aria-label="Notifications"
+            className="fixed inset-x-3 bottom-24 z-[120] max-h-[70vh] overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 bg-white shadow-xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-12 sm:w-96 sm:max-h-none sm:overflow-y-visible sm:overscroll-auto"
+          >
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <div>
               <p className="text-sm font-bold text-gray-900">Notifications</p>
@@ -203,7 +220,24 @@ export default function CustomerNotificationBell() {
               ))
             )}
           </div>
+          {/*
+            The `@notification` parallel slot renders a full notifications page
+            at `?tab=notification`, but nothing in the app linked to it, so it
+            was unreachable UI. This is the entry point; it sits outside the
+            scrolling list so it stays reachable at every viewport size.
+          */}
+          <div className="shrink-0 border-t border-gray-100 px-4 py-2">
+            <Link
+              href="/customer/dashboard?tab=notification"
+              onClick={() => setOpen(false)}
+              className="flex min-h-11 items-center justify-center gap-1.5 rounded-lg text-sm font-semibold text-[#2d4a35] transition-colors hover:bg-gray-50"
+            >
+              View all notifications
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
+        </>
       )}
     </div>
   );

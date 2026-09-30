@@ -361,7 +361,7 @@ export default function InventoryPage() {
 
       <AttentionBanner items={attentionItems} />
 
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start min-w-0">
         <section className="min-w-0">
           <InventoryTable
             products={visibleProducts}

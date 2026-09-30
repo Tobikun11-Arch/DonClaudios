@@ -759,12 +759,35 @@ export default function CustomerCheckoutPage() {
                 </span>
               </div>
 
-              {checkoutButton}
-              {checkoutError ? (
-                <p className="text-center text-xs font-medium text-red-600">
-                  {checkoutError}
-                </p>
-              ) : null}
+              {/*
+                Below `lg` the checkout form is a single column and the primary
+                CTA ends up a full scroll below the fold. A sticky bottom bar
+                keeps the action in the thumb zone; at `lg` the order summary
+                card sits beside the form and the CTA stays in-flow inside it.
+              */}
+              <div className="lg:hidden sticky bottom-0 z-10 -mx-6 mb-6 border-t border-gray-100 bg-white px-6 py-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-gray-900">Total</span>
+                  <span className="text-2xl font-extrabold text-gray-900">
+                    ₱{total}.00
+                  </span>
+                </div>
+                {checkoutButton}
+                {checkoutError ? (
+                  <p className="text-center text-xs font-medium text-red-600">
+                    {checkoutError}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="hidden lg:block">
+                {checkoutButton}
+                {checkoutError ? (
+                  <p className="text-center text-xs font-medium text-red-600">
+                    {checkoutError}
+                  </p>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>

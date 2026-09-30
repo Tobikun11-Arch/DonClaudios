@@ -113,8 +113,13 @@ export default function DashboardLayout({
     router.replace('/sign-in');
   };
 
+  // Order history is part of the Order section, so both tabs keep `Order`
+  // highlighted. Without this, opening `?tab=history` left no nav item active
+  // in either the sidebar or the bottom bar. `history` is deliberately not its
+  // own `TABS` entry: the bottom bar's items are `min-w-15 px-3`, so a sixth
+  // entry would overflow at 320px.
   const isActive = (itemTab: string | null) =>
-    itemTab === null ? !tab : tab === itemTab;
+    itemTab === null ? !tab || tab === 'history' : tab === itemTab;
 
   const isStandalonePage =
     pathname.startsWith('/customer/dashboard/checkout') ||
@@ -272,13 +277,21 @@ export default function DashboardLayout({
         </div>
       </aside>
 
-      <main className="relative flex-1 overflow-y-auto bg-gray-50 pb-24 md:pb-0">
+      <main className="relative flex-1 overflow-y-auto overflow-x-hidden bg-gray-50">
         <div className="pointer-events-none absolute top-3 right-4 z-[110]">
           <div className="pointer-events-auto">
             <CustomerNotificationBell />
           </div>
         </div>
-        <div className="px-4 py-10">{content}</div>
+        {/*
+          The fixed bottom nav is `md:hidden`, so the clearance for it lives
+          here rather than on `main`, which otherwise stacked `pb-24` on top
+          of this element's own `py-10` for ~136px of dead space at the foot
+          of every phone page. `pt-16` clears the absolutely-positioned
+          notification bell, which spans y=12..52 on mobile and would
+          otherwise sit on top of the first line of page content.
+        */}
+        <div className="px-4 pt-16 pb-24 sm:px-6 sm:pt-10 md:pb-8">{content}</div>
       </main>
 
       <nav

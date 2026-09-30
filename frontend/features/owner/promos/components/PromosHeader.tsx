@@ -8,7 +8,7 @@ interface Props {
 
 export function PromosHeader({onCreate}: Props) {
   return (
-    <div className="flex items-start sm:items-center justify-between gap-4">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-2xl bg-[#e9f5ee] text-[#2d4a35] flex items-center justify-center">
           <Tag className="h-5 w-5" />

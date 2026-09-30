@@ -66,8 +66,11 @@ function Field({
   );
 }
 
+// Matches `components/ui/input.tsx`: `text-base md:text-sm` keeps phone form
+// text at 16px (so iOS does not zoom on focus) and lines up with the `Input`
+// rendered directly beside these selects, which used to look smaller.
 const selectClass =
-  'h-9 w-full rounded-md border border-input bg-transparent px-2.5 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50';
+  'h-10 w-full rounded-md border border-input bg-transparent px-2.5 text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 md:text-sm';
 
 function CategoryImagePicker({
   preview,
