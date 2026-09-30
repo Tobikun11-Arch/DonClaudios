@@ -4,8 +4,6 @@ import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {
-  CATEGORY_TYPE_LABELS,
-  STOCK_UNIT_HINTS,
   getCategoryByName,
   isCateringCategory,
   stockUnitLabel
@@ -189,10 +187,7 @@ export function ProductFormModal({
               )}
             </select>
             {!categoriesLoading && selectedCategory && (
-              <p className="text-xs text-gray-500">
-                {CATEGORY_TYPE_LABELS[selectedCategory.type]} · stock tracked
-                in {STOCK_UNIT_HINTS[selectedCategory.stockUnit]}
-              </p>
+              <p className="text-xs text-gray-500 hidden" />
             )}
             {legacyCategory && (
               <p className="text-xs text-amber-700">
@@ -232,13 +227,7 @@ export function ProductFormModal({
                       : 'unit'}
               </span>
             </div>
-            <p className="text-xs text-gray-500">
-              {selectedCategory
-                ? `Unit is locked to ${STOCK_UNIT_HINTS[selectedCategory.stockUnit]} for "${selectedCategory.name}".`
-                : legacyCategory
-                  ? 'This legacy category has no unit. Reassign above to fix stock units.'
-                  : 'Choose a category to lock the stock unit.'}
-            </p>
+            <p className="text-xs text-gray-500 hidden" />
           </div>
         </div>
 
@@ -280,12 +269,7 @@ export function ProductFormModal({
           />
         </div>
 
-        {bulk ? (
-          <div className="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3 text-xs text-gray-500">
-            Ingredient and allergen tags are skipped for catering / by-weight
-            items.
-          </div>
-        ) : (
+        {bulk ? null : (
           <>
             <div className="space-y-1.5">
               <Label>Ingredients</Label>
