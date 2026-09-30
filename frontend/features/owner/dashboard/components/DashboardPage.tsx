@@ -74,7 +74,7 @@ function DashboardPageContent() {
           <div className="flex gap-1 rounded-full border border-gray-200 bg-white p-0.5">
             {(
               [
-                {key: 'overview', label: 'At a glance', icon: LayoutGrid},
+                {key: 'overview', label: 'Home', icon: LayoutGrid},
                 {key: 'reports', label: 'Reports', icon: BarChart3}
               ] as const
             ).map(item => {

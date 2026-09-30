@@ -100,21 +100,6 @@ export function ReportExportBar({
 
       <button
         type="button"
-        onClick={handleCsv}
-        disabled={!canExportCsv || busy !== null}
-        className={buttonClass(!canExportCsv || busy !== null)}
-        title={canExportCsv ? 'Download the visible rows as CSV' : 'No tabular data to export'}
-      >
-        {busy === 'csv' ? (
-          <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-        ) : (
-          <FileSpreadsheet className="h-4 w-4 shrink-0" />
-        )}
-        <span className="hidden sm:inline">CSV</span>
-      </button>
-
-      <button
-        type="button"
         onClick={() => window.print()}
         className={buttonClass(false)}
         title="Print this view"
