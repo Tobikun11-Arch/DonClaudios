@@ -1,8 +1,3 @@
-1. Reduce the card in Report it was  10 its so many and some of them is redundant to other tab 
-2. maybe we can remove the /backend/scripts in git 
-
-
-
 Rewards/Loyalty System
 1. Finalize a rewards system design: points based on amount spent (not fixed items like "whole lechon"), similar to Starbucks' model — needs to avoid making the business lose money.
 Make points-per-peso ratio editable/configurable in admin settings (not hardcoded).

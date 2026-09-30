@@ -12,7 +12,7 @@ import type {ReportPreset, ReportRange} from '@/lib/types/report';
  * them straight through as `YYYY-MM-DD` so the backend's Asia/Manila bucketing
  * is the single source of truth.
  */
-function manilaToday() {
+export function manilaToday() {
   // `en-CA` formats as YYYY-MM-DD, which is exactly the wire format we need.
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Manila',

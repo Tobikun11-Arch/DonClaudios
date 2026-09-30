@@ -1,18 +1,17 @@
 'use client';
 
-import {useMemo, useState} from 'react';
+import {useState} from 'react';
 import {ChevronDown, ChevronLeft, ChevronRight, Loader2, Search} from 'lucide-react';
 import {cn} from '@/lib/utils';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
-import {ReportRangePicker} from '@/features/owner/dashboard/components/reports/ReportRangePicker';
-import {ReportExportBar} from '@/features/owner/dashboard/components/reports/ReportExportBar';
 import {
   formatNumber,
   formatPeso
 } from '@/features/owner/dashboard/components/reports/reportPrimitives';
 import {OrderStatusPill, OrderTypePill, ORDER_STATUSES, formatStatus} from './OrderPills';
 import {OrderDetailDrawer} from './OrderDetailDrawer';
-import {itemName, orderCustomerName, useOwnerOrders, OWNER_ORDERS_PAGE_SIZE} from '../hooks/useOwnerOrders';
+import {DownloadOrdersReport} from './DownloadOrdersReport';
+import {orderCustomerName, useOwnerOrders, OWNER_ORDERS_PAGE_SIZE} from '../hooks/useOwnerOrders';
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
 import type {ReportRange} from '@/lib/types/report';
 
@@ -25,27 +24,6 @@ function formatDateTime(iso?: string) {
     hour: 'numeric',
     minute: '2-digit'
   });
-}
-
-const CASH_COLUMNS = [
-  {header: 'Order', value: (r: Record<string, string | number>) => r.id},
-  {header: 'Customer', value: (r: Record<string, string | number>) => r.customer},
-  {header: 'Type', value: (r: Record<string, string | number>) => r.type},
-  {header: 'Status', value: (r: Record<string, string | number>) => r.status},
-  {header: 'Items', value: (r: Record<string, string | number>) => r.items},
-  {header: 'Total', value: (r: Record<string, string | number>) => r.total}
-] as const;
-
-function orderRow(order: OrderHistoryEntry) {
-  const items = order.items ?? [];
-  return {
-    id: order._id,
-    customer: orderCustomerName(order),
-    type: order.orderType,
-    status: order.orderStatus,
-    items: items.map(item => `${item.quantity}x ${itemName(item) || 'Removed product'}`).join('; '),
-    total: order.totalAmount
-  };
 }
 
 /** Compact page-number window: 1 … 4 5 6 … 20. */
@@ -226,7 +204,7 @@ function OrdersPagination({
 }
 
 export default function OwnerOrdersPage() {
-  const [range, setRange] = useState<ReportRange>({preset: '7d'});
+  const [range] = useState<ReportRange>({preset: '7d'});
   const [selected, setSelected] = useState<OrderHistoryEntry | null>(null);
 
   const {
@@ -237,7 +215,6 @@ export default function OwnerOrdersPage() {
     total,
     revenue,
     statusCounts,
-    typeCounts,
     isSearching,
     setPage,
     isPending,
@@ -249,7 +226,6 @@ export default function OwnerOrdersPage() {
   } = useOwnerOrders(range);
 
   const visible = orders;
-  const csvRows = useMemo(() => visible.map(orderRow), [visible]);
 
   // While a request is in flight we render skeleton rows, never the empty state,
   // so there's no "No orders match these filters" flash before data lands.
@@ -272,14 +248,8 @@ export default function OwnerOrdersPage() {
               : `${formatNumber(count)} order${count === 1 ? '' : 's'} · ${formatPeso(shownRevenue, shownRevenue % 1 !== 0)} revenue`}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <ReportRangePicker value={range} onChange={setRange} />
-          <ReportExportBar
-            view="sales"
-            range={range}
-            rows={csvRows as Array<Record<string, string | number>>}
-            columns={CASH_COLUMNS as never}
-          />
+        <div className="flex shrink-0 items-center">
+          <DownloadOrdersReport />
         </div>
       </div>
 
