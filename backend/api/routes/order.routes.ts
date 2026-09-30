@@ -8,11 +8,12 @@ import {
   optionalAuth
 } from '../middleware/auth';
 import {ApiError} from '../utils/error';
-import {validate} from '../middleware/validation';
+import {validate, validateQuery} from '../middleware/validation';
 import {guestOtpLimiter} from '../middleware/rateLimit';
 import {
   guestOtpSendDto,
-  guestOtpVerifyDto
+  guestOtpVerifyDto,
+  listAllOrdersQueryDto
 } from '../dtos/order.dto';
 import type {Request, Response, NextFunction} from 'express';
 
@@ -57,7 +58,13 @@ router.post(
   optionalAuth,
   orderController.cancelOrder
 );
-router.get('/all', requireAuth, requireStaff, orderController.listAllOrders);
+router.get(
+  '/all',
+  requireAuth,
+  requireStaff,
+  validateQuery(listAllOrdersQueryDto),
+  orderController.listAllOrders
+);
 
 router.get(
   '/counter',

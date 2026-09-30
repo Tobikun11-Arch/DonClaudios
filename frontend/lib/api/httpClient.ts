@@ -20,7 +20,7 @@ const refreshClient = axios.create({
   }
 });
 
-function normalizeAxiosError(error: unknown): NormalizedApiError {
+async function normalizeAxiosError(error: unknown): Promise<NormalizedApiError> {
   const fallback: NormalizedApiError = {
     status: null,
     code: 'NETWORK_ERROR',
@@ -34,6 +34,32 @@ function normalizeAxiosError(error: unknown): NormalizedApiError {
   const status = axiosError.response?.status ?? null;
 
   const payload = axiosError.response?.data;
+
+  // Binary endpoints (e.g. the report PDF) receive their error body as a Blob.
+  // Without this, `payload.message` is undefined and the owner would only ever
+  // see a generic network message for a genuine 400/403/500.
+  if (typeof Blob !== 'undefined' && payload instanceof Blob) {
+    try {
+      const parsed = JSON.parse(await payload.text()) as ApiErrorPayload;
+      return {
+        status,
+        code: parsed.code ?? 'BLOB_REQUEST_FAILED',
+        message: parsed.message ?? axiosError.message ?? fallback.message,
+        details: parsed.details
+      };
+    } catch {
+      return {
+        status,
+        code: 'BLOB_REQUEST_FAILED',
+        message:
+          status && status >= 500
+            ? 'The server could not generate this file. Please try again.'
+            : 'The file could not be generated for this range.',
+        details: undefined
+      };
+    }
+  }
+
   if (payload && typeof payload === 'object') {
     const message = payload.message ?? axiosError.message ?? fallback.message;
     const code = payload.code ?? fallback.code;
@@ -83,7 +109,7 @@ export const httpClient = (() => {
     (response: AxiosResponse) => response,
     async (error: unknown) => {
       if (!axios.isAxiosError(error)) {
-        return Promise.reject(normalizeAxiosError(error));
+        return Promise.reject(await normalizeAxiosError(error));
       }
 
       const axiosError: AxiosError<ApiErrorPayload> = error;
@@ -113,11 +139,11 @@ export const httpClient = (() => {
           return client(originalConfig);
         } catch (refreshError) {
           // Reject here so your SignInPage catch runs
-          return Promise.reject(normalizeAxiosError(refreshError));
+          return Promise.reject(await normalizeAxiosError(refreshError));
         }
       }
 
-      return Promise.reject(normalizeAxiosError(axiosError));
+      return Promise.reject(await normalizeAxiosError(axiosError));
     }
   );
 

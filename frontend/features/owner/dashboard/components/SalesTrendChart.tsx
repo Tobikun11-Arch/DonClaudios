@@ -19,7 +19,7 @@ interface Props {
 
 interface CustomTooltipProps {
   active?: boolean;
-  payload?: Array<{value: number}>;
+  payload?: Array<{value: number; name?: string; dataKey?: string}>;
   label?: string;
 }
 
@@ -28,7 +28,12 @@ function CustomTooltip({active, payload, label}: CustomTooltipProps) {
   return (
     <div className="bg-[#1A1A1A] text-white text-xs rounded-lg px-3 py-2 shadow-lg">
       <p className="font-medium">{label}</p>
-      <p>Sales: ₱{payload[0].value.toLocaleString()}</p>
+      {payload.map(entry => (
+        <p key={entry.dataKey}>
+          {entry.dataKey === 'openRevenue' ? 'Still open' : 'Collected'}: ₱
+          {entry.value.toLocaleString()}
+        </p>
+      ))}
     </div>
   );
 }
@@ -41,7 +46,9 @@ export function SalesTrendChart({data, isLoading, isError}: Props) {
           <h3 className="text-[1rem] font-semibold text-[#1A1A1A]">
             Sales Trend (Last 7 Days)
           </h3>
-          <p className="text-[0.8rem] text-[#6B7280]">Daily sales performance</p>
+          <p className="text-[0.8rem] text-[#6B7280]">
+            Collected revenue, with still-open orders dashed
+          </p>
         </div>
       </div>
 
@@ -86,6 +93,14 @@ export function SalesTrendChart({data, isLoading, isError}: Props) {
               stroke="#4A7C35"
               strokeWidth={2}
               fill="url(#salesGradient)"
+            />
+            <Area
+              type="monotone"
+              dataKey="openRevenue"
+              stroke="#D4A843"
+              strokeWidth={1.5}
+              strokeDasharray="4 3"
+              fill="none"
             />
           </AreaChart>
         </ResponsiveContainer>

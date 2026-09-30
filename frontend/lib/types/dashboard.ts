@@ -7,13 +7,29 @@ export type StatCardData = {
   context?: string;
 };
 
+export type DashboardValueSplit = {
+  collected: number;
+  collectedOrders: number;
+  open: number;
+  openOrders: number;
+  placed: number;
+  stuckOrders: number;
+  stuckValue: number;
+  oldestStuckDays: number | null;
+  staleAfterDays: number;
+};
+
 export type DashboardSummaryResponse = {
   cards: StatCardData[];
+  valueSplit?: DashboardValueSplit;
 };
 
 export type SalesDay = {
   date: string;
   revenue: number;
+  orders?: number;
+  /** Value placed that day that is still unfulfilled. */
+  openRevenue?: number;
 };
 
 export type SalesTrendResponse = {

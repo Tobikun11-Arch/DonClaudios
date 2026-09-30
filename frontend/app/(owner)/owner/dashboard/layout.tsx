@@ -9,6 +9,7 @@ import {useState, useRef, useCallback, useEffect} from 'react';
 import {
   LayoutDashboard,
   Package,
+  ClipboardList,
   Archive,
   Tag,
   Palette,
@@ -29,6 +30,13 @@ const PRIMARY_TABS = [
     tab: null,
     icon: LayoutDashboard,
     href: '/owner/dashboard'
+  },
+  {
+    label: 'Orders',
+    mobileLabel: 'Orders',
+    tab: 'orders',
+    icon: ClipboardList,
+    href: '/owner/dashboard?tab=orders'
   },
   {
     label: 'Products',
@@ -78,6 +86,7 @@ const ALL_SIDEBAR_ITEMS = [...PRIMARY_TABS, ...DRAWER_ITEMS];
 type DashboardLayoutProps = {
   children: React.ReactNode;
   products?: React.ReactNode;
+  orders?: React.ReactNode;
   inventory?: React.ReactNode;
   promos?: React.ReactNode;
   cashiers?: React.ReactNode;
@@ -88,6 +97,7 @@ type DashboardLayoutProps = {
 export default function DashboardLayout({
   children,
   products,
+  orders,
   inventory,
   promos,
   cashiers,
@@ -131,6 +141,7 @@ export default function DashboardLayout({
 
   const slotByTab: Record<string, React.ReactNode | undefined> = {
     products,
+    orders,
     inventory,
     promos,
     cashiers,

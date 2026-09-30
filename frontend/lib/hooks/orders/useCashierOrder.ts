@@ -30,7 +30,7 @@ export function useOrderDetailQuery(orderId: string) {
 export function useAllOrdersQuery() {
   return useQuery({
     queryKey: allOrdersQueryKey,
-    queryFn: listAllOrders,
+    queryFn: () => listAllOrders(),
     refetchOnWindowFocus: false,
     refetchInterval: 5000,
     refetchIntervalInBackground: true,

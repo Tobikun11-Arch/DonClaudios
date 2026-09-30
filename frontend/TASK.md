@@ -1,9 +1,5 @@
-Reporting
-Add a Sales/Reporting section to the dashboard (currently missing) — needs monthly reports.
-Make reports downloadable and printable.
-
 Rewards/Loyalty System
-Finalize a rewards system design: points based on amount spent (not fixed items like "whole lechon"), similar to Starbucks' model — needs to avoid making the business lose money.
+1. Finalize a rewards system design: points based on amount spent (not fixed items like "whole lechon"), similar to Starbucks' model — needs to avoid making the business lose money.
 Make points-per-peso ratio editable/configurable in admin settings (not hardcoded).
 Set up redemption flow: customer downloads/screenshots redemption confirmation, redeems in-store (delivery redemption also possible).
 Display reward benefits during account registration.

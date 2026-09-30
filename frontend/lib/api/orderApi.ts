@@ -1,4 +1,5 @@
 import {httpClient} from './httpClient';
+import type {ReportPreset} from '@/lib/types/report';
 
 export type GuestOrderItemInput = {
   productId: string;
@@ -106,6 +107,26 @@ export type OrderHistoryEntry = {
 
 export type ListOrdersResponse = {
   orders: OrderHistoryEntry[];
+  total?: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
+  revenue?: number;
+  counts?: {
+    status: Record<string, number>;
+    type: Record<string, number>;
+  };
+};
+
+export type ListAllOrdersParams = {
+  status?: string;
+  type?: 'pickup' | 'delivery' | 'reservation';
+  page?: number;
+  limit?: number;
+  preset?: ReportPreset | 'custom';
+  from?: string;
+  to?: string;
+  withCounts?: boolean;
 };
 
 export type OrderDetailResponse = {
@@ -166,8 +187,8 @@ export async function listMyOrders() {
   return res.data;
 }
 
-export async function listAllOrders() {
-  const res = await httpClient.get<ListOrdersResponse>('/orders/all');
+export async function listAllOrders(params?: ListAllOrdersParams) {
+  const res = await httpClient.get<ListOrdersResponse>('/orders/all', {params});
   return res.data;
 }
 
