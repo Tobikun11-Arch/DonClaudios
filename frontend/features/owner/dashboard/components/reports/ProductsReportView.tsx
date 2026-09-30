@@ -15,8 +15,18 @@ import {
   ReportStatTile
 } from './reportPrimitives';
 import {ReportBreakdownTable, breakdownToCsvRows} from './ReportBreakdownTable';
+import {ReportRowPicker} from './ReportRowPicker';
 import {ReportExportBar} from './ReportExportBar';
 import type {ReportRange} from '@/lib/types/report';
+
+type StockRow = {
+  key: string;
+  label: string;
+  stock?: number;
+  stockValue?: number;
+  units?: number;
+  revenue?: number;
+};
 
 function StockTable({
   rows,
@@ -27,23 +37,33 @@ function StockTable({
   emptyMessage
 }: {
   /** Only the two columns actually rendered are required per row. */
-  rows: Array<{
-    key: string;
-    label: string;
-    stock?: number;
-    stockValue?: number;
-    units?: number;
-    revenue?: number;
-  }>;
+  rows: StockRow[];
   valueKey: 'stockValue' | 'revenue';
   unitKey: 'stock' | 'units';
   isLoading: boolean;
   isError: boolean;
   emptyMessage: string;
 }) {
+  const unitLabel = unitKey === 'stock' ? 'In stock' : 'Units sold';
+  const valueLabel = valueKey === 'stockValue' ? 'Stock value' : 'Revenue';
+
   return (
     <ReportBody isLoading={isLoading} isError={isError} isEmpty={rows.length === 0} emptyMessage={emptyMessage} skeleton="rows">
-      <div className="overflow-x-auto">
+      <ReportRowPicker
+        options={rows.map(row => ({value: row.key, label: row.label}))}
+        metrics={option => {
+          const row = rows.find(entry => entry.key === option.value);
+          if (!row) return [];
+          const units = row[unitKey] ?? 0;
+          const value = row[valueKey] ?? 0;
+          return [
+            {label: unitLabel, value: formatNumber(units)},
+            {label: valueLabel, value: formatPeso(value, value % 1 !== 0)}
+          ];
+        }}
+        pickerLabel={`Select a product to see its ${valueLabel.toLowerCase()}`}
+      />
+      <div className="hidden overflow-x-auto sm:block">
         <table className="w-full min-w-[460px]">
           <thead>
             <tr className="border-t border-[#E5E7EB]">
@@ -51,10 +71,10 @@ function StockTable({
                 Product
               </th>
               <th className="px-4 py-2.5 text-right text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
-                {unitKey === 'stock' ? 'In stock' : 'Units sold'}
+                {unitLabel}
               </th>
               <th className="px-4 py-2.5 text-right text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
-                {valueKey === 'stockValue' ? 'Stock value' : 'Revenue'}
+                {valueLabel}
               </th>
             </tr>
           </thead>
@@ -70,6 +90,69 @@ function StockTable({
                 </td>
                 <td className="px-4 py-3 text-right text-[0.875rem] font-medium tabular-nums text-[#1A1A1A]">
                   {formatPeso(row[valueKey] ?? 0, (row[valueKey] ?? 0) % 1 !== 0)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </ReportBody>
+  );
+}
+
+function WastageTable({
+  rows,
+  isLoading,
+  isError
+}: {
+  rows: Array<{key: string; label: string; units: number; cost: number}>;
+  isLoading: boolean;
+  isError: boolean;
+}) {
+  return (
+    <ReportBody
+      isLoading={isLoading}
+      isError={isError}
+      isEmpty={rows.length === 0}
+      emptyMessage="No spoilage or stock adjustments recorded"
+      skeleton="rows"
+    >
+      <ReportRowPicker
+        options={rows.map(row => ({value: row.key, label: row.label}))}
+        metrics={option => {
+          const row = rows.find(entry => entry.key === option.value);
+          if (!row) return [];
+          return [
+            {label: 'Units lost', value: formatNumber(row.units), tone: 'danger' as const},
+            {label: 'Value at menu price', value: formatPeso(row.cost, row.cost % 1 !== 0)}
+          ];
+        }}
+        pickerLabel="Select a product to see what was lost"
+      />
+      <div className="hidden overflow-x-auto sm:block">
+        <table className="w-full min-w-[420px]">
+          <thead>
+            <tr className="border-t border-[#E5E7EB]">
+              <th className="px-4 py-2.5 text-left text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+                Product
+              </th>
+              <th className="px-4 py-2.5 text-right text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+                Units lost
+              </th>
+              <th className="px-4 py-2.5 text-right text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+                Value at menu price
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(row => (
+              <tr key={row.key} className="border-t border-[#E5E7EB] transition-colors hover:bg-[#E8F0E3]">
+                <td className="px-4 py-3 text-[0.875rem] font-medium text-[#1A1A1A]">{row.label}</td>
+                <td className="px-4 py-3 text-right text-[0.875rem] tabular-nums text-red-500">
+                  {formatNumber(row.units)}
+                </td>
+                <td className="px-4 py-3 text-right text-[0.875rem] font-medium tabular-nums text-[#1A1A1A]">
+                  {formatPeso(row.cost, row.cost % 1 !== 0)}
                 </td>
               </tr>
             ))}
@@ -219,44 +302,11 @@ export function ProductsReportView({range}: {range: ReportRange}) {
               : 'Spoilage and stock adjustments'
         }
       >
-        <ReportBody
+        <WastageTable
+          rows={health?.wastage.byProduct ?? []}
           isLoading={healthQuery.isLoading}
           isError={healthQuery.isError}
-          isEmpty={(health?.wastage.byProduct.length ?? 0) === 0}
-          emptyMessage="No spoilage or stock adjustments recorded"
-          skeleton="rows"
-        >
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[420px]">
-              <thead>
-                <tr className="border-t border-[#E5E7EB]">
-                  <th className="px-4 py-2.5 text-left text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
-                    Product
-                  </th>
-                  <th className="px-4 py-2.5 text-right text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
-                    Units lost
-                  </th>
-                  <th className="px-4 py-2.5 text-right text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
-                    Value at menu price
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {(health?.wastage.byProduct ?? []).map(row => (
-                  <tr key={row.key} className="border-t border-[#E5E7EB] transition-colors hover:bg-[#E8F0E3]">
-                    <td className="px-4 py-3 text-[0.875rem] font-medium text-[#1A1A1A]">{row.label}</td>
-                    <td className="px-4 py-3 text-right text-[0.875rem] tabular-nums text-red-500">
-                      {formatNumber(row.units)}
-                    </td>
-                    <td className="px-4 py-3 text-right text-[0.875rem] font-medium tabular-nums text-[#1A1A1A]">
-                      {formatPeso(row.cost, row.cost % 1 !== 0)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </ReportBody>
+        />
         <ReportNote>
           Restocks and sales are excluded; only spoilage and negative stock adjustments count
           as loss.

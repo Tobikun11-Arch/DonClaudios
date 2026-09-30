@@ -1,5 +1,5 @@
 import {Input} from '@/components/ui/input';
-import {cn} from '@/lib/utils';
+import {FilterPills} from '@/shared/components/FilterPills';
 import {Search} from 'lucide-react';
 
 interface Props {
@@ -30,23 +30,12 @@ export function ProductsFilters({
           className="pl-9"
         />
       </div>
-      <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">
-        {categories.map(cat => (
-          <button
-            key={cat}
-            type="button"
-            onClick={() => onCategoryChange(cat)}
-            className={cn(
-              'shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-colors border',
-              cat === activeCategory
-                ? 'bg-[#2d4a35] text-white border-[#2d4a35]'
-                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-            )}
-          >
-            {cat} ({productCount(cat)})
-          </button>
-        ))}
-      </div>
+      <FilterPills
+        items={categories.map(cat => ({key: cat, label: `${cat} (${productCount(cat)})`}))}
+        value={activeCategory}
+        onChange={onCategoryChange}
+        ariaLabel="Filter by category"
+      />
     </div>
   );
 }

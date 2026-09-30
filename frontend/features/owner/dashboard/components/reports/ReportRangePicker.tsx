@@ -110,89 +110,107 @@ export function ReportRangePicker({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-40 mt-1 w-80 overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-xl">
-          <p className="mb-2 text-[0.7rem] font-semibold uppercase tracking-[0.08em] text-[#6B7280]">
-            Quick range
-          </p>
-          <div className="grid grid-cols-2 gap-1.5">
-            {REPORT_PRESETS.map(preset => {
-              const active = value.preset === preset.key;
-              return (
-                <button
-                  key={preset.key}
-                  type="button"
-                  onClick={() => {
-                    onChange({preset: preset.key as ReportPreset});
-                    setOpen(false);
-                  }}
-                  className={cn(
-                    'rounded-xl border px-3 py-2 text-xs font-semibold transition-colors',
-                    active
-                      ? 'border-[#2d4a35] bg-[#2d4a35] text-white'
-                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-                  )}
-                >
-                  {preset.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <p className="mb-2 mt-4 text-[0.7rem] font-semibold uppercase tracking-[0.08em] text-[#6B7280]">
-            Custom range
-          </p>
-          <label className="mb-2 block">
-            <span className="mb-1 block text-[0.7rem] font-medium text-gray-500">From</span>
-            <input
-              type="date"
-              value={draftFrom}
-              max={draftTo}
-              onChange={e => setDraftFrom(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
-            />
-          </label>
-          <label className="mb-3 block">
-            <span className="mb-1 block text-[0.7rem] font-medium text-gray-500">To</span>
-            <input
-              type="date"
-              value={draftTo}
-              max={maxDate}
-              min={draftFrom}
-              onChange={e => setDraftTo(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
-            />
-          </label>
-
-          {invalid && (
-            <p className="mb-2 text-[0.72rem] font-medium text-red-500">
-              Start date must be on or before the end date.
+        <>
+          <div
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+            className="fixed inset-0 z-[55] overscroll-contain bg-black/30 sm:hidden"
+          />
+          {/*
+            Below `sm` this is a bottom sheet rather than a popover. The old
+            `absolute right-0 w-80` panel hung off the left edge whenever the
+            trigger was not flush right, and `html, body { overflow-x: hidden }`
+            clipped the overflow, so the date inputs were unreachable on a
+            phone. A fixed sheet is viewport-anchored, so it cannot overflow.
+          */}
+          <div
+            role="dialog"
+            aria-label="Report date range"
+            className="fixed inset-x-3 bottom-24 z-[60] max-h-[70vh] overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 bg-white p-4 shadow-xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-12 sm:mt-1 sm:max-h-none sm:w-80 sm:overflow-y-visible sm:overscroll-auto"
+          >
+            <p className="mb-2 text-[0.7rem] font-semibold uppercase tracking-[0.08em] text-[#6B7280]">
+              Quick range
             </p>
-          )}
+            <div className="grid grid-cols-2 gap-1.5">
+              {REPORT_PRESETS.map(preset => {
+                const active = value.preset === preset.key;
+                return (
+                  <button
+                    key={preset.key}
+                    type="button"
+                    onClick={() => {
+                      onChange({preset: preset.key as ReportPreset});
+                      setOpen(false);
+                    }}
+                    className={cn(
+                      'rounded-xl border px-3 py-2 text-xs font-semibold transition-colors',
+                      active
+                        ? 'border-[#2d4a35] bg-[#2d4a35] text-white'
+                        : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                    )}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
+            </div>
 
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={invalid}
-              onClick={applyCustom}
-              className="flex-1 rounded-xl bg-[#2d4a35] px-3 py-2 text-xs font-bold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Apply range
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setDraftFrom(shiftManilaDate(today, -29));
-                setDraftTo(today);
-              }}
-              className="rounded-xl border border-gray-200 px-3 py-2 text-xs font-bold text-gray-600 transition-colors hover:bg-gray-50"
-            >
-              Reset
-            </button>
+            <p className="mb-2 mt-4 text-[0.7rem] font-semibold uppercase tracking-[0.08em] text-[#6B7280]">
+              Custom range
+            </p>
+            <label className="mb-2 block">
+              <span className="mb-1 block text-[0.7rem] font-medium text-gray-500">From</span>
+              <input
+                type="date"
+                value={draftFrom}
+                max={draftTo}
+                onChange={e => setDraftFrom(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
+              />
+            </label>
+            <label className="mb-3 block">
+              <span className="mb-1 block text-[0.7rem] font-medium text-gray-500">To</span>
+              <input
+                type="date"
+                value={draftTo}
+                max={maxDate}
+                min={draftFrom}
+                onChange={e => setDraftTo(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
+              />
+            </label>
+
+            {invalid && (
+              <p className="mb-2 text-[0.72rem] font-medium text-red-500">
+                Start date must be on or before the end date.
+              </p>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={invalid}
+                onClick={applyCustom}
+                className="flex-1 rounded-xl bg-[#2d4a35] px-3 py-2 text-xs font-bold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Apply range
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDraftFrom(shiftManilaDate(today, -29));
+                  setDraftTo(today);
+                }}
+                className="rounded-xl border border-gray-200 px-3 py-2 text-xs font-bold text-gray-600 transition-colors hover:bg-gray-50"
+              >
+                Reset
+              </button>
+            </div>
+            <p className="mt-2 text-[0.65rem] text-[#6B7280]">
+              All dates are interpreted in Asia/Manila.
+            </p>
           </div>
-          <p className="mt-2 text-[0.65rem] text-[#6B7280]">
-            All dates are interpreted in Asia/Manila.
-          </p>
-        </div>
+        </>
       )}
     </div>
   );

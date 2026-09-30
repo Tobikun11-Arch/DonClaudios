@@ -6,6 +6,7 @@ import {toast} from 'sonner';
 import {listAllOrders, updateOrderStatus} from '@/lib/api/orderApi';
 import type {ListAllOrdersParams} from '@/lib/api/orderApi';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
+import {ALL_STATUSES} from '../components/OrderPills';
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
 import type {ReportRange} from '@/lib/types/report';
 
@@ -42,10 +43,14 @@ export function useOwnerOrders(range: ReportRange) {
 
   const params = useMemo<ListAllOrdersParams>(() => {
     const next: ListAllOrdersParams = {
-      status: filters.status,
       preset: range.preset,
       withCounts: true
     };
+    // `all` is a UI sentinel: the endpoint's status enum has no such member and
+    // already treats an absent `status` as "every status".
+    if (filters.status !== ALL_STATUSES) {
+      next.status = filters.status;
+    }
     if (range.preset === 'custom') {
       next.from = range.from;
       next.to = range.to;
@@ -132,7 +137,7 @@ export function filterOrders(
 ) {
   const needle = filters.search.trim().toLowerCase();
   return orders.filter(order => {
-    if (order.orderStatus !== filters.status) return false;
+    if (filters.status !== ALL_STATUSES && order.orderStatus !== filters.status) return false;
     if (!needle) return true;
 
     const customer = order.customerName ?? [

@@ -22,6 +22,18 @@ export const ORDER_STATUSES = [
   'cancelled'
 ] as const;
 
+export type OrderStatus = (typeof ORDER_STATUSES)[number];
+
+/**
+ * UI-only sentinel for "no status filter". The endpoint's `status` enum has no
+ * `all` member — an absent `status` already means every status — so the query
+ * omits the param instead of sending this.
+ */
+export const ALL_STATUSES = 'all';
+
+/** Options for the filter dropdown: `All` first, then each real status. */
+export const ORDER_STATUS_FILTERS = [ALL_STATUSES, ...ORDER_STATUSES] as const;
+
 export function formatStatus(status: string) {
   return status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }

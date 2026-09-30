@@ -2,6 +2,8 @@
 
 import {cn} from '@/lib/utils';
 import {formatNumber, formatPeso, ReportBody, ShareBar} from './reportPrimitives';
+import {ReportRowPicker} from './ReportRowPicker';
+import type {ReportRowMetric, ReportRowOption} from './ReportRowPicker';
 import type {ReportBreakdownRow} from '@/lib/types/report';
 
 type Column = 'label' | 'secondary' | 'orders' | 'units' | 'revenue' | 'share';
@@ -57,6 +59,40 @@ export function ReportBreakdownTable({
     {orders: 0, units: 0, revenue: 0}
   );
 
+  // Keys can repeat across dimensions, so the row index is folded into the
+  // option value to keep it unique and stable for the picker's selection.
+  const options: ReportRowOption[] = rows.map((row, index) => ({
+    value: `${row.key}-${index}`,
+    label: row.label,
+    secondary: row.secondary
+  }));
+  const rowByValue = new Map(options.map((option, index) => [option.value, rows[index]]));
+
+  const mobileMetrics = (option: ReportRowOption): ReportRowMetric[] => {
+    const row = rowByValue.get(option.value);
+    if (!row) return [];
+    const metrics: Array<ReportRowMetric | false> = [
+      columns.includes('orders') && {
+        label: HEAD.orders,
+        value: formatNumber(row.orders)
+      },
+      columns.includes('units') && {
+        label: HEAD.units,
+        value: formatNumber(row.units)
+      },
+      columns.includes('revenue') && {
+        label: HEAD.revenue,
+        value: formatPeso(row.revenue, row.revenue % 1 !== 0)
+      },
+      columns.includes('share') && {
+        label: HEAD.share,
+        value: `${formatNumber(Math.round(row.share * 10) / 10)}%`,
+        share: row.share
+      }
+    ];
+    return metrics.filter((metric): metric is ReportRowMetric => Boolean(metric));
+  };
+
   return (
     <ReportBody
       isLoading={isLoading}
@@ -65,7 +101,29 @@ export function ReportBreakdownTable({
       emptyMessage={emptyMessage ?? 'No sales recorded in this period'}
       skeleton="rows"
     >
-      <div className="overflow-x-auto">
+      <ReportRowPicker
+        options={options}
+        metrics={mobileMetrics}
+        pickerLabel="Select a row to see its figures"
+        rank={rank}
+        summary={
+          showTotals ? (
+            <p className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 rounded-lg bg-[#F7FAF6] px-3 py-2 text-[0.75rem] text-[#6B7280]">
+              <span className="font-bold uppercase tracking-[0.08em] text-[#1A1A1A]">Total</span>
+              {columns.includes('orders') && (
+                <span className="tabular-nums">{formatNumber(totals.orders)} orders</span>
+              )}
+              {columns.includes('units') && (
+                <span className="tabular-nums">{formatNumber(totals.units)} units</span>
+              )}
+              {columns.includes('revenue') && (
+                <span className="tabular-nums">{formatPeso(totals.revenue, totals.revenue % 1 !== 0)}</span>
+              )}
+            </p>
+          ) : null
+        }
+      />
+      <div className="hidden overflow-x-auto sm:block">
         <table className="w-full min-w-[520px]">
           <thead>
             <tr className="border-t border-[#E5E7EB]">

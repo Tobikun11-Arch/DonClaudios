@@ -1,6 +1,6 @@
 'use client';
 
-import {useState} from 'react';
+import {useMemo, useState} from 'react';
 import {ChevronDown, ChevronLeft, ChevronRight, Loader2, Search} from 'lucide-react';
 import {cn} from '@/lib/utils';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
@@ -8,9 +8,10 @@ import {
   formatNumber,
   formatPeso
 } from '@/features/owner/dashboard/components/reports/reportPrimitives';
-import {OrderStatusPill, OrderTypePill, ORDER_STATUSES, formatStatus} from './OrderPills';
+import {OrderStatusPill, OrderTypePill, ORDER_STATUS_FILTERS, ALL_STATUSES, formatStatus} from './OrderPills';
 import {OrderDetailDrawer} from './OrderDetailDrawer';
 import {DownloadOrdersReport} from './DownloadOrdersReport';
+import {ReportRangePicker} from '../../dashboard/components/reports/ReportRangePicker';
 import {orderCustomerName, useOwnerOrders, OWNER_ORDERS_PAGE_SIZE} from '../hooks/useOwnerOrders';
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
 import type {ReportRange} from '@/lib/types/report';
@@ -204,7 +205,7 @@ function OrdersPagination({
 }
 
 export default function OwnerOrdersPage() {
-  const [range] = useState<ReportRange>({preset: '7d'});
+  const [range, setRange] = useState<ReportRange>({preset: '7d'});
   const [selected, setSelected] = useState<OrderHistoryEntry | null>(null);
 
   const {
@@ -236,6 +237,13 @@ export default function OwnerOrdersPage() {
         .filter(o => o.orderStatus !== 'cancelled')
         .reduce((sum, o) => sum + o.totalAmount, 0)
     : revenue;
+
+  // The facet ignores the status filter but not the date range, so this is the
+  // queue size for whatever range is selected.
+  const allCount = useMemo(
+    () => Object.values(statusCounts).reduce((sum, n) => sum + n, 0),
+    [statusCounts]
+  );
 
   return (
     <div className="space-y-4">
@@ -274,14 +282,18 @@ export default function OwnerOrdersPage() {
             aria-label="Filter by status"
             className="appearance-none rounded-full border border-gray-200 bg-white py-2 pl-4 pr-9 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
           >
-            {ORDER_STATUSES.map(status => (
+            {ORDER_STATUS_FILTERS.map(status => (
               <option key={status} value={status}>
-                {formatStatus(status)} ({statusCounts[status] ?? 0})
+                {status === ALL_STATUSES
+                  ? `All statuses (${formatNumber(allCount)})`
+                  : `${formatStatus(status)} (${formatNumber(statusCounts[status] ?? 0)})`}
               </option>
             ))}
           </select>
           <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         </div>
+
+        <ReportRangePicker value={range} onChange={setRange} />
 
       </div>
 

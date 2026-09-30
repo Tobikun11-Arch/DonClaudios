@@ -18,6 +18,7 @@ import {
   YAxis
 } from 'recharts';
 import {cn} from '@/lib/utils';
+import {FilterSelect} from '@/shared/components/FilterPills';
 import {
   useReportBreakdownQuery,
   useReportSummaryQuery,
@@ -313,18 +314,13 @@ export function SalesReportView({range}: {range: ReportRange}) {
         title="Revenue breakdown"
         subtitle={breakdownQuery.isLoading ? undefined : breakdown?.note ?? 'Ranked by revenue'}
         action={
-          <select
+          <FilterSelect
             value={dimension}
-            onChange={e => setDimension(e.target.value as ReportDimension)}
-            aria-label="Group revenue by"
-            className="h-9 rounded-lg border border-gray-200 bg-white px-2.5 text-sm font-medium text-gray-600 focus:border-[#2d4a35] focus:outline-none"
-          >
-            {GROUPABLE.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            onChange={next => setDimension(next as ReportDimension)}
+            options={GROUPABLE}
+            ariaLabel="Group revenue by"
+            className="w-44"
+          />
         }
       >
         <ReportBreakdownTable
