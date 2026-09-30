@@ -132,7 +132,7 @@ export function CustomersReportView({range}: {range: ReportRange}) {
                         className="h-2.5 w-2.5 shrink-0 rounded-full"
                         style={{backgroundColor: entry.color}}
                       />
-                      <span className="flex-1 text-[#1A1A1A]">{entry.label}</span>
+                      <span className="min-w-0 flex-1 truncate text-[#1A1A1A]">{entry.label}</span>
                       <span className="font-medium tabular-nums text-[#1A1A1A]">
                         {formatNumber(entry.value)}
                       </span>
@@ -194,7 +194,7 @@ export function CustomersReportView({range}: {range: ReportRange}) {
                         className="h-2.5 w-2.5 shrink-0 rounded-full"
                         style={{backgroundColor: entry.color}}
                       />
-                      <span className="flex-1 text-[#1A1A1A]">{entry.label}</span>
+                      <span className="min-w-0 flex-1 truncate text-[#1A1A1A]">{entry.label}</span>
                       <span className="font-medium tabular-nums text-[#1A1A1A]">
                         {formatNumber(entry.value)}
                       </span>

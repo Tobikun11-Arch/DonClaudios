@@ -296,7 +296,7 @@ export function SalesReportView({range}: {range: ReportRange}) {
                         className="h-2.5 w-2.5 shrink-0 rounded-full"
                         style={{backgroundColor: SLICE_COLORS[idx % SLICE_COLORS.length]}}
                       />
-                      <span className="flex-1 text-[#1A1A1A]">{entry.label}</span>
+                      <span className="min-w-0 flex-1 truncate text-[#1A1A1A]">{entry.label}</span>
                       <span className="tabular-nums text-[#6B7280]">{entry.orders}</span>
                       <span className="w-20 text-right font-medium tabular-nums text-[#1A1A1A]">
                         {formatCompactPeso(entry.revenue)}

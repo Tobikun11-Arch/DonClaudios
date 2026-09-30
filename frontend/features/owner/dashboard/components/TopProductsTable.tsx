@@ -1,5 +1,6 @@
 import {Star} from 'lucide-react';
 import type {TopProduct} from '@/lib/types/dashboard';
+import {ReportRowPicker} from './reports/ReportRowPicker';
 
 interface Props {
   products: TopProduct[];
@@ -35,47 +36,73 @@ export function TopProductsTable({products, isLoading, isError}: Props) {
           No sales data yet this month
         </div>
       ) : (
-        <table className="w-full">
-          <thead>
-            <tr className="border-t border-[#E5E7EB]">
-              <th className="text-left px-4 py-2.5 text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] w-12">
-                Rank
-              </th>
-              <th className="text-left px-4 py-2.5 text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
-                Product
-              </th>
-              <th className="text-right px-4 py-2.5 text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
-                Units Sold
-              </th>
-              <th className="text-right px-4 py-2.5 text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
-                Revenue
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map(product => (
-              <tr
-                key={product.rank}
-                className="border-t border-[#E5E7EB] hover:bg-[#E8F0E3] transition-colors"
-              >
-                <td className="px-4 py-3">
-                  <div className="w-7 h-7 rounded-full bg-[#2D4A1E] text-white flex items-center justify-center text-[0.75rem] font-semibold">
-                    {product.rank}
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-[0.875rem] text-[#1A1A1A]">
-                  {product.name}
-                </td>
-                <td className="px-4 py-3 text-[0.875rem] text-[#1A1A1A] text-right">
-                  {product.unitsSold}
-                </td>
-                <td className="px-4 py-3 text-[0.875rem] text-[#1A1A1A] text-right font-medium">
-                  ₱{product.revenue.toLocaleString()}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <>
+          {/*
+            Four columns of `px-4` cells need ~355px before a single word wraps,
+            so a plain `w-full` table overflowed the card on a 360-375px phone
+            and the Revenue column was clipped away by `overflow-x: hidden`.
+            Same trade the Reports tables make: picker below `sm`, table above.
+          */}
+          <ReportRowPicker
+            options={products.map(product => ({
+              value: String(product.rank),
+              label: product.name
+            }))}
+            metrics={option => {
+              const product = products.find(entry => String(entry.rank) === option.value);
+              if (!product) return [];
+              return [
+                {label: 'Units Sold', value: product.unitsSold.toLocaleString()},
+                {label: 'Revenue', value: `₱${product.revenue.toLocaleString()}`}
+              ];
+            }}
+            pickerLabel="Select a product to see its figures"
+            rank
+          />
+          <div className="hidden overflow-x-auto sm:block">
+            <table className="w-full min-w-[420px]">
+              <thead>
+                <tr className="border-t border-[#E5E7EB]">
+                  <th className="text-left px-4 py-2.5 text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] w-12">
+                    Rank
+                  </th>
+                  <th className="text-left px-4 py-2.5 text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+                    Product
+                  </th>
+                  <th className="text-right px-4 py-2.5 text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+                    Units Sold
+                  </th>
+                  <th className="text-right px-4 py-2.5 text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+                    Revenue
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map(product => (
+                  <tr
+                    key={product.rank}
+                    className="border-t border-[#E5E7EB] hover:bg-[#E8F0E3] transition-colors"
+                  >
+                    <td className="px-4 py-3">
+                      <div className="w-7 h-7 rounded-full bg-[#2D4A1E] text-white flex items-center justify-center text-[0.75rem] font-semibold">
+                        {product.rank}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-[0.875rem] text-[#1A1A1A]">
+                      {product.name}
+                    </td>
+                    <td className="px-4 py-3 text-[0.875rem] text-[#1A1A1A] text-right tabular-nums">
+                      {product.unitsSold}
+                    </td>
+                    <td className="px-4 py-3 text-[0.875rem] text-[#1A1A1A] text-right font-medium tabular-nums">
+                      ₱{product.revenue.toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );

@@ -84,12 +84,26 @@ export function ReportCard({
   return (
     <section className={cn(CARD, className)}>
       {(title || action) && (
-        <header className="flex items-start justify-between gap-3 px-5 pt-4 pb-3">
+        /*
+          `flex-wrap` keeps this header honest on a phone. The title block only
+          has `min-w-0`, while the actions - a segmented granularity control, a
+          dimension toggle plus export button - keep their intrinsic width, so a
+          nowrap row overflowed the card and was silently clipped by the global
+          `overflow-x: hidden`. Wrapping lets the action drop to its own line,
+          and `break-words` keeps a long subtitle such as "vs previous 7 days ·
+          Sep 24 - Sep 30 · collected vs still open" wrapping inside the card
+          rather than pushing it wider.
+        */
+        <header className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 px-5 pt-4 pb-3">
           <div className="min-w-0">
-            {title && <h3 className="text-[1rem] font-semibold text-[#1A1A1A]">{title}</h3>}
-            {subtitle && <p className="text-[0.8rem] text-[#6B7280]">{subtitle}</p>}
+            {title && (
+              <h3 className="break-words text-[1rem] font-semibold text-[#1A1A1A]">{title}</h3>
+            )}
+            {subtitle && (
+              <p className="break-words text-[0.8rem] leading-snug text-[#6B7280]">{subtitle}</p>
+            )}
           </div>
-          {action}
+          {action && <div className="shrink-0">{action}</div>}
         </header>
       )}
       {children}
