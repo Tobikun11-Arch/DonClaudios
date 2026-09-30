@@ -1,7 +1,13 @@
 'use client';
 
 import {AlertTriangle, CheckCircle2} from 'lucide-react';
-import {formatNumber, formatPeso} from './reportPrimitives';
+import {cn} from '@/lib/utils';
+import {
+  formatNumber,
+  formatPeso,
+  ReportSkeletonRows,
+  SHIMMER
+} from './reportPrimitives';
 import type {ReportSummary} from '@/lib/types/report';
 
 type Row = {
@@ -21,7 +27,19 @@ type Row = {
  * nobody ever closed.
  */
 export function ValueSplitPanel({summary}: {summary?: ReportSummary}) {
-  if (!summary) return null;
+  // The card frame is already rendered by the caller, so hold the same space
+  // with a shimmer instead of collapsing to nothing while the fetch is in flight.
+  if (!summary) {
+    return (
+      <div className="px-5 pb-5" aria-hidden="true">
+        <div className="mb-3 overflow-hidden rounded-lg border border-[#E4E9E1]">
+          <ReportSkeletonRows rows={3} className="!px-3.5 !pb-3.5" />
+        </div>
+        <div className={cn(SHIMMER, 'h-2.5 w-full')} />
+        <div className={cn(SHIMMER, 'mt-3 h-3 w-2/3')} />
+      </div>
+    );
+  }
   const split = summary.valueSplit;
   const total = split.collected + split.open;
   const realizedShare = total > 0 ? (split.collected / total) * 100 : 0;

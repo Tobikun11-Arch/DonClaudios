@@ -14,8 +14,9 @@ import {
   formatPeso,
   ReportBody,
   ReportCard,
-  ReportKpiGrid,
-  ReportNote
+  ReportNote,
+  ReportStatGrid,
+  ReportStatTile
 } from './reportPrimitives';
 import {ReportBreakdownTable, breakdownToCsvRows} from './ReportBreakdownTable';
 import {ReportExportBar} from './ReportExportBar';
@@ -50,14 +51,47 @@ export function CustomersReportView({range}: {range: ReportRange}) {
       ].filter(entry => entry.value > 0)
     : [];
 
+  const revenueKpi = summary?.kpis.find(kpi => kpi.key === 'revenue');
+  const avgPerCustomer =
+    mix && mix.unique > 0 ? (revenueKpi?.value ?? 0) / mix.unique : 0;
+
   return (
     <div className="space-y-4">
-      <ReportKpiGrid kpis={summary?.kpis ?? []} columns={3} />
+      <ReportStatGrid columns={4}>
+        <ReportStatTile
+          label="Unique Customers"
+          value={formatNumber(mix?.unique ?? 0)}
+          hint="Distinct customers in this period"
+          isLoading={summaryQuery.isLoading}
+        />
+        <ReportStatTile
+          label="Repeat Rate"
+          value={mix ? `${formatNumber(Math.round(mix.repeatRate))}%` : '—'}
+          hint={mix ? `${formatNumber(mix.repeat)} of ${formatNumber(mix.unique)}` : undefined}
+          isLoading={summaryQuery.isLoading}
+        />
+        <ReportStatTile
+          label="New Sign-ups"
+          value={formatNumber(mix?.newCustomers ?? 0)}
+          hint="First-time customers in this period"
+          isLoading={summaryQuery.isLoading}
+        />
+        <ReportStatTile
+          label="Avg Revenue / Customer"
+          value={formatPeso(avgPerCustomer)}
+          hint="Collected revenue ÷ unique customers"
+          isLoading={summaryQuery.isLoading}
+        />
+      </ReportStatGrid>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ReportCard
           title="Guest vs registered"
-          subtitle={`${formatNumber(mix?.unique ?? 0)} unique customers in this period`}
+          subtitle={
+            summaryQuery.isLoading
+              ? undefined
+              : `${formatNumber(mix?.unique ?? 0)} unique customers in this period`
+          }
         >
           <div className="px-4 pb-5">
             <ReportBody
@@ -114,7 +148,7 @@ export function CustomersReportView({range}: {range: ReportRange}) {
           title="Retention"
           subtitle="Share of customers who came back"
           action={
-            mix ? (
+            mix && !summaryQuery.isLoading ? (
               <span className="rounded-full bg-[#E8F0E3] px-3 py-1 text-sm font-bold tabular-nums text-[#2D4A1E]">
                 {formatNumber(Math.round(mix.repeatRate))}% repeat
               </span>
@@ -177,13 +211,15 @@ export function CustomersReportView({range}: {range: ReportRange}) {
         </ReportCard>
       </div>
 
-      <ReportCard
-        title={dimension === 'customer' ? 'Top customers' : 'Payment methods'}
-        subtitle={
-          dimension === 'customer'
-            ? 'Guest orders are grouped as a single row'
-            : 'How customers paid'
-        }
+        <ReportCard
+          title={dimension === 'customer' ? 'Top customers' : 'Payment methods'}
+          subtitle={
+            breakdownQuery.isLoading
+              ? undefined
+              : dimension === 'customer'
+                ? 'Guest orders are grouped as a single row'
+                : 'How customers paid'
+          }
         action={
           <div className="flex items-center gap-2">
             <div className="flex gap-1 rounded-full border border-gray-200 bg-white p-0.5">
@@ -231,35 +267,6 @@ export function CustomersReportView({range}: {range: ReportRange}) {
           </ReportNote>
         )}
       </ReportCard>
-
-      {mix && (
-        <ReportCard title="Customer mix at a glance">
-          <div className="grid grid-cols-2 gap-3 px-5 pb-5 lg:grid-cols-4">
-            {[
-              {label: 'Unique customers', value: formatNumber(mix.unique)},
-              {label: 'Repeat customers', value: formatNumber(mix.repeat)},
-              {label: 'New sign-ups', value: formatNumber(mix.newCustomers)},
-              {
-                label: 'Avg revenue / customer',
-                value: formatPeso(
-                  mix.unique > 0
-                    ? (summary?.kpis.find(k => k.key === 'revenue')?.value ?? 0) / mix.unique
-                    : 0
-                )
-              }
-            ].map(tile => (
-              <div key={tile.label} className="rounded-lg bg-[#F7FAF6] px-3 py-2.5">
-                <p className="text-[0.68rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
-                  {tile.label}
-                </p>
-                <p className="mt-0.5 text-[1.05rem] font-bold tabular-nums text-[#1A1A1A]">
-                  {tile.value}
-                </p>
-              </div>
-            ))}
-          </div>
-        </ReportCard>
-      )}
     </div>
   );
 }

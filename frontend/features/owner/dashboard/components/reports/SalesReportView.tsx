@@ -31,7 +31,8 @@ import {
   ReportBody,
   ReportCard,
   ReportKpiGrid,
-  ReportNote
+  ReportNote,
+  selectKpis
 } from './reportPrimitives';
 import {ReportBreakdownTable, breakdownToCsvRows} from './ReportBreakdownTable';
 import {ReportExportBar} from './ReportExportBar';
@@ -39,6 +40,13 @@ import {ValueSplitPanel} from './ValueSplitPanel';
 import type {ReportDimension, ReportGranularity, ReportRange} from '@/lib/types/report';
 
 const SLICE_COLORS = ['#2D4A1E', '#4A7C35', '#7BAF5A', '#A8CC8C', '#D4A843', '#E8C87A', '#C9B99A', '#E5DDD0'];
+
+const SALES_CARDS = [
+  {key: 'aov', label: 'Avg Order Value'},
+  {key: 'units', label: 'Units Sold'},
+  {key: 'deliveryFees', label: 'Delivery Fees'},
+  {key: 'discount', label: 'Discount Given'}
+] as const;
 
 const GROUPABLE: ReadonlyArray<{value: ReportDimension; label: string}> = [
   {value: 'product', label: 'Product'},
@@ -92,7 +100,11 @@ export function SalesReportView({range}: {range: ReportRange}) {
 
   return (
     <div className="space-y-4">
-      <ReportKpiGrid kpis={summary?.kpis ?? []} />
+      <ReportKpiGrid
+        kpis={selectKpis(summary?.kpis ?? [], SALES_CARDS)}
+        isLoading={summaryQuery.isLoading}
+        skeletonCards={SALES_CARDS}
+      />
 
       <ReportCard
         title="Order value reconciliation"
@@ -100,10 +112,13 @@ export function SalesReportView({range}: {range: ReportRange}) {
       >
         <ValueSplitPanel summary={summary} />
       </ReportCard>
-
       <ReportCard
         title="Revenue trend"
-        subtitle={`${summary?.comparisonLabel ?? 'Current period'} · ${summary?.range.label ?? ''} · collected vs still open`}
+        subtitle={
+          summaryQuery.isLoading || trendQuery.isLoading
+            ? undefined
+            : `${summary?.comparisonLabel ?? 'Current period'} · ${summary?.range.label ?? ''} · collected vs still open`
+        }
         action={
           <div className="flex items-center gap-2">
             <div className="flex gap-1 rounded-full border border-gray-200 bg-white p-0.5">
@@ -296,7 +311,7 @@ export function SalesReportView({range}: {range: ReportRange}) {
 
       <ReportCard
         title="Revenue breakdown"
-        subtitle={breakdown?.note ?? 'Ranked by revenue'}
+        subtitle={breakdownQuery.isLoading ? undefined : breakdown?.note ?? 'Ranked by revenue'}
         action={
           <select
             value={dimension}

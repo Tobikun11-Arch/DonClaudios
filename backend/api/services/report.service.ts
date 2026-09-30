@@ -357,68 +357,85 @@ async function fetchValueSplit(
 }
 
 export async function getReportSummary(range: ResolvedRange): Promise<ReportSummary> {
-  const [current, previous, split, cancelled, totalOrders, newCustomers, returningOrders, typeAgg, sourceAgg] =
-    await Promise.all([
-      // Realized only: money the business actually collected inside the window.
-      fetchTotals(range.from, range.to, REALIZED_STATUSES),
-      fetchTotals(range.prevFrom, range.prevTo, REALIZED_STATUSES),
-      fetchValueSplit(range.from, range.to),
-      OrderModel.countDocuments({
-        createdAt: rangeMatch(range.from, range.to).createdAt,
-        orderStatus: 'cancelled'
-      }),
-      OrderModel.countDocuments({createdAt: rangeMatch(range.from, range.to).createdAt}),
-      CustomerModel.countDocuments({createdAt: rangeMatch(range.from, range.to).createdAt}),
-      OrderModel.aggregate([
-        {
-          $match: {
-            createdAt: rangeMatch(range.from, range.to).createdAt,
-            customerId: {$ne: null},
-            orderStatus: {$in: REALIZED_STATUSES}
-          }
-        },
-        { $group: {_id: '$customerId'}},
-        {
-          $lookup: {
-            from: 'orders',
-            let: {cid: '$_id'},
-            pipeline: [
-              {
-                // Inside $expr every operator needs an argument array, not the
-                // `{field: {$op: value}}` query form.
-                $match: {
-                  $expr: {
-                    $and: [
-                      {$eq: ['$customerId', '$$cid']},
-                      {$lt: ['$createdAt', range.from]}
-                    ]
-                  }
-                }
-              },
-              { $limit: 1}
-            ],
-            as: 'prior'
-          }
-        },
-        {$match: {prior: {$eq: []}}},
-        {$count: 'count'}
-      ]),
-      OrderModel.aggregate([
-        {$match: {createdAt: rangeMatch(range.from, range.to).createdAt, orderStatus: {$in: REALIZED_STATUSES}}},
-        {$group: {_id: '$orderType', orders: {$sum: 1}, revenue: {$sum: '$totalAmount'}}}
-      ]),
-      OrderModel.aggregate([
-        {$match: {createdAt: rangeMatch(range.from, range.to).createdAt, orderStatus: {$in: REALIZED_STATUSES}}},
-        {
-          // Older orders predate `orderSource`; the schema default is 'online'.
-          $group: {
-            _id: {$ifNull: ['$orderSource', 'online']},
-            orders: {$sum: 1},
-            revenue: {$sum: '$totalAmount'}
-          }
+  const [
+    current,
+    previous,
+    split,
+    cancelled,
+    totalOrders,
+    previousCancelled,
+    previousTotalOrders,
+    newCustomers,
+    returningOrders,
+    typeAgg,
+    sourceAgg
+  ] = await Promise.all([
+    // Realized only: money the business actually collected inside the window.
+    fetchTotals(range.from, range.to, REALIZED_STATUSES),
+    fetchTotals(range.prevFrom, range.prevTo, REALIZED_STATUSES),
+    fetchValueSplit(range.from, range.to),
+    OrderModel.countDocuments({
+      createdAt: rangeMatch(range.from, range.to).createdAt,
+      orderStatus: 'cancelled'
+    }),
+    OrderModel.countDocuments({createdAt: rangeMatch(range.from, range.to).createdAt}),
+    // Baseline for the cancellation-rate KPI, which otherwise had no comparison.
+    OrderModel.countDocuments({
+      createdAt: rangeMatch(range.prevFrom, range.prevTo).createdAt,
+      orderStatus: 'cancelled'
+    }),
+    OrderModel.countDocuments({createdAt: rangeMatch(range.prevFrom, range.prevTo).createdAt}),
+    CustomerModel.countDocuments({createdAt: rangeMatch(range.from, range.to).createdAt}),
+    OrderModel.aggregate([
+      {
+        $match: {
+          createdAt: rangeMatch(range.from, range.to).createdAt,
+          customerId: {$ne: null},
+          orderStatus: {$in: REALIZED_STATUSES}
         }
-      ])
-    ]);
+      },
+      { $group: {_id: '$customerId'}},
+      {
+        $lookup: {
+          from: 'orders',
+          let: {cid: '$_id'},
+          pipeline: [
+            {
+              // Inside $expr every operator needs an argument array, not the
+              // `{field: {$op: value}}` query form.
+              $match: {
+                $expr: {
+                  $and: [
+                    {$eq: ['$customerId', '$$cid']},
+                    {$lt: ['$createdAt', range.from]}
+                  ]
+                }
+              }
+            },
+            { $limit: 1}
+          ],
+          as: 'prior'
+        }
+      },
+      {$match: {prior: {$eq: []}}},
+      {$count: 'count'}
+    ]),
+    OrderModel.aggregate([
+      {$match: {createdAt: rangeMatch(range.from, range.to).createdAt, orderStatus: {$in: REALIZED_STATUSES}}},
+      {$group: {_id: '$orderType', orders: {$sum: 1}, revenue: {$sum: '$totalAmount'}}}
+    ]),
+    OrderModel.aggregate([
+      {$match: {createdAt: rangeMatch(range.from, range.to).createdAt, orderStatus: {$in: REALIZED_STATUSES}}},
+      {
+        // Older orders predate `orderSource`; the schema default is 'online'.
+        $group: {
+          _id: {$ifNull: ['$orderSource', 'online']},
+          orders: {$sum: 1},
+          revenue: {$sum: '$totalAmount'}
+        }
+      }
+    ])
+  ]);
 
   const previousAov = safeRatio(previous.revenue, previous.orders);
   const currentAov = safeRatio(current.revenue, current.orders);
@@ -432,6 +449,8 @@ export async function getReportSummary(range: ResolvedRange): Promise<ReportSumm
   const orderValue = peso(split.collected + split.open);
   const realizedShare = safePercent(split.collected, orderValue);
   const unfilled = totalOrders - current.orders - cancelled;
+  const cancellationRate = safePercent(cancelled, totalOrders);
+  const previousCancellationRate = safePercent(previousCancelled, previousTotalOrders);
 
   const kpis: ReportKpi[] = [
     {
@@ -509,7 +528,8 @@ export async function getReportSummary(range: ResolvedRange): Promise<ReportSumm
     {
       key: 'cancellationRate',
       label: 'Cancellation Rate',
-      value: safePercent(cancelled, totalOrders),
+      value: cancellationRate,
+      delta: percentDelta(cancellationRate, previousCancellationRate),
       hint: `${cancelled} of ${totalOrders} orders · ${unfilled} never closed`,
       format: 'percent'
     }

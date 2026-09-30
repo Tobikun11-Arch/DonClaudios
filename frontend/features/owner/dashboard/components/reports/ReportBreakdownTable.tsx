@@ -63,7 +63,7 @@ export function ReportBreakdownTable({
       isError={isError}
       isEmpty={rows.length === 0}
       emptyMessage={emptyMessage ?? 'No sales recorded in this period'}
-      height={140}
+      skeleton="rows"
     >
       <div className="overflow-x-auto">
         <table className="w-full min-w-[520px]">

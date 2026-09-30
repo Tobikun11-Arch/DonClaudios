@@ -2,7 +2,7 @@
 
 import {useMemo} from 'react';
 import {ReportViewTabs} from './ReportViewTabs';
-import {ReportRangePicker, rangeLabel} from './ReportRangePicker';
+import {ReportRangePicker} from './ReportRangePicker';
 import {ReportExportBar} from './ReportExportBar';
 import {OverviewReportView} from './OverviewReportView';
 import {SalesReportView} from './SalesReportView';
