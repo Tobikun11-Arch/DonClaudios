@@ -5,12 +5,6 @@ Set up redemption flow: customer downloads/screenshots redemption confirmation, 
 Display reward benefits during account registration.
 
 
-
-Reservations
-1. Add SMS/text notification to the owner (Ate Sheena's phone) specifically for reservation-type orders (e.g., whole lechon for events), since email/response delays were a pain point.
-   Categorize which items count as "reservation-priority" (large/made-to-order items) vs. regular in-store orders. - so the reservation
-   notificaiton will go through to ate sheena phone is the medium or large only
-
 -adding product add new category promo
 -it will show in customer menu and don't show if no current food on that
 -remove the promo tab in owner 
@@ -21,6 +15,17 @@ Pre-order
 -add product if 4 lechon cochi chosen it will show new pre order dropdown yes or no - if yes show purchase limit input
 -if there's an available pre order it will be default in customer menu for category
 -per IP one order only
+
+NEW UI MODAL For choosing type of order delivery/reservation/pick up - if customer choose the pre order product in menu
+it dont need to choose type of order
+
+
+
+Reservations
+1. Add SMS/text notification to the owner (Ate Sheena's phone) specifically for reservation-type orders (e.g., whole lechon for events), since email/response delays were a pain point.
+   Categorize which items count as "reservation-priority" (large/made-to-order items) vs. regular in-store orders. - so the reservation
+   notificaiton will go through to ate sheena phone is the medium or large only
+
 
 
 
@@ -41,10 +46,8 @@ Populate the donclaudios product/food
 
 
 Proposal suggestions:
-2 Dashboard dropdown for report (that summarize in dashboard) - prio
 3 Apk for cashier pos - prio
 5 Transactions done by cashiers - prio
-6 Sales report detailed 
 7 tab to customize all data of admin side what is their business name, logo etc
 
 
