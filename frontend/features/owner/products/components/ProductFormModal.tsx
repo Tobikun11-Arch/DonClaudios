@@ -260,6 +260,29 @@ export function ProductFormModal({
         </div>
 
         <div className="space-y-1.5">
+          <Label htmlFor="rewardPointsOverride">
+            Custom reward points (optional)
+          </Label>
+          <div className="relative">
+            <Input
+              id="rewardPointsOverride"
+              inputMode="numeric"
+              value={form.rewardPointsOverride}
+              onChange={e => onFormChange('rewardPointsOverride', e.target.value)}
+              placeholder="Leave blank for automatic price → points"
+              className="pr-16"
+            />
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">
+              pts
+            </span>
+          </div>
+          <p className="text-xs text-gray-500">
+            Override the points cost for this reward. Leave blank to use 100
+            points = ₱5 (rounded to nearest 50).
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
           <Label htmlFor="description">Description</Label>
           <Input
             id="description"

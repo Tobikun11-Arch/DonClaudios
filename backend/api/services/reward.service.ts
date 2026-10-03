@@ -3,11 +3,17 @@ import {ApiError} from '../utils/error';
 import {customerRepository} from '../repositories/customer.repository';
 import {productRepository} from '../repositories/product.repository';
 import {rewardRedemptionRepository} from '../repositories/reward.repository';
+import {
+  pointsCostForPrice,
+  pointsCostForReward
+} from '../config/rewards';
 
-export const PESOS_PER_POINT = 10;
+// Re-exported so any existing import of `pointsCostForPrice` from this
+// service keeps working. The maths now lives in api/config/rewards.ts.
+export {pointsCostForPrice, pointsCostForReward} from '../config/rewards';
 
-export function pointsCostForPrice(price: number): number {
-  return Math.max(1, Math.ceil(price / PESOS_PER_POINT));
+function formatPoints(value: number): string {
+  return value.toLocaleString('en-PH', {maximumFractionDigits: 0});
 }
 
 export const rewardService = {
@@ -28,7 +34,11 @@ export const rewardService = {
         stock: product.stock,
         imageUrl: product.imageUrl,
         description: product.description,
-        pointsRequired: pointsCostForPrice(product.price)
+        pointsRequired: pointsCostForReward(
+          product.price,
+          product.rewardPointsOverride
+        ),
+        pointsIsOverridden: product.rewardPointsOverride != null
       }));
 
     const redemptions =
@@ -54,6 +64,10 @@ export const rewardService = {
   async redeem(customerId: string, productId: string, quantity = 1) {
     const safeQty = Math.max(1, Math.floor(Number(quantity) || 1));
 
+    if (typeof productId !== 'string' || !productId.trim()) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'A reward is required');
+    }
+
     const [customer, product] = await Promise.all([
       customerRepository.findById(customerId),
       productRepository.findById(productId)
@@ -63,7 +77,7 @@ export const rewardService = {
       throw new ApiError(404, 'CUSTOMER_NOT_FOUND', 'Customer not found');
     }
     if (!product) {
-      throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Product not found');
+      throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Reward not found');
     }
     if (!product.isAvailable || product.stock <= 0) {
       throw new ApiError(400, 'OUT_OF_STOCK', 'This reward is out of stock');
@@ -76,12 +90,16 @@ export const rewardService = {
       );
     }
 
-    const pointsRequired = pointsCostForPrice(product.price) * safeQty;
+    const unitPoints = pointsCostForReward(
+      product.price,
+      product.rewardPointsOverride
+    );
+    const pointsRequired = unitPoints * safeQty;
     if (customer.points < pointsRequired) {
       throw new ApiError(
         400,
         'INSUFFICIENT_POINTS',
-        `You need ${pointsRequired} points, but you only have ${customer.points}.`
+        `You need ${formatPoints(pointsRequired)} points, but you only have ${formatPoints(customer.points)}.`
       );
     }
 
@@ -93,7 +111,7 @@ export const rewardService = {
       throw new ApiError(
         400,
         'INSUFFICIENT_POINTS',
-        `You need ${pointsRequired} points, but you only have ${customer.points}.`
+        'Your points balance changed. Please try again.'
       );
     }
 
@@ -111,6 +129,10 @@ export const rewardService = {
       status: 'pending'
     });
 
+    // Re-read the balance after the atomic $inc rather than deriving it from
+    // the stale in-memory document.
+    const refreshed = await customerRepository.findById(customerId);
+
     return {
       redemption: {
         _id: String(redemption._id),
@@ -123,7 +145,7 @@ export const rewardService = {
         status: redemption.status,
         createdAt: redemption.createdAt
       },
-      remainingPoints: customer.points - pointsRequired
+      remainingPoints: refreshed?.points ?? customer.points - pointsRequired
     };
   }
 };

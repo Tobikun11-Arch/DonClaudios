@@ -35,6 +35,7 @@ export interface ProductDocument extends mongoose.Document {
   isAvailable: boolean;
   ingredients: ProductIngredient[];
   allergens: ProductAllergen[];
+  rewardPointsOverride?: number | null;
   createdBy: mongoose.Types.ObjectId;
 }
 
@@ -59,6 +60,7 @@ const ProductSchema = new Schema<ProductDocument>(
     ingredients: {type: [ProductIngredientSchema], default: []},
     allergens: {type: [String], enum: [...ALLERGEN_VALUES], default: []},
     isAvailable: {type: Boolean, default: true},
+    rewardPointsOverride: {type: Number, min: 0, default: null},
     createdBy: {type: Schema.Types.ObjectId, ref: 'Admin', required: true}
   },
   {timestamps: true}

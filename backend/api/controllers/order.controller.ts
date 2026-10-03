@@ -19,6 +19,7 @@ import type {PaymentMethod} from '../models/Transaction.model';
 import type {OrderStatus, OrderDocument} from '../models/Order.model';
 import type {CashierDocument} from '../models/Cashier.model';
 import {resolveRange} from '../utils/dateRange';
+import {pointsEarnedForOrderTotal} from '../config/rewards';
 import type {ListAllOrdersQuery} from '../dtos/order.dto';
 
 async function notifyCashiersOfNewOrder(orderId: string, totalAmount: number) {
@@ -1081,20 +1082,32 @@ export const orderController = {
 
         if (status === 'completed') {
           try {
-            const pointsEarned = Math.floor(order.totalAmount / 10);
+            // points_earned = Math.floor(order_total) — the earn rate lives
+            // in api/config/rewards.ts. Points are only ever credited here,
+            // on a completed (paid) order — never on cart/pending orders.
+            const pointsEarned = pointsEarnedForOrderTotal(order.totalAmount);
             if (pointsEarned > 0) {
-              await customerRepository.addPoints(
-                String(order.customerId),
+              // Claim first: only the caller that flips pointsAwarded from
+              // null actually credits, so repeated `completed` updates are
+              // a no-op instead of double-awarding.
+              const claim = await orderRepository.claimPointsAwarded(
+                String(order._id),
                 pointsEarned
               );
-              await notificationService.createForCustomer({
-                customerId: String(order.customerId),
-                type: 'order_status',
-                title: 'Rewards points earned!',
-                message: `You earned ${pointsEarned} rewards points for your order (#${String(order._id).slice(-6).toUpperCase()}). Redeem them in the Rewards tab!`,
-                orderId: String(order._id),
-                link: '/customer/dashboard?tab=rewards'
-              });
+              if (claim.modifiedCount > 0) {
+                await customerRepository.addPoints(
+                  String(order.customerId),
+                  pointsEarned
+                );
+                await notificationService.createForCustomer({
+                  customerId: String(order.customerId),
+                  type: 'order_status',
+                  title: 'Rewards points earned!',
+                  message: `You earned ${pointsEarned.toLocaleString('en-PH', {maximumFractionDigits: 0})} rewards points for your order (#${String(order._id).slice(-6).toUpperCase()}). Redeem them in the Rewards tab!`,
+                  orderId: String(order._id),
+                  link: '/customer/dashboard?tab=rewards'
+                });
+              }
             }
           } catch (error) {
             console.error('Failed to award rewards points', error);

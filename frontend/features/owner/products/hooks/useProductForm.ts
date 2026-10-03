@@ -43,10 +43,14 @@ export function useProductForm(categories: Category[] = []) {
       imageUrl: data.imageUrl ?? '',
       prepTimeMinutes:
         data.prepTimeMinutes == null ? '' : String(data.prepTimeMinutes),
-      ingredients: data.ingredients ?? [],
-      allergens: data.allergens ?? [],
-      isAvailable: data.isAvailable ?? true
-    });
+ingredients: data.ingredients ?? [],
+        allergens: data.allergens ?? [],
+        isAvailable: data.isAvailable ?? true,
+        rewardPointsOverride:
+          data.rewardPointsOverride == null
+            ? ''
+            : String(data.rewardPointsOverride)
+      });
     setPreviewUrl(data.imageUrl ?? null);
     setFormError(null);
     setSelectedFile(null);
@@ -84,6 +88,9 @@ export function useProductForm(categories: Category[] = []) {
     const stock = Number(form.stock);
     const prepTime = form.prepTimeMinutes.trim();
     const prepTimeMinutes = prepTime === '' ? null : Number(prepTime);
+    const rewardOverrideStr = form.rewardPointsOverride.trim();
+    const rewardPointsOverride =
+      rewardOverrideStr === '' ? null : Number(rewardOverrideStr);
     if (prepTimeMinutes !== null) {
       if (!Number.isInteger(prepTimeMinutes) || prepTimeMinutes < 0) {
         setFormError('Prep time is invalid');
@@ -91,6 +98,12 @@ export function useProductForm(categories: Category[] = []) {
       }
       if (prepTimeMinutes > 1440) {
         setFormError('Prep time must be 1440 minutes (24 hours) or less');
+        return null;
+      }
+    }
+    if (rewardPointsOverride !== null) {
+      if (!Number.isInteger(rewardPointsOverride) || rewardPointsOverride < 0) {
+        setFormError('Custom points cost is invalid');
         return null;
       }
     }
@@ -129,7 +142,8 @@ export function useProductForm(categories: Category[] = []) {
       prepTimeMinutes,
       ingredients: form.ingredients,
       allergens: form.allergens,
-      isBulkCategory
+      isBulkCategory,
+      rewardPointsOverride
     } as {
       price: number;
       stock: number;
@@ -137,6 +151,7 @@ export function useProductForm(categories: Category[] = []) {
       ingredients: ProductIngredient[];
       allergens: ProductAllergen[];
       isBulkCategory: boolean;
+      rewardPointsOverride: number | null;
     };
   };
 

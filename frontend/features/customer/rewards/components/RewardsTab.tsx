@@ -11,6 +11,11 @@ import {
   useRedeemRewardMutation
 } from '@/lib/hooks/rewards/useRewards';
 import type {RewardProduct, RewardRedemption} from '@/lib/api/rewardsApi';
+import {formatPoints} from '@/lib/utils/formatPoints';
+import {
+  buildEarnBannerText,
+  REWARDS_VALUE_FOOTNOTE
+} from '@/config/rewards';
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pending',
@@ -79,7 +84,9 @@ export default function RewardsTab() {
         setRedeemedReward(result.redemption);
       }
       toast.success(
-        `Reward redeemed! You have ${result.remainingPoints} points left.`
+        `Reward redeemed! You have ${formatPoints(
+          result.remainingPoints
+        )} points left.`
       );
     } catch (error) {
       toast.error(
@@ -104,7 +111,7 @@ export default function RewardsTab() {
             </p>
             <p className="mt-2 flex items-baseline gap-2">
               <span className="text-5xl font-extrabold tracking-tight">
-                {points.toLocaleString()}
+                {formatPoints(points)}
               </span>
               <span className="flex items-center gap-1 text-lg font-semibold text-[#7ed4a0]">
                 <Coins className="h-5 w-5" />
@@ -112,8 +119,7 @@ export default function RewardsTab() {
               </span>
             </p>
             <p className="mt-2 text-sm text-[#b8d4c0]">
-              Earn 1 point for every ₱10 you spend. Redeem them for your
-              favorite dishes!
+              {buildEarnBannerText()}
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:items-end">
@@ -140,6 +146,9 @@ export default function RewardsTab() {
         </div>
         <p className="mt-1 text-sm text-gray-500">
           Pick a product below and spend your points to get it.
+        </p>
+        <p className="mt-1 text-xs text-gray-400">
+          {REWARDS_VALUE_FOOTNOTE}
         </p>
 
         {categories.length > 1 && (
@@ -216,7 +225,7 @@ export default function RewardsTab() {
                     <div className="mt-3 flex items-center gap-1.5">
                       <Coins className="h-4 w-4 text-[#c9a227]" />
                       <span className="font-extrabold text-[#c9a227]">
-                        {product.pointsRequired.toLocaleString()}
+                        {formatPoints(product.pointsRequired)}
                       </span>
                       <span className="text-sm text-gray-500">points</span>
                     </div>
@@ -231,7 +240,9 @@ export default function RewardsTab() {
                         ? 'Sold Out'
                         : canRedeem
                           ? 'Redeem'
-                          : `Need ${(product.pointsRequired - points).toLocaleString()} more`}
+                          : `Need ${formatPoints(
+                              Math.max(0, product.pointsRequired - points)
+                            )} more`}
                     </Button>
                   </div>
                 </div>
@@ -259,7 +270,7 @@ export default function RewardsTab() {
                 <p className="mt-2 text-sm leading-relaxed text-gray-500">
                   Spend{' '}
                   <span className="font-bold text-[#c9a227]">
-                    {selected.pointsRequired.toLocaleString()} points
+                    {formatPoints(selected.pointsRequired)} points
                   </span>{' '}
                   to get{' '}
                   <span className="font-semibold text-gray-900">
@@ -383,7 +394,7 @@ export default function RewardsTab() {
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-bold text-[#c9a227]">
-                          -{redemption.pointsSpent.toLocaleString()} pts
+                          -{formatPoints(redemption.pointsSpent)} pts
                         </p>
                         <div className="flex items-center gap-1">
                           <span

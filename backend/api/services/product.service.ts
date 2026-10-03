@@ -49,6 +49,7 @@ export const productService = {
       ingredients?: ProductIngredient[];
       allergens?: ProductAllergen[];
       isAvailable?: boolean;
+      rewardPointsOverride?: number | null;
     }
   ) {
     const category = await resolveCategory(data.category);
@@ -56,6 +57,7 @@ export const productService = {
       ...data,
       stockUnit: category.stockUnit,
       isAvailable: data.isAvailable ?? true,
+      rewardPointsOverride: data.rewardPointsOverride ?? null,
       createdBy: adminId as any
     });
   },
@@ -74,12 +76,16 @@ export const productService = {
       ingredients?: ProductIngredient[];
       allergens?: ProductAllergen[];
       isAvailable?: boolean;
+      rewardPointsOverride?: number | null;
     }
   ) {
     if (data.category) {
       const category = await resolveCategory(data.category);
       data = {...data, stockUnit: category.stockUnit};
     }
+    // rewardPointsOverride is intentionally NOT defaulted here: Mongoose
+    // skips undefined, so omitting it leaves an existing override intact,
+    // and sending an explicit null clears it.
     const updated = await productRepository.updateById(id, data);
     if (!updated) {
       throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Product not found');

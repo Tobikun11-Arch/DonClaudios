@@ -37,7 +37,11 @@ export const createProductDto = z.object({
     .array(z.enum(ALLERGEN_VALUES))
     .max(ALLERGEN_VALUES.length)
     .optional(),
-  isAvailable: z.coerce.boolean().optional()
+  isAvailable: z.coerce.boolean().optional(),
+    rewardPointsOverride: z.preprocess(
+      value => (value === '' || value === null ? null : value),
+      z.coerce.number().int().min(0).nullable().optional()
+    )
 });
 
 export type CreateProductDto = z.infer<typeof createProductDto>;

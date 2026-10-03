@@ -164,7 +164,7 @@ export default function OrderTracking({
   }
 
   return (
-    <div className={embedded ? 'bg-gray-50' : 'min-h-screen bg-gray-50'}>
+    <div className={embedded ? '' : 'min-h-screen'}>
       <div
         className={
           embedded

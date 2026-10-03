@@ -11,6 +11,7 @@ export type ProductFormState = {
   ingredients: ProductIngredient[];
   allergens: ProductAllergen[];
   isAvailable: boolean;
+  rewardPointsOverride: string;
 };
 
 export const emptyProductForm: ProductFormState = {
@@ -23,5 +24,6 @@ export const emptyProductForm: ProductFormState = {
   prepTimeMinutes: '',
   ingredients: [],
   allergens: [],
-  isAvailable: true
+  isAvailable: true,
+  rewardPointsOverride: ''
 };

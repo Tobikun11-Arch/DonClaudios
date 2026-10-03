@@ -33,6 +33,7 @@ export type Product = {
   ingredients?: ProductIngredient[];
   allergens?: ProductAllergen[];
   isAvailable: boolean;
+  rewardPointsOverride?: number | null;
   createdBy: string | {firstName: string; lastName: string} | null;
   createdAt?: string;
   updatedAt?: string;
@@ -57,6 +58,7 @@ export type CreateProductBody = {
   ingredients?: ProductIngredient[];
   allergens?: ProductAllergen[];
   isAvailable?: boolean;
+  rewardPointsOverride?: number | null;
 };
 
 export type CreateProductResponse = {

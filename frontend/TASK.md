@@ -1,14 +1,18 @@
-Rewards/Loyalty System
-1. Finalize a rewards system design: points based on amount spent (not fixed items like "whole lechon"), similar to Starbucks' model — needs to avoid making the business lose money.
-Make points-per-peso ratio editable/configurable in admin settings (not hardcoded).
-Set up redemption flow: customer downloads/screenshots redemption confirmation, redeems in-store (delivery redemption also possible).
-Display reward benefits during account registration.
+...
 
 
--adding product add new category promo
--it will show in customer menu and don't show if no current food on that
--remove the promo tab in owner 
--highlights section/promo display that food and can click that and can order
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 Pre-order
