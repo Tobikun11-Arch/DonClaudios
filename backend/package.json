@@ -10,7 +10,10 @@
     "seed:ingredients": "tsx scripts/seedIngredients.ts",
     "seed:categories": "tsx scripts/seedCategories.ts",
     "seed:prep-times": "tsx scripts/backfillPrepTimes.ts",
-    "scan:profanity": "tsx scripts/scanProfanity.ts"
+    "scan:profanity": "tsx scripts/scanProfanity.ts",
+    "rewards:preview": "tsx scripts/previewRewardRecalc.ts",
+    "rewards:migrate": "tsx scripts/migratePointsScale.ts up",
+    "rewards:rollback": "tsx scripts/migratePointsScale.ts down"
   },
   "keywords": [],
   "author": "",

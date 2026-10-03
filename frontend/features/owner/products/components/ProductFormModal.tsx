@@ -10,7 +10,10 @@ import {
 } from '@/lib/categories/categoryUtils';
 import {type Category} from '@/lib/types/category';
 import {type IngredientItem} from '@/lib/types/ingredient';
-import {type ProductAllergen, type ProductIngredient} from '@/lib/types/product';
+import {
+  type ProductAllergen,
+  type ProductIngredient
+} from '@/lib/types/product';
 import {cn} from '@/lib/utils';
 import {useDefaultPrepMinutes} from '@/lib/hooks/useDefaultPrepMinutes';
 import {Upload} from 'lucide-react';
@@ -172,7 +175,9 @@ export function ProductFormModal({
                 <option value="">Loading categories...</option>
               ) : (
                 <>
-                  <option value="">{legacyCategory ? 'Choose a category' : 'Select a category'}</option>
+                  <option value="">
+                    {legacyCategory ? 'Choose a category' : 'Select a category'}
+                  </option>
                   {legacyCategory && (
                     <option value={form.category} disabled>
                       {form.category} (not in your list — pick one below)
@@ -247,15 +252,42 @@ export function ProductFormModal({
             </span>
           </div>
           <p className="text-xs text-gray-500">
-            How long the kitchen takes to make this. An order is estimated by its
-            slowest item, and cashiers get alerted if it runs past that.
+            How long the kitchen takes to make this. An order is estimated by
+            its slowest item, and cashiers get alerted if it runs past that.
             {form.prepTimeMinutes.trim() === '' && (
               <>
                 {' '}
-                Leave blank to use the store default of {defaultPrepMinutes}{' '}
+                Leave blank to use the store default of {
+                  defaultPrepMinutes
+                }{' '}
                 min.
               </>
             )}
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="rewardPointsOverride">
+            Custom reward points (optional)
+          </Label>
+          <div className="relative">
+            <Input
+              id="rewardPointsOverride"
+              inputMode="numeric"
+              value={form.rewardPointsOverride}
+              onChange={e =>
+                onFormChange('rewardPointsOverride', e.target.value)
+              }
+              placeholder="Leave blank for automatic price → points"
+              className="pr-16"
+            />
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">
+              pts
+            </span>
+          </div>
+          <p className="text-xs text-gray-500">
+            Override the points cost for this reward. Leave blank to use 100
+            points = ₱5 (rounded to nearest 50).
           </p>
         </div>
 
@@ -268,6 +300,114 @@ export function ProductFormModal({
             placeholder="Short description"
           />
         </div>
+
+        {/* Promo-specific fields - shown when category is 'promo' */}
+        {form.category.toLowerCase() === 'promo' && (
+          <>
+            <div className="rounded-xl border border-[#2d4a35]/20 bg-[#e9f5ee]/50 p-4">
+              <p className="text-sm font-semibold text-[#2d4a35] mb-3">
+                Promo Settings
+              </p>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="promoType">Promo Type</Label>
+                  <select
+                    id="promoType"
+                    value={form.promoType}
+                    onChange={e =>
+                      onFormChange(
+                        'promoType',
+                        e.target.value as
+                          | 'percentage'
+                          | 'fixed_amount'
+                          | 'bundle'
+                      )
+                    }
+                    disabled={isDisabled}
+                    className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 py-1 text-base shadow-xs outline-none disabled:opacity-50 md:text-sm"
+                  >
+                    <option value="percentage">Percentage Discount</option>
+                    <option value="fixed_amount">Fixed Amount Discount</option>
+                    <option value="bundle">Bundle Deal</option>
+                  </select>
+                </div>
+
+                {form.promoType === 'percentage' && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="discountRate">Discount Rate (%)</Label>
+                    <Input
+                      id="discountRate"
+                      inputMode="decimal"
+                      value={form.discountRate}
+                      onChange={e =>
+                        onFormChange('discountRate', e.target.value)
+                      }
+                      placeholder="e.g. 20"
+                      disabled={isDisabled}
+                    />
+                  </div>
+                )}
+
+                {form.promoType === 'fixed_amount' && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="discountAmount">Discount Amount (₱)</Label>
+                    <Input
+                      id="discountAmount"
+                      inputMode="decimal"
+                      value={form.discountAmount}
+                      onChange={e =>
+                        onFormChange('discountAmount', e.target.value)
+                      }
+                      placeholder="e.g. 50"
+                      disabled={isDisabled}
+                    />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="promoStartDate">Start Date</Label>
+                    <Input
+                      id="promoStartDate"
+                      type="date"
+                      value={form.promoStartDate}
+                      onChange={e =>
+                        onFormChange('promoStartDate', e.target.value)
+                      }
+                      disabled={isDisabled}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="promoEndDate">End Date</Label>
+                    <Input
+                      id="promoEndDate"
+                      type="date"
+                      value={form.promoEndDate}
+                      onChange={e =>
+                        onFormChange('promoEndDate', e.target.value)
+                      }
+                      disabled={isDisabled}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <input
+                    id="isPromoActive"
+                    type="checkbox"
+                    checked={form.isPromoActive}
+                    onChange={e =>
+                      onFormChange('isPromoActive', e.target.checked)
+                    }
+                    disabled={isDisabled}
+                    className="h-4 w-4"
+                  />
+                  <Label htmlFor="isPromoActive">Active Promo</Label>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
 
         {bulk ? null : (
           <>
@@ -325,10 +465,10 @@ export function ProductFormModal({
             {submitStatus === 'uploading'
               ? 'Uploading...'
               : submitStatus === 'submitting'
-              ? 'Uploading...'
-              : mode === 'create'
-              ? 'Save Product'
-              : 'Save Changes'}
+                ? 'Uploading...'
+                : mode === 'create'
+                  ? 'Save Product'
+                  : 'Save Changes'}
           </Button>
         </div>
       </form>

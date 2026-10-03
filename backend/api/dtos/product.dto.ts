@@ -37,7 +37,23 @@ export const createProductDto = z.object({
     .array(z.enum(ALLERGEN_VALUES))
     .max(ALLERGEN_VALUES.length)
     .optional(),
-  isAvailable: z.coerce.boolean().optional()
+  isAvailable: z.coerce.boolean().optional(),
+  rewardPointsOverride: z.preprocess(
+    value => (value === '' || value === null ? null : value),
+    z.coerce.number().int().min(0).nullable().optional()
+  ),
+  promoType: z.enum(['percentage', 'fixed_amount', 'bundle']).optional(),
+  discountRate: z.preprocess(
+    value => (value === '' || value === null ? undefined : value),
+    z.coerce.number().min(0).max(100).optional()
+  ),
+  discountAmount: z.preprocess(
+    value => (value === '' || value === null ? undefined : value),
+    z.coerce.number().min(0).optional()
+  ),
+  promoStartDate: z.string().optional(),
+  promoEndDate: z.string().optional(),
+  isPromoActive: z.coerce.boolean().optional()
 });
 
 export type CreateProductDto = z.infer<typeof createProductDto>;

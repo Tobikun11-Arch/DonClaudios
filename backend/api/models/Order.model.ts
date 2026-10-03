@@ -51,6 +51,12 @@ export interface OrderDocument extends mongoose.Document {
   overdueNotifiedAt?: Date | null;
   isOnline: boolean;
   stockDeducted: boolean;
+  /**
+   * Loyalty points credited when this order was completed, or null if it has
+   * not been credited yet. Doubles as an idempotency latch so re-sending
+   * `completed` cannot award the same points twice.
+   */
+  pointsAwarded?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -124,6 +130,7 @@ const OrderSchema = new Schema<OrderDocument>(
     estimatedReadyAt: {type: Date, default: null},
     overdueNotifiedAt: {type: Date, default: null},
     stockDeducted: {type: Boolean, default: false},
+    pointsAwarded: {type: Number, default: null},
     isOnline: {type: Boolean, default: true}
   },
   {timestamps: true}

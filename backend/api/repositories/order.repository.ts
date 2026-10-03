@@ -109,5 +109,16 @@ export const orderRepository = {
     ).exec(),
 
   updateStockDeducted: (orderId: string, stockDeducted: boolean) =>
-    OrderModel.updateOne({_id: orderId}, {stockDeducted}).exec()
+    OrderModel.updateOne({_id: orderId}, {stockDeducted}).exec(),
+
+  /**
+   * Atomic idempotency latch for loyalty points. Exactly one caller can flip
+   * pointsAwarded from null to a value, so a repeated `completed` status
+   * update cannot award the same points twice.
+   */
+  claimPointsAwarded: (orderId: string, points: number) =>
+    OrderModel.updateOne(
+      {_id: orderId, pointsAwarded: null},
+      {$set: {pointsAwarded: points}}
+    ).exec()
 };

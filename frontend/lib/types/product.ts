@@ -33,6 +33,13 @@ export type Product = {
   ingredients?: ProductIngredient[];
   allergens?: ProductAllergen[];
   isAvailable: boolean;
+  rewardPointsOverride?: number | null;
+  promoType?: 'percentage' | 'fixed_amount' | 'bundle';
+  discountRate?: number;
+  discountAmount?: number;
+  promoStartDate?: string;
+  promoEndDate?: string;
+  isPromoActive?: boolean;
   createdBy: string | {firstName: string; lastName: string} | null;
   createdAt?: string;
   updatedAt?: string;
@@ -57,6 +64,13 @@ export type CreateProductBody = {
   ingredients?: ProductIngredient[];
   allergens?: ProductAllergen[];
   isAvailable?: boolean;
+  rewardPointsOverride?: number | null;
+  promoType?: 'percentage' | 'fixed_amount' | 'bundle';
+  discountRate?: number;
+  discountAmount?: number;
+  promoStartDate?: string;
+  promoEndDate?: string;
+  isPromoActive?: boolean;
 };
 
 export type CreateProductResponse = {

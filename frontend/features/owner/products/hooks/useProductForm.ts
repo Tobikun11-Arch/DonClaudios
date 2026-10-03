@@ -1,5 +1,8 @@
 import {uploadProductImage} from '@/lib/api/uploadApi';
-import {isCateringCategory, getCategoryByName} from '@/lib/categories/categoryUtils';
+import {
+  isCateringCategory,
+  getCategoryByName
+} from '@/lib/categories/categoryUtils';
 import {emptyProductForm, type ProductFormState} from '@/lib/types/products';
 import {type Category} from '@/lib/types/category';
 import {
@@ -45,7 +48,18 @@ export function useProductForm(categories: Category[] = []) {
         data.prepTimeMinutes == null ? '' : String(data.prepTimeMinutes),
       ingredients: data.ingredients ?? [],
       allergens: data.allergens ?? [],
-      isAvailable: data.isAvailable ?? true
+      isAvailable: data.isAvailable ?? true,
+      rewardPointsOverride:
+        data.rewardPointsOverride == null
+          ? ''
+          : String(data.rewardPointsOverride),
+      promoType: data.promoType ?? 'percentage',
+      discountRate: data.discountRate == null ? '' : String(data.discountRate),
+      discountAmount:
+        data.discountAmount == null ? '' : String(data.discountAmount),
+      promoStartDate: data.promoStartDate ?? '',
+      promoEndDate: data.promoEndDate ?? '',
+      isPromoActive: data.isPromoActive ?? true
     });
     setPreviewUrl(data.imageUrl ?? null);
     setFormError(null);
@@ -84,6 +98,52 @@ export function useProductForm(categories: Category[] = []) {
     const stock = Number(form.stock);
     const prepTime = form.prepTimeMinutes.trim();
     const prepTimeMinutes = prepTime === '' ? null : Number(prepTime);
+    const rewardOverrideStr = form.rewardPointsOverride.trim();
+    const rewardPointsOverride =
+      rewardOverrideStr === '' ? null : Number(rewardOverrideStr);
+    const isPromoCategory = form.category.toLowerCase() === 'promo';
+
+    // Promo field validation
+    let promoType: 'percentage' | 'fixed_amount' | 'bundle' | undefined;
+    let discountRate: number | undefined;
+    let discountAmount: number | undefined;
+    let promoStartDate: string | undefined;
+    let promoEndDate: string | undefined;
+    let isPromoActive: boolean | undefined;
+
+    if (isPromoCategory) {
+      promoType = form.promoType;
+      if (promoType === 'percentage') {
+        const dr = Number(form.discountRate);
+        if (
+          form.discountRate.trim() === '' ||
+          Number.isNaN(dr) ||
+          dr < 0 ||
+          dr > 100
+        ) {
+          setFormError('Discount rate must be between 0 and 100');
+          return null;
+        }
+        discountRate = dr;
+      } else if (promoType === 'fixed_amount') {
+        const da = Number(form.discountAmount);
+        if (form.discountAmount.trim() === '' || Number.isNaN(da) || da < 0) {
+          setFormError('Discount amount must be a valid number');
+          return null;
+        }
+        discountAmount = da;
+      }
+      // Bundle type doesn't need discount fields
+
+      if (form.promoStartDate.trim()) {
+        promoStartDate = form.promoStartDate;
+      }
+      if (form.promoEndDate.trim()) {
+        promoEndDate = form.promoEndDate;
+      }
+      isPromoActive = form.isPromoActive;
+    }
+
     if (prepTimeMinutes !== null) {
       if (!Number.isInteger(prepTimeMinutes) || prepTimeMinutes < 0) {
         setFormError('Prep time is invalid');
@@ -91,6 +151,12 @@ export function useProductForm(categories: Category[] = []) {
       }
       if (prepTimeMinutes > 1440) {
         setFormError('Prep time must be 1440 minutes (24 hours) or less');
+        return null;
+      }
+    }
+    if (rewardPointsOverride !== null) {
+      if (!Number.isInteger(rewardPointsOverride) || rewardPointsOverride < 0) {
+        setFormError('Custom points cost is invalid');
         return null;
       }
     }
@@ -119,7 +185,7 @@ export function useProductForm(categories: Category[] = []) {
       return null;
     }
     const isBulkCategory = isCateringCategory(categories, form.category);
-    if (!isBulkCategory && form.ingredients.length === 0) {
+    if (!isBulkCategory && !isPromoCategory && form.ingredients.length === 0) {
       setFormError('Add at least 1 ingredient.');
       return null;
     }
@@ -129,7 +195,14 @@ export function useProductForm(categories: Category[] = []) {
       prepTimeMinutes,
       ingredients: form.ingredients,
       allergens: form.allergens,
-      isBulkCategory
+      isBulkCategory,
+      rewardPointsOverride,
+      promoType,
+      discountRate,
+      discountAmount,
+      promoStartDate,
+      promoEndDate,
+      isPromoActive
     } as {
       price: number;
       stock: number;
@@ -137,6 +210,13 @@ export function useProductForm(categories: Category[] = []) {
       ingredients: ProductIngredient[];
       allergens: ProductAllergen[];
       isBulkCategory: boolean;
+      rewardPointsOverride: number | null;
+      promoType?: 'percentage' | 'fixed_amount' | 'bundle';
+      discountRate?: number;
+      discountAmount?: number;
+      promoStartDate?: string;
+      promoEndDate?: string;
+      isPromoActive?: boolean;
     };
   };
 

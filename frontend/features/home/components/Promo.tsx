@@ -1,29 +1,35 @@
 'use client';
 
 import {Button} from '@/components/ui/button';
-import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
-import type {Promo} from '@/lib/types/promo';
-import type {PromoSection as PromoSectionType, SectionStyle} from '@/lib/types/settings';
+import {useProductsQuery} from '@/lib/hooks/products/useProducts';
+import type {Product} from '@/lib/types/product';
+import type {
+  PromoSection as PromoSectionType,
+  SectionStyle
+} from '@/lib/types/settings';
 import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
 import Image from 'next/image';
 import NoPromosEmptyState from './NoPromosEmptyState';
 import {useMemo, useRef, useState} from 'react';
+import {useRouter} from 'next/navigation';
 
-function PromoCardImage({promo}: {promo: Promo}) {
-  const [loaded, setLoaded] = useState(!promo.imageUrl);
+function PromoCardImage({product}: {product: Product}) {
+  const [loaded, setLoaded] = useState(!product.imageUrl);
   const isUpcoming = useMemo(() => {
-    const start = new Date(promo.startDate);
-    if (Number.isNaN(start.getTime())) return false;
+    const start = product.promoStartDate
+      ? new Date(product.promoStartDate)
+      : null;
+    if (!start || Number.isNaN(start.getTime())) return false;
     return new Date() < start;
-  }, [promo.startDate]);
+  }, [product.promoStartDate]);
 
   return (
     <div className="relative h-64 bg-gray-100">
-      {promo.imageUrl ? (
+      {product.imageUrl ? (
         <Image
           draggable={false}
-          src={promo.imageUrl}
-          alt={promo.title}
+          src={product.imageUrl}
+          alt={product.name}
           fill
           loading="lazy"
           sizes="(max-width: 768px) 90vw, 380px"
@@ -63,18 +69,30 @@ function PromoCardSkeleton() {
   );
 }
 
-export default function PromoSection({promo, sectionStyle}: {promo?: PromoSectionType; sectionStyle?: SectionStyle}) {
+export default function PromoSection({
+  promo,
+  sectionStyle
+}: {
+  promo?: PromoSectionType;
+  sectionStyle?: SectionStyle;
+}) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isDown = useRef(false);
   const startX = useRef(0);
   const scrollLeft = useRef(0);
+  const router = useRouter();
 
   const p = promo ?? DEFAULT_SETTINGS.promo;
 
-  const promosQuery = usePublicPromosQuery();
+  const productsQuery = useProductsQuery();
   const promos = useMemo(
-    () => promosQuery.data?.promos ?? [],
-    [promosQuery.data]
+    () =>
+      (productsQuery.data?.products ?? []).filter(
+        product =>
+          product.category.toLowerCase() === 'promo' &&
+          product.isPromoActive !== false
+      ),
+    [productsQuery.data]
   );
 
   const onMouseDown = (e: React.MouseEvent) => {
@@ -97,10 +115,12 @@ export default function PromoSection({promo, sectionStyle}: {promo?: PromoSectio
     scrollRef.current!.scrollLeft = scrollLeft.current - walk;
   };
 
-  const onOrderClick = () => {};
+  const onOrderClick = () => {
+    router.push('/order');
+  };
 
   const items = promos;
-  const hasNoPromos = !promosQuery.isLoading && items.length === 0;
+  const hasNoPromos = !productsQuery.isLoading && items.length === 0;
 
   return (
     <section
@@ -110,13 +130,27 @@ export default function PromoSection({promo, sectionStyle}: {promo?: PromoSectio
         backgroundColor: sectionStyle?.backgroundColor || '#fbd897',
         color: sectionStyle?.textColor || undefined,
         fontFamily: sectionStyle?.fontFamily || undefined,
-        ...(sectionStyle?.textColor ? {'--dc-text': sectionStyle.textColor} : {})
+        ...(sectionStyle?.textColor
+          ? {'--dc-text': sectionStyle.textColor}
+          : {})
       }}
     >
       <div className="container mx-auto">
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-5xl font-bold mb-4" style={{color: 'var(--dc-text, ' + DEFAULT_SETTINGS.colors.primary + ')'}}>{p.title}</h2>
-          <p className="text-xl" style={{color: 'var(--dc-text, ' + DEFAULT_SETTINGS.colors.primary + ')'}}>
+          <h2
+            className="text-5xl font-bold mb-4"
+            style={{
+              color: 'var(--dc-text, ' + DEFAULT_SETTINGS.colors.primary + ')'
+            }}
+          >
+            {p.title}
+          </h2>
+          <p
+            className="text-xl"
+            style={{
+              color: 'var(--dc-text, ' + DEFAULT_SETTINGS.colors.primary + ')'
+            }}
+          >
             {p.subtitle}
           </p>
         </div>
@@ -139,26 +173,26 @@ export default function PromoSection({promo, sectionStyle}: {promo?: PromoSectio
                 onMouseMove={onMouseMove}
               >
                 <div className="flex gap-6 w-max">
-                  {promosQuery.isLoading
+                  {productsQuery.isLoading
                     ? Array.from({length: 4}).map((_, idx) => (
                         <PromoCardSkeleton key={idx} />
                       ))
                     : null}
 
-                  {!promosQuery.isLoading
-                    ? items.map((promo: Promo) => (
+                  {!productsQuery.isLoading
+                    ? items.map((product: Product) => (
                         <div
-                          key={promo._id}
+                          key={product._id}
                           className="relative bg-white rounded-3xl border overflow-hidden shrink-0 w-95"
                         >
-                          <PromoCardImage promo={promo} />
+                          <PromoCardImage product={product} />
                           <div className="p-6 flex flex-col h-60">
                             <h3 className="text-xl font-bold mb-2 text-3c5e45">
-                              {promo.title}
+                              {product.name}
                             </h3>
-                            {promo.description ? (
+                            {product.description ? (
                               <p className="text-base mb-4 grow text-a4bbab">
-                                {promo.description}
+                                {product.description}
                               </p>
                             ) : null}
                             <Button

@@ -144,10 +144,7 @@ export default function ProductsPage() {
     }
   };
 
-  const onApproveIngredient = async (
-    item: IngredientItem,
-    iconKey: string
-  ) => {
+  const onApproveIngredient = async (item: IngredientItem, iconKey: string) => {
     await updateIngredientMutation.mutateAsync({
       id: item._id,
       body: {iconKey, status: 'active'}
@@ -221,7 +218,17 @@ export default function ProductsPage() {
     setFormError(null);
     const validated = validateAndGetPayload(mode);
     if (!validated) return;
-    const {price, stock, prepTimeMinutes} = validated;
+    const {
+      price,
+      stock,
+      prepTimeMinutes,
+      promoType,
+      discountRate,
+      discountAmount,
+      promoStartDate,
+      promoEndDate,
+      isPromoActive
+    } = validated;
 
     try {
       const imageUrl = await uploadImageIfNeeded();
@@ -238,7 +245,13 @@ export default function ProductsPage() {
           imageUrl,
           ingredients: validated.isBulkCategory ? [] : validated.ingredients,
           allergens: validated.isBulkCategory ? [] : validated.allergens,
-          isAvailable: form.isAvailable
+          isAvailable: form.isAvailable,
+          promoType,
+          discountRate,
+          discountAmount,
+          promoStartDate,
+          promoEndDate,
+          isPromoActive
         });
       } else {
         if (!editingId) return;
@@ -254,7 +267,13 @@ export default function ProductsPage() {
             imageUrl,
             ingredients: validated.isBulkCategory ? [] : validated.ingredients,
             allergens: validated.isBulkCategory ? [] : validated.allergens,
-            isAvailable: form.isAvailable
+            isAvailable: form.isAvailable,
+            promoType,
+            discountRate,
+            discountAmount,
+            promoStartDate,
+            promoEndDate,
+            isPromoActive
           }
         });
       }
@@ -304,8 +323,16 @@ export default function ProductsPage() {
 
       <IngredientLibraryBanner
         pending={pendingIngredients}
-        busyId={updateIngredientMutation.isPending ? updateIngredientMutation.variables?.id : null}
-        isDeletingId={deleteIngredientMutation.isPending ? deleteIngredientMutation.variables : null}
+        busyId={
+          updateIngredientMutation.isPending
+            ? updateIngredientMutation.variables?.id
+            : null
+        }
+        isDeletingId={
+          deleteIngredientMutation.isPending
+            ? deleteIngredientMutation.variables
+            : null
+        }
         onApprove={onApproveIngredient}
         onDelete={onDeleteSuggestion}
       />
