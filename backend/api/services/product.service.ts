@@ -50,6 +50,12 @@ export const productService = {
       allergens?: ProductAllergen[];
       isAvailable?: boolean;
       rewardPointsOverride?: number | null;
+      promoType?: 'percentage' | 'fixed_amount' | 'bundle';
+      discountRate?: number;
+      discountAmount?: number;
+      promoStartDate?: string;
+      promoEndDate?: string;
+      isPromoActive?: boolean;
     }
   ) {
     const category = await resolveCategory(data.category);
@@ -58,6 +64,14 @@ export const productService = {
       stockUnit: category.stockUnit,
       isAvailable: data.isAvailable ?? true,
       rewardPointsOverride: data.rewardPointsOverride ?? null,
+      promoType: data.promoType,
+      discountRate: data.discountRate,
+      discountAmount: data.discountAmount,
+      promoStartDate: data.promoStartDate
+        ? new Date(data.promoStartDate)
+        : undefined,
+      promoEndDate: data.promoEndDate ? new Date(data.promoEndDate) : undefined,
+      isPromoActive: data.isPromoActive,
       createdBy: adminId as any
     });
   },
@@ -77,6 +91,12 @@ export const productService = {
       allergens?: ProductAllergen[];
       isAvailable?: boolean;
       rewardPointsOverride?: number | null;
+      promoType?: 'percentage' | 'fixed_amount' | 'bundle';
+      discountRate?: number;
+      discountAmount?: number;
+      promoStartDate?: string;
+      promoEndDate?: string;
+      isPromoActive?: boolean;
     }
   ) {
     if (data.category) {
@@ -86,7 +106,14 @@ export const productService = {
     // rewardPointsOverride is intentionally NOT defaulted here: Mongoose
     // skips undefined, so omitting it leaves an existing override intact,
     // and sending an explicit null clears it.
-    const updated = await productRepository.updateById(id, data);
+    const updateData: any = {...data};
+    if (data.promoStartDate) {
+      updateData.promoStartDate = new Date(data.promoStartDate);
+    }
+    if (data.promoEndDate) {
+      updateData.promoEndDate = new Date(data.promoEndDate);
+    }
+    const updated = await productRepository.updateById(id, updateData);
     if (!updated) {
       throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Product not found');
     }

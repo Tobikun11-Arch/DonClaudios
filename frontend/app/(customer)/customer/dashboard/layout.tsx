@@ -5,7 +5,7 @@ import Image from 'next/image';
 import {useRouter} from 'next/navigation';
 import {useLogout} from '@/lib/hooks/auth/useLogout';
 import {useState, useRef, useCallback, useEffect} from 'react';
-import {ShoppingCart, Tag, User, Star, LogOut, Gift} from 'lucide-react';
+import {ShoppingCart, User, Star, LogOut, Gift} from 'lucide-react';
 import CustomerCartDrawer from '@/shared/components/cart/CustomerCartDrawer';
 import CustomerNotificationBell from '@/features/customer/notifications/components/CustomerNotificationBell';
 import SupportChatBubble from '@/features/support/components/SupportChatBubble';
@@ -17,12 +17,6 @@ const TABS = [
     tab: null,
     icon: ShoppingCart,
     href: '/customer/dashboard'
-  },
-  {
-    label: 'Promos',
-    tab: 'promos',
-    icon: Tag,
-    href: '/customer/dashboard?tab=promos'
   },
   {
     label: 'Reviews',
@@ -47,7 +41,6 @@ const TABS = [
 type DashboardLayoutProps = {
   children: React.ReactNode;
   order?: React.ReactNode;
-  promos?: React.ReactNode;
   notification?: React.ReactNode;
   history?: React.ReactNode;
   profile?: React.ReactNode;
@@ -58,7 +51,6 @@ type DashboardLayoutProps = {
 export default function DashboardLayout({
   children,
   order,
-  promos: promosSlot,
   notification,
   history,
   profile,
@@ -100,7 +92,6 @@ export default function DashboardLayout({
   }, []);
 
   const slotByTab: Record<string, React.ReactNode | undefined> = {
-    promos: promosSlot,
     notification,
     history,
     profile,
@@ -291,7 +282,9 @@ export default function DashboardLayout({
           notification bell, which spans y=12..52 on mobile and would
           otherwise sit on top of the first line of page content.
         */}
-        <div className="px-4 pt-16 pb-24 sm:px-6 sm:pt-10 md:pb-8">{content}</div>
+        <div className="px-4 pt-16 pb-24 sm:px-6 sm:pt-10 md:pb-8">
+          {content}
+        </div>
       </main>
 
       <nav
@@ -308,8 +301,7 @@ export default function DashboardLayout({
           const label = (
             'mobileLabel' in item ? item.mobileLabel : item.label
           ) as string;
-          const badgeCount =
-            0;
+          const badgeCount = 0;
           return (
             <Link
               key={item.label}
@@ -350,7 +342,12 @@ export default function DashboardLayout({
       </nav>
 
       <CustomerCartDrawer />
-      <Toaster position="top-right" richColors duration={2500} visibleToasts={4} />
+      <Toaster
+        position="top-right"
+        richColors
+        duration={2500}
+        visibleToasts={4}
+      />
       <SupportChatBubble />
     </div>
   );

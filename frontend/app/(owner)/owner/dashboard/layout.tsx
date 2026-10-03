@@ -11,7 +11,6 @@ import {
   Package,
   ClipboardList,
   Archive,
-  Tag,
   Palette,
   Star,
   Settings,
@@ -56,12 +55,6 @@ const PRIMARY_TABS = [
 
 const DRAWER_ITEMS = [
   {
-    label: 'Promos',
-    tab: 'promos',
-    icon: Tag,
-    href: '/owner/dashboard?tab=promos'
-  },
-  {
     label: 'Appearance',
     tab: 'appearance',
     icon: Palette,
@@ -88,7 +81,6 @@ type DashboardLayoutProps = {
   products?: React.ReactNode;
   orders?: React.ReactNode;
   inventory?: React.ReactNode;
-  promos?: React.ReactNode;
   cashiers?: React.ReactNode;
   appearance?: React.ReactNode;
   reviews?: React.ReactNode;
@@ -99,7 +91,6 @@ export default function DashboardLayout({
   products,
   orders,
   inventory,
-  promos,
   cashiers,
   appearance,
   reviews: reviewsSlot
@@ -143,7 +134,6 @@ export default function DashboardLayout({
     products,
     orders,
     inventory,
-    promos,
     cashiers,
     appearance,
     reviews: reviewsSlot
@@ -482,7 +472,12 @@ export default function DashboardLayout({
         </div>
       </div>
 
-      <Toaster position="top-right" richColors duration={2500} visibleToasts={4} />
+      <Toaster
+        position="top-right"
+        richColors
+        duration={2500}
+        visibleToasts={4}
+      />
       <OwnerSupportChatBubble />
     </div>
   );

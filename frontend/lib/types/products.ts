@@ -1,4 +1,7 @@
-import {type ProductAllergen, type ProductIngredient} from '@/lib/types/product';
+import {
+  type ProductAllergen,
+  type ProductIngredient
+} from '@/lib/types/product';
 
 export type ProductFormState = {
   name: string;
@@ -12,6 +15,12 @@ export type ProductFormState = {
   allergens: ProductAllergen[];
   isAvailable: boolean;
   rewardPointsOverride: string;
+  promoType: 'percentage' | 'fixed_amount' | 'bundle';
+  discountRate: string;
+  discountAmount: string;
+  promoStartDate: string;
+  promoEndDate: string;
+  isPromoActive: boolean;
 };
 
 export const emptyProductForm: ProductFormState = {
@@ -25,5 +34,11 @@ export const emptyProductForm: ProductFormState = {
   ingredients: [],
   allergens: [],
   isAvailable: true,
-  rewardPointsOverride: ''
+  rewardPointsOverride: '',
+  promoType: 'percentage',
+  discountRate: '',
+  discountAmount: '',
+  promoStartDate: '',
+  promoEndDate: '',
+  isPromoActive: true
 };
