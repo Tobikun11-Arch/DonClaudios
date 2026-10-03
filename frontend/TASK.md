@@ -1,12 +1,3 @@
-Pre-order
--add product if 4 lechon cochi chosen it will show new pre order dropdown yes or no - if yes show purchase limit input
--if there's an available pre order it will be default in customer menu for category
-
-
-
-
-
-
 
 NEW UI MODAL For choosing type of order delivery/reservation/pick up - if customer choose the pre order product in menu
 it dont need to choose type of order

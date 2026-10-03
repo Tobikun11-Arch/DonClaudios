@@ -44,6 +44,16 @@ import StoreClosedModal from '@/shared/components/StoreClosedModal';
 
 import SplashGate from '@/shared/components/SplashGate';
 
+import {toast} from 'sonner';
+
+import {
+  isPreOrderClosed,
+  isPreOrderProduct,
+  preOrderClosedMessage,
+  preOrderDeadlineLabel,
+  preOrderLimitMessage
+} from '@/lib/preOrder/preOrder';
+
 export default function OrderSlot() {
   const {data, isLoading, isError} = useProductsQuery();
 
@@ -205,7 +215,12 @@ export default function OrderSlot() {
         price: p.price,
         imageUrl: p.imageUrl,
         note: p.description,
-        href: `/customer/dashboard/promo/${encodeURIComponent(p._id)}`
+        href: `/customer/dashboard/promo/${encodeURIComponent(p._id)}`,
+        // Bundles are never pre-orders.
+        isPreOrder: false,
+        preOrderClosed: false,
+        preOrderLimit: null,
+        preOrderDeadlineLabel: ''
       }));
     }
 
@@ -232,7 +247,19 @@ export default function OrderSlot() {
 
       note: item.description,
 
-      href: undefined as string | undefined
+      href: undefined as string | undefined,
+
+      isPreOrder: isPreOrderProduct(item),
+
+      preOrderClosed: isPreOrderClosed(item),
+
+      preOrderLimit:
+        typeof item.preOrderPurchaseLimit === 'number' &&
+        item.preOrderPurchaseLimit >= 1
+          ? item.preOrderPurchaseLimit
+          : null,
+
+      preOrderDeadlineLabel: preOrderDeadlineLabel(item)
     }));
   }, [activeCategory, availableProducts, promoBundles, query, resolvedActiveTab]);
 
@@ -243,7 +270,32 @@ export default function OrderSlot() {
     name: string;
     price: number;
     imageUrl?: string;
+    isPreOrder?: boolean;
+    preOrderClosed?: boolean;
+    preOrderLimit?: number | null;
   }) => {
+    // Check the deadline and the owner's limit before the request so the
+    // customer gets a clear message. The cart API enforces the same rules.
+    if (item.isPreOrder && item.preOrderClosed) {
+      toast.error(preOrderClosedMessage(item.name));
+      return;
+    }
+
+    if (item.isPreOrder && typeof item.preOrderLimit === 'number') {
+      const currentQty =
+        cartItems.find(i => i.productId === item.id)?.quantity ?? 0;
+      if (currentQty + 1 > item.preOrderLimit) {
+        toast.error(
+          preOrderLimitMessage({
+            productName: item.name,
+            limit: item.preOrderLimit,
+            currentQty
+          })
+        );
+        return;
+      }
+    }
+
     await addCustomerCartItem.mutateAsync({
       productId: item.id,
       name: item.name,
@@ -395,6 +447,10 @@ export default function OrderSlot() {
                   note={item.note}
                   basePath="customer/dashboard"
                   href={item.href}
+                  isPreOrder={item.isPreOrder}
+                  preOrderClosed={item.preOrderClosed}
+                  preOrderLimit={item.preOrderLimit}
+                  preOrderDeadlineLabel={item.preOrderDeadlineLabel}
                   badge={
                     resolvedActiveTab === 'promoBundles'
                       ? {

@@ -34,6 +34,12 @@ export type Product = {
   allergens?: ProductAllergen[];
   isAvailable: boolean;
   pointsCost?: number | null;
+  /** Pre-order: only in the 4 eligible categories, signed-in customers only. */
+  isPreOrder?: boolean;
+  /** Max quantity one customer may order. Whole number >= 1. */
+  preOrderPurchaseLimit?: number | null;
+  /** Instant pre-orders close (end of the owner's chosen day, UTC+8). */
+  preOrderDeadline?: string | null;
   promoType?: 'percentage' | 'fixed_amount' | 'bundle';
   discountRate?: number;
   discountAmount?: number;
@@ -65,6 +71,9 @@ export type CreateProductBody = {
   allergens?: ProductAllergen[];
   isAvailable?: boolean;
   pointsCost?: number | null;
+  isPreOrder?: boolean;
+  preOrderPurchaseLimit?: number | null;
+  preOrderDeadline?: string | null;
   promoType?: 'percentage' | 'fixed_amount' | 'bundle';
   discountRate?: number;
   discountAmount?: number;

@@ -20,6 +20,7 @@ import type {OrderStatus, OrderDocument} from '../models/Order.model';
 import type {CashierDocument} from '../models/Cashier.model';
 import {resolveRange} from '../utils/dateRange';
 import {pointsEarnedForOrder} from '../config/rewards';
+import {assertPreOrderItemsOrderable} from '../services/cart.service';
 import type {ListAllOrdersQuery} from '../dtos/order.dto';
 
 async function notifyCashiersOfNewOrder(orderId: string, totalAmount: number) {
@@ -534,6 +535,17 @@ export const orderController = {
       const safeDeliveryFee =
         orderType === 'delivery' && items.length > 0 ? 49 : 0;
 
+      // Re-check pre-order limits and deadlines at order time: the cart may
+      // have been sitting open past the deadline, or the owner may have
+      // lowered the limit since it was added.
+      await assertPreOrderItemsOrderable({
+        items: items.map((i: any) => ({
+          productId: i.productId,
+          quantity: Math.max(1, Number(i.quantity ?? i.qty ?? 1))
+        })),
+        allowPreOrder: true
+      });
+
       const customerList = await customerRepository.listByIds([
         req.auth.userId as string
       ]);
@@ -722,6 +734,17 @@ export const orderController = {
       if (!Array.isArray(items) || items.length === 0) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'items are required');
       }
+
+      // Pre-order items are exclusive to signed-in customers. Guests are
+      // already prevented from seeing them, so this catches a stale cart or a
+      // direct API call trying to slip one through.
+      await assertPreOrderItemsOrderable({
+        items: items.map((i: any) => ({
+          productId: i.productId,
+          quantity: Math.max(1, Number(i.quantity ?? i.qty ?? 1))
+        })),
+        allowPreOrder: false
+      });
 
       const safeTotalAmount = Number(totalAmount);
       if (!Number.isFinite(safeTotalAmount) || safeTotalAmount <= 0) {

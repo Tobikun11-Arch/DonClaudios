@@ -6,7 +6,7 @@ import {useProductQuery} from '@/lib/hooks/products/useProducts';
 import {ArrowLeft, Minus, Plus, ShoppingCart} from 'lucide-react';
 import Image from 'next/image';
 import {useRouter} from 'next/navigation';
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {useCartStore} from '@/app/store/cartStore';
 import {usePathname} from 'next/navigation';
 import {useAddCustomerCartItemMutation} from '@/lib/hooks/cart/useCustomerCart';
@@ -17,6 +17,15 @@ import {
   getPromoBadgeForProduct
 } from '@/lib/utils/promoPricing';
 import {useCustomerCartQuery} from '@/lib/hooks/cart/useCustomerCart';
+import {
+  isPreOrderClosed,
+  isPreOrderProduct,
+  preOrderClosedMessage,
+  preOrderDeadlineLabel,
+  preOrderLimitLabel,
+  preOrderLimitMessage
+} from '@/lib/preOrder/preOrder';
+import {toast} from 'sonner';
 import {AllergenBadges} from './AllergenBadges';
 import {IngredientGrid} from './IngredientGrid';
 import ProductDetailSkeleton from './ProductDetailSkeleton';
@@ -76,6 +85,46 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
     if (!product) return null;
     return getPromoBadgeForProduct({promos, productId: product._id});
   }, [product, promos]);
+
+  // Pre-order state for this product: the deadline and the owner's limit cap
+  // the quantity stepper and block the add button.
+  const isPreOrder = isPreOrderProduct(product);
+  const preOrderClosed = isPreOrderClosed(product);
+  const preOrderLimit =
+    isPreOrder &&
+    typeof product?.preOrderPurchaseLimit === 'number' &&
+    product.preOrderPurchaseLimit >= 1
+      ? product.preOrderPurchaseLimit
+      : null;
+
+  /** Quantity already in the cart, so the limit applies to the total. */
+  const qtyInCart = product
+    ? cartItems.find(i => i.productId === product._id)?.quantity ?? 0
+    : 0;
+
+  const maxSelectableQty = useMemo(() => {
+    if (preOrderLimit == null) return Infinity;
+    return Math.max(1, preOrderLimit - qtyInCart);
+  }, [preOrderLimit, qtyInCart]);
+
+  // Clamp if the owner lowered the limit while this page was open.
+  useEffect(() => {
+    setQty(q => Math.min(q, maxSelectableQty));
+  }, [maxSelectableQty]);
+
+  /** Why adding is blocked, or null if it is allowed. */
+  const addBlockedReason = useMemo(() => {
+    if (!product) return 'Product not found.';
+    if (preOrderClosed) return preOrderClosedMessage(product.name);
+    if (preOrderLimit != null && qtyInCart >= preOrderLimit) {
+      return preOrderLimitMessage({
+        productName: product.name,
+        limit: preOrderLimit,
+        currentQty: qtyInCart
+      });
+    }
+    return null;
+  }, [product, preOrderClosed, preOrderLimit, qtyInCart]);
 
   return (
     <div
@@ -235,8 +284,9 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
 
                   <button
                     type="button"
-                    onClick={() => setQty(q => q + 1)}
-                    className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
+                    onClick={() => setQty(q => Math.min(q + 1, maxSelectableQty))}
+                    disabled={qty >= maxSelectableQty}
+                    className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white"
                     aria-label="Increase quantity"
                   >
                     <Plus className="h-3.5 w-3.5 text-gray-600" />
@@ -244,9 +294,13 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                 </div>
                 <Button
                   type="button"
-                  disabled={!product}
+                  disabled={!product || preOrderClosed}
                   onClick={() => {
                     if (!product) return;
+                    if (addBlockedReason) {
+                      toast.error(addBlockedReason);
+                      return;
+                    }
                     if (isCustomerRoute) {
                       addCustomerCartItemMutation.mutate({
                         productId: product._id,
@@ -274,9 +328,31 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                   }}
                   className="w-full sm:flex-1 h-12 rounded-full bg-[#3c5e45] text-white"
                 >
-                  Add to Cart - <span className="font-bold">₱{total}.00</span>
+                  {preOrderClosed
+                    ? 'Pre-order closed'
+                    : `Add to Cart - ₱${total}.00`}
                 </Button>
               </div>
+
+              {/* Pre-order context: who can buy it, until when, how many. */}
+              {isPreOrder && (
+                <div className="mt-4 rounded-xl border border-purple-200 bg-purple-50/70 p-4">
+                  <p className="text-sm font-bold text-purple-800">
+                    {preOrderClosed
+                      ? 'Pre-order closed'
+                      : preOrderDeadlineLabel(product)}
+                  </p>
+                  {preOrderLimit != null && (
+                    <p className="mt-0.5 text-xs text-purple-700">
+                      {preOrderLimitLabel(product)}
+                    </p>
+                  )}
+                  <p className="mt-2 text-xs text-gray-600">
+                    Pre-order items are only available to signed-in customers
+                    and only until the deadline above.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}

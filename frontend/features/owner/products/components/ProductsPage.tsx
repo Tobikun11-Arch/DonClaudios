@@ -67,6 +67,8 @@ export default function ProductsPage() {
     setSubmitStatus,
     resetForm,
     loadForm,
+    setCategory,
+    setIsPreOrder,
     onFileChange,
     onDrop,
     validateAndGetPayload,
@@ -227,7 +229,11 @@ export default function ProductsPage() {
       discountAmount,
       promoStartDate,
       promoEndDate,
-      isPromoActive
+      isPromoActive,
+      pointsCost,
+      isPreOrder,
+      preOrderPurchaseLimit,
+      preOrderDeadline
     } = validated;
 
     try {
@@ -251,7 +257,11 @@ export default function ProductsPage() {
           discountAmount,
           promoStartDate,
           promoEndDate,
-          isPromoActive
+          isPromoActive,
+          pointsCost,
+          isPreOrder,
+          preOrderPurchaseLimit,
+          preOrderDeadline
         });
       } else {
         if (!editingId) return;
@@ -273,7 +283,11 @@ export default function ProductsPage() {
             discountAmount,
             promoStartDate,
             promoEndDate,
-            isPromoActive
+            isPromoActive,
+            pointsCost,
+            isPreOrder,
+            preOrderPurchaseLimit,
+            preOrderDeadline
           }
         });
       }
@@ -419,6 +433,8 @@ export default function ProductsPage() {
         onClose={onCloseModal}
         onSubmit={onSubmit}
         onFormChange={(field, value) => setForm(v => ({...v, [field]: value}))}
+        onCategoryChange={setCategory}
+        onPreOrderChange={setIsPreOrder}
         onFileChange={handleFileChange}
         onDrop={onDrop}
         onDragEnter={() => setIsDragging(true)}

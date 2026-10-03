@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {
@@ -6,7 +6,7 @@ import {
   listMovements,
   restockProduct
 } from '@/lib/api/inventoryApi';
-import {productsQueryKey} from '../products/useProducts';
+import {PRODUCTS_QUERY_PREFIX} from '../products/useProducts';
 
 export const movementsQueryKey = (productId?: string) =>
   productId ? ['movements', productId] : ['movements'];
@@ -27,7 +27,7 @@ export function useRestockMutation() {
     mutationFn: ({productId, ...body}: {productId: string} & {quantity: number; note?: string}) =>
       restockProduct(productId, body),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({queryKey: productsQueryKey});
+      await queryClient.invalidateQueries({queryKey: PRODUCTS_QUERY_PREFIX});
       await queryClient.invalidateQueries({queryKey: ['movements']});
       await queryClient.invalidateQueries({queryKey: ['dashboard', 'inventory-by-category']});
       await queryClient.invalidateQueries({queryKey: ['dashboard', 'low-stock']});
@@ -41,10 +41,11 @@ export function useAdjustMutation() {
     mutationFn: ({productId, ...body}: {productId: string} & {quantity: number; reason: 'spoilage' | 'adjustment'; note?: string}) =>
       adjustProduct(productId, body),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({queryKey: productsQueryKey});
+      await queryClient.invalidateQueries({queryKey: PRODUCTS_QUERY_PREFIX});
       await queryClient.invalidateQueries({queryKey: ['movements']});
       await queryClient.invalidateQueries({queryKey: ['dashboard', 'inventory-by-category']});
       await queryClient.invalidateQueries({queryKey: ['dashboard', 'low-stock']});
     }
   });
 }
+

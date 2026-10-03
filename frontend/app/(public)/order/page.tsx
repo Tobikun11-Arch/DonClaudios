@@ -12,6 +12,7 @@ import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {usePublicCategoriesQuery} from '@/lib/hooks/categories/useCategories';
 import type {Promo} from '@/lib/types/promo';
 import Link from 'next/link';
+import {toast} from 'sonner';
 import {useCartStore} from '@/app/store/cartStore';
 import {useCartUiStore} from '@/app/store/cartUiStore';
 
@@ -20,6 +21,13 @@ import {
   getPromoBadgeForProduct
 } from '@/lib/utils/promoPricing';
 import StoreClosedModal from '@/shared/components/StoreClosedModal';
+import {
+  isPreOrderClosed,
+  isPreOrderProduct,
+  preOrderClosedMessage,
+  preOrderDeadlineLabel,
+  preOrderLimitMessage
+} from '@/lib/preOrder/preOrder';
 import {useGuestOrders} from '@/lib/hooks/orders/useGuestOrders';
 
 function ProductsSection() {
@@ -141,7 +149,16 @@ function ProductsSection() {
 
         note: p.description,
 
-        href: `/order/promo/${encodeURIComponent(p._id)}`
+        href: `/order/promo/${encodeURIComponent(p._id)}`,
+
+        // Bundles are never pre-orders.
+        isPreOrder: false,
+
+        preOrderClosed: false,
+
+        preOrderLimit: null,
+
+        preOrderDeadlineLabel: ''
       }));
     }
 
@@ -168,7 +185,19 @@ function ProductsSection() {
 
       note: item.description,
 
-      href: undefined as string | undefined
+      href: undefined as string | undefined,
+
+      isPreOrder: isPreOrderProduct(item),
+
+      preOrderClosed: isPreOrderClosed(item),
+
+      preOrderLimit:
+        typeof item.preOrderPurchaseLimit === 'number' &&
+        item.preOrderPurchaseLimit >= 1
+          ? item.preOrderPurchaseLimit
+          : null,
+
+      preOrderDeadlineLabel: preOrderDeadlineLabel(item)
     }));
   }, [
     activeCategory,
@@ -183,6 +212,7 @@ function ProductsSection() {
   ]);
 
   const addItem = useCartStore(s => s.addItem);
+  const cartItems = useCartStore(s => s.items);
   const openCart = useCartUiStore(s => s.open);
 
   const handleAdd = (item: {
@@ -190,7 +220,33 @@ function ProductsSection() {
     name: string;
     price: number;
     imageUrl?: string;
+    isPreOrder?: boolean;
+    preOrderClosed?: boolean;
+    preOrderLimit?: number | null;
   }) => {
+    // The guest cart can never hold a pre-order, but a signed-in customer
+    // can reach this page — so check the deadline and limit here too rather
+    // than letting the customer add an item the backend will reject.
+    if (item.isPreOrder && item.preOrderClosed) {
+      toast.error(preOrderClosedMessage(item.name));
+      return;
+    }
+
+    if (item.isPreOrder && typeof item.preOrderLimit === 'number') {
+      const currentQty =
+        cartItems.find(i => i.productId === item.id)?.qty ?? 0;
+      if (currentQty + 1 > item.preOrderLimit) {
+        toast.error(
+          preOrderLimitMessage({
+            productName: item.name,
+            limit: item.preOrderLimit,
+            currentQty
+          })
+        );
+        return;
+      }
+    }
+
     addItem({
       productId: item.id,
       name: item.name,
@@ -311,6 +367,10 @@ function ProductsSection() {
                   note={item.note}
                   basePath="order"
                   href={item.href}
+                  isPreOrder={item.isPreOrder}
+                  preOrderClosed={item.preOrderClosed}
+                  preOrderLimit={item.preOrderLimit}
+                  preOrderDeadlineLabel={item.preOrderDeadlineLabel}
                   badge={
                     resolvedActiveTab === 'promoBundles'
                       ? {
