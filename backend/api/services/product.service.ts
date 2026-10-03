@@ -13,6 +13,35 @@ import {
   preOrderDeadlineToInstant,
   validatePreOrderFields
 } from '../config/preOrder';
+import {notificationService} from './notification.service';
+
+/**
+ * Tell signed-in customers a pre-order just opened.
+ *
+ * A broadcast failure must not undo a successful product save, so errors are
+ * logged and swallowed — the product is what the owner asked for, and they
+ * can re-save to announce again.
+ */
+async function announcePreOrder(product: {
+  _id: unknown;
+  name: string;
+  preOrderDeadline?: Date | null;
+  preOrderPurchaseLimit?: number | null;
+}): Promise<void> {
+  try {
+    const notified = await notificationService.announcePreOrderToCustomers(
+      product
+    );
+    console.log(
+      `Pre-order "${product.name}" announced to ${notified} customer(s)`
+    );
+  } catch (error) {
+    console.error(
+      `Failed to announce pre-order "${product.name}" to customers`,
+      error
+    );
+  }
+}
 
 /**
  * Normalise the incoming pre-order trio into exactly what should be stored.
@@ -138,7 +167,7 @@ export const productService = {
       purchaseLimit: data.preOrderPurchaseLimit,
       deadlineInput: data.preOrderDeadline
     });
-    return productRepository.create({
+    const created = await productRepository.create({
       ...data,
       stockUnit: category.stockUnit,
       isAvailable: data.isAvailable ?? true,
@@ -156,6 +185,13 @@ export const productService = {
       ...preOrder,
       createdBy: adminId as any
     });
+
+    // A brand new product can only be "turning pre-order on" once.
+    if (created.isPreOrder === true) {
+      await announcePreOrder(created);
+    }
+
+    return created;
   },
 
   async update(
@@ -234,6 +270,15 @@ export const productService = {
     if (!updated) {
       throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Product not found');
     }
+
+    // Only announce on the OFF -> ON transition. Re-saving a product that was
+    // already a pre-order (e.g. bumping the price) is not "turning it on", so
+    // it stays quiet. Toggling off and back on announces again.
+    const wasPreOrder = existing.isPreOrder === true;
+    if (updated.isPreOrder === true && !wasPreOrder) {
+      await announcePreOrder(updated);
+    }
+
     return updated;
   },
 

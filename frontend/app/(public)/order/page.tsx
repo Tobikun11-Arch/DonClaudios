@@ -29,12 +29,24 @@ import {
   preOrderLimitMessage
 } from '@/lib/preOrder/preOrder';
 import {useGuestOrders} from '@/lib/hooks/orders/useGuestOrders';
+import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
+import {
+  buildFeaturedMenuItems,
+  FEATURED_TAB_ID,
+  FEATURED_TAB_IMAGE,
+  FEATURED_TAB_LABEL
+} from '@/lib/menu/featured';
 
 function ProductsSection() {
   const {data, isLoading, isError} = useProductsQuery();
   const promosQuery = usePublicPromosQuery();
   const publicCategoriesQuery = usePublicCategoriesQuery();
   const guestOrders = useGuestOrders();
+  const {data: me} = useMeQuery();
+
+  // Featured mixes pre-orders in, and guests cannot see or order those, so
+  // the tab is hidden for them entirely rather than shown with gaps.
+  const isSignedIn = !!me;
 
   const products = useMemo(() => data?.products ?? [], [data?.products]);
 
@@ -62,6 +74,17 @@ function ProductsSection() {
     );
   }, [promos]);
 
+  const featuredItems = useMemo(
+    () =>
+      buildFeaturedMenuItems({
+        products: availableProducts,
+        promos,
+        isSignedIn,
+        basePath: 'order'
+      }),
+    [availableProducts, isSignedIn, promos]
+  );
+
   const tabs = useMemo(() => {
     const categories = Array.from(
       new Set(
@@ -76,6 +99,9 @@ function ProductsSection() {
     const rice = categories.find(c => /rice/i.test(c)) ?? null;
 
     return [
+      ...(featuredItems.length > 0
+        ? [{id: FEATURED_TAB_ID, label: FEATURED_TAB_LABEL, category: null}]
+        : []),
       ...(rice
         ? [
             {
@@ -96,16 +122,18 @@ function ProductsSection() {
           category
         }))
     ];
-  }, [availableProducts, promoBundles.length]);
+  }, [availableProducts, featuredItems.length, promoBundles.length]);
 
   const defaultTabId = useMemo(() => {
+    if (featuredItems.length > 0) return FEATURED_TAB_ID;
+
     return (
       tabs.find(t => t.category && /rice/i.test(t.category))?.id ??
       tabs.find(t => t.category)?.id ??
       tabs[0]?.id ??
       ''
     );
-  }, [tabs]);
+  }, [featuredItems.length, tabs]);
 
   const [activeTab, setActiveTab] = useState('');
   const [query, setQuery] = useState('');
@@ -125,10 +153,21 @@ function ProductsSection() {
 
   const activeCategory = useMemo(() => {
     if (resolvedActiveTab === 'promoBundles') return null;
+    if (resolvedActiveTab === FEATURED_TAB_ID) return null;
     return tabs.find(t => t.id === resolvedActiveTab)?.category ?? null;
   }, [resolvedActiveTab, tabs]);
 
   const visibleItems = useMemo(() => {
+    if (resolvedActiveTab === FEATURED_TAB_ID) {
+      const normalizedQuery = query.trim().toLowerCase();
+
+      if (!normalizedQuery) return featuredItems;
+
+      return featuredItems
+        .filter(item => item.name.toLowerCase().includes(normalizedQuery))
+        .slice(0, 5);
+    }
+
     if (resolvedActiveTab === 'promoBundles') {
       const normalizedQuery = query.trim().toLowerCase();
 
@@ -203,6 +242,8 @@ function ProductsSection() {
     activeCategory,
 
     availableProducts,
+
+    featuredItems,
 
     promoBundles,
 
@@ -333,7 +374,11 @@ function ProductsSection() {
             <MenuCategoryCard
               key={tab.id}
               label={tab.label}
-              imageUrl={categoryImageMap[tab.label]}
+              imageUrl={
+                tab.id === FEATURED_TAB_ID
+                  ? FEATURED_TAB_IMAGE
+                  : categoryImageMap[tab.label]
+              }
               active={tab.id === resolvedActiveTab}
               onClick={() => setActiveTab(tab.id)}
             />
@@ -372,7 +417,8 @@ function ProductsSection() {
                   preOrderLimit={item.preOrderLimit}
                   preOrderDeadlineLabel={item.preOrderDeadlineLabel}
                   badge={
-                    resolvedActiveTab === 'promoBundles'
+                    resolvedActiveTab === 'promoBundles' ||
+                    (resolvedActiveTab === FEATURED_TAB_ID && !item.isPreOrder)
                       ? {
                           label: getBundleBadge()?.label ?? 'BUNDLE',
 

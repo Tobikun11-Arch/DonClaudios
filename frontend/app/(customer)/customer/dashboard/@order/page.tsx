@@ -54,12 +54,25 @@ import {
   preOrderLimitMessage
 } from '@/lib/preOrder/preOrder';
 
+import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
+
+import {
+  buildFeaturedMenuItems,
+  FEATURED_TAB_ID,
+  FEATURED_TAB_IMAGE,
+  FEATURED_TAB_LABEL
+} from '@/lib/menu/featured';
+
 export default function OrderSlot() {
   const {data, isLoading, isError} = useProductsQuery();
 
   const promosQuery = usePublicPromosQuery();
 
   const publicCategoriesQuery = usePublicCategoriesQuery();
+
+  const {data: me} = useMeQuery();
+
+  const isSignedIn = !!me;
 
   const openCart = useCartUiStore(s => s.open);
 
@@ -129,6 +142,19 @@ export default function OrderSlot() {
     );
   }, [promos]);
 
+  // Open pre-orders plus active bundles. Empty for guests, and while the
+  // session is still resolving.
+  const featuredItems = useMemo(
+    () =>
+      buildFeaturedMenuItems({
+        products: availableProducts,
+        promos,
+        isSignedIn,
+        basePath: 'customer/dashboard'
+      }),
+    [availableProducts, isSignedIn, promos]
+  );
+
   const tabs = useMemo(() => {
     const categories = Array.from(
       new Set(
@@ -145,6 +171,11 @@ export default function OrderSlot() {
     const rice = categories.find(c => /rice/i.test(c)) ?? null;
 
     return [
+      // Featured leads: it is the only place open pre-orders are surfaced
+      // outside their own category, and it is time-limited.
+      ...(featuredItems.length > 0
+        ? [{id: FEATURED_TAB_ID, label: FEATURED_TAB_LABEL, category: null}]
+        : []),
       ...(rice
         ? [
             {
@@ -171,9 +202,13 @@ export default function OrderSlot() {
           category
         }))
     ];
-  }, [availableProducts, promoBundles.length]);
+  }, [availableProducts, featuredItems.length, promoBundles.length]);
 
   const defaultTabId = useMemo(() => {
+    // Prefer Featured when there is something to feature, so an open
+    // pre-order is what the customer lands on.
+    if (featuredItems.length > 0) return FEATURED_TAB_ID;
+
     return (
       tabs.find(t => t.category && /rice/i.test(t.category))?.id ??
 
@@ -183,7 +218,7 @@ export default function OrderSlot() {
 
       ''
     );
-  }, [tabs]);
+  }, [featuredItems.length, tabs]);
 
   const [activeTab, setActiveTab] = useState('');
 
@@ -195,11 +230,22 @@ export default function OrderSlot() {
 
   const activeCategory = useMemo(() => {
     if (resolvedActiveTab === 'promoBundles') return null;
+    if (resolvedActiveTab === FEATURED_TAB_ID) return null;
 
     return tabs.find(t => t.id === resolvedActiveTab)?.category ?? null;
   }, [resolvedActiveTab, tabs]);
 
   const visibleItems = useMemo(() => {
+    if (resolvedActiveTab === FEATURED_TAB_ID) {
+      const normalizedQuery = query.trim().toLowerCase();
+
+      if (!normalizedQuery) return featuredItems;
+
+      return featuredItems
+        .filter(item => item.name.toLowerCase().includes(normalizedQuery))
+        .slice(0, 5);
+    }
+
     if (resolvedActiveTab === 'promoBundles') {
       const normalizedQuery = query.trim().toLowerCase();
 
@@ -261,7 +307,14 @@ export default function OrderSlot() {
 
       preOrderDeadlineLabel: preOrderDeadlineLabel(item)
     }));
-  }, [activeCategory, availableProducts, promoBundles, query, resolvedActiveTab]);
+  }, [
+    activeCategory,
+    availableProducts,
+    featuredItems,
+    promoBundles,
+    query,
+    resolvedActiveTab
+  ]);
 
   const addCustomerCartItem = useAddCustomerCartItemMutation();
 
@@ -413,7 +466,11 @@ export default function OrderSlot() {
             <MenuCategoryCard
               key={tab.id}
               label={tab.label}
-              imageUrl={categoryImageMap[tab.label]}
+              imageUrl={
+                tab.id === FEATURED_TAB_ID
+                  ? FEATURED_TAB_IMAGE
+                  : categoryImageMap[tab.label]
+              }
               active={tab.id === resolvedActiveTab}
               onClick={() => setActiveTab(tab.id)}
             />
@@ -452,7 +509,8 @@ export default function OrderSlot() {
                   preOrderLimit={item.preOrderLimit}
                   preOrderDeadlineLabel={item.preOrderDeadlineLabel}
                   badge={
-                    resolvedActiveTab === 'promoBundles'
+                    resolvedActiveTab === 'promoBundles' ||
+                    (resolvedActiveTab === FEATURED_TAB_ID && !item.isPreOrder)
                       ? {
                           label: getBundleBadge()?.label ?? 'BUNDLE',
 

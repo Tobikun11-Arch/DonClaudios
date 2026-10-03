@@ -113,6 +113,28 @@ export function isPreOrderClosed(
   return now.getTime() > instant.getTime();
 }
 
+/**
+ * Short, human deadline for copy we generate (notifications, not the UI),
+ * e.g. "Oct 20". Uses English month abbreviations in the store's timezone so it
+ * matches what the customer sees on the menu card.
+ */
+export function formatPreOrderDeadlineShort(
+  deadline: Date | string | null | undefined
+): string {
+  if (!deadline) return '';
+  const instant = deadline instanceof Date ? deadline : new Date(deadline);
+  if (Number.isNaN(instant.getTime())) return '';
+
+  const MONTHS = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
+  const shifted = new Date(
+    instant.getTime() + PRE_ORDER_TZ_OFFSET_MINUTES * 60 * 1000
+  );
+  return `${MONTHS[shifted.getUTCMonth()]} ${shifted.getUTCDate()}`;
+}
+
 /* ------------------------------------------------------------------ *
  * VALIDATION HELPERS
  * ------------------------------------------------------------------ */
