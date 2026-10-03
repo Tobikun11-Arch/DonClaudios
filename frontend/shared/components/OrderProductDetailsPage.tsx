@@ -6,7 +6,7 @@ import {useProductQuery} from '@/lib/hooks/products/useProducts';
 import {ArrowLeft, Minus, Plus, ShoppingCart} from 'lucide-react';
 import Image from 'next/image';
 import {useRouter} from 'next/navigation';
-import {useEffect, useMemo, useState} from 'react';
+import {useMemo, useState} from 'react';
 import {useCartStore} from '@/app/store/cartStore';
 import {usePathname} from 'next/navigation';
 import {useAddCustomerCartItemMutation} from '@/lib/hooks/cart/useCustomerCart';
@@ -71,16 +71,6 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
   const [qty, setQty] = useState(1);
   const [instructions, setInstructions] = useState('');
 
-  const total = useMemo(() => {
-    if (!product) return 0;
-    const {unitPrice} = getDiscountedUnitPrice({
-      promos,
-      productId: product._id,
-      basePrice: product.price
-    });
-    return unitPrice * qty;
-  }, [product, promos, qty]);
-
   const badge = useMemo(() => {
     if (!product) return null;
     return getPromoBadgeForProduct({promos, productId: product._id});
@@ -107,10 +97,27 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
     return Math.max(1, preOrderLimit - qtyInCart);
   }, [preOrderLimit, qtyInCart]);
 
-  // Clamp if the owner lowered the limit while this page was open.
-  useEffect(() => {
-    setQty(q => Math.min(q, maxSelectableQty));
-  }, [maxSelectableQty]);
+  /**
+   * What the stepper actually shows and adds.
+   *
+   * `qty` can end up above the cap without the user doing anything: the owner
+   * can lower the limit while this page is open, and adding to the cart raises
+   * `qtyInCart`, which lowers the cap too. Clamping here rather than in an
+   * effect keeps the displayed value correct on the very first render after
+   * the cap moves, instead of showing a stale number for a frame and costing
+   * an extra render pass.
+   */
+  const selectableQty = Math.min(qty, maxSelectableQty);
+
+  const total = useMemo(() => {
+    if (!product) return 0;
+    const {unitPrice} = getDiscountedUnitPrice({
+      promos,
+      productId: product._id,
+      basePrice: product.price
+    });
+    return unitPrice * selectableQty;
+  }, [product, promos, selectableQty]);
 
   /** Why adding is blocked, or null if it is allowed. */
   const addBlockedReason = useMemo(() => {
@@ -279,13 +286,13 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                   </button>
 
                   <span className="min-w-6 text-center text-base font-semibold text-gray-900">
-                    {qty}
+                    {selectableQty}
                   </span>
 
                   <button
                     type="button"
                     onClick={() => setQty(q => Math.min(q + 1, maxSelectableQty))}
-                    disabled={qty >= maxSelectableQty}
+                    disabled={selectableQty >= maxSelectableQty}
                     className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white"
                     aria-label="Increase quantity"
                   >
@@ -306,7 +313,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                         productId: product._id,
                         name: product.name,
                         price: product.price,
-                        quantity: qty,
+                        quantity: selectableQty,
                         imageUrl: product.imageUrl,
                         instructions: instructions.trim().length
                           ? instructions.trim()
@@ -318,7 +325,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                         name: product.name,
                         price: product.price,
                         imageUrl: product.imageUrl,
-                        qty,
+                        qty: selectableQty,
                         instructions: instructions.trim().length
                           ? instructions.trim()
                           : undefined

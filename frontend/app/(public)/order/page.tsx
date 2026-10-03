@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useMemo, useState} from 'react';
+import {useMemo, useState} from 'react';
 import Image from 'next/image';
 import {Input} from '@/components/ui/input';
 import {Search, History, SlidersHorizontal} from 'lucide-react';
