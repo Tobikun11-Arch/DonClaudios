@@ -267,18 +267,14 @@ export function ProductFormModal({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="rewardPointsOverride">
-            Custom reward points (optional)
-          </Label>
+          <Label htmlFor="pointsCost">Reward points cost</Label>
           <div className="relative">
             <Input
-              id="rewardPointsOverride"
+              id="pointsCost"
               inputMode="numeric"
-              value={form.rewardPointsOverride}
-              onChange={e =>
-                onFormChange('rewardPointsOverride', e.target.value)
-              }
-              placeholder="Leave blank for automatic price → points"
+              value={form.pointsCost}
+              onChange={e => onFormChange('pointsCost', e.target.value)}
+              placeholder="e.g. 5000"
               className="pr-16"
             />
             <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">
@@ -286,8 +282,9 @@ export function ProductFormModal({
             </span>
           </div>
           <p className="text-xs text-gray-500">
-            Override the points cost for this reward. Leave blank to use 100
-            points = ₱5 (rounded to nearest 50).
+            Points a customer spends to redeem this dish as a reward. New
+            products default to 20× the menu price rounded to the nearest 50 (a
+            ₱250 dish = 5,000 pts). Leave blank to fall back to that.
           </p>
         </div>
 

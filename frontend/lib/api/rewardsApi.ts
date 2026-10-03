@@ -9,7 +9,6 @@ export type RewardProduct = {
   imageUrl?: string;
   description?: string;
   pointsRequired: number;
-  pointsIsOverridden?: boolean;
 };
 
 export type RewardRedemption = {

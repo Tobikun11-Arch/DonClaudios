@@ -33,7 +33,7 @@ export type Product = {
   ingredients?: ProductIngredient[];
   allergens?: ProductAllergen[];
   isAvailable: boolean;
-  rewardPointsOverride?: number | null;
+  pointsCost?: number | null;
   promoType?: 'percentage' | 'fixed_amount' | 'bundle';
   discountRate?: number;
   discountAmount?: number;
@@ -64,7 +64,7 @@ export type CreateProductBody = {
   ingredients?: ProductIngredient[];
   allergens?: ProductAllergen[];
   isAvailable?: boolean;
-  rewardPointsOverride?: number | null;
+  pointsCost?: number | null;
   promoType?: 'percentage' | 'fixed_amount' | 'bundle';
   discountRate?: number;
   discountAmount?: number;

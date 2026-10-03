@@ -35,7 +35,13 @@ export interface ProductDocument extends mongoose.Document {
   isAvailable: boolean;
   ingredients: ProductIngredient[];
   allergens: ProductAllergen[];
-  rewardPointsOverride?: number | null;
+  /**
+   * Points a customer must spend to redeem this product as a reward.
+   * Owner-editable. Seeded once by scripts/backfillRewardPointsCost.ts
+   * (price * 20, rounded to the nearest 50) and then stored — never
+   * recomputed from `price` at runtime.
+   */
+  pointsCost?: number | null;
   promoType?: 'percentage' | 'fixed_amount' | 'bundle';
   discountRate?: number;
   discountAmount?: number;
@@ -66,7 +72,7 @@ const ProductSchema = new Schema<ProductDocument>(
     ingredients: {type: [ProductIngredientSchema], default: []},
     allergens: {type: [String], enum: [...ALLERGEN_VALUES], default: []},
     isAvailable: {type: Boolean, default: true},
-    rewardPointsOverride: {type: Number, min: 0, default: null},
+    pointsCost: {type: Number, min: 0, default: null},
     promoType: {
       type: String,
       enum: ['percentage', 'fixed_amount', 'bundle'],

@@ -49,10 +49,8 @@ export function useProductForm(categories: Category[] = []) {
       ingredients: data.ingredients ?? [],
       allergens: data.allergens ?? [],
       isAvailable: data.isAvailable ?? true,
-      rewardPointsOverride:
-        data.rewardPointsOverride == null
-          ? ''
-          : String(data.rewardPointsOverride),
+      pointsCost:
+        data.pointsCost == null ? '' : String(data.pointsCost),
       promoType: data.promoType ?? 'percentage',
       discountRate: data.discountRate == null ? '' : String(data.discountRate),
       discountAmount:
@@ -98,9 +96,8 @@ export function useProductForm(categories: Category[] = []) {
     const stock = Number(form.stock);
     const prepTime = form.prepTimeMinutes.trim();
     const prepTimeMinutes = prepTime === '' ? null : Number(prepTime);
-    const rewardOverrideStr = form.rewardPointsOverride.trim();
-    const rewardPointsOverride =
-      rewardOverrideStr === '' ? null : Number(rewardOverrideStr);
+    const pointsCostStr = form.pointsCost.trim();
+    const pointsCost = pointsCostStr === '' ? null : Number(pointsCostStr);
     const isPromoCategory = form.category.toLowerCase() === 'promo';
 
     // Promo field validation
@@ -154,9 +151,9 @@ export function useProductForm(categories: Category[] = []) {
         return null;
       }
     }
-    if (rewardPointsOverride !== null) {
-      if (!Number.isInteger(rewardPointsOverride) || rewardPointsOverride < 0) {
-        setFormError('Custom points cost is invalid');
+    if (pointsCost !== null) {
+      if (!Number.isInteger(pointsCost) || pointsCost < 0) {
+        setFormError('Reward points cost is invalid');
         return null;
       }
     }
@@ -196,7 +193,7 @@ export function useProductForm(categories: Category[] = []) {
       ingredients: form.ingredients,
       allergens: form.allergens,
       isBulkCategory,
-      rewardPointsOverride,
+      pointsCost,
       promoType,
       discountRate,
       discountAmount,
@@ -210,7 +207,7 @@ export function useProductForm(categories: Category[] = []) {
       ingredients: ProductIngredient[];
       allergens: ProductAllergen[];
       isBulkCategory: boolean;
-      rewardPointsOverride: number | null;
+      pointsCost: number | null;
       promoType?: 'percentage' | 'fixed_amount' | 'bundle';
       discountRate?: number;
       discountAmount?: number;

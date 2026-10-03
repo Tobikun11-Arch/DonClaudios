@@ -120,5 +120,16 @@ export const orderRepository = {
     OrderModel.updateOne(
       {_id: orderId, pointsAwarded: null},
       {$set: {pointsAwarded: points}}
+    ).exec(),
+
+  /**
+   * Atomic idempotency latch for a points clawback. Exactly one caller can
+   * flip pointsReversed from false to true, so cancelling an already
+   * cancelled / completed order cannot deduct the same points twice.
+   */
+  claimPointsReversal: (orderId: string) =>
+    OrderModel.updateOne(
+      {_id: orderId, pointsReversed: false},
+      {$set: {pointsReversed: true}}
     ).exec()
 };

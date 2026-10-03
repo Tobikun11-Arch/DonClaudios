@@ -3,14 +3,22 @@ import {ApiError} from '../utils/error';
 import {customerRepository} from '../repositories/customer.repository';
 import {productRepository} from '../repositories/product.repository';
 import {rewardRedemptionRepository} from '../repositories/reward.repository';
-import {
-  pointsCostForPrice,
-  pointsCostForReward
-} from '../config/rewards';
+import {fallbackPointsCost} from '../config/rewards';
 
-// Re-exported so any existing import of `pointsCostForPrice` from this
-// service keeps working. The maths now lives in api/config/rewards.ts.
-export {pointsCostForPrice, pointsCostForReward} from '../config/rewards';
+/**
+ * A reward's point cost is STORED on the product as `pointsCost` and owned
+ * by the shop owner. `fallbackPointsCost` is only a safety net for products
+ * that somehow have no stored value yet (see scripts/backfillRewardPointsCost.ts).
+ */
+function resolvePointsCost(product: {
+  pointsCost?: number | null;
+  price: number;
+}): number {
+  if (typeof product.pointsCost === 'number' && Number.isFinite(product.pointsCost) && product.pointsCost > 0) {
+    return Math.round(product.pointsCost);
+  }
+  return fallbackPointsCost(product.price);
+}
 
 function formatPoints(value: number): string {
   return value.toLocaleString('en-PH', {maximumFractionDigits: 0});
@@ -34,11 +42,7 @@ export const rewardService = {
         stock: product.stock,
         imageUrl: product.imageUrl,
         description: product.description,
-        pointsRequired: pointsCostForReward(
-          product.price,
-          product.rewardPointsOverride
-        ),
-        pointsIsOverridden: product.rewardPointsOverride != null
+        pointsRequired: resolvePointsCost(product)
       }));
 
     const redemptions =
@@ -90,10 +94,7 @@ export const rewardService = {
       );
     }
 
-    const unitPoints = pointsCostForReward(
-      product.price,
-      product.rewardPointsOverride
-    );
+    const unitPoints = resolvePointsCost(product);
     const pointsRequired = unitPoints * safeQty;
     if (customer.points < pointsRequired) {
       throw new ApiError(

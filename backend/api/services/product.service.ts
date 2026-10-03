@@ -7,6 +7,7 @@ import {
   type ProductAllergen,
   type ProductIngredient
 } from '../models/Product.model';
+import {initialPointsCostForPrice} from '../config/rewards';
 
 async function resolveCategory(
   categoryName: string
@@ -49,7 +50,7 @@ export const productService = {
       ingredients?: ProductIngredient[];
       allergens?: ProductAllergen[];
       isAvailable?: boolean;
-      rewardPointsOverride?: number | null;
+      pointsCost?: number | null;
       promoType?: 'percentage' | 'fixed_amount' | 'bundle';
       discountRate?: number;
       discountAmount?: number;
@@ -63,7 +64,8 @@ export const productService = {
       ...data,
       stockUnit: category.stockUnit,
       isAvailable: data.isAvailable ?? true,
-      rewardPointsOverride: data.rewardPointsOverride ?? null,
+      // Seed new products that were not given an explicit owner-set cost.
+      pointsCost: data.pointsCost ?? initialPointsCostForPrice(data.price),
       promoType: data.promoType,
       discountRate: data.discountRate,
       discountAmount: data.discountAmount,
@@ -90,7 +92,7 @@ export const productService = {
       ingredients?: ProductIngredient[];
       allergens?: ProductAllergen[];
       isAvailable?: boolean;
-      rewardPointsOverride?: number | null;
+      pointsCost?: number | null;
       promoType?: 'percentage' | 'fixed_amount' | 'bundle';
       discountRate?: number;
       discountAmount?: number;
@@ -103,8 +105,8 @@ export const productService = {
       const category = await resolveCategory(data.category);
       data = {...data, stockUnit: category.stockUnit};
     }
-    // rewardPointsOverride is intentionally NOT defaulted here: Mongoose
-    // skips undefined, so omitting it leaves an existing override intact,
+    // pointsCost is intentionally NOT defaulted here: Mongoose
+    // skips undefined, so omitting it leaves an existing owner-set cost intact,
     // and sending an explicit null clears it.
     const updateData: any = {...data};
     if (data.promoStartDate) {

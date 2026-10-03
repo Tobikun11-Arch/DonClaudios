@@ -38,7 +38,7 @@ export const createProductDto = z.object({
     .max(ALLERGEN_VALUES.length)
     .optional(),
   isAvailable: z.coerce.boolean().optional(),
-  rewardPointsOverride: z.preprocess(
+  pointsCost: z.preprocess(
     value => (value === '' || value === null ? null : value),
     z.coerce.number().int().min(0).nullable().optional()
   ),

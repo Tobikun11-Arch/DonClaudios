@@ -14,7 +14,7 @@ export type ProductFormState = {
   ingredients: ProductIngredient[];
   allergens: ProductAllergen[];
   isAvailable: boolean;
-  rewardPointsOverride: string;
+  pointsCost: string;
   promoType: 'percentage' | 'fixed_amount' | 'bundle';
   discountRate: string;
   discountAmount: string;
@@ -34,7 +34,7 @@ export const emptyProductForm: ProductFormState = {
   ingredients: [],
   allergens: [],
   isAvailable: true,
-  rewardPointsOverride: '',
+  pointsCost: '',
   promoType: 'percentage',
   discountRate: '',
   discountAmount: '',
