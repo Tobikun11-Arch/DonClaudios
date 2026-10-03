@@ -10,6 +10,11 @@ import {
   type ProductAllergen,
   type ProductIngredient
 } from '@/lib/types/product';
+import {
+  isPreOrderCategory,
+  toDeadlineInputValue,
+  todayInStoreTimezone
+} from '@/lib/preOrder/preOrder';
 import {type DragEvent, useEffect, useState} from 'react';
 
 export function useProductForm(categories: Category[] = []) {
@@ -49,21 +54,67 @@ export function useProductForm(categories: Category[] = []) {
       ingredients: data.ingredients ?? [],
       allergens: data.allergens ?? [],
       isAvailable: data.isAvailable ?? true,
-      rewardPointsOverride:
-        data.rewardPointsOverride == null
-          ? ''
-          : String(data.rewardPointsOverride),
+      pointsCost:
+        data.pointsCost == null ? '' : String(data.pointsCost),
       promoType: data.promoType ?? 'percentage',
       discountRate: data.discountRate == null ? '' : String(data.discountRate),
       discountAmount:
         data.discountAmount == null ? '' : String(data.discountAmount),
       promoStartDate: data.promoStartDate ?? '',
       promoEndDate: data.promoEndDate ?? '',
-      isPromoActive: data.isPromoActive ?? true
+      isPromoActive: data.isPromoActive ?? true,
+      // Existing products default to no pre-order; only honour the stored
+      // values if the product is still in an eligible category.
+      isPreOrder:
+        data.isPreOrder === true && isPreOrderCategory(data.category)
+          ? 'yes'
+          : 'no',
+      preOrderPurchaseLimit:
+        data.preOrderPurchaseLimit == null
+          ? ''
+          : String(data.preOrderPurchaseLimit),
+      preOrderDeadline: toDeadlineInputValue(data.preOrderDeadline)
     });
     setPreviewUrl(data.imageUrl ?? null);
     setFormError(null);
     setSelectedFile(null);
+  };
+
+  /** Can the currently selected category be turned into a pre-order? */
+  const canUsePreOrder = isPreOrderCategory(form.category);
+  const isPreOrderOn = canUsePreOrder && form.isPreOrder === 'yes';
+
+  /**
+   * Pick a category. If the new category does not support pre-order, the
+   * pre-order fields are cleared so a stale limit/deadline can never be
+   * submitted by accident.
+   */
+  const setCategory = (category: string) => {
+    setForm(prev =>
+      isPreOrderCategory(category)
+        ? {...prev, category}
+        : {
+            ...prev,
+            category,
+            isPreOrder: 'no',
+            preOrderPurchaseLimit: '',
+            preOrderDeadline: ''
+          }
+    );
+  };
+
+  /** Toggle pre-order on/off. Turning it off clears the extra fields. */
+  const setIsPreOrder = (value: 'yes' | 'no') => {
+    setForm(prev =>
+      value === 'yes'
+        ? {...prev, isPreOrder: 'yes'}
+        : {
+            ...prev,
+            isPreOrder: 'no',
+            preOrderPurchaseLimit: '',
+            preOrderDeadline: ''
+          }
+    );
   };
 
   const handleIncomingFile = (file: File) => {
@@ -98,9 +149,8 @@ export function useProductForm(categories: Category[] = []) {
     const stock = Number(form.stock);
     const prepTime = form.prepTimeMinutes.trim();
     const prepTimeMinutes = prepTime === '' ? null : Number(prepTime);
-    const rewardOverrideStr = form.rewardPointsOverride.trim();
-    const rewardPointsOverride =
-      rewardOverrideStr === '' ? null : Number(rewardOverrideStr);
+    const pointsCostStr = form.pointsCost.trim();
+    const pointsCost = pointsCostStr === '' ? null : Number(pointsCostStr);
     const isPromoCategory = form.category.toLowerCase() === 'promo';
 
     // Promo field validation
@@ -154,9 +204,9 @@ export function useProductForm(categories: Category[] = []) {
         return null;
       }
     }
-    if (rewardPointsOverride !== null) {
-      if (!Number.isInteger(rewardPointsOverride) || rewardPointsOverride < 0) {
-        setFormError('Custom points cost is invalid');
+    if (pointsCost !== null) {
+      if (!Number.isInteger(pointsCost) || pointsCost < 0) {
+        setFormError('Reward points cost is invalid');
         return null;
       }
     }
@@ -189,6 +239,45 @@ export function useProductForm(categories: Category[] = []) {
       setFormError('Add at least 1 ingredient.');
       return null;
     }
+
+    // Pre-order: only ever sent for an eligible category, and never as a
+    // half-filled state. When off we send explicit nulls so the backend
+    // clears any previously stored limit/deadline.
+    let isPreOrder = false;
+    let preOrderPurchaseLimit: number | null = null;
+    let preOrderDeadline: string | null = null;
+
+    if (canUsePreOrder && form.isPreOrder === 'yes') {
+      const limitRaw = form.preOrderPurchaseLimit.trim();
+      const limit = Number(limitRaw);
+      if (
+        limitRaw === '' ||
+        !Number.isInteger(limit) ||
+        limit < 1 ||
+        limit > 999
+      ) {
+        setFormError(
+          'Purchase limit must be a whole number greater than zero.'
+        );
+        return null;
+      }
+
+      const deadline = form.preOrderDeadline.trim();
+      if (!deadline) {
+        setFormError('Pre-order deadline is required.');
+        return null;
+      }
+      if (deadline < todayInStoreTimezone()) {
+        setFormError('Pre-order deadline cannot be in the past.');
+        return null;
+      }
+
+      isPreOrder = true;
+      preOrderPurchaseLimit = limit;
+      // Sent as YYYY-MM-DD; the backend turns it into the end-of-day instant.
+      preOrderDeadline = deadline;
+    }
+
     return {
       price,
       stock,
@@ -196,13 +285,16 @@ export function useProductForm(categories: Category[] = []) {
       ingredients: form.ingredients,
       allergens: form.allergens,
       isBulkCategory,
-      rewardPointsOverride,
+      pointsCost,
       promoType,
       discountRate,
       discountAmount,
       promoStartDate,
       promoEndDate,
-      isPromoActive
+      isPromoActive,
+      isPreOrder,
+      preOrderPurchaseLimit,
+      preOrderDeadline
     } as {
       price: number;
       stock: number;
@@ -210,13 +302,16 @@ export function useProductForm(categories: Category[] = []) {
       ingredients: ProductIngredient[];
       allergens: ProductAllergen[];
       isBulkCategory: boolean;
-      rewardPointsOverride: number | null;
+      pointsCost: number | null;
       promoType?: 'percentage' | 'fixed_amount' | 'bundle';
       discountRate?: number;
       discountAmount?: number;
       promoStartDate?: string;
       promoEndDate?: string;
       isPromoActive?: boolean;
+      isPreOrder: boolean;
+      preOrderPurchaseLimit: number | null;
+      preOrderDeadline: string | null;
     };
   };
 
@@ -240,6 +335,10 @@ export function useProductForm(categories: Category[] = []) {
     setSubmitStatus,
     resetForm,
     loadForm,
+    setCategory,
+    setIsPreOrder,
+    canUsePreOrder,
+    isPreOrderOn,
     onFileChange,
     onDrop,
     validateAndGetPayload,

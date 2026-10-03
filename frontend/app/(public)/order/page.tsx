@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useMemo, useState} from 'react';
+import {useMemo, useState} from 'react';
 import Image from 'next/image';
 import {Input} from '@/components/ui/input';
 import {Search, History, SlidersHorizontal} from 'lucide-react';
@@ -12,6 +12,7 @@ import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {usePublicCategoriesQuery} from '@/lib/hooks/categories/useCategories';
 import type {Promo} from '@/lib/types/promo';
 import Link from 'next/link';
+import {toast} from 'sonner';
 import {useCartStore} from '@/app/store/cartStore';
 import {useCartUiStore} from '@/app/store/cartUiStore';
 
@@ -20,13 +21,32 @@ import {
   getPromoBadgeForProduct
 } from '@/lib/utils/promoPricing';
 import StoreClosedModal from '@/shared/components/StoreClosedModal';
+import {
+  isPreOrderClosed,
+  isPreOrderProduct,
+  preOrderClosedMessage,
+  preOrderDeadlineLabel,
+  preOrderLimitMessage
+} from '@/lib/preOrder/preOrder';
 import {useGuestOrders} from '@/lib/hooks/orders/useGuestOrders';
+import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
+import {
+  buildFeaturedMenuItems,
+  FEATURED_TAB_ID,
+  FEATURED_TAB_IMAGE,
+  FEATURED_TAB_LABEL
+} from '@/lib/menu/featured';
 
 function ProductsSection() {
   const {data, isLoading, isError} = useProductsQuery();
   const promosQuery = usePublicPromosQuery();
   const publicCategoriesQuery = usePublicCategoriesQuery();
   const guestOrders = useGuestOrders();
+  const {data: me} = useMeQuery();
+
+  // Featured mixes pre-orders in, and guests cannot see or order those, so
+  // the tab is hidden for them entirely rather than shown with gaps.
+  const isSignedIn = !!me;
 
   const products = useMemo(() => data?.products ?? [], [data?.products]);
 
@@ -54,6 +74,17 @@ function ProductsSection() {
     );
   }, [promos]);
 
+  const featuredItems = useMemo(
+    () =>
+      buildFeaturedMenuItems({
+        products: availableProducts,
+        promos,
+        isSignedIn,
+        basePath: 'order'
+      }),
+    [availableProducts, isSignedIn, promos]
+  );
+
   const tabs = useMemo(() => {
     const categories = Array.from(
       new Set(
@@ -68,6 +99,9 @@ function ProductsSection() {
     const rice = categories.find(c => /rice/i.test(c)) ?? null;
 
     return [
+      ...(featuredItems.length > 0
+        ? [{id: FEATURED_TAB_ID, label: FEATURED_TAB_LABEL, category: null}]
+        : []),
       ...(rice
         ? [
             {
@@ -88,16 +122,18 @@ function ProductsSection() {
           category
         }))
     ];
-  }, [availableProducts, promoBundles.length]);
+  }, [availableProducts, featuredItems.length, promoBundles.length]);
 
   const defaultTabId = useMemo(() => {
+    if (featuredItems.length > 0) return FEATURED_TAB_ID;
+
     return (
       tabs.find(t => t.category && /rice/i.test(t.category))?.id ??
       tabs.find(t => t.category)?.id ??
       tabs[0]?.id ??
       ''
     );
-  }, [tabs]);
+  }, [featuredItems.length, tabs]);
 
   const [activeTab, setActiveTab] = useState('');
   const [query, setQuery] = useState('');
@@ -117,10 +153,21 @@ function ProductsSection() {
 
   const activeCategory = useMemo(() => {
     if (resolvedActiveTab === 'promoBundles') return null;
+    if (resolvedActiveTab === FEATURED_TAB_ID) return null;
     return tabs.find(t => t.id === resolvedActiveTab)?.category ?? null;
   }, [resolvedActiveTab, tabs]);
 
   const visibleItems = useMemo(() => {
+    if (resolvedActiveTab === FEATURED_TAB_ID) {
+      const normalizedQuery = query.trim().toLowerCase();
+
+      if (!normalizedQuery) return featuredItems;
+
+      return featuredItems
+        .filter(item => item.name.toLowerCase().includes(normalizedQuery))
+        .slice(0, 5);
+    }
+
     if (resolvedActiveTab === 'promoBundles') {
       const normalizedQuery = query.trim().toLowerCase();
 
@@ -141,7 +188,16 @@ function ProductsSection() {
 
         note: p.description,
 
-        href: `/order/promo/${encodeURIComponent(p._id)}`
+        href: `/order/promo/${encodeURIComponent(p._id)}`,
+
+        // Bundles are never pre-orders.
+        isPreOrder: false,
+
+        preOrderClosed: false,
+
+        preOrderLimit: null,
+
+        preOrderDeadlineLabel: ''
       }));
     }
 
@@ -168,12 +224,26 @@ function ProductsSection() {
 
       note: item.description,
 
-      href: undefined as string | undefined
+      href: undefined as string | undefined,
+
+      isPreOrder: isPreOrderProduct(item),
+
+      preOrderClosed: isPreOrderClosed(item),
+
+      preOrderLimit:
+        typeof item.preOrderPurchaseLimit === 'number' &&
+        item.preOrderPurchaseLimit >= 1
+          ? item.preOrderPurchaseLimit
+          : null,
+
+      preOrderDeadlineLabel: preOrderDeadlineLabel(item)
     }));
   }, [
     activeCategory,
 
     availableProducts,
+
+    featuredItems,
 
     promoBundles,
 
@@ -183,6 +253,7 @@ function ProductsSection() {
   ]);
 
   const addItem = useCartStore(s => s.addItem);
+  const cartItems = useCartStore(s => s.items);
   const openCart = useCartUiStore(s => s.open);
 
   const handleAdd = (item: {
@@ -190,7 +261,33 @@ function ProductsSection() {
     name: string;
     price: number;
     imageUrl?: string;
+    isPreOrder?: boolean;
+    preOrderClosed?: boolean;
+    preOrderLimit?: number | null;
   }) => {
+    // The guest cart can never hold a pre-order, but a signed-in customer
+    // can reach this page — so check the deadline and limit here too rather
+    // than letting the customer add an item the backend will reject.
+    if (item.isPreOrder && item.preOrderClosed) {
+      toast.error(preOrderClosedMessage(item.name));
+      return;
+    }
+
+    if (item.isPreOrder && typeof item.preOrderLimit === 'number') {
+      const currentQty =
+        cartItems.find(i => i.productId === item.id)?.qty ?? 0;
+      if (currentQty + 1 > item.preOrderLimit) {
+        toast.error(
+          preOrderLimitMessage({
+            productName: item.name,
+            limit: item.preOrderLimit,
+            currentQty
+          })
+        );
+        return;
+      }
+    }
+
     addItem({
       productId: item.id,
       name: item.name,
@@ -277,7 +374,11 @@ function ProductsSection() {
             <MenuCategoryCard
               key={tab.id}
               label={tab.label}
-              imageUrl={categoryImageMap[tab.label]}
+              imageUrl={
+                tab.id === FEATURED_TAB_ID
+                  ? FEATURED_TAB_IMAGE
+                  : categoryImageMap[tab.label]
+              }
               active={tab.id === resolvedActiveTab}
               onClick={() => setActiveTab(tab.id)}
             />
@@ -311,8 +412,13 @@ function ProductsSection() {
                   note={item.note}
                   basePath="order"
                   href={item.href}
+                  isPreOrder={item.isPreOrder}
+                  preOrderClosed={item.preOrderClosed}
+                  preOrderLimit={item.preOrderLimit}
+                  preOrderDeadlineLabel={item.preOrderDeadlineLabel}
                   badge={
-                    resolvedActiveTab === 'promoBundles'
+                    resolvedActiveTab === 'promoBundles' ||
+                    (resolvedActiveTab === FEATURED_TAB_ID && !item.isPreOrder)
                       ? {
                           label: getBundleBadge()?.label ?? 'BUNDLE',
 

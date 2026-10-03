@@ -19,7 +19,7 @@ export const POINTS_REDEEM_VALUE_LABEL = '100 points = ₱5';
 
 /** The banner under the points balance. */
 export const REWARDS_BANNER_TEXT =
-  'Earn 1 point for every ₱1 you spend. Redeem them for your favorite dishes!';
+  'Earn 1 point for every ₱1 you spend (delivery fees not included). Redeem them for your favorite dishes!';
 
 /** Reward value footnote shown under the catalog. */
 export const REWARDS_VALUE_FOOTNOTE =
@@ -30,5 +30,5 @@ export function buildEarnBannerText(pointsPerPeso = POINTS_PER_PESO): string {
   const perPeso = pointsPerPeso === 1 ? '₱1' : `₱${1 / pointsPerPeso}`;
   return `Earn ${pointsPerPeso} point${
     pointsPerPeso === 1 ? '' : 's'
-  } for every ${perPeso} you spend. Redeem them for your favorite dishes!`;
+  } for every ${perPeso} you spend (delivery fees not included). Redeem them for your favorite dishes!`;
 }

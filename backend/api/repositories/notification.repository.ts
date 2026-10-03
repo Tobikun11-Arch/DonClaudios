@@ -1,4 +1,9 @@
-import {NotificationDocument, NotificationModel} from '../models/Notification.model';
+import {
+  NotificationDocument,
+  NotificationModel,
+  NotificationType
+} from '../models/Notification.model';
+import mongoose from 'mongoose';
 
 export const notificationRepository = {
   listByCustomerId: (customerId: string) =>
@@ -37,6 +42,38 @@ export const notificationRepository = {
 
   create: (data: Partial<NotificationDocument>) =>
     NotificationModel.create(data),
+
+  /**
+   * Fan one announcement out to every customer in a single write.
+   *
+   * Returns 0 when there are no customers so the caller can skip a pointless
+   * round trip.
+   */
+  createManyForCustomers: (
+    customerIds: Array<string | mongoose.Types.ObjectId>,
+    data: {
+      type: NotificationType;
+      title: string;
+      message: string;
+      link?: string;
+    }
+  ) => {
+    if (customerIds.length === 0) {
+      return Promise.resolve([]);
+    }
+    return NotificationModel.insertMany(
+      customerIds.map(customerId => ({
+        target: 'customer' as const,
+        customerId,
+        type: data.type,
+        title: data.title,
+        message: data.message,
+        link: data.link ?? null,
+        read: false,
+        readAt: null
+      }))
+    );
+  },
 
   markRead: (id: string) =>
     NotificationModel.findByIdAndUpdate(

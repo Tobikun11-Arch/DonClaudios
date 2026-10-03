@@ -2,10 +2,16 @@ import {Button} from '@/components/ui/button';
 import {Card, CardContent} from '@/components/ui/card';
 import {stockUnitLabel} from '@/lib/categories/categoryUtils';
 import {cn} from '@/lib/utils';
-import {Package, Pencil, Trash2, Clock} from 'lucide-react';
+import {Package, Pencil, Trash2, Clock, CalendarClock} from 'lucide-react';
 import Image from 'next/image';
 import {formatPeso} from '../utils/formatPeso';
 import {Product} from '@/lib/types/product';
+import {
+  isPreOrderClosed,
+  isPreOrderProduct,
+  preOrderDeadlineLabel,
+  preOrderLimitLabel
+} from '@/lib/preOrder/preOrder';
 
 interface Props {
   product: Product;
@@ -46,6 +52,15 @@ export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
             <Clock size={11} />
             {p.prepTimeMinutes != null ? `~${p.prepTimeMinutes} min` : 'No time set'}
           </span>
+          {isPreOrderProduct(p) && (
+            <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-purple-200 bg-purple-50 text-purple-700">
+              <CalendarClock size={11} />
+              PRE-ORDER
+              {isPreOrderClosed(p) && (
+                <span className="font-semibold text-purple-500">· CLOSED</span>
+              )}
+            </span>
+          )}
         </div>
       </div>
 
@@ -63,7 +78,20 @@ export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
           </div>
         </div>
 
-        {p.description ? (
+        {isPreOrderProduct(p) ? (
+          <div className="mt-2 min-h-8 space-y-0.5">
+            <p className="text-xs font-semibold text-purple-700">
+              {isPreOrderClosed(p)
+                ? 'Pre-order closed'
+                : preOrderDeadlineLabel(p)}
+            </p>
+            {preOrderLimitLabel(p) && (
+              <p className="text-xs text-gray-500">
+                {preOrderLimitLabel(p)}
+              </p>
+            )}
+          </div>
+        ) : p.description ? (
           <p className="mt-2 text-xs text-gray-500 line-clamp-2 min-h-8">
             {p.description}
           </p>

@@ -8,6 +8,10 @@ export const productRepository = {
       .select('prepTimeMinutes')
       .exec(),
 
+  /** Full documents for many ids. Use `findByIds` when only prep times are needed. */
+  findManyByIds: (ids: string[]) =>
+    ProductModel.find({_id: {$in: ids}}).exec(),
+
   listPublic: () =>
     ProductModel.find({})
       .populate('createdBy', 'firstName lastName')

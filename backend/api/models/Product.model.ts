@@ -35,7 +35,23 @@ export interface ProductDocument extends mongoose.Document {
   isAvailable: boolean;
   ingredients: ProductIngredient[];
   allergens: ProductAllergen[];
-  rewardPointsOverride?: number | null;
+  /**
+   * Points a customer must spend to redeem this product as a reward.
+   * Owner-editable. Seeded once by scripts/backfillRewardPointsCost.ts
+   * (price * 20, rounded to the nearest 50) and then stored — never
+   * recomputed from `price` at runtime.
+   */
+  pointsCost?: number | null;
+  /**
+   * Pre-order: only available in the categories listed in
+   * api/config/preOrder.ts, only orderable by signed-in customers, and
+   * hidden entirely from guests.
+   */
+  isPreOrder?: boolean;
+  /** Max quantity one customer may order. Whole number >= 1. */
+  preOrderPurchaseLimit?: number | null;
+  /** Instant pre-orders close (end of the owner's chosen day, UTC+8). */
+  preOrderDeadline?: Date | null;
   promoType?: 'percentage' | 'fixed_amount' | 'bundle';
   discountRate?: number;
   discountAmount?: number;
@@ -66,7 +82,10 @@ const ProductSchema = new Schema<ProductDocument>(
     ingredients: {type: [ProductIngredientSchema], default: []},
     allergens: {type: [String], enum: [...ALLERGEN_VALUES], default: []},
     isAvailable: {type: Boolean, default: true},
-    rewardPointsOverride: {type: Number, min: 0, default: null},
+    pointsCost: {type: Number, min: 0, default: null},
+    isPreOrder: {type: Boolean, default: false},
+    preOrderPurchaseLimit: {type: Number, min: 1, default: null},
+    preOrderDeadline: {type: Date, default: null},
     promoType: {
       type: String,
       enum: ['percentage', 'fixed_amount', 'bundle'],

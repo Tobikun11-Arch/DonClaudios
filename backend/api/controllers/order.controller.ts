@@ -19,7 +19,8 @@ import type {PaymentMethod} from '../models/Transaction.model';
 import type {OrderStatus, OrderDocument} from '../models/Order.model';
 import type {CashierDocument} from '../models/Cashier.model';
 import {resolveRange} from '../utils/dateRange';
-import {pointsEarnedForOrderTotal} from '../config/rewards';
+import {pointsEarnedForOrder} from '../config/rewards';
+import {assertPreOrderItemsOrderable} from '../services/cart.service';
 import type {ListAllOrdersQuery} from '../dtos/order.dto';
 
 async function notifyCashiersOfNewOrder(orderId: string, totalAmount: number) {
@@ -534,6 +535,17 @@ export const orderController = {
       const safeDeliveryFee =
         orderType === 'delivery' && items.length > 0 ? 49 : 0;
 
+      // Re-check pre-order limits and deadlines at order time: the cart may
+      // have been sitting open past the deadline, or the owner may have
+      // lowered the limit since it was added.
+      await assertPreOrderItemsOrderable({
+        items: items.map((i: any) => ({
+          productId: i.productId,
+          quantity: Math.max(1, Number(i.quantity ?? i.qty ?? 1))
+        })),
+        allowPreOrder: true
+      });
+
       const customerList = await customerRepository.listByIds([
         req.auth.userId as string
       ]);
@@ -722,6 +734,17 @@ export const orderController = {
       if (!Array.isArray(items) || items.length === 0) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'items are required');
       }
+
+      // Pre-order items are exclusive to signed-in customers. Guests are
+      // already prevented from seeing them, so this catches a stale cart or a
+      // direct API call trying to slip one through.
+      await assertPreOrderItemsOrderable({
+        items: items.map((i: any) => ({
+          productId: i.productId,
+          quantity: Math.max(1, Number(i.quantity ?? i.qty ?? 1))
+        })),
+        allowPreOrder: false
+      });
 
       const safeTotalAmount = Number(totalAmount);
       if (!Number.isFinite(safeTotalAmount) || safeTotalAmount <= 0) {
@@ -1062,6 +1085,58 @@ export const orderController = {
         await orderRepository.updateStockDeducted(String(order._id), false);
       }
 
+      // Claw back loyalty points if we are cancelling an order that had
+      // already credited them. Guarded by claimPointsReversal() so a
+      // repeated cancel is a no-op instead of a double deduction.
+      if (status === 'cancelled') {
+        const awarded = order.pointsAwarded;
+        if (
+          order.customerId &&
+          typeof awarded === 'number' &&
+          awarded > 0 &&
+          order.orderStatus === 'completed'
+        ) {
+          try {
+            const claim = await orderRepository.claimPointsReversal(
+              String(order._id)
+            );
+            if (claim.modifiedCount > 0) {
+              const result = await customerRepository.subtractPoints(
+                String(order.customerId),
+                awarded
+              );
+              if (result.modifiedCount === 0) {
+                // The customer already spent those points. We deliberately
+                // never let a balance go negative, so this is logged for the
+                // owner to settle by hand rather than silently ignored.
+                console.error(
+                  `Could not claw back ${awarded} points for order #${String(
+                    order._id
+                  ).slice(-6)
+                  .toUpperCase()}: customer balance is lower than the awarded amount.`
+                );
+              } else {
+                await notificationService.createForCustomer({
+                  customerId: String(order.customerId),
+                  type: 'order_status',
+                  title: 'Rewards points adjusted',
+                  message: `Order #${String(order._id)
+                    .slice(-6)
+                    .toUpperCase()} was cancelled, so ${awarded.toLocaleString(
+                    'en-PH',
+                    {maximumFractionDigits: 0}
+                  )} rewards points were removed from your balance.`,
+                  orderId: String(order._id),
+                  link: '/customer/dashboard?tab=rewards'
+                });
+              }
+            }
+          } catch (error) {
+            console.error('Failed to reverse rewards points', error);
+          }
+        }
+      }
+
       await orderRepository.updateStatusWithHistory(
         req.params.id,
         status,
@@ -1082,10 +1157,18 @@ export const orderController = {
 
         if (status === 'completed') {
           try {
-            // points_earned = Math.floor(order_total) — the earn rate lives
-            // in api/config/rewards.ts. Points are only ever credited here,
-            // on a completed (paid) order — never on cart/pending orders.
-            const pointsEarned = pointsEarnedForOrderTotal(order.totalAmount);
+            // points_earned = Math.floor(earnable_amount), where
+            // earnable_amount = totalAmount - deliveryFee.
+            // The stored totalAmount INCLUDES the delivery fee, and delivery
+            // fees never earn points. Pickup/reservation/counter orders carry
+            // deliveryFee 0, so the whole total earns.
+            // The earn rate lives in api/config/rewards.ts. Points are only
+            // ever credited here, on a completed (paid) order — never on
+            // cart/pending orders.
+            const pointsEarned = pointsEarnedForOrder(
+              order.totalAmount,
+              order.deliveryFee
+            );
             if (pointsEarned > 0) {
               // Claim first: only the caller that flips pointsAwarded from
               // null actually credits, so repeated `completed` updates are

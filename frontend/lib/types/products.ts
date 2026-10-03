@@ -14,7 +14,11 @@ export type ProductFormState = {
   ingredients: ProductIngredient[];
   allergens: ProductAllergen[];
   isAvailable: boolean;
-  rewardPointsOverride: string;
+  pointsCost: string;
+  isPreOrder: 'yes' | 'no';
+  preOrderPurchaseLimit: string;
+  /** YYYY-MM-DD for <input type="date">. */
+  preOrderDeadline: string;
   promoType: 'percentage' | 'fixed_amount' | 'bundle';
   discountRate: string;
   discountAmount: string;
@@ -34,7 +38,10 @@ export const emptyProductForm: ProductFormState = {
   ingredients: [],
   allergens: [],
   isAvailable: true,
-  rewardPointsOverride: '',
+  pointsCost: '',
+  isPreOrder: 'no',
+  preOrderPurchaseLimit: '',
+  preOrderDeadline: '',
   promoType: 'percentage',
   discountRate: '',
   discountAmount: '',

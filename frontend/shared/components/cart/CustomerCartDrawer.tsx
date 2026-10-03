@@ -12,7 +12,9 @@ import {
   CalendarClock
 } from 'lucide-react';
 import {useRouter} from 'next/navigation';
+import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
+import {cn} from '@/lib/utils';
 import {useCartUiStore} from '@/app/store/cartUiStore';
 import {
   useCustomerCartQuery,
@@ -20,7 +22,16 @@ import {
   useSetCustomerCartItemQuantityMutation
 } from '@/lib/hooks/cart/useCustomerCart';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
+import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
+import {
+  isPreOrderClosed,
+  isPreOrderProduct,
+  preOrderClosedMessage,
+  preOrderLimitLabel,
+  preOrderLimitMessage
+} from '@/lib/preOrder/preOrder';
+import {type Product} from '@/lib/types/product';
 import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
 import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 import CartRemoveConfirmModal from './CartRemoveConfirmModal';
@@ -66,6 +77,32 @@ export default function CustomerCartDrawer({
   const items = useMemo(
     () => cartQuery.data?.cart?.items ?? [],
     [cartQuery.data]
+  );
+
+  /**
+   * Pre-order state per cart item, read from the products list.
+   *
+   * A cart can outlive a deadline (left open overnight) or an owner's limit
+   * edit, so we re-check here rather than trusting what was true when the
+   * item was added. The backend rejects these at order time regardless.
+   */
+  const productsQuery = useProductsQuery();
+  const preOrderByProductId = useMemo(() => {
+    const map = new Map<string, Product>();
+    for (const p of productsQuery.data?.products ?? []) {
+      if (isPreOrderProduct(p)) map.set(p._id, p);
+    }
+    return map;
+  }, [productsQuery.data]);
+
+  /** Cart items whose pre-order window has since closed. */
+  const closedPreOrderItems = useMemo(
+    () =>
+      items.filter(i => {
+        const p = preOrderByProductId.get(i.productId);
+        return p ? isPreOrderClosed(p) : false;
+      }),
+    [items, preOrderByProductId]
   );
 
   const subtotal = useMemo(() => {
@@ -134,6 +171,20 @@ export default function CustomerCartDrawer({
   };
 
   const goToCheckout = () => {
+    // A pre-order can close while it sits in the cart (deadline passed, or the
+    // owner lowered the limit). Catch it here rather than letting checkout
+    // fail after the customer has filled in everything.
+    if (closedPreOrderItems.length > 0) {
+      toast.error(
+        preOrderClosedMessage(
+          closedPreOrderItems.length === 1
+            ? closedPreOrderItems[0].name
+            : 'Some items in your cart'
+        )
+      );
+      return;
+    }
+
     const id =
       typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? crypto.randomUUID()
@@ -150,6 +201,54 @@ export default function CustomerCartDrawer({
     if (!removeTarget) return;
     removeItemMutation.mutate(removeTarget.productId, {
       onSuccess: () => setRemoveTarget(null)
+    });
+  };
+
+  /**
+   * Why the "+" button is unavailable for this item, or null if it is fine.
+   * Used both to disable the button and to explain it on click of the label.
+   */
+  const increaseBlockedReason = (item: {
+    productId: string;
+    name: string;
+    quantity: number;
+  }): string | null => {
+    const po = preOrderByProductId.get(item.productId);
+    if (!po) return null;
+
+    if (isPreOrderClosed(po)) {
+      return preOrderClosedMessage(item.name);
+    }
+
+    const limit = po.preOrderPurchaseLimit;
+    if (
+      typeof limit === 'number' &&
+      limit >= 1 &&
+      item.quantity + 1 > limit
+    ) {
+      return preOrderLimitMessage({
+        productName: item.name,
+        limit,
+        currentQty: item.quantity
+      });
+    }
+
+    return null;
+  };
+
+  const increaseItem = (item: {
+    productId: string;
+    name: string;
+    quantity: number;
+  }) => {
+    const blocked = increaseBlockedReason(item);
+    if (blocked) {
+      toast.error(blocked);
+      return;
+    }
+    setQtyMutation.mutate({
+      productId: item.productId,
+      quantity: item.quantity + 1
     });
   };
 
@@ -251,6 +350,25 @@ export default function CustomerCartDrawer({
                         <p className="text-sm font-semibold text-gray-900 line-clamp-2">
                           {item.name}
                         </p>
+                        {(() => {
+                          const po = preOrderByProductId.get(item.productId);
+                          if (!po) return null;
+                          const closed = isPreOrderClosed(po);
+                          return (
+                            <p
+                              className={cn(
+                                'mt-0.5 text-[11px] font-semibold',
+                                closed
+                                  ? 'text-gray-500'
+                                  : 'text-purple-700'
+                              )}
+                            >
+                              {closed
+                                ? 'Pre-order closed'
+                                : preOrderLimitLabel(po)}
+                            </p>
+                          );
+                        })()}
                         <button
                           type="button"
                           className="mt-1 text-xs font-semibold text-[#c30010]"
@@ -310,15 +428,13 @@ export default function CustomerCartDrawer({
                         </div>
                         <button
                           type="button"
-                          className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50"
-                          onClick={() =>
-                            setQtyMutation.mutate({
-                              productId: item.productId,
-                              quantity: item.quantity + 1
-                            })
-                          }
+                          className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                          onClick={() => increaseItem(item)}
                           aria-label="Increase"
-                          disabled={setQtyMutation.isPending}
+                          disabled={
+                            setQtyMutation.isPending ||
+                            increaseBlockedReason(item) !== null
+                          }
                         >
                           <Plus className="h-4 w-4" />
                         </button>

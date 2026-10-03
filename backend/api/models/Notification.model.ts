@@ -11,7 +11,8 @@ export type NotificationType =
   | 'new_order'
   | 'order_overdue'
   | 'order_delayed'
-  | 'support_message';
+  | 'support_message'
+  | 'pre_order';
 export type NotificationTarget = 'customer' | 'admin' | 'cashier';
 
 export interface NotificationDocument extends mongoose.Document {
@@ -53,7 +54,7 @@ const NotificationSchema = new Schema<NotificationDocument>(
     },
     type: {
       type: String,
-      enum: ['review_reply', 'review_submitted', 'review_auto_rejected', 'review_requested', 'order_message', 'low_stock', 'order_status', 'new_order', 'order_overdue', 'order_delayed', 'support_message'],
+      enum: ['review_reply', 'review_submitted', 'review_auto_rejected', 'review_requested', 'order_message', 'low_stock', 'order_status', 'new_order', 'order_overdue', 'order_delayed', 'support_message', 'pre_order'],
       required: true
     },
     title: {type: String, required: true},

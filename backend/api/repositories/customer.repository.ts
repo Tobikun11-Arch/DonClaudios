@@ -29,6 +29,16 @@ export const customerRepository = {
 
   listAll: () => CustomerModel.find({}).exec(),
 
+  /**
+   * Ids only, for broadcasting the same announcement to everyone.
+   * Selecting just `_id` keeps a large customer table from being pulled into
+   * memory on every pre-order notification.
+   */
+  listAllIds: () =>
+    CustomerModel.find({})
+      .select('_id')
+      .exec(),
+
   listByIds: (ids: string[]) =>
     CustomerModel.find({_id: {$in: ids}})
       .select('firstName lastName phoneNumber email')

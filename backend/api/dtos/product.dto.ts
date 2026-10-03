@@ -38,7 +38,7 @@ export const createProductDto = z.object({
     .max(ALLERGEN_VALUES.length)
     .optional(),
   isAvailable: z.coerce.boolean().optional(),
-  rewardPointsOverride: z.preprocess(
+  pointsCost: z.preprocess(
     value => (value === '' || value === null ? null : value),
     z.coerce.number().int().min(0).nullable().optional()
   ),
@@ -53,7 +53,23 @@ export const createProductDto = z.object({
   ),
   promoStartDate: z.string().optional(),
   promoEndDate: z.string().optional(),
-  isPromoActive: z.coerce.boolean().optional()
+  isPromoActive: z.coerce.boolean().optional(),
+  // Pre-order fields. The cross-field rules (eligible category, limit > 0,
+  // deadline required and not in the past) are enforced in product.service
+  // so the checks stay next to the database write.
+  //
+  // The deadline is accepted as a raw string on purpose: it may be a
+  // bare 'YYYY-MM-DD' from <input type="date">, and converting that to the
+  // correct end-of-day instant is done once, in preOrder.ts.
+  isPreOrder: z.coerce.boolean().optional(),
+  preOrderPurchaseLimit: z.preprocess(
+    value => (value === '' || value === null ? null : value),
+    z.coerce.number().int().min(1).nullable().optional()
+  ),
+  preOrderDeadline: z.preprocess(
+    value => (value === '' || value === null ? null : value),
+    z.string().nullable().optional()
+  )
 });
 
 export type CreateProductDto = z.infer<typeof createProductDto>;

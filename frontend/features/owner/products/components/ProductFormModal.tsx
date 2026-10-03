@@ -20,6 +20,11 @@ import {Upload} from 'lucide-react';
 import Image from 'next/image';
 import {type DragEvent, type FormEvent} from 'react';
 import {type ProductFormState} from '@/lib/types/products';
+import {
+  isPreOrderCategory,
+  PRE_ORDER_CATEGORIES,
+  todayInStoreTimezone
+} from '@/lib/preOrder/preOrder';
 import {AllergenChecklist} from './AllergenChecklist';
 import {IngredientChipsInput} from './IngredientChipsInput';
 import {Modal} from './Modal';
@@ -44,6 +49,10 @@ interface Props {
     field: keyof ProductFormState,
     value: string | boolean | ProductIngredient[] | ProductAllergen[]
   ) => void;
+  /** Routed through the hook so picking a non-eligible category clears pre-order. */
+  onCategoryChange: (category: string) => void;
+  /** Same reason: turning pre-order off clears the limit and deadline. */
+  onPreOrderChange: (value: 'yes' | 'no') => void;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDrop: (e: DragEvent<HTMLButtonElement>) => void;
   onDragEnter: () => void;
@@ -67,6 +76,8 @@ export function ProductFormModal({
   onClose,
   onSubmit,
   onFormChange,
+  onCategoryChange,
+  onPreOrderChange,
   onFileChange,
   onDrop,
   onDragEnter,
@@ -78,6 +89,9 @@ export function ProductFormModal({
   const legacyCategory =
     form.category && !selectedCategory ? form.category : null;
   const bulk = isCateringCategory(categories, form.category);
+  const canPreOrder = isPreOrderCategory(form.category);
+  const preOrderOn = canPreOrder && form.isPreOrder === 'yes';
+  const minDeadline = todayInStoreTimezone();
 
   return (
     <Modal
@@ -163,7 +177,7 @@ export function ProductFormModal({
             <select
               id="category"
               value={form.category}
-              onChange={e => onFormChange('category', e.target.value)}
+              onChange={e => onCategoryChange(e.target.value)}
               disabled={isDisabled || categoriesLoading}
               className={cn(
                 'h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-2.5 text-base shadow-xs outline-none transition-[color,box-shadow]',
@@ -267,31 +281,6 @@ export function ProductFormModal({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="rewardPointsOverride">
-            Custom reward points (optional)
-          </Label>
-          <div className="relative">
-            <Input
-              id="rewardPointsOverride"
-              inputMode="numeric"
-              value={form.rewardPointsOverride}
-              onChange={e =>
-                onFormChange('rewardPointsOverride', e.target.value)
-              }
-              placeholder="Leave blank for automatic price → points"
-              className="pr-16"
-            />
-            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">
-              pts
-            </span>
-          </div>
-          <p className="text-xs text-gray-500">
-            Override the points cost for this reward. Leave blank to use 100
-            points = ₱5 (rounded to nearest 50).
-          </p>
-        </div>
-
-        <div className="space-y-1.5">
           <Label htmlFor="description">Description</Label>
           <Input
             id="description"
@@ -300,6 +289,97 @@ export function ProductFormModal({
             placeholder="Short description"
           />
         </div>
+
+        {/* Pre-order — only offered in the eligible categories. */}
+        {canPreOrder && (
+          <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="isPreOrder">Pre-order</Label>
+              <select
+                id="isPreOrder"
+                value={form.isPreOrder}
+                onChange={e =>
+                  onPreOrderChange(e.target.value as 'yes' | 'no')
+                }
+                disabled={isDisabled}
+                className={cn(
+                  'h-9 w-full min-w-0 rounded-md border border-input bg-white px-2.5 text-base shadow-xs outline-none transition-[color,box-shadow]',
+                  'focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
+                  'disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
+                )}
+              >
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+              <p className="text-xs text-gray-600">
+                Pre-order items are only visible to signed-in customers and only
+                orderable until the deadline below.
+              </p>
+            </div>
+
+            {preOrderOn && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="preOrderPurchaseLimit">
+                    Purchase limit per customer
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="preOrderPurchaseLimit"
+                      type="number"
+                      inputMode="numeric"
+                      step={1}
+                      min={1}
+                      required
+                      value={form.preOrderPurchaseLimit}
+                      onChange={e =>
+                        onFormChange('preOrderPurchaseLimit', e.target.value)
+                      }
+                      placeholder="e.g. 2"
+                      className="pr-16"
+                    />
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">
+                      max
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    The most one customer can order of this item.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="preOrderDeadline">Pre-order deadline</Label>
+                  <Input
+                    id="preOrderDeadline"
+                    type="date"
+                    required
+                    min={minDeadline}
+                    value={form.preOrderDeadline}
+                    onChange={e =>
+                      onFormChange('preOrderDeadline', e.target.value)
+                    }
+                  />
+                  <p className="text-xs text-gray-600">
+                    Last day customers can pre-order. The whole day counts, up
+                    to 11:59 PM.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Remind the owner why pre-order is unavailable here, instead of
+            silently hiding it. */}
+        {mode === 'create' &&
+          form.category.trim() &&
+          !canPreOrder &&
+          form.category.toLowerCase() !== 'promo' && (
+            <p className="text-xs text-gray-500">
+              Pre-order is available for:{' '}
+              {PRE_ORDER_CATEGORIES.join(', ')}.
+            </p>
+          )}
 
         {/* Promo-specific fields - shown when category is 'promo' */}
         {form.category.toLowerCase() === 'promo' && (

@@ -7,6 +7,92 @@ import {
   type ProductAllergen,
   type ProductIngredient
 } from '../models/Product.model';
+import {initialPointsCostForPrice} from '../config/rewards';
+import {
+  isPreOrderCategory,
+  preOrderDeadlineToInstant,
+  validatePreOrderFields
+} from '../config/preOrder';
+import {notificationService} from './notification.service';
+
+/**
+ * Tell signed-in customers a pre-order just opened.
+ *
+ * A broadcast failure must not undo a successful product save, so errors are
+ * logged and swallowed — the product is what the owner asked for, and they
+ * can re-save to announce again.
+ */
+async function announcePreOrder(product: {
+  _id: unknown;
+  name: string;
+  preOrderDeadline?: Date | null;
+  preOrderPurchaseLimit?: number | null;
+}): Promise<void> {
+  try {
+    const notified = await notificationService.announcePreOrderToCustomers(
+      product
+    );
+    console.log(
+      `Pre-order "${product.name}" announced to ${notified} customer(s)`
+    );
+  } catch (error) {
+    console.error(
+      `Failed to announce pre-order "${product.name}" to customers`,
+      error
+    );
+  }
+}
+
+/**
+ * Normalise the incoming pre-order trio into exactly what should be stored.
+ *
+ * Turning pre-order OFF, or moving the product to a category that does not
+ * support it, clears the limit and deadline so stale values can never be
+ * saved by accident and later resurface.
+ */
+function resolvePreOrderFields(input: {
+  category?: string | null;
+  isPreOrder?: boolean | null;
+  purchaseLimit?: number | null;
+  deadlineInput?: string | null;
+  /**
+   * The deadline already stored on the product, used when the owner did not
+   * touch it. Together with `deadlineCarriedOver` this lets an edit that leaves
+   * an expired pre-order alone (e.g. changing the price) succeed instead of
+   * being blocked by the past-date rule.
+   */
+  existingDeadline?: Date | null;
+  deadlineCarriedOver?: boolean;
+}) {
+  const enabled = input.isPreOrder === true;
+
+  if (!enabled || !isPreOrderCategory(input.category)) {
+    return {isPreOrder: false, preOrderPurchaseLimit: null, preOrderDeadline: null};
+  }
+
+  const pickedNewDate =
+    input.deadlineInput != null && input.deadlineInput !== '';
+  const deadline = pickedNewDate
+    ? preOrderDeadlineToInstant(input.deadlineInput as string)
+    : (input.existingDeadline ?? null);
+
+  const check = validatePreOrderFields({
+    category: input.category,
+    isPreOrder: true,
+    purchaseLimit: input.purchaseLimit ?? null,
+    deadline,
+    allowPastDeadline: input.deadlineCarriedOver === true
+  });
+  if (!check.ok) {
+    throw new ApiError(400, 'VALIDATION_ERROR', check.message);
+  }
+
+  return {
+    isPreOrder: true,
+    preOrderPurchaseLimit: input.purchaseLimit as number,
+    preOrderDeadline: deadline
+  };
+}
 
 async function resolveCategory(
   categoryName: string
@@ -23,13 +109,26 @@ async function resolveCategory(
 }
 
 export const productService = {
-  async list() {
-    return productRepository.listPublic();
+  /**
+   * `includePreOrder` is false for guests: pre-order products are exclusive
+   * to signed-in customers, so they are filtered out server-side rather than
+   * merely hidden in the UI. Owners and cashiers still receive them so they
+   * can manage and sell them at the counter.
+   */
+  async list(includePreOrder = true) {
+    const products = await productRepository.listPublic();
+    if (includePreOrder) return products;
+    return products.filter(p => p.isPreOrder !== true);
   },
 
-  async getById(id: string) {
+  async getById(id: string, includePreOrder = true) {
     const product = await productRepository.findById(id);
     if (!product) {
+      throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Product not found');
+    }
+    // A guest asking for a pre-order product directly gets a 404, so it is
+    // indistinguishable from a product that does not exist.
+    if (!includePreOrder && product.isPreOrder === true) {
       throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Product not found');
     }
     return product;
@@ -49,21 +148,31 @@ export const productService = {
       ingredients?: ProductIngredient[];
       allergens?: ProductAllergen[];
       isAvailable?: boolean;
-      rewardPointsOverride?: number | null;
+      pointsCost?: number | null;
       promoType?: 'percentage' | 'fixed_amount' | 'bundle';
       discountRate?: number;
       discountAmount?: number;
       promoStartDate?: string;
       promoEndDate?: string;
       isPromoActive?: boolean;
+      isPreOrder?: boolean;
+      preOrderPurchaseLimit?: number | null;
+      preOrderDeadline?: string | null;
     }
   ) {
     const category = await resolveCategory(data.category);
-    return productRepository.create({
+    const preOrder = resolvePreOrderFields({
+      category: data.category,
+      isPreOrder: data.isPreOrder,
+      purchaseLimit: data.preOrderPurchaseLimit,
+      deadlineInput: data.preOrderDeadline
+    });
+    const created = await productRepository.create({
       ...data,
       stockUnit: category.stockUnit,
       isAvailable: data.isAvailable ?? true,
-      rewardPointsOverride: data.rewardPointsOverride ?? null,
+      // Seed new products that were not given an explicit owner-set cost.
+      pointsCost: data.pointsCost ?? initialPointsCostForPrice(data.price),
       promoType: data.promoType,
       discountRate: data.discountRate,
       discountAmount: data.discountAmount,
@@ -72,8 +181,17 @@ export const productService = {
         : undefined,
       promoEndDate: data.promoEndDate ? new Date(data.promoEndDate) : undefined,
       isPromoActive: data.isPromoActive,
+      // Spread last so the normalised values win over the raw string input.
+      ...preOrder,
       createdBy: adminId as any
     });
+
+    // A brand new product can only be "turning pre-order on" once.
+    if (created.isPreOrder === true) {
+      await announcePreOrder(created);
+    }
+
+    return created;
   },
 
   async update(
@@ -90,21 +208,52 @@ export const productService = {
       ingredients?: ProductIngredient[];
       allergens?: ProductAllergen[];
       isAvailable?: boolean;
-      rewardPointsOverride?: number | null;
+      pointsCost?: number | null;
       promoType?: 'percentage' | 'fixed_amount' | 'bundle';
       discountRate?: number;
       discountAmount?: number;
       promoStartDate?: string;
       promoEndDate?: string;
       isPromoActive?: boolean;
+      isPreOrder?: boolean;
+      preOrderPurchaseLimit?: number | null;
+      preOrderDeadline?: string | null;
     }
   ) {
+    // Pre-order state depends on the EFFECTIVE category and flag, so read the
+    // current product first when the owner only changed one of them.
+    const existing = await productRepository.findById(id);
+    if (!existing) {
+      throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Product not found');
+    }
+
     if (data.category) {
       const category = await resolveCategory(data.category);
       data = {...data, stockUnit: category.stockUnit};
     }
-    // rewardPointsOverride is intentionally NOT defaulted here: Mongoose
-    // skips undefined, so omitting it leaves an existing override intact,
+
+    const effectiveCategory = data.category ?? existing.category;
+    const effectiveIsPreOrder =
+      data.isPreOrder === undefined ? existing.isPreOrder : data.isPreOrder;
+    const effectiveLimit =
+      data.preOrderPurchaseLimit === undefined
+        ? existing.preOrderPurchaseLimit
+        : data.preOrderPurchaseLimit;
+    // When the owner does not touch the deadline, reuse the stored instant
+    // directly instead of round-tripping through a date string.
+    const deadlineCarriedOver = data.preOrderDeadline === undefined;
+
+    const preOrder = resolvePreOrderFields({
+      category: effectiveCategory,
+      isPreOrder: effectiveIsPreOrder,
+      purchaseLimit: effectiveLimit,
+      deadlineInput: data.preOrderDeadline ?? null,
+      existingDeadline: existing.preOrderDeadline ?? null,
+      deadlineCarriedOver
+    });
+
+    // pointsCost is intentionally NOT defaulted here: Mongoose
+    // skips undefined, so omitting it leaves an existing owner-set cost intact,
     // and sending an explicit null clears it.
     const updateData: any = {...data};
     if (data.promoStartDate) {
@@ -113,10 +262,23 @@ export const productService = {
     if (data.promoEndDate) {
       updateData.promoEndDate = new Date(data.promoEndDate);
     }
+    // Normalised pre-order values win over any raw input on the payload.
+    updateData.isPreOrder = preOrder.isPreOrder;
+    updateData.preOrderPurchaseLimit = preOrder.preOrderPurchaseLimit;
+    updateData.preOrderDeadline = preOrder.preOrderDeadline;
     const updated = await productRepository.updateById(id, updateData);
     if (!updated) {
       throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Product not found');
     }
+
+    // Only announce on the OFF -> ON transition. Re-saving a product that was
+    // already a pre-order (e.g. bumping the price) is not "turning it on", so
+    // it stays quiet. Toggling off and back on announces again.
+    const wasPreOrder = existing.isPreOrder === true;
+    if (updated.isPreOrder === true && !wasPreOrder) {
+      await announcePreOrder(updated);
+    }
+
     return updated;
   },
 

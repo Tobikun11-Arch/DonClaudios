@@ -1,7 +1,61 @@
 import {ApiError} from '../utils/error';
 import {notificationRepository} from '../repositories/notification.repository';
+import {customerRepository} from '../repositories/customer.repository';
+import {
+  formatPreOrderDeadlineShort,
+  isPreOrderClosed
+} from '../config/preOrder';
+
+/**
+ * Announce an open pre-order to every customer with an account.
+ *
+ * Guests are deliberately not included: they cannot see or order pre-orders,
+ * so a notification would be noise.
+ *
+ * Callers are responsible for only invoking this on an OFF -> ON transition.
+ *
+ * @returns how many customers were notified.
+ */
+async function announcePreOrderToCustomers(product: {
+  _id: unknown;
+  name: string;
+  preOrderDeadline?: Date | null;
+  preOrderPurchaseLimit?: number | null;
+}): Promise<number> {
+  // An already-expired pre-order is not worth announcing.
+  if (isPreOrderClosed(product.preOrderDeadline)) return 0;
+
+  const deadline = formatPreOrderDeadlineShort(product.preOrderDeadline);
+  const limit = product.preOrderPurchaseLimit;
+
+  const details: string[] = [];
+  if (deadline) details.push(`until ${deadline}`);
+  if (typeof limit === 'number' && limit >= 1) {
+    details.push(`max ${limit} per customer`);
+  }
+
+  const customers = await customerRepository.listAllIds();
+  const customerIds = customers.map(c => c._id);
+
+  const created = await notificationRepository.createManyForCustomers(
+    customerIds,
+    {
+      type: 'pre_order',
+      title: 'Pre-order available',
+      message:
+        `${product.name} is now open for pre-order` +
+        (details.length > 0 ? ` (${details.join(', ')}).` : '.') +
+        ' Tap to view and order.',
+      link: `/customer/dashboard/${product._id}`
+    }
+  );
+
+  return created.length;
+}
 
 export const notificationService = {
+  announcePreOrderToCustomers,
+
   async listForCustomer(customerId: string) {
     return notificationRepository.listByCustomerId(customerId);
   },
@@ -28,7 +82,7 @@ export const notificationService = {
 
   async createForCustomer(data: {
     customerId: string;
-    type: 'review_reply' | 'review_auto_rejected' | 'review_requested' | 'order_message' | 'order_status' | 'order_delayed' | 'support_message';
+    type: 'review_reply' | 'review_auto_rejected' | 'review_requested' | 'order_message' | 'order_status' | 'order_delayed' | 'support_message' | 'pre_order';
     title: string;
     message: string;
     reviewId?: string;

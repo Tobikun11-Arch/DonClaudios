@@ -57,6 +57,12 @@ export interface OrderDocument extends mongoose.Document {
    * `completed` cannot award the same points twice.
    */
   pointsAwarded?: number | null;
+  /**
+   * Set once the points from `pointsAwarded` have been clawed back because a
+   * completed order was cancelled. Doubles as an idempotency latch so a
+   * repeated cancel cannot deduct the same points twice.
+   */
+  pointsReversed?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -131,6 +137,7 @@ const OrderSchema = new Schema<OrderDocument>(
     overdueNotifiedAt: {type: Date, default: null},
     stockDeducted: {type: Boolean, default: false},
     pointsAwarded: {type: Number, default: null},
+    pointsReversed: {type: Boolean, default: false},
     isOnline: {type: Boolean, default: true}
   },
   {timestamps: true}

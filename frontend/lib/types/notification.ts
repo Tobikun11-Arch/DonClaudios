@@ -8,7 +8,8 @@ export type NotificationType =
   | 'new_order'
   | 'order_overdue'
   | 'order_delayed'
-  | 'support_message';
+  | 'support_message'
+  | 'pre_order';
 export type NotificationTarget = 'customer' | 'admin' | 'cashier';
 
 export interface Notification {
