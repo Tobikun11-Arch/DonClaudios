@@ -9,6 +9,7 @@ import {ShoppingCart, User, Star, LogOut, Gift} from 'lucide-react';
 import CustomerCartDrawer from '@/shared/components/cart/CustomerCartDrawer';
 import CustomerNotificationBell from '@/features/customer/notifications/components/CustomerNotificationBell';
 import SupportChatBubble from '@/features/support/components/SupportChatBubble';
+import {Z} from '@/lib/zIndex';
 import {Toaster} from 'sonner';
 
 const TABS = [
@@ -269,7 +270,12 @@ export default function DashboardLayout({
       </aside>
 
       <main className="relative flex-1 overflow-y-auto overflow-x-hidden bg-gray-50">
-        <div className="pointer-events-none absolute top-3 right-4 z-[110]">
+        {/*
+          `Z.floating` (60) keeps the bell under the cart drawer overlay and
+          its modals (1000+), so an open drawer dims it and eats its clicks
+          instead of the bell painting on top of the drawer header.
+        */}
+        <div className={`pointer-events-none absolute top-3 right-4 ${Z.floating}`}>
           <div className="pointer-events-auto">
             <CustomerNotificationBell />
           </div>

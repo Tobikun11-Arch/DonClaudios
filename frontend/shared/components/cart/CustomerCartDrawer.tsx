@@ -1,6 +1,7 @@
 'use client';
 
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
+import {createPortal} from 'react-dom';
 import Image from 'next/image';
 import {
   X,
@@ -34,6 +35,7 @@ import {
 import {type Product} from '@/lib/types/product';
 import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
 import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
+import {Z} from '@/lib/zIndex';
 import CartRemoveConfirmModal from './CartRemoveConfirmModal';
 
 type CustomerCartDrawerProps = {
@@ -156,7 +158,21 @@ export default function CustomerCartDrawer({
     name: string;
   } | null>(null);
 
-  if (!isOpen) return null;
+  // Lock page scroll while the drawer (and its modals) are open. The
+  // customer layout scrolls inside `<main>`, but the checkout page and any
+  // future body-scrolled page must not scroll behind the overlay either.
+  useEffect(() => {
+    if (!isOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [isOpen]);
+
+  // `document.body` only exists on the client. The drawer only ever opens
+  // after hydration (via a user click), so this guard is purely SSR safety.
+  if (!isOpen || typeof document === 'undefined') return null;
 
   const openOrderDetails = () => {
     setDraftOrderType(orderType);
@@ -269,8 +285,11 @@ export default function CustomerCartDrawer({
       ? `${orderType}, ${reservationDate}, ${reservationTime}`
       : `${orderType}, Today, ${timing}`;
 
-  return (
-    <div className="fixed inset-0 z-80">
+  // The drawer is portaled to `document.body` so no ancestor (transform,
+  // overflow, stacking context) can trap it below the floating chrome. Its
+  // overlay layer dims the bell and chat bubble and eats their clicks.
+  return createPortal(
+    <div className={`fixed inset-0 ${Z.drawerOverlay}`}>
       <button
         type="button"
         className="absolute inset-0 bg-black/40"
@@ -497,7 +516,7 @@ export default function CustomerCartDrawer({
 
       {orderDetailsOpen ? (
         <div
-          className="fixed inset-0 z-[110] bg-black/40 flex items-center justify-center p-4"
+          className={`fixed inset-0 ${Z.orderModal} bg-black/40 flex items-center justify-center p-4`}
           onClick={cancelOrderDetails}
           role="dialog"
           aria-modal="true"
@@ -645,35 +664,6 @@ export default function CustomerCartDrawer({
             <div className="px-[28px] pt-6 flex-1 overflow-y-auto">
               {draftOrderType === 'Delivery' ? (
                 <div className="space-y-6">
-                  <div>
-                    <span
-                      className="mb-2 block text-[13px] font-bold"
-                      style={{color: 'var(--text)'}}
-                    >
-                      When
-                    </span>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setDraftTiming('ASAP')}
-                        className="h-11 rounded-full border-[1.5px] px-5 text-[14px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2"
-                        style={{
-                          borderColor:
-                            draftTiming === 'ASAP'
-                              ? 'var(--brand-green)'
-                              : 'var(--border)',
-                          backgroundColor:
-                            draftTiming === 'ASAP'
-                              ? 'var(--brand-green)'
-                              : 'white',
-                          color:
-                            draftTiming === 'ASAP' ? 'white' : 'var(--text)'
-                        }}
-                      >
-                        ASAP
-                      </button>
-                    </div>
-                  </div>
                 </div>
               ) : draftOrderType === 'Pick-up' ? (
                 <div className="space-y-6">
@@ -727,35 +717,6 @@ export default function CustomerCartDrawer({
                           Cavite, Philippines 4108
                         </p>
                       </div>
-                    </div>
-                  </div>
-                  <div>
-                    <span
-                      className="mb-2 block text-[13px] font-bold"
-                      style={{color: 'var(--text)'}}
-                    >
-                      When
-                    </span>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setDraftTiming('ASAP')}
-                        className="h-11 rounded-full border-[1.5px] px-5 text-[14px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2"
-                        style={{
-                          borderColor:
-                            draftTiming === 'ASAP'
-                              ? 'var(--brand-green)'
-                              : 'var(--border)',
-                          backgroundColor:
-                            draftTiming === 'ASAP'
-                              ? 'var(--brand-green)'
-                              : 'white',
-                          color:
-                            draftTiming === 'ASAP' ? 'white' : 'var(--text)'
-                        }}
-                      >
-                        ASAP
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -887,6 +848,7 @@ export default function CustomerCartDrawer({
         onCancel={() => setRemoveTarget(null)}
         onConfirm={confirmRemoveItem}
       />
-    </div>
+    </div>,
+    document.body
   );
 }
