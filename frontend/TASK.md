@@ -1,14 +1,4 @@
 
-NEW UI MODAL For choosing type of order delivery/reservation/pick up - if customer choose the pre order product in menu
-it dont need to choose type of order`
-
-
-Reservations
-1. Add SMS/text notification to the owner (Ate Sheena's phone) specifically for reservation-type orders (e.g., whole lechon for events), since email/response delays were a pain point.
-   Categorize which items count as "reservation-priority" (large/made-to-order items) vs. regular in-store orders. - so the reservation
-   notificaiton will go through to ate sheena phone is the medium or large only
-
-
 
 
 
@@ -37,13 +27,6 @@ Proposal suggestions:
 
 
 
-
-
-
-
-
-
-
 PRIORITY TASKS: 
 8. admin must power to end or delete the conversation from reviews if bad happens like a troll customer 
 
@@ -63,7 +46,27 @@ PRIORITY TASKS:
 
 
 additional if only possible:
-1. customer can leave a feedback thru trustpilot and system fetch data from all review there
 4. reservation/event calendar for owner/admin
 
 
+
+
+
+
+MINOR NEED TO ADD IN SYSTEM LATER: (may anne gc references)
+1
+add label:
+- Profile Tab (Customer)
+- Sign up
+- Guest (Place Order)
+- Counter Order Tab (Current Order)
+- Settings Tab
+Reference image:
+
+
+2
+—registered_Customer—
+Order tab
+- change Special instructions to options: "Order Notes (optional)”, "Notes for the Kitchen (optional)" or “Kitchen Notes (optional)”
+- add “Edit” each product on My Cart/Order Summary or both
+- glitch when hovering menu (changing green)

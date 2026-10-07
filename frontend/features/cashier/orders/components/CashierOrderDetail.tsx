@@ -114,7 +114,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
         </Link>
       </div>
 
-      <div className="rounded-2xl bg-white shadow p-6">
+      <div className="rounded-2xl bg-white shadow p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
@@ -138,12 +138,12 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {canAdvance && (
               <button
                 onClick={advance}
                 disabled={isUpdating}
-                className="rounded-xl bg-[#2d4a35] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#3a5c44] disabled:opacity-50"
+                className="min-h-[40px] rounded-xl bg-[#2d4a35] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#3a5c44] disabled:opacity-50"
               >
                 {isUpdating ? 'Updating...' : `Mark ${formatStatus(nextStatus)}`}
               </button>
@@ -152,7 +152,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
               <button
                 onClick={() => setCancelling(true)}
                 disabled={isUpdating}
-                className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-bold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
+                className="min-h-[40px] rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-bold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
               >
                 Cancel Order
               </button>
@@ -200,7 +200,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
         ) : null}
       </div>
 
-      <div className="rounded-2xl bg-white shadow p-6">
+      <div className="rounded-2xl bg-white shadow p-5 sm:p-6">
         <h3 className="text-sm font-bold text-gray-900 mb-4">Order Items</h3>
         <div className="space-y-3">
           {(order.items ?? []).map((item, index) => {
@@ -237,7 +237,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
         </div>
       </div>
 
-      <div className="rounded-2xl bg-white shadow p-6">
+      <div className="rounded-2xl bg-white shadow p-5 sm:p-6">
         <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">
           Conversation with {customer}
         </p>

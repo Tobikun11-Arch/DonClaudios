@@ -20,6 +20,8 @@ import {ingredientIconByKey} from '@/lib/ingredients/ingredientIcons';
 import type {Product} from '@/lib/types/product';
 import type {Category} from '@/lib/types/category';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
+import {FilterPills} from '@/shared/components/FilterPills';
+import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
 
 function stockClass(stock: number) {
   if (stock <= 0) return 'bg-red-50 text-red-700 border-red-200';
@@ -34,7 +36,7 @@ function ProductDetails({product}: {product: Product}) {
   return (
     <div className="mt-3 border-t border-gray-100 pt-3 space-y-3">
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400">
           Ingredients
         </p>
         {ingredients.length === 0 ? (
@@ -57,7 +59,7 @@ function ProductDetails({product}: {product: Product}) {
         )}
       </div>
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400">
           Allergens
         </p>
         <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -111,7 +113,7 @@ function CashierProductCard({
           </div>
         )}
         <span
-          className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${stockClass(product.stock)}`}
+          className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${stockClass(product.stock)}`}
         >
           {product.stock > 0
             ? `${product.stock}${unitLabel ? ` ${unitLabel}` : ''} in stock`
@@ -122,7 +124,7 @@ function CashierProductCard({
       <p className="text-xs text-gray-500">
         {product.category}{unitLabel ? ` · ${unitLabel}` : ''}
       </p>
-      <p className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+      <p className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700">
         <Clock size={10} />
         {product.prepTimeMinutes != null
           ? `~${product.prepTimeMinutes} min prep`
@@ -141,7 +143,7 @@ function CashierProductCard({
           type="button"
           onClick={() => setExpanded(v => !v)}
           aria-expanded={expanded}
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-200 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50"
+          className="flex min-h-[36px] w-full items-center justify-center gap-1.5 rounded-lg border border-gray-200 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50"
         >
           {expanded ? (
             <>
@@ -200,41 +202,46 @@ export function CashierMenuStock() {
   }, [promos, query]);
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-[#2d4a35]">Menu &amp; Stock</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-extrabold text-[#2d4a35]">
+            Menu &amp; Stock
+          </h1>
+          <p className="text-sm text-gray-500">
             Read-only view of menu items, current stock, and promos.
           </p>
         </div>
 
-        <div className="flex rounded-xl border border-gray-200 bg-white p-1">
-          <button
-            type="button"
-            onClick={() => setView('products')}
-            className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-              view === 'products' ? 'bg-[#2d4a35] text-white' : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <Package size={16} />
-            Products
-          </button>
-          <button
-            type="button"
-            onClick={() => setView('promos')}
-            className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-              view === 'promos' ? 'bg-[#2d4a35] text-white' : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <Tag size={16} />
-            Promos
-          </button>
+        <div className="flex items-center gap-3">
+          <div className="flex rounded-xl border border-gray-200 bg-white p-1">
+            <button
+              type="button"
+              onClick={() => setView('products')}
+              className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                view === 'products' ? 'bg-[#2d4a35] text-white' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <Package size={16} />
+              Products
+            </button>
+            <button
+              type="button"
+              onClick={() => setView('promos')}
+              className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                view === 'promos' ? 'bg-[#2d4a35] text-white' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <Tag size={16} />
+              Promos
+            </button>
+          </div>
+          <CashierNotificationBell />
         </div>
       </div>
 
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="relative w-full lg:w-80">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
             value={query}
@@ -244,22 +251,16 @@ export function CashierMenuStock() {
           />
         </div>
         {view === 'products' && (
-          <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-            {categories.map(c => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setCategory(c)}
-                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  category === c
-                    ? 'bg-[#2d4a35] text-white'
-                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                {c === 'all' ? 'All' : c}
-              </button>
-            ))}
-          </div>
+          <FilterPills
+            items={categories.map(c => ({
+              key: c,
+              label: c === 'all' ? 'All' : c
+            }))}
+            value={category}
+            onChange={setCategory}
+            ariaLabel="Filter by category"
+            dropdownUpTo="lg"
+          />
         )}
       </div>
 
@@ -278,7 +279,7 @@ export function CashierMenuStock() {
             <p className="text-sm text-gray-500">No products found.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4 items-start">
+          <div className="grid grid-cols-1 gap-4 items-start sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {visibleProducts.map(product => (
               <CashierProductCard
                 key={product._id}
@@ -302,7 +303,7 @@ export function CashierMenuStock() {
           <p className="text-sm text-gray-500">No active promos.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {visiblePromos.map(promo => (
             <div
               key={promo._id}

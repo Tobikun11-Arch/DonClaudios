@@ -16,7 +16,6 @@ import {
   ShoppingCart
 } from 'lucide-react';
 import {Toaster} from 'sonner';
-import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
 
 const PRIMARY_TABS = [
   {
@@ -126,7 +125,7 @@ export default function DashboardLayout({
   const drawerTabActive = DRAWER_ITEMS.some(i => isActive(i.tab));
 
   return (
-    <div className="flex h-screen cursor-default bg-gray-50">
+    <div className="flex h-dvh cursor-default bg-gray-50">
       <aside
         onMouseEnter={handleSidebarEnter}
         onMouseLeave={handleSidebarLeave}
@@ -260,16 +259,9 @@ export default function DashboardLayout({
       </aside>
 
       <main className="flex-1 overflow-y-auto scrollbar-hide bg-gray-50 pb-24 md:pb-0">
+        {/* Phones cannot spare 48px of gutter, and every card below is
+            sized against this width. */}
         <div className="px-4 py-4 sm:px-6 sm:py-6">
-          <div className="mb-6 flex items-center justify-between gap-3">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Cashier Dashboard</h1>
-              <p className="text-sm text-gray-500">
-                Manage orders, stock, and account.
-              </p>
-            </div>
-            <CashierNotificationBell />
-          </div>
           {(tab && slotByTab[tab] ? slotByTab[tab] : slotByTab.counter) ?? children}
         </div>
       </main>
@@ -289,7 +281,7 @@ export default function DashboardLayout({
             <Link
               key={item.label}
               href={item.href}
-              className="relative flex flex-col items-center gap-1 px-3 py-1 min-w-15 transition-all duration-200"
+              className="relative flex flex-col items-center gap-1 px-3 py-1.5 min-w-15 transition-all duration-200"
             >
               <Icon
                 size={22}
@@ -298,7 +290,7 @@ export default function DashboardLayout({
                 }`}
               />
               <span
-                className={`text-[10px] font-bold leading-none transition-colors duration-200 ${
+                className={`text-[11px] font-bold leading-none transition-colors duration-200 ${
                   active ? 'text-[#7ed4a0]' : 'text-[#5a8a6a]'
                 }`}
               >
@@ -318,7 +310,7 @@ export default function DashboardLayout({
 
         <button
           onClick={() => setDrawerOpen(true)}
-          className="relative flex flex-col items-center gap-1 px-3 py-1 min-w-15 transition-all duration-200"
+          className="relative flex flex-col items-center gap-1 px-3 py-1.5 min-w-15 transition-all duration-200"
         >
           <MoreHorizontal
             size={22}
@@ -327,7 +319,7 @@ export default function DashboardLayout({
             }`}
           />
           <span
-            className={`text-[10px] font-bold leading-none transition-colors duration-200 ${
+            className={`text-[11px] font-bold leading-none transition-colors duration-200 ${
               drawerTabActive ? 'text-[#7ed4a0]' : 'text-[#5a8a6a]'
             }`}
           >

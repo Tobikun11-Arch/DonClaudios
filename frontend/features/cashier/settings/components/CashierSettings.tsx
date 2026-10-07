@@ -15,6 +15,7 @@ import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {validatePassword} from '@/lib/utils/passwordRules';
 import {Camera, Check, Pencil} from 'lucide-react';
 import {cn} from '@/lib/utils';
+import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
 
 export function CashierSettings() {
   const meQuery = useMeQuery();
@@ -90,12 +91,15 @@ export function CashierSettings() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-[#2d4a35]">Settings</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Manage your profile photo and account details.
-        </p>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-extrabold text-[#2d4a35]">Settings</h1>
+          <p className="text-sm text-gray-500">
+            Manage your profile photo and account details.
+          </p>
+        </div>
+        <CashierNotificationBell />
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
