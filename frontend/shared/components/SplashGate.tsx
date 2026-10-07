@@ -2,6 +2,7 @@
 
 import FrameLoader from './FrameLoader';
 import {useSplash} from '../hooks/useSplash';
+import {Z} from '@/lib/zIndex';
 
 export default function SplashGate({
   ready,
@@ -20,7 +21,7 @@ export default function SplashGate({
   // height reduced by its own margins, so a leaked 20px bottom margin left a
   // strip of the dashboard visible below the splash.
   return (
-    <div className="fixed inset-0 z-[200] m-0 flex items-center justify-center bg-white">
+    <div className={`fixed inset-0 ${Z.splash} m-0 flex items-center justify-center bg-white`}>
       <FrameLoader size={160} />
     </div>
   );

@@ -19,6 +19,7 @@ import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
 import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
+import {Z} from '@/lib/zIndex';
 import CartRemoveConfirmModal from './CartRemoveConfirmModal';
 
 type CartDrawerProps = {
@@ -143,7 +144,7 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[110] bg-black/40"
+      className={`fixed inset-0 ${Z.drawerOverlay} bg-black/40`}
       onClick={close}
       role="dialog"
       aria-modal="true"
@@ -319,7 +320,7 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
 
       {orderDetailsOpen ? (
         <div
-          className="fixed inset-0 z-[120] bg-black/40 flex items-center justify-center p-4"
+          className={`fixed inset-0 ${Z.orderModal} bg-black/40 flex items-center justify-center p-4`}
           onClick={cancelOrderDetails}
           role="dialog"
           aria-modal="true"
@@ -367,10 +368,7 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
               </Button>
             </div>
 
-            <div
-              className="px-[28px] pt-[22px] flex gap-3"
-              role="radiogroup"
-            >
+            <div className="px-[28px] pt-[22px] flex gap-3" role="radiogroup">
               {(['Delivery', 'Pick-up', 'Reservation'] as const).map(type => {
                 const isSelected = draftOrderType === type;
                 const baseClasses =
@@ -388,7 +386,9 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
                       }
                       if (type === 'Reservation') {
                         setDraftReservationDate(prev =>
-                          prev < defaultScheduleDate ? defaultScheduleDate : prev
+                          prev < defaultScheduleDate
+                            ? defaultScheduleDate
+                            : prev
                         );
                       }
                     }}
@@ -465,8 +465,7 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
 
             <div className="px-[28px] pt-6 flex-1 overflow-y-auto">
               {draftOrderType === 'Delivery' ? (
-                <div className="space-y-6">
-                </div>
+                <div className="space-y-6"></div>
               ) : draftOrderType === 'Pick-up' ? (
                 <div className="space-y-6">
                   <div>
@@ -598,9 +597,7 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
                         className="flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] bg-white transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2"
                         style={{borderColor: 'var(--border)', minHeight: 44}}
                         onClick={() =>
-                          setDraftReservationGuests(
-                            draftReservationGuests + 1
-                          )
+                          setDraftReservationGuests(draftReservationGuests + 1)
                         }
                       >
                         <Plus className="h-4 w-4" />

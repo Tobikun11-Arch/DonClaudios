@@ -1,16 +1,22 @@
+import {Z} from '@/lib/zIndex';
+
 // The customer and owner dashboards both render a `md:hidden` bottom nav
 // (app/(customer)/customer/dashboard/layout.tsx and
 // app/(owner)/owner/dashboard/layout.tsx) that is ~72px tall including its own
 // `pb-[env(safe-area-inset-bottom,10px)]` padding. The support bubble is
 // `h-14` (56px) tall, so a plain `bottom-5` (20px) lands it entirely on top of
 // the nav's rightmost tab -- Profile for customers, More for owners -- and
-// `z-[100]` makes that tab untappable.
+// the bubble's `Z.floating` layer makes that tab untappable.
 //
 // `4.5rem` (72px) reproduces the nav's own 10px safe-area fallback, giving a
 // ~10px gap at every inset size. `md:bottom-5` restores the desktop position,
 // since the nav is `md:hidden`.
+//
+// `Z.floating` (60) also keeps the bubble below the cart drawer overlay and
+// its modals (1000+): an open drawer dims the bubble and covers "Go To
+// Checkout" instead of the bubble floating over the drawer's Total/CTA.
 export const supportBubbleClass =
-  'fixed right-5 z-[100] flex flex-col items-end ' +
+  `fixed right-5 ${Z.floating} flex flex-col items-end ` +
   'bottom-[calc(env(safe-area-inset-bottom,10px)+4.5rem)] md:bottom-5';
 
 // `100dvh` rather than `vh` so mobile browser chrome does not push the panel

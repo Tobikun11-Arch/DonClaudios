@@ -2,6 +2,7 @@
 
 import {Button} from '@/components/ui/button';
 import {X} from 'lucide-react';
+import {Z} from '@/lib/zIndex';
 
 type CartRemoveConfirmModalProps = {
   itemName: string;
@@ -22,7 +23,7 @@ export default function CartRemoveConfirmModal({
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/45 p-4"
+      className={`fixed inset-0 ${Z.cartConfirm} flex items-center justify-center bg-black/45 p-4`}
       role="dialog"
       aria-modal="true"
       onClick={onCancel}

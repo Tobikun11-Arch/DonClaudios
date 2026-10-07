@@ -4,6 +4,7 @@ import {useState} from 'react';
 import Image from 'next/image';
 import {Button} from '@/components/ui/button';
 import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
+import {Z} from '@/lib/zIndex';
 
 const ACK_KEY = 'don_closed_acknowledged';
 
@@ -41,7 +42,7 @@ export default function StoreClosedModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/45 p-4"
+      className={`fixed inset-0 ${Z.globalModal} flex items-center justify-center bg-black/45 p-4`}
       role="dialog"
       aria-modal="true"
       onClick={handleBrowse}
