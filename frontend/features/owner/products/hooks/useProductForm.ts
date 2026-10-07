@@ -17,6 +17,18 @@ import {
 } from '@/lib/preOrder/preOrder';
 import {type DragEvent, useEffect, useState} from 'react';
 
+/** Most batch windows an owner can define; the API accepts up to 7. */
+export const MAX_PRE_ORDER_BATCHES = 4;
+
+const EMPTY_BATCH = {startTime: '', endTime: '', stock: ''};
+
+const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+function timeToMinutes(value: string): number {
+  const [h, m] = value.split(':').map(Number);
+  return h * 60 + m;
+}
+
 export function useProductForm(categories: Category[] = []) {
   const [form, setForm] = useState<ProductFormState>(emptyProductForm);
   const [formError, setFormError] = useState<string | null>(null);
@@ -73,7 +85,22 @@ export function useProductForm(categories: Category[] = []) {
         data.preOrderPurchaseLimit == null
           ? ''
           : String(data.preOrderPurchaseLimit),
-      preOrderDeadline: toDeadlineInputValue(data.preOrderDeadline)
+      preOrderDeadline: toDeadlineInputValue(data.preOrderDeadline),
+      // Load the stored schedule so editing shows the windows the owner
+      // already set. A legacy pre-order (saved before batches) starts with
+      // one blank window to fill in.
+      preOrderBatchCount:
+        Array.isArray(data.preOrderBatches) && data.preOrderBatches.length > 0
+          ? String(data.preOrderBatches.length)
+          : '1',
+      preOrderBatches:
+        Array.isArray(data.preOrderBatches) && data.preOrderBatches.length > 0
+          ? data.preOrderBatches.map(b => ({
+              startTime: b.startTime,
+              endTime: b.endTime,
+              stock: String(b.stock)
+            }))
+          : [{...EMPTY_BATCH}]
     });
     setPreviewUrl(data.imageUrl ?? null);
     setFormError(null);
@@ -98,7 +125,9 @@ export function useProductForm(categories: Category[] = []) {
             category,
             isPreOrder: 'no',
             preOrderPurchaseLimit: '',
-            preOrderDeadline: ''
+            preOrderDeadline: '',
+            preOrderBatchCount: '1',
+            preOrderBatches: [{...EMPTY_BATCH}]
           }
     );
   };
@@ -112,9 +141,42 @@ export function useProductForm(categories: Category[] = []) {
             ...prev,
             isPreOrder: 'no',
             preOrderPurchaseLimit: '',
-            preOrderDeadline: ''
+            preOrderDeadline: '',
+            preOrderBatchCount: '1',
+            preOrderBatches: [{...EMPTY_BATCH}]
           }
     );
+  };
+
+  /**
+   * Change how many batch windows exist. Rows the owner already typed are
+   * kept; new rows start blank.
+   */
+  const setBatchCount = (count: number) => {
+    const next = Math.min(Math.max(1, count), MAX_PRE_ORDER_BATCHES);
+    setForm(prev => {
+      const rows = [...prev.preOrderBatches];
+      while (rows.length < next) rows.push({...EMPTY_BATCH});
+      return {
+        ...prev,
+        preOrderBatchCount: String(next),
+        preOrderBatches: rows.slice(0, next)
+      };
+    });
+  };
+
+  /** Edit one field of one batch window. */
+  const updateBatch = (
+    index: number,
+    field: 'startTime' | 'endTime' | 'stock',
+    value: string
+  ) => {
+    setForm(prev => {
+      const rows = prev.preOrderBatches.map((row, i) =>
+        i === index ? {...row, [field]: value} : row
+      );
+      return {...prev, preOrderBatches: rows};
+    });
   };
 
   const handleIncomingFile = (file: File) => {
@@ -146,7 +208,7 @@ export function useProductForm(categories: Category[] = []) {
 
   const validateAndGetPayload = (mode: 'create' | 'edit') => {
     const price = Number(form.price);
-    const stock = Number(form.stock);
+    let stock = Number(form.stock);
     const prepTime = form.prepTimeMinutes.trim();
     const prepTimeMinutes = prepTime === '' ? null : Number(prepTime);
     const pointsCostStr = form.pointsCost.trim();
@@ -226,10 +288,6 @@ export function useProductForm(categories: Category[] = []) {
       setFormError('Price is invalid');
       return null;
     }
-    if (!Number.isInteger(stock) || stock < 0) {
-      setFormError('Stock is invalid');
-      return null;
-    }
     if (mode === 'create' && !selectedFile) {
       setFormError('Please select a product image before saving.');
       return null;
@@ -242,10 +300,15 @@ export function useProductForm(categories: Category[] = []) {
 
     // Pre-order: only ever sent for an eligible category, and never as a
     // half-filled state. When off we send explicit nulls so the backend
-    // clears any previously stored limit/deadline.
+    // clears any previously stored limit/deadline/batches.
     let isPreOrder = false;
     let preOrderPurchaseLimit: number | null = null;
     let preOrderDeadline: string | null = null;
+    let preOrderBatches: Array<{
+      startTime: string;
+      endTime: string;
+      stock: number;
+    }> | null = null;
 
     if (canUsePreOrder && form.isPreOrder === 'yes') {
       const limitRaw = form.preOrderPurchaseLimit.trim();
@@ -257,25 +320,106 @@ export function useProductForm(categories: Category[] = []) {
         limit > 999
       ) {
         setFormError(
-          'Purchase limit must be a whole number greater than zero.'
+          'Purchase limit per batch must be a whole number greater than zero.'
         );
         return null;
       }
 
       const deadline = form.preOrderDeadline.trim();
       if (!deadline) {
-        setFormError('Pre-order deadline is required.');
+        setFormError('Pre-order date is required.');
         return null;
       }
       if (deadline < todayInStoreTimezone()) {
-        setFormError('Pre-order deadline cannot be in the past.');
+        setFormError('Pre-order date cannot be in the past.');
         return null;
+      }
+
+      // Batch windows: every selected row needs a real time range and a
+      // positive stock pool. The API re-checks all of this, but catching it
+      // here keeps the owner from losing the rest of the form.
+      const count = Number(form.preOrderBatchCount);
+      if (!Number.isInteger(count) || count < 1 || count > MAX_PRE_ORDER_BATCHES) {
+        setFormError('Pick how many batches to run.');
+        return null;
+      }
+
+      const rows = form.preOrderBatches.slice(0, count);
+      if (rows.length !== count) {
+        setFormError('Fill in every batch window.');
+        return null;
+      }
+
+      const parsed: Array<{
+        startTime: string;
+        endTime: string;
+        stock: number;
+      }> = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const startTime = row.startTime.trim();
+        const endTime = row.endTime.trim();
+        const label = `Batch ${i + 1}`;
+
+        if (!startTime || !endTime) {
+          setFormError(`${label}: start and end time are required.`);
+          return null;
+        }
+        if (!TIME_PATTERN.test(startTime) || !TIME_PATTERN.test(endTime)) {
+          setFormError(`${label}: times must be in HH:MM format.`);
+          return null;
+        }
+        if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
+          setFormError(`${label}: end time must be after the start time.`);
+          return null;
+        }
+
+        const batchStockRaw = row.stock.trim();
+        const batchStock = Number(batchStockRaw);
+        if (
+          batchStockRaw === '' ||
+          !Number.isInteger(batchStock) ||
+          batchStock < 1 ||
+          batchStock > 9999
+        ) {
+          setFormError(
+            `${label}: stock must be a whole number greater than zero.`
+          );
+          return null;
+        }
+
+        parsed.push({startTime, endTime, stock: batchStock});
+      }
+
+      // Windows must not overlap, in the order they actually run rather
+      // than the order they were typed.
+      const chronological = [...parsed].sort(
+        (a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime)
+      );
+      for (let i = 1; i < chronological.length; i++) {
+        const prev = chronological[i - 1];
+        const next = chronological[i];
+        if (timeToMinutes(next.startTime) < timeToMinutes(prev.endTime)) {
+          setFormError(
+            `Batch windows cannot overlap — ${next.startTime} starts before the ${prev.endTime} batch ends.`
+          );
+          return null;
+        }
       }
 
       isPreOrder = true;
       preOrderPurchaseLimit = limit;
       // Sent as YYYY-MM-DD; the backend turns it into the end-of-day instant.
       preOrderDeadline = deadline;
+      preOrderBatches = parsed;
+      // Stock is owned by the batches, so the manual field is bypassed.
+      stock = parsed.reduce((sum, b) => sum + b.stock, 0);
+    }
+
+    if (preOrderBatches === null && (!Number.isInteger(stock) || stock < 0)) {
+      setFormError('Stock is invalid');
+      return null;
     }
 
     return {
@@ -294,7 +438,8 @@ export function useProductForm(categories: Category[] = []) {
       isPromoActive,
       isPreOrder,
       preOrderPurchaseLimit,
-      preOrderDeadline
+      preOrderDeadline,
+      preOrderBatches
     } as {
       price: number;
       stock: number;
@@ -312,6 +457,11 @@ export function useProductForm(categories: Category[] = []) {
       isPreOrder: boolean;
       preOrderPurchaseLimit: number | null;
       preOrderDeadline: string | null;
+      preOrderBatches: Array<{
+        startTime: string;
+        endTime: string;
+        stock: number;
+      }> | null;
     };
   };
 
@@ -337,6 +487,8 @@ export function useProductForm(categories: Category[] = []) {
     loadForm,
     setCategory,
     setIsPreOrder,
+    setBatchCount,
+    updateBatch,
     canUsePreOrder,
     isPreOrderOn,
     onFileChange,

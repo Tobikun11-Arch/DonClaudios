@@ -41,6 +41,24 @@ export function FilterSelect({
 
 export type FilterPill = {key: string; label: string};
 
+const BREAKPOINTS = {
+  sm: {
+    pills:
+      'hidden gap-2 overflow-x-auto scrollbar-hide sm:-mx-1 sm:flex sm:px-1 sm:pb-1',
+    select: 'sm:hidden'
+  },
+  md: {
+    pills:
+      'hidden gap-2 overflow-x-auto scrollbar-hide md:-mx-1 md:flex md:px-1 md:pb-1',
+    select: 'md:hidden'
+  },
+  lg: {
+    pills:
+      'hidden gap-2 overflow-x-auto scrollbar-hide lg:-mx-1 lg:flex lg:px-1 lg:pb-1',
+    select: 'lg:hidden'
+  }
+} as const;
+
 /**
  * A row of pill filters that collapses into a dropdown on phones.
  *
@@ -54,23 +72,24 @@ export function FilterPills({
   value,
   onChange,
   ariaLabel,
-  className
+  className,
+  dropdownUpTo = 'sm'
 }: {
   items: ReadonlyArray<FilterPill>;
   value: string;
   onChange: (key: string) => void;
   ariaLabel: string;
   className?: string;
+  /** Largest breakpoint that still renders the dropdown; pills appear above it. */
+  dropdownUpTo?: keyof typeof BREAKPOINTS;
 }) {
+  const breakpoints = BREAKPOINTS[dropdownUpTo];
   return (
     <>
       <div
         role="group"
         aria-label={ariaLabel}
-        className={cn(
-          'hidden gap-2 overflow-x-auto scrollbar-hide sm:-mx-1 sm:flex sm:px-1 sm:pb-1',
-          className
-        )}
+        className={cn(breakpoints.pills, className)}
       >
         {items.map(item => {
           const active = item.key === value;
@@ -98,7 +117,7 @@ export function FilterPills({
         onChange={onChange}
         options={items.map(item => ({value: item.key, label: item.label}))}
         ariaLabel={ariaLabel}
-        className={cn('sm:hidden', className)}
+        className={cn(breakpoints.select, className)}
       />
     </>
   );

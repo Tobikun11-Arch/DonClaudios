@@ -17,7 +17,7 @@ import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
-import {usePublicCategoriesQuery} from '@/lib/hooks/categories/useCategories';
+import {FilterPills} from '@/shared/components/FilterPills';
 import {
   useCounterOrdersQuery,
   useCreateCounterOrderMutation,
@@ -26,6 +26,7 @@ import {
 import CounterOrderReceipt from './CounterOrderReceipt';
 import type {CounterOrderEntry} from '@/lib/api/orderApi';
 import SplashGate from '@/shared/components/SplashGate';
+import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
 
 type CartLine = {
   productId: string;
@@ -45,7 +46,6 @@ const PAYMENT_METHODS = [
 
 export default function CounterOrder() {
   const {data: productsData, isLoading, isError} = useProductsQuery();
-  const publicCategoriesQuery = usePublicCategoriesQuery();
   const products = useMemo(
     () => productsData?.products ?? [],
     [productsData?.products]
@@ -54,14 +54,6 @@ export default function CounterOrder() {
     () => products.filter(p => p.isAvailable && p.stock > 0),
     [products]
   );
-
-  const categoryImageMap = useMemo(() => {
-    const map: Record<string, string | undefined> = {};
-    for (const c of publicCategoriesQuery.data?.categories ?? []) {
-      map[c.name] = c.imageUrl ?? undefined;
-    }
-    return map;
-  }, [publicCategoriesQuery.data]);
 
   const [cart, setCart] = useState<CartLine[]>([]);
   const [query, setQuery] = useState('');
@@ -213,7 +205,20 @@ export default function CounterOrder() {
   };
 
   return (
-    <div className="flex min-h-full flex-col gap-4 p-4 md:p-6 lg:h-full lg:flex-row">
+    <div className="flex min-h-full flex-col gap-4 lg:h-full">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-extrabold text-[#2d4a35]">
+            Counter Order
+          </h1>
+          <p className="text-sm text-gray-500">
+            Create walk-in orders and manage the counter queue.
+          </p>
+        </div>
+        <CashierNotificationBell />
+      </div>
+
+      <div className="flex flex-1 flex-col gap-4 lg:h-full lg:flex-row">
       <SplashGate ready={productsData !== undefined || isError} />
       <div className="flex-1 overflow-auto rounded-2xl border border-gray-200 bg-white p-4">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -235,45 +240,17 @@ export default function CounterOrder() {
           </div>
         </div>
 
-        <div className="mb-4 flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-          <button
-            type="button"
-            onClick={() => setActiveCategory(null)}
-            className={
-              'shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ' +
-              (!activeCategory
-                ? 'bg-[#c30010] text-white'
-                : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50')
-            }
-          >
-            All
-          </button>
-          {categories.map(category => (
-            <button
-              key={category}
-              type="button"
-              onClick={() => setActiveCategory(category)}
-              className={
-                'shrink-0 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ' +
-                (activeCategory === category
-                  ? 'bg-[#c30010] text-white'
-                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50')
-              }
-            >
-              {categoryImageMap[category] ? (
-                <span className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full bg-gray-100">
-                  <Image
-                    src={categoryImageMap[category]!}
-                    alt=""
-                    fill
-                    sizes="24px"
-                    className="object-cover"
-                  />
-                </span>
-              ) : null}
-              {category}
-            </button>
-          ))}
+<div className="mb-4">
+          <FilterPills
+            items={[
+              {key: 'all', label: 'All'},
+              ...categories.map(c => ({key: c, label: c}))
+            ]}
+            value={activeCategory ?? 'all'}
+            onChange={key => setActiveCategory(key === 'all' ? null : key)}
+            ariaLabel="Filter by category"
+            dropdownUpTo="lg"
+          />
         </div>
 
         {isLoading && (
@@ -286,7 +263,7 @@ export default function CounterOrder() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {visibleProducts.map(product => (
             <div
               key={product._id}
@@ -367,7 +344,7 @@ export default function CounterOrder() {
                     <button
                       type="button"
                       onClick={() => changeQty(line.productId, -1)}
-                      className="grid h-9 w-9 place-items-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50"
+                      className="grid h-10 w-10 place-items-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50"
                     >
                       <Minus className="h-3.5 w-3.5" />
                     </button>
@@ -377,7 +354,7 @@ export default function CounterOrder() {
                     <button
                       type="button"
                       onClick={() => changeQty(line.productId, 1)}
-                      className="grid h-9 w-9 place-items-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50"
+                      className="grid h-10 w-10 place-items-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50"
                     >
                       <Plus className="h-3.5 w-3.5" />
                     </button>
@@ -403,7 +380,7 @@ export default function CounterOrder() {
 
           <div className="mt-4 space-y-3">
             <div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <div>
                   <Label className="text-xs font-medium">First name *</Label>
                   <Input
@@ -435,7 +412,7 @@ export default function CounterOrder() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <div>
                 <Label className="text-xs font-medium">Phone</Label>
                 <Input
@@ -466,7 +443,7 @@ export default function CounterOrder() {
                     type="button"
                     onClick={() => setPaymentMethod(method.value)}
                     className={
-                      'rounded-full px-3 py-1.5 text-sm font-medium transition-colors ' +
+                      'rounded-full px-3 py-1.5 min-h-[40px] text-sm font-medium transition-colors ' +
                       (paymentMethod === method.value
                         ? 'bg-[#3c5e45] text-white'
                         : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50')
@@ -485,7 +462,7 @@ export default function CounterOrder() {
             scrolling normally. At `lg` the card sits beside the menu, so it
             returns to static flow.
           */}
-            <div className="sticky bottom-0 z-10 -mx-4 mt-1 bg-white px-4 py-3 lg:static lg:mx-0 lg:mt-4 lg:p-0">
+            <div className="sticky bottom-20 z-10 -mx-4 mt-1 bg-white px-4 py-3 md:bottom-0 lg:static lg:mx-0 lg:mt-4 lg:p-0">
             <Button
               type="button"
               className="w-full"
@@ -564,6 +541,7 @@ export default function CounterOrder() {
             ))}
           </div>
         </div>
+      </div>
       </div>
 
       {receiptOrder && (

@@ -23,6 +23,16 @@ export const productIngredient = z.object({
   iconKey: z.string().min(1).max(64)
 });
 
+/**
+ * One pre-order batch. Only the wall-clock window and its stock come from
+ * the client — `sold` is maintained server-side and is never accepted here.
+ */
+export const preOrderBatchDto = z.object({
+  startTime: z.string().trim().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
+  endTime: z.string().trim().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
+  stock: z.coerce.number().int().min(1)
+});
+
 export const createProductDto = z.object({
   name: z.string().min(1),
   category: z.string().min(1),
@@ -69,6 +79,12 @@ export const createProductDto = z.object({
   preOrderDeadline: z.preprocess(
     value => (value === '' || value === null ? null : value),
     z.string().nullable().optional()
+  ),
+  // null clears every batch (pre-order off); undefined means "not touched"
+  // on a partial update so existing batches carry over.
+  preOrderBatches: z.preprocess(
+    value => (value === '' ? null : value),
+    z.array(preOrderBatchDto).max(7).nullable().optional()
   )
 });
 

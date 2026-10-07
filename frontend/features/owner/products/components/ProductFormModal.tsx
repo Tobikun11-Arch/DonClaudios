@@ -51,8 +51,16 @@ interface Props {
   ) => void;
   /** Routed through the hook so picking a non-eligible category clears pre-order. */
   onCategoryChange: (category: string) => void;
-  /** Same reason: turning pre-order off clears the limit and deadline. */
+  /** Same reason: turning pre-order off clears the limit, date and batches. */
   onPreOrderChange: (value: 'yes' | 'no') => void;
+  /** How many batch windows the owner wants (1–4). */
+  onBatchCountChange: (count: number) => void;
+  /** Edit one field of one batch window. */
+  onBatchChange: (
+    index: number,
+    field: 'startTime' | 'endTime' | 'stock',
+    value: string
+  ) => void;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDrop: (e: DragEvent<HTMLButtonElement>) => void;
   onDragEnter: () => void;
@@ -78,6 +86,8 @@ export function ProductFormModal({
   onFormChange,
   onCategoryChange,
   onPreOrderChange,
+  onBatchCountChange,
+  onBatchChange,
   onFileChange,
   onDrop,
   onDragEnter,
@@ -92,6 +102,13 @@ export function ProductFormModal({
   const canPreOrder = isPreOrderCategory(form.category);
   const preOrderOn = canPreOrder && form.isPreOrder === 'yes';
   const minDeadline = todayInStoreTimezone();
+
+  const batchCount = Number(form.preOrderBatchCount) || 1;
+  const batchRows = form.preOrderBatches.slice(0, batchCount);
+  const batchStockTotal = batchRows.reduce(
+    (sum, row) => sum + (Number(row.stock) || 0),
+    0
+  );
 
   return (
     <Modal
@@ -231,8 +248,9 @@ export function ProductFormModal({
               <Input
                 id="stock"
                 inputMode="numeric"
-                value={form.stock}
+                value={preOrderOn ? String(batchStockTotal) : form.stock}
                 onChange={e => onFormChange('stock', e.target.value)}
+                readOnly={preOrderOn}
                 placeholder="0"
                 className="pr-16"
               />
@@ -246,7 +264,13 @@ export function ProductFormModal({
                       : 'unit'}
               </span>
             </div>
-            <p className="text-xs text-gray-500 hidden" />
+            <p
+              className={
+                preOrderOn ? 'text-xs text-gray-500' : 'text-xs text-gray-500 hidden'
+              }
+            >
+              {preOrderOn ? 'Totals the batch windows below automatically.' : ''}
+            </p>
           </div>
         </div>
 
@@ -312,59 +336,159 @@ export function ProductFormModal({
                 <option value="yes">Yes</option>
               </select>
               <p className="text-xs text-gray-600">
-                Pre-order items are only visible to signed-in customers and only
-                orderable until the deadline below.
+                Pre-order items are only visible to signed-in customers, and
+                customers can only order them while a batch window is open.
               </p>
             </div>
 
             {preOrderOn && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="preOrderPurchaseLimit">
-                    Purchase limit per customer
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="preOrderPurchaseLimit"
-                      type="number"
-                      inputMode="numeric"
-                      step={1}
-                      min={1}
-                      required
-                      value={form.preOrderPurchaseLimit}
-                      onChange={e =>
-                        onFormChange('preOrderPurchaseLimit', e.target.value)
-                      }
-                      placeholder="e.g. 2"
-                      className="pr-16"
-                    />
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">
-                      max
-                    </span>
+              <>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="preOrderPurchaseLimit">
+                      Purchase limit per batch
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="preOrderPurchaseLimit"
+                        type="number"
+                        inputMode="numeric"
+                        step={1}
+                        min={1}
+                        required
+                        value={form.preOrderPurchaseLimit}
+                        onChange={e =>
+                          onFormChange('preOrderPurchaseLimit', e.target.value)
+                        }
+                        placeholder="e.g. 2"
+                        className="pr-16"
+                      />
+                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">
+                        max
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600">
+                      The most one customer can order of this item per batch
+                      window.
+                    </p>
                   </div>
-                  <p className="text-xs text-gray-600">
-                    The most one customer can order of this item.
-                  </p>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="preOrderDeadline">Pre-order date</Label>
+                    <Input
+                      id="preOrderDeadline"
+                      type="date"
+                      required
+                      min={minDeadline}
+                      value={form.preOrderDeadline}
+                      onChange={e =>
+                        onFormChange('preOrderDeadline', e.target.value)
+                      }
+                    />
+                    <p className="text-xs text-gray-600">
+                      The day customers can pre-order. Every batch window below
+                      runs on this date.
+                    </p>
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="preOrderDeadline">Pre-order deadline</Label>
-                  <Input
-                    id="preOrderDeadline"
-                    type="date"
-                    required
-                    min={minDeadline}
-                    value={form.preOrderDeadline}
+                  <Label htmlFor="preOrderBatchCount">Batches</Label>
+                  <select
+                    id="preOrderBatchCount"
+                    value={form.preOrderBatchCount}
                     onChange={e =>
-                      onFormChange('preOrderDeadline', e.target.value)
+                      onBatchCountChange(Number(e.target.value))
                     }
-                  />
+                    disabled={isDisabled}
+                    className={cn(
+                      'h-9 w-full min-w-0 rounded-md border border-input bg-white px-2.5 text-base shadow-xs outline-none transition-[color,box-shadow]',
+                      'focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
+                      'disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
+                    )}
+                  >
+                    {[1, 2, 3, 4].map(n => (
+                      <option key={n} value={n}>
+                        {n} {n === 1 ? 'batch' : 'batches'}
+                      </option>
+                    ))}
+                  </select>
                   <p className="text-xs text-gray-600">
-                    Last day customers can pre-order. The whole day counts, up
-                    to 11:59 PM.
+                    Stock is split across the windows, and customers can only
+                    add to cart while one of them is running.
                   </p>
                 </div>
-              </div>
+
+                <div className="space-y-2">
+                  {batchRows.map((row, index) => (
+                    <div
+                      key={index}
+                      className="rounded-lg border border-purple-200 bg-white p-3"
+                    >
+                      <p className="text-xs font-bold text-purple-800 mb-2">
+                        Batch {index + 1}
+                      </p>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="space-y-1.5">
+                          <Label
+                            htmlFor={`batchStart-${index}`}
+                            className="text-xs text-gray-600"
+                          >
+                            Starts
+                          </Label>
+                          <Input
+                            id={`batchStart-${index}`}
+                            type="time"
+                            required
+                            value={row.startTime}
+                            onChange={e =>
+                              onBatchChange(index, 'startTime', e.target.value)
+                            }
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label
+                            htmlFor={`batchEnd-${index}`}
+                            className="text-xs text-gray-600"
+                          >
+                            Ends
+                          </Label>
+                          <Input
+                            id={`batchEnd-${index}`}
+                            type="time"
+                            required
+                            value={row.endTime}
+                            onChange={e =>
+                              onBatchChange(index, 'endTime', e.target.value)
+                            }
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label
+                            htmlFor={`batchStock-${index}`}
+                            className="text-xs text-gray-600"
+                          >
+                            Stock
+                          </Label>
+                          <Input
+                            id={`batchStock-${index}`}
+                            type="number"
+                            inputMode="numeric"
+                            step={1}
+                            min={1}
+                            required
+                            value={row.stock}
+                            onChange={e =>
+                              onBatchChange(index, 'stock', e.target.value)
+                            }
+                            placeholder="e.g. 30"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}

@@ -16,8 +16,10 @@ function FeaturedMenuItemCard({
   badge,
   isPreOrder = false,
   preOrderClosed = false,
+  preOrderOrderable = true,
   preOrderLimit,
-  preOrderDeadlineLabel: preOrderDeadlineText,
+  preOrderStatusLine,
+  preOrderSubLine,
   onAdd
 }: {
   id: string;
@@ -34,11 +36,16 @@ function FeaturedMenuItemCard({
   /** Pre-order items are only reachable by signed-in customers. */
   isPreOrder?: boolean;
   preOrderClosed?: boolean;
+  /** A batch window is open — the plus button may be pressed. */
+  preOrderOrderable?: boolean;
   preOrderLimit?: number | null;
-  preOrderDeadlineLabel?: string;
+  preOrderStatusLine?: string;
+  preOrderSubLine?: string;
   onAdd: () => void;
 }) {
   const linkHref = href ?? `/${basePath}/${encodeURIComponent(id)}`;
+  // Waiting for the next batch is a soft "not now" — greyed, not "closed".
+  const addDisabled = !preOrderOrderable || preOrderClosed;
 
   return (
     <div className="group relative min-h-[240px] rounded-[20px] bg-white border border-gray-200 shadow-sm px-4 pt-28 pb-6 transition-colors duration-200 hover:bg-[#2d4a35] active:bg-[#2d4a35]">
@@ -71,10 +78,14 @@ function FeaturedMenuItemCard({
           <div
             className={cn(
               'pointer-events-none rounded-full px-2.5 py-1 text-[10px] font-extrabold tracking-wide text-white',
-              preOrderClosed ? 'bg-gray-500' : 'bg-purple-700'
+              preOrderClosed ? 'bg-gray-500' : preOrderOrderable ? 'bg-purple-700' : 'bg-purple-400'
             )}
           >
-            {preOrderClosed ? 'PRE-ORDER CLOSED' : 'PRE-ORDER'}
+            {preOrderClosed
+              ? 'PRE-ORDER CLOSED'
+              : preOrderOrderable
+                ? 'PRE-ORDER LIVE'
+                : 'PRE-ORDER'}
           </div>
         )}
       </div>
@@ -86,14 +97,21 @@ function FeaturedMenuItemCard({
 
         {isPreOrder ? (
           <div className="mt-2 min-h-8 leading-snug">
-            <p className="text-[11px] font-semibold text-purple-700 transition-colors duration-200 group-hover:text-white group-active:text-white">
-              {preOrderClosed
-                ? 'Pre-order closed'
-                : (preOrderDeadlineText ?? 'Pre-order')}
+            <p
+              className={cn(
+                'text-[11px] font-semibold transition-colors duration-200 group-hover:text-white group-active:text-white',
+                preOrderOrderable && !preOrderClosed
+                  ? 'text-purple-700'
+                  : 'text-gray-500'
+              )}
+            >
+              {preOrderStatusLine ||
+                (preOrderClosed ? 'Pre-order closed' : 'Pre-order')}
             </p>
-            {typeof preOrderLimit === 'number' && preOrderLimit >= 1 && (
+            {(preOrderSubLine ||
+              (typeof preOrderLimit === 'number' && preOrderLimit >= 1)) && (
               <p className="text-[11px] text-gray-500 transition-colors duration-200 group-hover:text-white/70 group-active:text-white/70">
-                Max {preOrderLimit} per customer
+                {preOrderSubLine || `Max ${preOrderLimit} per customer`}
               </p>
             )}
           </div>
@@ -115,15 +133,17 @@ function FeaturedMenuItemCard({
       <button
         type="button"
         onClick={onAdd}
-        disabled={preOrderClosed}
+        disabled={addDisabled}
         aria-label={
-          preOrderClosed
-            ? `Pre-order closed for ${name}`
+          addDisabled
+            ? preOrderClosed
+              ? `Pre-order closed for ${name}`
+              : `Pre-order not open yet for ${name}`
             : `Add ${name} to order`
         }
         className={cn(
           'absolute bottom-6 right-4 z-10 w-10 h-10 rounded-full grid place-items-center transition-colors shadow-md border',
-          preOrderClosed
+          addDisabled
             ? 'cursor-not-allowed bg-gray-200 text-gray-400 border-gray-300'
             : 'bg-[#fbd897] text-[#2d4a35] hover:bg-white border-[#2d4a35]/20'
         )}

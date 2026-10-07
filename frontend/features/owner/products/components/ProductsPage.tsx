@@ -69,6 +69,8 @@ export default function ProductsPage() {
     loadForm,
     setCategory,
     setIsPreOrder,
+    setBatchCount,
+    updateBatch,
     onFileChange,
     onDrop,
     validateAndGetPayload,
@@ -233,7 +235,8 @@ export default function ProductsPage() {
       pointsCost,
       isPreOrder,
       preOrderPurchaseLimit,
-      preOrderDeadline
+      preOrderDeadline,
+      preOrderBatches
     } = validated;
 
     try {
@@ -261,7 +264,8 @@ export default function ProductsPage() {
           pointsCost,
           isPreOrder,
           preOrderPurchaseLimit,
-          preOrderDeadline
+          preOrderDeadline,
+          preOrderBatches
         });
       } else {
         if (!editingId) return;
@@ -287,7 +291,8 @@ export default function ProductsPage() {
             pointsCost,
             isPreOrder,
             preOrderPurchaseLimit,
-            preOrderDeadline
+            preOrderDeadline,
+            preOrderBatches
           }
         });
       }
@@ -435,6 +440,8 @@ export default function ProductsPage() {
         onFormChange={(field, value) => setForm(v => ({...v, [field]: value}))}
         onCategoryChange={setCategory}
         onPreOrderChange={setIsPreOrder}
+        onBatchCountChange={setBatchCount}
+        onBatchChange={updateBatch}
         onFileChange={handleFileChange}
         onDrop={onDrop}
         onDragEnter={() => setIsDragging(true)}

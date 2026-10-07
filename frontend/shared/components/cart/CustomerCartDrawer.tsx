@@ -25,9 +25,9 @@ import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
 import {
-  isPreOrderClosed,
   isPreOrderProduct,
   preOrderClosedMessage,
+  preOrderDisplay,
   preOrderLimitLabel,
   preOrderLimitMessage
 } from '@/lib/preOrder/preOrder';
@@ -79,13 +79,6 @@ export default function CustomerCartDrawer({
     [cartQuery.data]
   );
 
-  /**
-   * Pre-order state per cart item, read from the products list.
-   *
-   * A cart can outlive a deadline (left open overnight) or an owner's limit
-   * edit, so we re-check here rather than trusting what was true when the
-   * item was added. The backend rejects these at order time regardless.
-   */
   const productsQuery = useProductsQuery();
   const preOrderByProductId = useMemo(() => {
     const map = new Map<string, Product>();
@@ -95,15 +88,32 @@ export default function CustomerCartDrawer({
     return map;
   }, [productsQuery.data]);
 
-  /** Cart items whose pre-order window has since closed. */
-  const closedPreOrderItems = useMemo(
-    () =>
-      items.filter(i => {
-        const p = preOrderByProductId.get(i.productId);
-        return p ? isPreOrderClosed(p) : false;
-      }),
-    [items, preOrderByProductId]
-  );
+  /**
+   * Cart items whose batch window has closed or is not currently open.
+   *
+   * A cart can outlive a batch window (left open overnight) or an owner's
+   * limit edit, so we re-check here rather than trusting what was true when
+   * the item was added. The backend rejects these at order time regardless.
+   */
+  const blockedPreOrderItems = useMemo(() => {
+    const out: Array<{name: string; reason: string}> = [];
+    for (const i of items) {
+      const p = preOrderByProductId.get(i.productId);
+      if (!p) continue;
+      const display = preOrderDisplay(p);
+      if (display.closed) {
+        out.push({name: i.name, reason: preOrderClosedMessage(i.name)});
+      } else if (!display.orderable) {
+        out.push({
+          name: i.name,
+          reason: display.statusLine
+            ? `${i.name} — ${display.statusLine}. Please check back then.`
+            : preOrderClosedMessage(i.name)
+        });
+      }
+    }
+    return out;
+  }, [items, preOrderByProductId]);
 
   const subtotal = useMemo(() => {
     if (promos.length === 0) {
@@ -171,17 +181,11 @@ export default function CustomerCartDrawer({
   };
 
   const goToCheckout = () => {
-    // A pre-order can close while it sits in the cart (deadline passed, or the
-    // owner lowered the limit). Catch it here rather than letting checkout
+    // A pre-order can close while it sits in the cart (batch window ended, or
+    // the owner lowered the limit). Catch it here rather than letting checkout
     // fail after the customer has filled in everything.
-    if (closedPreOrderItems.length > 0) {
-      toast.error(
-        preOrderClosedMessage(
-          closedPreOrderItems.length === 1
-            ? closedPreOrderItems[0].name
-            : 'Some items in your cart'
-        )
-      );
+    if (blockedPreOrderItems.length > 0) {
+      toast.error(blockedPreOrderItems[0].reason);
       return;
     }
 
@@ -216,8 +220,16 @@ export default function CustomerCartDrawer({
     const po = preOrderByProductId.get(item.productId);
     if (!po) return null;
 
-    if (isPreOrderClosed(po)) {
+    const display = preOrderDisplay(po);
+
+    if (display.closed) {
       return preOrderClosedMessage(item.name);
+    }
+
+    if (!display.orderable) {
+      return display.statusLine
+        ? `${item.name} — ${display.statusLine}. Please check back then.`
+        : preOrderClosedMessage(item.name);
     }
 
     const limit = po.preOrderPurchaseLimit;
@@ -353,19 +365,23 @@ export default function CustomerCartDrawer({
                         {(() => {
                           const po = preOrderByProductId.get(item.productId);
                           if (!po) return null;
-                          const closed = isPreOrderClosed(po);
+                          const display = preOrderDisplay(po);
+                          const label = display.closed
+                            ? 'Pre-order closed'
+                            : !display.orderable
+                              ? display.statusLine
+                              : preOrderLimitLabel(po);
+                          if (!label) return null;
                           return (
                             <p
                               className={cn(
                                 'mt-0.5 text-[11px] font-semibold',
-                                closed
+                                display.closed || !display.orderable
                                   ? 'text-gray-500'
                                   : 'text-purple-700'
                               )}
                             >
-                              {closed
-                                ? 'Pre-order closed'
-                                : preOrderLimitLabel(po)}
+                              {label}
                             </p>
                           );
                         })()}
@@ -487,133 +503,375 @@ export default function CustomerCartDrawer({
           aria-modal="true"
         >
           <div
-            className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl"
+            className="w-full max-w-[520px] max-h-[calc(100vh-32px)] rounded-[24px] bg-white shadow-[0_24px_60px_rgba(0,0,0,.35)] overflow-hidden flex flex-col"
             onClick={e => e.stopPropagation()}
+            style={
+              {
+                ['--brand-green']: '#3d6146',
+                ['--brand-green-tint']: '#eef4ef',
+                ['--cta-red']: '#b80012',
+                ['--text']: '#1a1a1a',
+                ['--text-muted']: '#5f5f5a',
+                ['--border']: '#e2e2de',
+                ['--surface-muted']: '#f1f1ee',
+                ['--surface-soft']: '#fafaf8'
+              } as React.CSSProperties
+            }
           >
-            <div className="flex items-center justify-between px-6 py-5 border-b">
-              <p className="text-xl font-bold text-gray-900">Order details</p>
+            <div className="flex items-start justify-between px-[28px] pt-[28px]">
+              <div>
+                <h2
+                  className="text-[22px] font-extrabold leading-tight"
+                  style={{color: 'var(--text)', fontWeight: 800}}
+                >
+                  How would you like your order?
+                </h2>
+                <p
+                  className="mt-1.5 text-[14px]"
+                  style={{color: 'var(--text-muted)'}}
+                >
+                  Pick one. You can change it anytime.
+                </p>
+              </div>
               <Button
                 type="button"
                 onClick={cancelOrderDetails}
                 variant="ghost"
                 size="icon"
-                className="rounded-full"
+                className="h-11 w-11 rounded-full"
                 aria-label="Close"
               >
                 <X className="h-5 w-5" />
               </Button>
             </div>
 
-            <div className="px-6 py-6">
-              <p className="text-sm font-semibold text-gray-900">
-                Select order type
-              </p>
-
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setDraftOrderType('Delivery')}
-                  className={
-                    'h-12 rounded-xl border px-4 inline-flex items-center justify-center gap-2 font-semibold ' +
-                    (draftOrderType === 'Delivery'
-                      ? 'bg-[#3c5e45] text-white'
-                      : 'bg-white text-gray-900 border-gray-200 hover:bg-gray-50')
-                  }
-                >
-                  <Bike className="h-5 w-5" />
-                  Delivery
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setDraftOrderType('Pick-up')}
-                  className={
-                    'h-12 rounded-xl border px-4 inline-flex items-center justify-center gap-2 font-semibold ' +
-                    (draftOrderType === 'Pick-up'
-                      ? 'bg-[#3c5e45] text-white'
-                      : 'bg-white text-gray-900 border-gray-200 hover:bg-gray-50')
-                  }
-                >
-                  <ShoppingBag className="h-5 w-5" />
-                  Pick-up
-                </button>
-              </div>
-
-              <div className="mt-3">
-                <button
-                  type="button"
-                  onClick={() => setDraftOrderType('Reservation')}
-                  className={
-                    'h-12 w-full rounded-xl border px-4 inline-flex items-center justify-center gap-2 font-semibold ' +
-                    (draftOrderType === 'Reservation'
-                      ? 'bg-[#3c5e45] text-white'
-                      : 'bg-white text-gray-900 border-gray-200 hover:bg-gray-50')
-                  }
-                >
-                  <CalendarClock className="h-5 w-5" />
-                  Reservation
-                </button>
-              </div>
-
-              {draftOrderType === 'Reservation' ? (
-                <div className="mt-6 space-y-6">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      Schedule
+            <div
+              className="px-[28px] pt-[22px] flex gap-3"
+              role="radiogroup"
+            >
+              {(['Delivery', 'Pick-up', 'Reservation'] as const).map(type => {
+                const isSelected = draftOrderType === type;
+                const baseClasses =
+                  'relative flex flex-1 flex-col items-center gap-2 rounded-2xl border-[1.5px] bg-white px-2 pb-4 pt-5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2';
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    onClick={() => {
+                      setDraftOrderType(type);
+                      if (type === 'Reservation') {
+                        if (!draftReservationDate) {
+                          setDraftReservationDate(defaultScheduleDate);
+                        } else {
+                          setDraftReservationDate(prev =>
+                            prev < defaultScheduleDate ? defaultScheduleDate : prev
+                          );
+                        }
+                      }
+                    }}
+                    className={baseClasses}
+                    style={{
+                      borderColor: isSelected
+                        ? 'var(--brand-green)'
+                        : 'var(--border)',
+                      backgroundColor: isSelected
+                        ? 'var(--brand-green-tint)'
+                        : 'white',
+                      boxShadow: isSelected
+                        ? '0 0 0 1px var(--brand-green)'
+                        : undefined,
+                      minHeight: '44px'
+                    }}
+                  >
+                    {isSelected ? (
+                      <div
+                        className="absolute right-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full"
+                        style={{backgroundColor: 'var(--brand-green)'}}
+                      >
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          stroke="white"
+                          fill="none"
+                          strokeWidth="3.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </div>
+                    ) : null}
+                    <div
+                      className="flex h-12 w-12 items-center justify-center rounded-[14px]"
+                      style={{
+                        backgroundColor: isSelected
+                          ? 'var(--brand-green)'
+                          : 'var(--surface-muted)',
+                        color: isSelected ? 'white' : 'var(--brand-green)'
+                      }}
+                    >
+                      {type === 'Delivery' ? (
+                        <Bike className="h-6 w-6" strokeWidth={2} />
+                      ) : type === 'Pick-up' ? (
+                        <ShoppingBag className="h-6 w-6" strokeWidth={2} />
+                      ) : (
+                        <CalendarClock className="h-6 w-6" strokeWidth={2} />
+                      )}
+                    </div>
+                    <p
+                      className="text-[15px] font-bold"
+                      style={{color: 'var(--text)'}}
+                    >
+                      {type === 'Pick-up' ? 'Pick-up' : type}
                     </p>
-                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <p
+                      className="text-[12px] leading-tight"
+                      style={{color: 'var(--text-muted)'}}
+                    >
+                      {type === 'Delivery'
+                        ? 'To your door'
+                        : type === 'Pick-up'
+                          ? 'Grab it at the shop'
+                          : 'Book a table'}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="px-[28px] pt-6 flex-1 overflow-y-auto">
+              {draftOrderType === 'Delivery' ? (
+                <div className="space-y-6">
+                  <div>
+                    <span
+                      className="mb-2 block text-[13px] font-bold"
+                      style={{color: 'var(--text)'}}
+                    >
+                      When
+                    </span>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setDraftTiming('ASAP')}
+                        className="h-11 rounded-full border-[1.5px] px-5 text-[14px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2"
+                        style={{
+                          borderColor:
+                            draftTiming === 'ASAP'
+                              ? 'var(--brand-green)'
+                              : 'var(--border)',
+                          backgroundColor:
+                            draftTiming === 'ASAP'
+                              ? 'var(--brand-green)'
+                              : 'white',
+                          color:
+                            draftTiming === 'ASAP' ? 'white' : 'var(--text)'
+                        }}
+                      >
+                        ASAP
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : draftOrderType === 'Pick-up' ? (
+                <div className="space-y-6">
+                  <div>
+                    <span
+                      className="mb-2 block text-[13px] font-bold"
+                      style={{color: 'var(--text)'}}
+                    >
+                      Pick up at
+                    </span>
+                    <div
+                      className="flex items-center gap-3 rounded-xl border-[1.5px] p-3.5"
+                      style={{
+                        borderColor: 'var(--border)',
+                        backgroundColor: 'var(--surface-soft)'
+                      }}
+                    >
+                      <div
+                        className="flex h-10 w-10 items-center justify-center rounded-[14px] shrink-0"
+                        style={{
+                          backgroundColor: 'var(--surface-muted)',
+                          color: 'var(--brand-green)'
+                        }}
+                      >
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          fill="none"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                          <circle cx="12" cy="10" r="3" />
+                        </svg>
+                      </div>
+                      <div className="min-w-0">
+                        <p
+                          className="text-[15px] font-bold"
+                          style={{color: 'var(--text)'}}
+                        >
+                          DonClaudio&apos;s Lechon House
+                        </p>
+                        <p
+                          className="mt-0.5 text-[13px] leading-snug"
+                          style={{color: 'var(--text-muted)'}}
+                        >
+                          Jasmine St. De Roman Brgy.Daang Amaya 1, Tanza,
+                          Cavite, Philippines 4108
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <span
+                      className="mb-2 block text-[13px] font-bold"
+                      style={{color: 'var(--text)'}}
+                    >
+                      When
+                    </span>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setDraftTiming('ASAP')}
+                        className="h-11 rounded-full border-[1.5px] px-5 text-[14px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2"
+                        style={{
+                          borderColor:
+                            draftTiming === 'ASAP'
+                              ? 'var(--brand-green)'
+                              : 'var(--border)',
+                          backgroundColor:
+                            draftTiming === 'ASAP'
+                              ? 'var(--brand-green)'
+                              : 'white',
+                          color:
+                            draftTiming === 'ASAP' ? 'white' : 'var(--text)'
+                        }}
+                      >
+                        ASAP
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : draftOrderType === 'Reservation' ? (
+                <div className="space-y-6">
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label
+                        htmlFor="reservation-date"
+                        className="mb-2 block text-[13px] font-bold"
+                        style={{color: 'var(--text)'}}
+                      >
+                        Date
+                      </label>
                       <input
+                        id="reservation-date"
                         type="date"
                         value={draftReservationDate}
+                        min={defaultScheduleDate}
                         onChange={e => setDraftReservationDate(e.target.value)}
-                        className="h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
+                        className="h-12 w-full rounded-xl border-[1.5px] px-3.5 text-[15px] font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--brand-green)] focus:ring-offset-0"
+                        style={{
+                          borderColor: 'var(--border)',
+                          color: 'var(--text)'
+                        }}
                       />
+                    </div>
+                    <div className="flex-1">
+                      <label
+                        htmlFor="reservation-time"
+                        className="mb-2 block text-[13px] font-bold"
+                        style={{color: 'var(--text)'}}
+                      >
+                        Time
+                      </label>
                       <input
+                        id="reservation-time"
                         type="time"
                         value={draftReservationTime}
                         onChange={e => setDraftReservationTime(e.target.value)}
-                        className="h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
+                        className="h-12 w-full rounded-xl border-[1.5px] px-3.5 text-[15px] font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--brand-green)] focus:ring-offset-0"
+                        style={{
+                          borderColor: 'var(--border)',
+                          color: 'var(--text)'
+                        }}
                       />
                     </div>
                   </div>
-
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      Number of Guests
-                    </p>
-                    <div className="mt-3 flex items-center gap-3">
-                      <input
-                        type="number"
-                        min={1}
-                        value={draftReservationGuests}
-                        onChange={e =>
+                    <label
+                      htmlFor="reservation-guests"
+                      className="mb-2 block text-[13px] font-bold"
+                      style={{color: 'var(--text)'}}
+                    >
+                      Number of guests
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        aria-label="Fewer guests"
+                        className="flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] bg-white transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2"
+                        style={{borderColor: 'var(--border)', minHeight: 44}}
+                        onClick={() =>
                           setDraftReservationGuests(
-                            Number.isFinite(Number(e.target.value))
-                              ? Number(e.target.value)
-                              : 1
+                            Math.max(1, draftReservationGuests - 1)
                           )
                         }
-                        className="h-10 w-28 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
-                      />
-                      <p className="text-sm text-gray-500">guest(s)</p>
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <div className="flex min-w-[56px] items-center justify-center text-[18px] font-bold">
+                        {draftReservationGuests}
+                      </div>
+                      <button
+                        type="button"
+                        aria-label="More guests"
+                        className="flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] bg-white transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2"
+                        style={{borderColor: 'var(--border)', minHeight: 44}}
+                        onClick={() =>
+                          setDraftReservationGuests(
+                            draftReservationGuests + 1
+                          )
+                        }
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                      <span
+                        className="text-sm"
+                        style={{color: 'var(--text-muted)'}}
+                      >
+                        guest(s)
+                      </span>
                     </div>
                   </div>
                 </div>
               ) : null}
             </div>
 
-            <div className="flex items-center justify-end gap-3 px-6 py-5 border-t">
+            <div
+              className="mt-2 flex items-center justify-end gap-2.5 border-t px-[28px] py-[28px]"
+              style={{borderColor: '#eee'}}
+            >
               <Button
                 type="button"
                 variant="outline"
                 onClick={cancelOrderDetails}
+                className="h-12 rounded-xl border-[1.5px] px-6 text-[15px] font-bold"
+                style={{borderColor: 'var(--border)'}}
               >
                 Cancel
               </Button>
               <Button
                 type="button"
-                className="bg-[#c30010] text-white hover:bg-[#a6000d]"
                 onClick={confirmOrderDetails}
+                className="h-12 rounded-xl px-8 text-[15px] font-bold text-white hover:brightness-90"
+                style={{backgroundColor: 'var(--cta-red)'}}
               >
                 Confirm
               </Button>

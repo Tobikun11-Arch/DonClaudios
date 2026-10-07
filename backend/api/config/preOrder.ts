@@ -8,8 +8,11 @@
  * A pre-order product:
  *   - lives in one of PRE_ORDER_CATEGORIES only
  *   - is hidden from guests entirely (server-side filtering)
- *   - has an owner-set purchase limit (whole number >= 1)
- *   - has an owner-set deadline; the WHOLE last day is still orderable
+ *   - has an owner-set purchase limit per batch (whole number >= 1)
+ *   - has an owner-set day; within that day it is split into one or more
+ *     batches, each with its own time window and stock. A batch only accepts
+ *     orders while its window is live — first come, first served.
+ *   - products saved before batches existed fall back to "orderable all day"
  */
 
 /**
@@ -113,6 +116,235 @@ export function isPreOrderClosed(
   return now.getTime() > instant.getTime();
 }
 
+/* ------------------------------------------------------------------ *
+ * BATCHES
+ * ------------------------------------------------------------------ */
+
+/** Shape the client may send (no `sold` — that is server-maintained). */
+export type PreOrderBatchInput = {
+  startTime: string;
+  endTime: string;
+  stock: number;
+};
+
+/** Shape stored on the product document. */
+export type PreOrderBatchStored = PreOrderBatchInput & {sold: number};
+
+export type PreOrderBatchStatus = 'upcoming' | 'live' | 'sold_out' | 'ended';
+
+export type PreOrderBatchState = PreOrderBatchStored & {
+  index: number;
+  /** Window open instant (store timezone). */
+  start: Date | null;
+  /** Window close instant (store timezone). */
+  end: Date | null;
+  status: PreOrderBatchStatus;
+  remaining: number;
+};
+
+export type PreOrderState = {
+  /** False for legacy pre-orders saved before batches existed. */
+  hasBatches: boolean;
+  batches: PreOrderBatchState[];
+  /** The batch whose window is open right now with stock left, if any. */
+  liveBatch: PreOrderBatchState | null;
+  /** The earliest not-yet-started batch with stock left, if any. */
+  nextBatch: PreOrderBatchState | null;
+  /** May an order be placed right now? */
+  orderable: boolean;
+  /** Every batch is over or sold out (or the day itself has passed). */
+  allDone: boolean;
+};
+
+const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+/** Is this a valid 24h wall-clock time ("08:00", "23:59")? */
+export function isValidBatchTime(value?: string | null): boolean {
+  return typeof value === 'string' && TIME_PATTERN.test(value.trim());
+}
+
+/** "08:30" -> 510. Returns null for anything unparseable. */
+export function batchTimeToMinutes(value: string): number | null {
+  if (!isValidBatchTime(value)) return null;
+  const [h, m] = value.trim().split(':').map(Number);
+  return h * 60 + m;
+}
+
+/** Store-local "HH:MM" -> UTC instant on the day the deadline falls on. */
+function timeOnDeadlineDay(deadline: Date, time: string): Date | null {
+  const day = new Date(
+    deadline.getTime() + PRE_ORDER_TZ_OFFSET_MINUTES * 60 * 1000
+  )
+    .toISOString()
+    .slice(0, 10);
+  const minutes = batchTimeToMinutes(time);
+  if (minutes === null) return null;
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(
+    Date.UTC(y, m - 1, d, 0, minutes) -
+      PRE_ORDER_TZ_OFFSET_MINUTES * 60 * 1000
+  );
+}
+
+/** e.g. "3:00 PM" — for customer-facing/limit error copy. */
+export function formatBatchTime(time: string): string {
+  const minutes = batchTimeToMinutes(time);
+  if (minutes === null) return time;
+  const hour24 = Math.floor(minutes / 60);
+  const minute = minutes % 60;
+  const suffix = hour24 >= 12 ? 'PM' : 'AM';
+  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+  return `${hour12}:${String(minute).padStart(2, '0')} ${suffix}`;
+}
+
+/**
+ * Derive every batch's window and status from the stored data plus the clock.
+ *
+ * Status priority: window over -> ended; no stock left -> sold_out;
+ * window not open yet -> upcoming; otherwise live.
+ */
+export function getPreOrderState(
+  product: {
+    isPreOrder?: boolean | null;
+    preOrderDeadline?: Date | string | null;
+    preOrderBatches?: PreOrderBatchStored[] | null;
+  },
+  now: Date = new Date()
+): PreOrderState {
+  const empty: PreOrderState = {
+    hasBatches: false,
+    batches: [],
+    liveBatch: null,
+    nextBatch: null,
+    orderable: false,
+    allDone: false
+  };
+
+  if (product.isPreOrder !== true) return empty;
+
+  const deadline =
+    product.preOrderDeadline instanceof Date
+      ? product.preOrderDeadline
+      : product.preOrderDeadline
+        ? new Date(product.preOrderDeadline)
+        : null;
+  const hasDeadline = deadline !== null && !Number.isNaN(deadline.getTime());
+
+  const raw = product.preOrderBatches ?? [];
+  if (raw.length === 0) {
+    // Legacy product: orderable all day, until the deadline passes.
+    const closed = !hasDeadline || isPreOrderClosed(deadline, now);
+    return {...empty, orderable: !closed, allDone: closed};
+  }
+
+  const batches: PreOrderBatchState[] = raw.map((b, index) => {
+    const start = hasDeadline ? timeOnDeadlineDay(deadline, b.startTime) : null;
+    const end = hasDeadline ? timeOnDeadlineDay(deadline, b.endTime) : null;
+    const remaining = Math.max(0, b.stock - b.sold);
+
+    let status: PreOrderBatchStatus;
+    if (!start || !end || now.getTime() >= end.getTime()) {
+      status = 'ended';
+    } else if (remaining <= 0) {
+      status = 'sold_out';
+    } else if (now.getTime() < start.getTime()) {
+      status = 'upcoming';
+    } else {
+      status = 'live';
+    }
+
+    return {
+      ...b,
+      index,
+      start,
+      end,
+      status,
+      remaining
+    };
+  });
+
+  const liveBatch = batches.find(b => b.status === 'live') ?? null;
+  // Earliest upcoming, regardless of the order the owner entered them.
+  const nextBatch =
+    batches
+      .filter(b => b.status === 'upcoming')
+      .sort(
+        (a, b) => (a.start?.getTime() ?? 0) - (b.start?.getTime() ?? 0)
+      )[0] ?? null;
+
+  return {
+    hasBatches: true,
+    batches,
+    liveBatch,
+    nextBatch,
+    orderable: liveBatch !== null,
+    allDone: liveBatch === null && nextBatch === null
+  };
+}
+
+/**
+ * Structural rules for the batches the owner submitted. Returns the list
+ * normalised in time order, or a message to reject the payload with.
+ *
+ * Batches are optional overall (legacy products have none), so this is only
+ * called when the payload actually carries them.
+ */
+export function validatePreOrderBatches(
+  batches: PreOrderBatchInput[] | null | undefined
+): {ok: true; batches: PreOrderBatchInput[]} | {ok: false; message: string} {
+  if (batches == null) return {ok: true, batches: []};
+  if (!Array.isArray(batches) || batches.length === 0) {
+    return {
+      ok: false,
+      message: 'Add at least one pre-order batch with a time window and stock.'
+    };
+  }
+  if (batches.length > 7) {
+    return {ok: false, message: 'A pre-order day can have at most 7 batches.'};
+  }
+
+  for (const batch of batches) {
+    if (!isValidBatchTime(batch.startTime) || !isValidBatchTime(batch.endTime)) {
+      return {
+        ok: false,
+        message: 'Each batch needs a valid start and end time (HH:MM).'
+      };
+    }
+    const start = batchTimeToMinutes(batch.startTime) as number;
+    const end = batchTimeToMinutes(batch.endTime) as number;
+    if (end <= start) {
+      return {
+        ok: false,
+        message: `Batch ${formatBatchTime(batch.startTime)}–${formatBatchTime(batch.endTime)} must end after it starts.`
+      };
+    }
+    if (!Number.isInteger(batch.stock) || batch.stock < 1) {
+      return {
+        ok: false,
+        message: 'Each batch needs a whole-number stock of at least 1.'
+      };
+    }
+  }
+
+  const sorted = [...batches].sort(
+    (a, b) =>
+      (batchTimeToMinutes(a.startTime) as number) -
+      (batchTimeToMinutes(b.startTime) as number)
+  );
+  for (let i = 1; i < sorted.length; i++) {
+    const prevEnd = batchTimeToMinutes(sorted[i - 1].endTime) as number;
+    const start = batchTimeToMinutes(sorted[i].startTime) as number;
+    if (start < prevEnd) {
+      return {
+        ok: false,
+        message: `Batches cannot overlap: ${formatBatchTime(sorted[i - 1].startTime)}–${formatBatchTime(sorted[i - 1].endTime)} and ${formatBatchTime(sorted[i].startTime)}–${formatBatchTime(sorted[i].endTime)}.`
+      };
+    }
+  }
+
+  return {ok: true, batches};
+}
+
 /**
  * Short, human deadline for copy we generate (notifications, not the UI),
  * e.g. "Oct 20". Uses English month abbreviations in the store's timezone so it
@@ -151,6 +383,12 @@ export function validatePreOrderFields(input: {
   deadline?: Date | null;
   today?: string;
   /**
+   * Batch windows for the chosen day. Optional so a legacy pre-order (saved
+   * before batches existed) can still be re-saved, but whenever batches are
+   * supplied they must be structurally valid.
+   */
+  batches?: PreOrderBatchInput[] | null;
+  /**
    * Skip the past-date rule. Used when re-saving a product whose deadline has
    * already passed and the owner did not pick a new date — the existing
    * pre-order is closed anyway, but blocking the edit would be wrong.
@@ -182,6 +420,9 @@ export function validatePreOrderFields(input: {
   if (Number.isNaN(deadline.getTime())) {
     return {ok: false, message: 'Pre-order deadline is not a valid date.'};
   }
+
+  const batchCheck = validatePreOrderBatches(input.batches);
+  if (!batchCheck.ok) return batchCheck;
 
   // Compare calendar days in the store's timezone, so "today" is allowed
   // (the whole day is still orderable) but yesterday is not.

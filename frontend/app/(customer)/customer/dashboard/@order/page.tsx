@@ -47,10 +47,9 @@ import SplashGate from '@/shared/components/SplashGate';
 import {toast} from 'sonner';
 
 import {
-  isPreOrderClosed,
   isPreOrderProduct,
   preOrderClosedMessage,
-  preOrderDeadlineLabel,
+  preOrderDisplay,
   preOrderLimitMessage
 } from '@/lib/preOrder/preOrder';
 
@@ -265,8 +264,10 @@ export default function OrderSlot() {
         // Bundles are never pre-orders.
         isPreOrder: false,
         preOrderClosed: false,
+        preOrderOrderable: true,
         preOrderLimit: null,
-        preOrderDeadlineLabel: ''
+        preOrderStatusLine: '',
+        preOrderSubLine: ''
       }));
     }
 
@@ -282,31 +283,38 @@ export default function OrderSlot() {
         )
       : sourceItems;
 
-    return filtered.slice(0, 5).map(item => ({
-      id: item._id,
+    return filtered.slice(0, 5).map(item => {
+      const display = preOrderDisplay(item);
+      return {
+        id: item._id,
 
-      name: item.name,
+        name: item.name,
 
-      price: item.price,
+        price: item.price,
 
-      imageUrl: item.imageUrl,
+        imageUrl: item.imageUrl,
 
-      note: item.description,
+        note: item.description,
 
-      href: undefined as string | undefined,
+        href: undefined as string | undefined,
 
-      isPreOrder: isPreOrderProduct(item),
+        isPreOrder: isPreOrderProduct(item),
 
-      preOrderClosed: isPreOrderClosed(item),
+        preOrderClosed: display.closed,
 
-      preOrderLimit:
-        typeof item.preOrderPurchaseLimit === 'number' &&
-        item.preOrderPurchaseLimit >= 1
-          ? item.preOrderPurchaseLimit
-          : null,
+        preOrderOrderable: display.orderable,
 
-      preOrderDeadlineLabel: preOrderDeadlineLabel(item)
-    }));
+        preOrderLimit:
+          typeof item.preOrderPurchaseLimit === 'number' &&
+          item.preOrderPurchaseLimit >= 1
+            ? item.preOrderPurchaseLimit
+            : null,
+
+        preOrderStatusLine: display.statusLine,
+
+        preOrderSubLine: display.subLine
+      };
+    });
   }, [
     activeCategory,
     availableProducts,
@@ -325,12 +333,23 @@ export default function OrderSlot() {
     imageUrl?: string;
     isPreOrder?: boolean;
     preOrderClosed?: boolean;
+    preOrderOrderable?: boolean;
     preOrderLimit?: number | null;
+    preOrderStatusLine?: string;
   }) => {
-    // Check the deadline and the owner's limit before the request so the
+    // Check the batch window and the owner's limit before the request so the
     // customer gets a clear message. The cart API enforces the same rules.
     if (item.isPreOrder && item.preOrderClosed) {
       toast.error(preOrderClosedMessage(item.name));
+      return;
+    }
+
+    if (item.isPreOrder && item.preOrderOrderable === false) {
+      toast.error(
+        item.preOrderStatusLine
+          ? `${item.name} — ${item.preOrderStatusLine}. Please check back then.`
+          : preOrderClosedMessage(item.name)
+      );
       return;
     }
 
@@ -506,8 +525,10 @@ export default function OrderSlot() {
                   href={item.href}
                   isPreOrder={item.isPreOrder}
                   preOrderClosed={item.preOrderClosed}
+                  preOrderOrderable={item.preOrderOrderable}
                   preOrderLimit={item.preOrderLimit}
-                  preOrderDeadlineLabel={item.preOrderDeadlineLabel}
+                  preOrderStatusLine={item.preOrderStatusLine}
+                  preOrderSubLine={item.preOrderSubLine}
                   badge={
                     resolvedActiveTab === 'promoBundles' ||
                     (resolvedActiveTab === FEATURED_TAB_ID && !item.isPreOrder)

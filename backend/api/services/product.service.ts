@@ -9,7 +9,10 @@ import {
 } from '../models/Product.model';
 import {initialPointsCostForPrice} from '../config/rewards';
 import {
+  type PreOrderBatchInput,
+  type PreOrderBatchStored,
   isPreOrderCategory,
+  formatBatchTime,
   preOrderDeadlineToInstant,
   validatePreOrderFields
 } from '../config/preOrder';
@@ -27,6 +30,7 @@ async function announcePreOrder(product: {
   name: string;
   preOrderDeadline?: Date | null;
   preOrderPurchaseLimit?: number | null;
+  preOrderBatches?: Array<{startTime: string; stock: number}> | null;
 }): Promise<void> {
   try {
     const notified = await notificationService.announcePreOrderToCustomers(
@@ -44,11 +48,16 @@ async function announcePreOrder(product: {
 }
 
 /**
- * Normalise the incoming pre-order trio into exactly what should be stored.
+ * Normalise the incoming pre-order fields into exactly what should be stored.
  *
  * Turning pre-order OFF, or moving the product to a category that does not
- * support it, clears the limit and deadline so stale values can never be
- * saved by accident and later resurface.
+ * support it, clears the limit, deadline and batches so stale values can
+ * never be saved by accident and later resurface.
+ *
+ * When batches are present, `stock` is derived as
+ * sum(batch.stock) - sum(batch.sold) so the product total can never drift
+ * from the per-batch pools. Returned as a separate `stock` key the caller
+ * only applies when it is defined.
  */
 function resolvePreOrderFields(input: {
   category?: string | null;
@@ -63,11 +72,28 @@ function resolvePreOrderFields(input: {
    */
   existingDeadline?: Date | null;
   deadlineCarriedOver?: boolean;
-}) {
+  /**
+   * undefined = carry over the stored batches (owner did not touch them);
+   * null = clear every batch; array = replace the schedule.
+   */
+  batchesInput?: PreOrderBatchInput[] | null | undefined;
+  existingBatches?: PreOrderBatchStored[] | null;
+}): {
+  isPreOrder: boolean;
+  preOrderPurchaseLimit: number | null;
+  preOrderDeadline: Date | null;
+  preOrderBatches: PreOrderBatchStored[] | null;
+  stock?: number;
+} {
   const enabled = input.isPreOrder === true;
 
   if (!enabled || !isPreOrderCategory(input.category)) {
-    return {isPreOrder: false, preOrderPurchaseLimit: null, preOrderDeadline: null};
+    return {
+      isPreOrder: false,
+      preOrderPurchaseLimit: null,
+      preOrderDeadline: null,
+      preOrderBatches: null
+    };
   }
 
   const pickedNewDate =
@@ -76,21 +102,60 @@ function resolvePreOrderFields(input: {
     ? preOrderDeadlineToInstant(input.deadlineInput as string)
     : (input.existingDeadline ?? null);
 
+  // undefined means the owner did not touch the schedule — keep what is
+  // stored so an unrelated edit (price, description) never wipes it.
+  const batches: PreOrderBatchInput[] | null =
+    input.batchesInput === undefined
+      ? (input.existingBatches ?? null)
+      : (input.batchesInput ?? null);
+
   const check = validatePreOrderFields({
     category: input.category,
     isPreOrder: true,
     purchaseLimit: input.purchaseLimit ?? null,
     deadline,
+    batches,
     allowPastDeadline: input.deadlineCarriedOver === true
   });
   if (!check.ok) {
     throw new ApiError(400, 'VALIDATION_ERROR', check.message);
   }
 
+  // Legacy pre-order with no batches at all (saved before batches existed):
+  // the owner-managed stock stands and the window stays all-day.
+  if (!batches || batches.length === 0) {
+    return {
+      isPreOrder: true,
+      preOrderPurchaseLimit: input.purchaseLimit as number,
+      preOrderDeadline: deadline,
+      preOrderBatches: null
+    };
+  }
+
+  // Carry `sold` across an edit: batch i keeps what batch i already sold,
+  // so lowering a batch below what customers already bought is rejected
+  // instead of silently resurrecting stock.
+  const existingSold = (index: number) =>
+    input.existingBatches?.[index]?.sold ?? 0;
+  const withSold: PreOrderBatchStored[] = batches.map((batch, index) => {
+    const sold = existingSold(index);
+    if (sold > batch.stock) {
+      throw new ApiError(
+        400,
+        'VALIDATION_ERROR',
+        `Batch ${formatBatchTime(batch.startTime)} cannot be set to ${batch.stock} — ${sold} have already been sold.`
+      );
+    }
+    return {...batch, sold};
+  });
+
+  const stock = withSold.reduce((sum, b) => sum + b.stock - b.sold, 0);
   return {
     isPreOrder: true,
     preOrderPurchaseLimit: input.purchaseLimit as number,
-    preOrderDeadline: deadline
+    preOrderDeadline: deadline,
+    preOrderBatches: withSold,
+    stock
   };
 }
 
@@ -158,6 +223,7 @@ export const productService = {
       isPreOrder?: boolean;
       preOrderPurchaseLimit?: number | null;
       preOrderDeadline?: string | null;
+      preOrderBatches?: PreOrderBatchInput[] | null;
     }
   ) {
     const category = await resolveCategory(data.category);
@@ -165,10 +231,13 @@ export const productService = {
       category: data.category,
       isPreOrder: data.isPreOrder,
       purchaseLimit: data.preOrderPurchaseLimit,
-      deadlineInput: data.preOrderDeadline
+      deadlineInput: data.preOrderDeadline,
+      batchesInput: data.preOrderBatches
     });
     const created = await productRepository.create({
       ...data,
+      // Batches own the stock; the client-sent total is only a fallback.
+      stock: preOrder.stock ?? data.stock,
       stockUnit: category.stockUnit,
       isAvailable: data.isAvailable ?? true,
       // Seed new products that were not given an explicit owner-set cost.
@@ -218,6 +287,7 @@ export const productService = {
       isPreOrder?: boolean;
       preOrderPurchaseLimit?: number | null;
       preOrderDeadline?: string | null;
+      preOrderBatches?: PreOrderBatchInput[] | null;
     }
   ) {
     // Pre-order state depends on the EFFECTIVE category and flag, so read the
@@ -249,7 +319,9 @@ export const productService = {
       purchaseLimit: effectiveLimit,
       deadlineInput: data.preOrderDeadline ?? null,
       existingDeadline: existing.preOrderDeadline ?? null,
-      deadlineCarriedOver
+      deadlineCarriedOver,
+      batchesInput: data.preOrderBatches,
+      existingBatches: existing.preOrderBatches ?? null
     });
 
     // pointsCost is intentionally NOT defaulted here: Mongoose
@@ -266,6 +338,11 @@ export const productService = {
     updateData.isPreOrder = preOrder.isPreOrder;
     updateData.preOrderPurchaseLimit = preOrder.preOrderPurchaseLimit;
     updateData.preOrderDeadline = preOrder.preOrderDeadline;
+    updateData.preOrderBatches = preOrder.preOrderBatches;
+    // Keep the product total locked to the batch pools when batches exist.
+    if (preOrder.stock !== undefined) {
+      updateData.stock = preOrder.stock;
+    }
     const updated = await productRepository.updateById(id, updateData);
     if (!updated) {
       throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Product not found');

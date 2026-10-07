@@ -6,6 +6,7 @@ import {toast} from 'sonner';
 import {MessageCircle, Package, ChevronRight, ChevronDown, ChevronUp, User, Phone, MapPin, Clock} from 'lucide-react';
 import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
 import OrderChatThread from '@/features/order/components/OrderChatThread';
+import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
 import {Modal} from '@/features/owner/cashiers/components/Modal';
 import {Button} from '@/components/ui/button';
 import {OrderDateFilter} from './OrderDateFilter';
@@ -233,30 +234,26 @@ export function CashierOrders() {
     f === 'overdue' ? overdueCount : countFor(f);
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <div className="mb-5 flex items-start justify-between gap-4">
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-[#2d4a35]">Orders</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-extrabold text-[#2d4a35]">Orders</h1>
+          <p className="text-sm text-gray-500">
             Live queue of all orders. Update status as orders progress, and reply
             to customer follow-ups.
           </p>
         </div>
+        <CashierNotificationBell />
       </div>
 
-      <div className="mb-5 flex flex-wrap items-center gap-2">
-        <label
-          htmlFor="order-status-filter"
-          className="text-sm font-semibold text-gray-600"
-        >
-          Status
-        </label>
-        <div className="relative">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="relative w-full sm:w-auto">
           <select
             id="order-status-filter"
+            aria-label="Filter by status"
             value={statusFilter}
             onChange={e => handleStatusFilterChange(e.target.value)}
-            className="appearance-none rounded-full border border-gray-200 bg-white py-2 pl-4 pr-10 text-sm font-semibold text-[#2d4a35] transition-colors hover:bg-gray-50 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
+            className="min-h-[40px] w-full appearance-none rounded-full border border-gray-200 bg-white py-2 pl-4 pr-10 text-sm font-semibold text-[#2d4a35] transition-colors hover:bg-gray-50 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20 sm:w-auto"
           >
             {filters.map(f => (
               <option key={f} value={f}>
@@ -268,18 +265,13 @@ export function CashierOrders() {
             className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
           />
         </div>
-        <label
-          htmlFor="order-type-filter"
-          className="text-sm font-semibold text-gray-600"
-        >
-          Order type
-        </label>
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <select
             id="order-type-filter"
+            aria-label="Filter by order type"
             value={orderTypeFilter}
             onChange={e => setOrderTypeFilter(e.target.value)}
-            className="appearance-none rounded-full border border-gray-200 bg-white py-2 pl-4 pr-10 text-sm font-semibold text-[#2d4a35] transition-colors hover:bg-gray-50 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
+            className="min-h-[40px] w-full appearance-none rounded-full border border-gray-200 bg-white py-2 pl-4 pr-10 text-sm font-semibold text-[#2d4a35] transition-colors hover:bg-gray-50 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20 sm:w-auto"
           >
             <option value="all">All types ({typeCountFor('all')})</option>
             {ORDER_TYPES.map(t => (
@@ -437,7 +429,7 @@ function OrderCard({
         onClick={() => setDetailsOpen(prev => !prev)}
         className="w-full cursor-pointer select-none p-5 transition-colors hover:bg-gray-50"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-50">
             {firstItem ? (
               <Image
@@ -475,18 +467,18 @@ function OrderCard({
               Order #{String(order._id).slice(-6).toUpperCase()} •{' '}
               {orderTypeLabel(order.orderType)} • ₱{order.totalAmount}.00
               {order.isGuest && (
-                <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
+                <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">
                   GUEST
                 </span>
               )}
             </p>
             {order.createdAt && (
-              <p className="mt-0.5 text-[11px] text-gray-400">
+              <p className="mt-0.5 text-xs text-gray-400">
                 {new Date(order.createdAt).toLocaleString()}
               </p>
             )}
             {order.prepTiming?.isOverdue && (
-              <p className="mt-1 text-[11px] font-semibold text-red-600">
+              <p className="mt-1 text-xs font-semibold text-red-600">
                 Started preparing{' '}
                 {order.prepTiming.preparingAt
                   ? new Date(order.prepTiming.preparingAt).toLocaleTimeString()
@@ -496,14 +488,14 @@ function OrderCard({
             )}
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex w-full items-center justify-end gap-2 sm:w-auto sm:shrink-0">
             <button
               type="button"
               onClick={e => {
                 e.stopPropagation();
                 onToggle();
               }}
-              className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50"
+              className="flex min-h-[40px] items-center gap-1.5 rounded-xl border border-gray-200 px-3.5 py-2 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50"
             >
               <MessageCircle size={14} />
               Follow-up
@@ -665,7 +657,7 @@ function OrderCard({
             <button
               onClick={onNextStatus}
               disabled={statusUpdating || cancelUpdating}
-              className="rounded-xl bg-[#2d4a35] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#3a5c44] disabled:opacity-50"
+              className="min-h-[40px] rounded-xl bg-[#2d4a35] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#3a5c44] disabled:opacity-50"
             >
               {statusUpdating
                 ? 'Updating...'
@@ -675,7 +667,7 @@ function OrderCard({
               <button
                 onClick={onCancel}
                 disabled={statusUpdating || cancelUpdating}
-                className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-bold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
+                className="min-h-[40px] rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-bold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
               >
                 Cancel Order
               </button>
