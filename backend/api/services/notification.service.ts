@@ -2,6 +2,7 @@ import {ApiError} from '../utils/error';
 import {notificationRepository} from '../repositories/notification.repository';
 import {customerRepository} from '../repositories/customer.repository';
 import {
+  formatBatchTime,
   formatPreOrderDeadlineShort,
   isPreOrderClosed
 } from '../config/preOrder';
@@ -21,17 +22,28 @@ async function announcePreOrderToCustomers(product: {
   name: string;
   preOrderDeadline?: Date | null;
   preOrderPurchaseLimit?: number | null;
+  preOrderBatches?: Array<{startTime: string; stock: number}> | null;
 }): Promise<number> {
   // An already-expired pre-order is not worth announcing.
   if (isPreOrderClosed(product.preOrderDeadline)) return 0;
 
   const deadline = formatPreOrderDeadlineShort(product.preOrderDeadline);
   const limit = product.preOrderPurchaseLimit;
+  const batches = product.preOrderBatches ?? [];
 
   const details: string[] = [];
-  if (deadline) details.push(`until ${deadline}`);
+  if (deadline) details.push(`on ${deadline}`);
+  if (batches.length > 0) {
+    details.push(
+      batches.length === 1
+        ? `1 batch starting ${formatBatchTime(batches[0].startTime)}`
+        : `${batches.length} batches, first at ${formatBatchTime(batches[0].startTime)}`
+    );
+  }
   if (typeof limit === 'number' && limit >= 1) {
-    details.push(`max ${limit} per customer`);
+    details.push(
+      `max ${limit} per customer${batches.length > 0 ? ' per batch' : ''}`
+    );
   }
 
   const customers = await customerRepository.listAllIds();

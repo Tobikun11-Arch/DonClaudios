@@ -1,7 +1,6 @@
 
 NEW UI MODAL For choosing type of order delivery/reservation/pick up - if customer choose the pre order product in menu
-it dont need to choose type of order
-
+it dont need to choose type of order`
 
 
 Reservations

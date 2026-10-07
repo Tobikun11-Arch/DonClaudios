@@ -535,16 +535,23 @@ export const orderController = {
       const safeDeliveryFee =
         orderType === 'delivery' && items.length > 0 ? 49 : 0;
 
-      // Re-check pre-order limits and deadlines at order time: the cart may
-      // have been sitting open past the deadline, or the owner may have
+      // Re-check pre-order limits and batch windows at order time: the cart
+      // may have been sitting open past a batch window, or the owner may have
       // lowered the limit since it was added.
-      await assertPreOrderItemsOrderable({
+      const preOrderStamps = await assertPreOrderItemsOrderable({
         items: items.map((i: any) => ({
           productId: i.productId,
           quantity: Math.max(1, Number(i.quantity ?? i.qty ?? 1))
         })),
-        allowPreOrder: true
+        allowPreOrder: true,
+        customerId: req.auth.userId as string
       });
+      const batchStartByProductId = new Map(
+        preOrderStamps.map(s => [
+          String(s.productId),
+          s.preOrderBatchStart ?? null
+        ])
+      );
 
       const customerList = await customerRepository.listByIds([
         req.auth.userId as string
@@ -612,6 +619,10 @@ export const orderController = {
           quantity: safeQty,
           price: safePrice,
           prepTimeMinutes: itemPreps[index] ?? null,
+          // Which pre-order batch this was bought in (null for everything
+          // else), so a cancel restores the stock to the right pool.
+          preOrderBatchStart:
+            batchStartByProductId.get(String(i.productId)) ?? null,
           specialRequest: isNonEmptyString(i.specialRequest)
             ? i.specialRequest
             : isNonEmptyString(i.instructions)

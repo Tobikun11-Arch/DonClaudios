@@ -23,6 +23,22 @@ export interface ProductIngredient {
   iconKey: string;
 }
 
+/**
+ * One pre-order batch within the owner's chosen day. Times are store-local
+ * (UTC+8) wall-clock strings, so moving `preOrderDeadline` moves every
+ * batch's window with it.
+ */
+export interface PreOrderBatch {
+  /** "HH:MM" — window opens. */
+  startTime: string;
+  /** "HH:MM" — window closes. Must be after `startTime`. */
+  endTime: string;
+  /** Stock allocated to this batch. Whole number >= 1. */
+  stock: number;
+  /** Units already sold from this batch. Maintained by order deduct/restore. */
+  sold: number;
+}
+
 export interface ProductDocument extends mongoose.Document {
   name: string;
   category: string;
@@ -48,10 +64,16 @@ export interface ProductDocument extends mongoose.Document {
    * hidden entirely from guests.
    */
   isPreOrder?: boolean;
-  /** Max quantity one customer may order. Whole number >= 1. */
+  /** Max quantity one customer may order per batch. Whole number >= 1. */
   preOrderPurchaseLimit?: number | null;
-  /** Instant pre-orders close (end of the owner's chosen day, UTC+8). */
+  /** Instant the pre-order DAY ends (end of the owner's chosen day, UTC+8). */
   preOrderDeadline?: Date | null;
+  /**
+   * The batches within the pre-order day. Each batch owns its own stock and
+   * only accepts orders while its time window is live. `product.stock` stays
+   * the total remaining across batches (sum(batch.stock - batch.sold)).
+   */
+  preOrderBatches?: PreOrderBatch[] | null;
   promoType?: 'percentage' | 'fixed_amount' | 'bundle';
   discountRate?: number;
   discountAmount?: number;
@@ -65,6 +87,16 @@ const ProductIngredientSchema = new Schema<ProductIngredient>(
   {
     name: {type: String, required: true, trim: true, maxlength: 80},
     iconKey: {type: String, required: true, trim: true, maxlength: 64}
+  },
+  {_id: false}
+);
+
+const PreOrderBatchSchema = new Schema<PreOrderBatch>(
+  {
+    startTime: {type: String, required: true, trim: true},
+    endTime: {type: String, required: true, trim: true},
+    stock: {type: Number, required: true, min: 1},
+    sold: {type: Number, min: 0, default: 0}
   },
   {_id: false}
 );
@@ -86,6 +118,7 @@ const ProductSchema = new Schema<ProductDocument>(
     isPreOrder: {type: Boolean, default: false},
     preOrderPurchaseLimit: {type: Number, min: 1, default: null},
     preOrderDeadline: {type: Date, default: null},
+    preOrderBatches: {type: [PreOrderBatchSchema], default: null},
     promoType: {
       type: String,
       enum: ['percentage', 'fixed_amount', 'bundle'],

@@ -22,10 +22,9 @@ import {
 } from '@/lib/utils/promoPricing';
 import StoreClosedModal from '@/shared/components/StoreClosedModal';
 import {
-  isPreOrderClosed,
   isPreOrderProduct,
   preOrderClosedMessage,
-  preOrderDeadlineLabel,
+  preOrderDisplay,
   preOrderLimitMessage
 } from '@/lib/preOrder/preOrder';
 import {useGuestOrders} from '@/lib/hooks/orders/useGuestOrders';
@@ -195,9 +194,13 @@ function ProductsSection() {
 
         preOrderClosed: false,
 
+        preOrderOrderable: true,
+
         preOrderLimit: null,
 
-        preOrderDeadlineLabel: ''
+        preOrderStatusLine: '',
+
+        preOrderSubLine: ''
       }));
     }
 
@@ -213,31 +216,38 @@ function ProductsSection() {
         )
       : sourceItems;
 
-    return filtered.slice(0, 5).map(item => ({
-      id: item._id,
+    return filtered.slice(0, 5).map(item => {
+      const display = preOrderDisplay(item);
+      return {
+        id: item._id,
 
-      name: item.name,
+        name: item.name,
 
-      price: item.price,
+        price: item.price,
 
-      imageUrl: item.imageUrl,
+        imageUrl: item.imageUrl,
 
-      note: item.description,
+        note: item.description,
 
-      href: undefined as string | undefined,
+        href: undefined as string | undefined,
 
-      isPreOrder: isPreOrderProduct(item),
+        isPreOrder: isPreOrderProduct(item),
 
-      preOrderClosed: isPreOrderClosed(item),
+        preOrderClosed: display.closed,
 
-      preOrderLimit:
-        typeof item.preOrderPurchaseLimit === 'number' &&
-        item.preOrderPurchaseLimit >= 1
-          ? item.preOrderPurchaseLimit
-          : null,
+        preOrderOrderable: display.orderable,
 
-      preOrderDeadlineLabel: preOrderDeadlineLabel(item)
-    }));
+        preOrderLimit:
+          typeof item.preOrderPurchaseLimit === 'number' &&
+          item.preOrderPurchaseLimit >= 1
+            ? item.preOrderPurchaseLimit
+            : null,
+
+        preOrderStatusLine: display.statusLine,
+
+        preOrderSubLine: display.subLine
+      };
+    });
   }, [
     activeCategory,
 
@@ -263,13 +273,24 @@ function ProductsSection() {
     imageUrl?: string;
     isPreOrder?: boolean;
     preOrderClosed?: boolean;
+    preOrderOrderable?: boolean;
     preOrderLimit?: number | null;
+    preOrderStatusLine?: string;
   }) => {
     // The guest cart can never hold a pre-order, but a signed-in customer
-    // can reach this page — so check the deadline and limit here too rather
-    // than letting the customer add an item the backend will reject.
+    // can reach this page — so check the batch window and limit here too
+    // rather than letting the customer add an item the backend will reject.
     if (item.isPreOrder && item.preOrderClosed) {
       toast.error(preOrderClosedMessage(item.name));
+      return;
+    }
+
+    if (item.isPreOrder && item.preOrderOrderable === false) {
+      toast.error(
+        item.preOrderStatusLine
+          ? `${item.name} — ${item.preOrderStatusLine}. Please check back then.`
+          : preOrderClosedMessage(item.name)
+      );
       return;
     }
 
@@ -414,8 +435,10 @@ function ProductsSection() {
                   href={item.href}
                   isPreOrder={item.isPreOrder}
                   preOrderClosed={item.preOrderClosed}
+                  preOrderOrderable={item.preOrderOrderable}
                   preOrderLimit={item.preOrderLimit}
-                  preOrderDeadlineLabel={item.preOrderDeadlineLabel}
+                  preOrderStatusLine={item.preOrderStatusLine}
+                  preOrderSubLine={item.preOrderSubLine}
                   badge={
                     resolvedActiveTab === 'promoBundles' ||
                     (resolvedActiveTab === FEATURED_TAB_ID && !item.isPreOrder)

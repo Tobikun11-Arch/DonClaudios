@@ -7,9 +7,10 @@ import Image from 'next/image';
 import {formatPeso} from '../utils/formatPeso';
 import {Product} from '@/lib/types/product';
 import {
-  isPreOrderClosed,
+  formatBatchTime,
+  getPreOrderState,
   isPreOrderProduct,
-  preOrderDeadlineLabel,
+  preOrderDisplay,
   preOrderLimitLabel
 } from '@/lib/preOrder/preOrder';
 
@@ -21,6 +22,9 @@ interface Props {
 }
 
 export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
+  const po = preOrderDisplay(p);
+  const poState = getPreOrderState(p);
+
   return (
     <Card className="overflow-hidden border-gray-100 p-0">
       <div className="relative aspect-[4/3] bg-gray-50">
@@ -56,7 +60,7 @@ export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
             <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-purple-200 bg-purple-50 text-purple-700">
               <CalendarClock size={11} />
               PRE-ORDER
-              {isPreOrderClosed(p) && (
+              {po.closed && (
                 <span className="font-semibold text-purple-500">· CLOSED</span>
               )}
             </span>
@@ -81,10 +85,19 @@ export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
         {isPreOrderProduct(p) ? (
           <div className="mt-2 min-h-8 space-y-0.5">
             <p className="text-xs font-semibold text-purple-700">
-              {isPreOrderClosed(p)
-                ? 'Pre-order closed'
-                : preOrderDeadlineLabel(p)}
+              {po.statusLine}
             </p>
+            {poState.hasBatches && poState.batches ? (
+              <p className="text-xs text-gray-500">
+                {poState.batches.length}{' '}
+                {poState.batches.length === 1 ? 'batch' : 'batches'} ·{' '}
+                {poState.batches
+                  .map(b => formatBatchTime(b.startTime))
+                  .join(', ')}{' '}
+                ·{' '}
+                {poState.batches.reduce((sum, b) => sum + b.stock, 0)} stocks
+              </p>
+            ) : null}
             {preOrderLimitLabel(p) && (
               <p className="text-xs text-gray-500">
                 {preOrderLimitLabel(p)}

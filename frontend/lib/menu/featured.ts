@@ -10,9 +10,8 @@
  */
 
 import {
-  isPreOrderClosed,
-  isPreOrderProduct,
-  preOrderDeadlineLabel
+  preOrderDisplay,
+  isPreOrderProduct
 } from '@/lib/preOrder/preOrder';
 import {type Product} from '@/lib/types/product';
 import {type Promo} from '@/lib/types/promo';
@@ -39,8 +38,13 @@ export type FeaturedMenuItem = {
   href: string;
   isPreOrder: boolean;
   preOrderClosed: boolean;
+  /** A batch window is open with stock left — the add button may be used. */
+  preOrderOrderable: boolean;
   preOrderLimit: number | null;
-  preOrderDeadlineLabel: string;
+  /** Purple status line: "Batch 1 live until 11:00 AM", "Pre-order closed"… */
+  preOrderStatusLine: string;
+  /** Gray second line: remaining stock and/or "Max N per customer". */
+  preOrderSubLine: string;
 };
 
 /**
@@ -64,30 +68,33 @@ export function buildFeaturedMenuItems(input: {
 
   const openPreOrders = input.products
     // A pre-order that is unavailable or out of stock is not "featured", and
-    // a closed one must not be advertised.
-    .filter(
-      p =>
-        isPreOrderProduct(p) &&
-        !isPreOrderClosed(p) &&
-        p.isAvailable &&
-        p.stock > 0
-    )
-    .map<FeaturedMenuItem>(p => ({
-      id: p._id,
-      name: p.name,
-      price: p.price,
-      imageUrl: p.imageUrl,
-      note: p.description,
-      href: `/${input.basePath}/${encodeURIComponent(p._id)}`,
-      isPreOrder: true,
-      preOrderClosed: false,
-      preOrderLimit:
-        typeof p.preOrderPurchaseLimit === 'number' &&
-        p.preOrderPurchaseLimit >= 1
-          ? p.preOrderPurchaseLimit
-          : null,
-      preOrderDeadlineLabel: preOrderDeadlineLabel(p)
-    }));
+    // one with no batch left today must not be advertised. Between batches it
+    // stays visible so customers can see when the next window opens.
+    .filter(p => {
+      if (!isPreOrderProduct(p) || !p.isAvailable || p.stock <= 0) return false;
+      return !preOrderDisplay(p).closed;
+    })
+    .map<FeaturedMenuItem>(p => {
+      const display = preOrderDisplay(p);
+      return {
+        id: p._id,
+        name: p.name,
+        price: p.price,
+        imageUrl: p.imageUrl,
+        note: p.description,
+        href: `/${input.basePath}/${encodeURIComponent(p._id)}`,
+        isPreOrder: true,
+        preOrderClosed: display.closed,
+        preOrderOrderable: display.orderable,
+        preOrderLimit:
+          typeof p.preOrderPurchaseLimit === 'number' &&
+          p.preOrderPurchaseLimit >= 1
+            ? p.preOrderPurchaseLimit
+            : null,
+        preOrderStatusLine: display.statusLine,
+        preOrderSubLine: display.subLine
+      };
+    });
 
   // Bundle promos only. Percentage and fixed-amount promos are discounts on
   // ordinary dishes, which already carry a badge on their own category tab —
@@ -106,8 +113,10 @@ export function buildFeaturedMenuItems(input: {
       href: `/${input.basePath}/promo/${encodeURIComponent(p._id)}`,
       isPreOrder: false,
       preOrderClosed: false,
+      preOrderOrderable: true,
       preOrderLimit: null,
-      preOrderDeadlineLabel: ''
+      preOrderStatusLine: '',
+      preOrderSubLine: ''
     }));
 
   // Pre-orders lead: they are time-limited, so they are the reason to look.

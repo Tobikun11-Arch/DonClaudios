@@ -1,3 +1,5 @@
+import {type PreOrderBatch} from '@/lib/preOrder/preOrder';
+
 export type ProductIngredient = {
   name: string;
   iconKey: string;
@@ -36,10 +38,12 @@ export type Product = {
   pointsCost?: number | null;
   /** Pre-order: only in the 4 eligible categories, signed-in customers only. */
   isPreOrder?: boolean;
-  /** Max quantity one customer may order. Whole number >= 1. */
+  /** Max quantity one customer may order per batch. Whole number >= 1. */
   preOrderPurchaseLimit?: number | null;
-  /** Instant pre-orders close (end of the owner's chosen day, UTC+8). */
+  /** Instant the pre-order DAY ends (end of the owner's chosen day, UTC+8). */
   preOrderDeadline?: string | null;
+  /** The batch windows within that day; each owns its own stock. */
+  preOrderBatches?: PreOrderBatch[] | null;
   promoType?: 'percentage' | 'fixed_amount' | 'bundle';
   discountRate?: number;
   discountAmount?: number;
@@ -74,6 +78,12 @@ export type CreateProductBody = {
   isPreOrder?: boolean;
   preOrderPurchaseLimit?: number | null;
   preOrderDeadline?: string | null;
+  /** Sent as `{startTime, endTime, stock}[]`; `sold` is server-managed. */
+  preOrderBatches?: Array<{
+    startTime: string;
+    endTime: string;
+    stock: number;
+  }> | null;
   promoType?: 'percentage' | 'fixed_amount' | 'bundle';
   discountRate?: number;
   discountAmount?: number;

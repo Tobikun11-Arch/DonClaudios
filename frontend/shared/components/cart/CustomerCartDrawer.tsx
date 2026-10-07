@@ -25,9 +25,9 @@ import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
 import {
-  isPreOrderClosed,
   isPreOrderProduct,
   preOrderClosedMessage,
+  preOrderDisplay,
   preOrderLimitLabel,
   preOrderLimitMessage
 } from '@/lib/preOrder/preOrder';
@@ -79,13 +79,6 @@ export default function CustomerCartDrawer({
     [cartQuery.data]
   );
 
-  /**
-   * Pre-order state per cart item, read from the products list.
-   *
-   * A cart can outlive a deadline (left open overnight) or an owner's limit
-   * edit, so we re-check here rather than trusting what was true when the
-   * item was added. The backend rejects these at order time regardless.
-   */
   const productsQuery = useProductsQuery();
   const preOrderByProductId = useMemo(() => {
     const map = new Map<string, Product>();
@@ -95,15 +88,32 @@ export default function CustomerCartDrawer({
     return map;
   }, [productsQuery.data]);
 
-  /** Cart items whose pre-order window has since closed. */
-  const closedPreOrderItems = useMemo(
-    () =>
-      items.filter(i => {
-        const p = preOrderByProductId.get(i.productId);
-        return p ? isPreOrderClosed(p) : false;
-      }),
-    [items, preOrderByProductId]
-  );
+  /**
+   * Cart items whose batch window has closed or is not currently open.
+   *
+   * A cart can outlive a batch window (left open overnight) or an owner's
+   * limit edit, so we re-check here rather than trusting what was true when
+   * the item was added. The backend rejects these at order time regardless.
+   */
+  const blockedPreOrderItems = useMemo(() => {
+    const out: Array<{name: string; reason: string}> = [];
+    for (const i of items) {
+      const p = preOrderByProductId.get(i.productId);
+      if (!p) continue;
+      const display = preOrderDisplay(p);
+      if (display.closed) {
+        out.push({name: i.name, reason: preOrderClosedMessage(i.name)});
+      } else if (!display.orderable) {
+        out.push({
+          name: i.name,
+          reason: display.statusLine
+            ? `${i.name} — ${display.statusLine}. Please check back then.`
+            : preOrderClosedMessage(i.name)
+        });
+      }
+    }
+    return out;
+  }, [items, preOrderByProductId]);
 
   const subtotal = useMemo(() => {
     if (promos.length === 0) {
@@ -171,17 +181,11 @@ export default function CustomerCartDrawer({
   };
 
   const goToCheckout = () => {
-    // A pre-order can close while it sits in the cart (deadline passed, or the
-    // owner lowered the limit). Catch it here rather than letting checkout
+    // A pre-order can close while it sits in the cart (batch window ended, or
+    // the owner lowered the limit). Catch it here rather than letting checkout
     // fail after the customer has filled in everything.
-    if (closedPreOrderItems.length > 0) {
-      toast.error(
-        preOrderClosedMessage(
-          closedPreOrderItems.length === 1
-            ? closedPreOrderItems[0].name
-            : 'Some items in your cart'
-        )
-      );
+    if (blockedPreOrderItems.length > 0) {
+      toast.error(blockedPreOrderItems[0].reason);
       return;
     }
 
@@ -216,8 +220,16 @@ export default function CustomerCartDrawer({
     const po = preOrderByProductId.get(item.productId);
     if (!po) return null;
 
-    if (isPreOrderClosed(po)) {
+    const display = preOrderDisplay(po);
+
+    if (display.closed) {
       return preOrderClosedMessage(item.name);
+    }
+
+    if (!display.orderable) {
+      return display.statusLine
+        ? `${item.name} — ${display.statusLine}. Please check back then.`
+        : preOrderClosedMessage(item.name);
     }
 
     const limit = po.preOrderPurchaseLimit;
@@ -353,19 +365,23 @@ export default function CustomerCartDrawer({
                         {(() => {
                           const po = preOrderByProductId.get(item.productId);
                           if (!po) return null;
-                          const closed = isPreOrderClosed(po);
+                          const display = preOrderDisplay(po);
+                          const label = display.closed
+                            ? 'Pre-order closed'
+                            : !display.orderable
+                              ? display.statusLine
+                              : preOrderLimitLabel(po);
+                          if (!label) return null;
                           return (
                             <p
                               className={cn(
                                 'mt-0.5 text-[11px] font-semibold',
-                                closed
+                                display.closed || !display.orderable
                                   ? 'text-gray-500'
                                   : 'text-purple-700'
                               )}
                             >
-                              {closed
-                                ? 'Pre-order closed'
-                                : preOrderLimitLabel(po)}
+                              {label}
                             </p>
                           );
                         })()}

@@ -7,6 +7,12 @@ export interface OrderItemDocument extends mongoose.Document {
   price: number;
   prepTimeMinutes?: number;
   specialRequest?: string;
+  /**
+   * The pre-order batch ("HH:MM" store-local start) this item was bought
+   * in, stamped at order creation so a later cancel restores the stock to
+   * the right batch even if the owner has since edited the schedule.
+   */
+  preOrderBatchStart?: string | null;
 }
 
 const OrderItemSchema = new Schema<OrderItemDocument>(
@@ -16,7 +22,8 @@ const OrderItemSchema = new Schema<OrderItemDocument>(
     quantity: {type: Number, required: true},
     price: {type: Number, required: true},
     prepTimeMinutes: {type: Number, min: 0, max: 1440, default: null},
-    specialRequest: {type: String}
+    specialRequest: {type: String},
+    preOrderBatchStart: {type: String, default: null}
   },
   {timestamps: true}
 );

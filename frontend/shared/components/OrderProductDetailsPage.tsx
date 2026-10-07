@@ -18,10 +18,11 @@ import {
 } from '@/lib/utils/promoPricing';
 import {useCustomerCartQuery} from '@/lib/hooks/cart/useCustomerCart';
 import {
-  isPreOrderClosed,
+  formatBatchTime,
+  getPreOrderState,
   isPreOrderProduct,
   preOrderClosedMessage,
-  preOrderDeadlineLabel,
+  preOrderDisplay,
   preOrderLimitLabel,
   preOrderLimitMessage
 } from '@/lib/preOrder/preOrder';
@@ -76,10 +77,13 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
     return getPromoBadgeForProduct({promos, productId: product._id});
   }, [product, promos]);
 
-  // Pre-order state for this product: the deadline and the owner's limit cap
-  // the quantity stepper and block the add button.
+  // Pre-order state for this product: batch windows and the owner's limit
+  // cap the quantity stepper and block the add button.
   const isPreOrder = isPreOrderProduct(product);
-  const preOrderClosed = isPreOrderClosed(product);
+  const preOrder = useMemo(() => preOrderDisplay(product), [product]);
+  const preOrderState = useMemo(() => getPreOrderState(product), [product]);
+  const preOrderClosed = isPreOrder && preOrder.closed;
+  const preOrderOrderable = preOrder.orderable;
   const preOrderLimit =
     isPreOrder &&
     typeof product?.preOrderPurchaseLimit === 'number' &&
@@ -123,6 +127,11 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
   const addBlockedReason = useMemo(() => {
     if (!product) return 'Product not found.';
     if (preOrderClosed) return preOrderClosedMessage(product.name);
+    if (isPreOrder && !preOrderOrderable) {
+      return preOrder.statusLine
+        ? `${product.name} — ${preOrder.statusLine}. Please check back then.`
+        : preOrderClosedMessage(product.name);
+    }
     if (preOrderLimit != null && qtyInCart >= preOrderLimit) {
       return preOrderLimitMessage({
         productName: product.name,
@@ -131,7 +140,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
       });
     }
     return null;
-  }, [product, preOrderClosed, preOrderLimit, qtyInCart]);
+  }, [product, preOrderClosed, isPreOrder, preOrderOrderable, preOrder, preOrderLimit, qtyInCart]);
 
   return (
     <div
@@ -301,7 +310,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                 </div>
                 <Button
                   type="button"
-                  disabled={!product || preOrderClosed}
+                  disabled={!product || preOrderClosed || (isPreOrder && !preOrderOrderable)}
                   onClick={() => {
                     if (!product) return;
                     if (addBlockedReason) {
@@ -337,26 +346,69 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                 >
                   {preOrderClosed
                     ? 'Pre-order closed'
-                    : `Add to Cart - ₱${total}.00`}
+                    : isPreOrder && !preOrderOrderable
+                      ? preOrder.statusLine || 'Pre-order not open yet'
+                      : `Add to Cart - ₱${total}.00`}
                 </Button>
               </div>
 
-              {/* Pre-order context: who can buy it, until when, how many. */}
+              {/* Pre-order context: batch windows, limits, how to order. */}
               {isPreOrder && (
                 <div className="mt-4 rounded-xl border border-purple-200 bg-purple-50/70 p-4">
                   <p className="text-sm font-bold text-purple-800">
                     {preOrderClosed
                       ? 'Pre-order closed'
-                      : preOrderDeadlineLabel(product)}
+                      : preOrder.statusLine}
                   </p>
+                  {preOrder.subLine ? (
+                    <p className="mt-0.5 text-xs text-purple-700">
+                      {preOrder.subLine}
+                    </p>
+                  ) : null}
                   {preOrderLimit != null && (
                     <p className="mt-0.5 text-xs text-purple-700">
                       {preOrderLimitLabel(product)}
                     </p>
                   )}
+
+                  {preOrderState.hasBatches && preOrderState.batches ? (
+                    <ul className="mt-3 space-y-1.5">
+                      {preOrderState.batches.map((b, i) => (
+                        <li
+                          key={i}
+                          className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 rounded-lg bg-white/70 px-3 py-1.5 text-xs"
+                        >
+                          <span className="font-semibold text-gray-800">
+                            Batch {i + 1} · {formatBatchTime(b.startTime)} –{' '}
+                            {formatBatchTime(b.endTime)} · {b.stock} stocks
+                          </span>
+                          <span
+                            className={
+                              b.status === 'live'
+                                ? 'font-bold text-emerald-700'
+                                : b.status === 'sold_out'
+                                  ? 'font-bold text-red-600'
+                                  : b.status === 'upcoming'
+                                    ? 'font-semibold text-purple-700'
+                                    : 'text-gray-400'
+                            }
+                          >
+                            {b.status === 'live'
+                              ? `Live now · ${Math.max(0, b.remaining)} of ${b.stock} left`
+                              : b.status === 'upcoming'
+                                ? `Opens ${formatBatchTime(b.startTime)}`
+                                : b.status === 'sold_out'
+                                  ? 'Sold out'
+                                  : 'Ended'}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+
                   <p className="mt-2 text-xs text-gray-600">
-                    Pre-order items are only available to signed-in customers
-                    and only until the deadline above.
+                    Pre-order items are only available to signed-in customers,
+                    and only while a batch window is open.
                   </p>
                 </div>
               )}

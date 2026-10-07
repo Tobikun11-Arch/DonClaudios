@@ -1,7 +1,14 @@
 import {ApiError} from '../utils/error';
 import {cartRepository} from '../repositories/cart.repository';
 import {productRepository} from '../repositories/product.repository';
-import {isPreOrderClosed} from '../config/preOrder';
+import {orderRepository} from '../repositories/order.repository';
+import {orderItemRepository} from '../repositories/orderItem.repository';
+import {
+  formatBatchTime,
+  getPreOrderState,
+  isPreOrderClosed,
+  type PreOrderBatchState
+} from '../config/preOrder';
 
 /**
  * Pre-order guards shared by the cart and both order-creation paths.
@@ -9,6 +16,150 @@ import {isPreOrderClosed} from '../config/preOrder';
  * These are the authoritative checks. The UI mirrors them for a friendly
  * message, but nothing is trusted from the client.
  */
+
+/**
+ * Every non-cancelled order created inside the batch's window, plus its
+ * items. One query answers both guard questions:
+ *   - how many units this customer already claimed in the batch (limit)
+ *   - how many units other customers are still holding unconfirmed
+ *     (the pool is only reduced when an order is confirmed, so pending
+ *     orders must count here or the batch would keep accepting past 0)
+ */
+async function batchWindowUsage(batch: PreOrderBatchState): Promise<{
+  orders: Array<any>;
+  items: Array<any>;
+}> {
+  if (!batch.start || !batch.end) return {orders: [], items: []};
+
+  const orders = await orderRepository.listPaginated(
+    {
+      orderStatus: {$ne: 'cancelled'},
+      createdAt: {$gte: batch.start, $lt: batch.end}
+    },
+    0,
+    0
+  );
+  if (orders.length === 0) return {orders: [], items: []};
+
+  const items = await orderItemRepository.listByOrderIds(
+    orders.map(o => String(o._id))
+  );
+  return {orders, items};
+}
+
+/**
+ * Batch-aware pre-order assertion for one product.
+ *
+ * Batch products may only be ordered while a batch window is live, and the
+ * per-customer limit applies to each batch separately (cart quantity plus
+ * whatever they already ordered in this batch).
+ */
+async function assertPreOrderProductOrderable(input: {
+  product: any;
+  customerId?: string;
+  requestedTotal: number;
+}): Promise<void> {
+  const product = input.product;
+  const state = getPreOrderState(product);
+
+  // Legacy pre-order (saved before batches existed): all-day window.
+  if (!state.hasBatches) {
+    if (isPreOrderClosed(product.preOrderDeadline)) {
+      throw new ApiError(
+        400,
+        'PRE_ORDER_CLOSED',
+        `Pre-orders for "${product.name}" have closed. Please pick another item.`
+      );
+    }
+    const limit = product.preOrderPurchaseLimit;
+    if (
+      typeof limit === 'number' &&
+      limit > 0 &&
+      input.requestedTotal > limit
+    ) {
+      throw new ApiError(
+        400,
+        'PRE_ORDER_LIMIT_EXCEEDED',
+        `"${product.name}" is limited to ${limit} per customer. You can order up to ${limit}.`
+      );
+    }
+    return;
+  }
+
+  if (!state.orderable) {
+    if (state.allDone) {
+      throw new ApiError(
+        400,
+        'PRE_ORDER_CLOSED',
+        `Pre-orders for "${product.name}" have closed for today. Please pick another item.`
+      );
+    }
+    const next = state.nextBatch;
+    throw new ApiError(
+      400,
+      'PRE_ORDER_NOT_LIVE',
+      `"${product.name}" can only be ordered during its batch window${
+        next
+          ? ` — the next batch runs ${formatBatchTime(next.startTime)}–${formatBatchTime(next.endTime)}`
+          : ''
+      }. Please try again then.`
+    );
+  }
+
+  const live = state.liveBatch as PreOrderBatchState;
+  const usage = await batchWindowUsage(live);
+  const orderByItemId = new Map(
+    usage.orders.map(o => [String(o._id), o])
+  );
+
+  // Units still spoken for in this window: confirmed sales are already in
+  // batch.sold; unconfirmed (pending) orders hold the rest.
+  const pendingQty = usage.items
+    .filter(item => String(item.productId) === String(product._id))
+    .reduce((sum, item) => {
+      const order = orderByItemId.get(String(item.orderId));
+      return order && order.stockDeducted === false
+        ? sum + item.quantity
+        : sum;
+    }, 0);
+  const effectiveRemaining = Math.max(
+    0,
+    live.stock - live.sold - pendingQty
+  );
+
+  if (input.requestedTotal > effectiveRemaining) {
+    throw new ApiError(
+      400,
+      'INSUFFICIENT_STOCK',
+      effectiveRemaining === 0
+        ? `The current batch of "${product.name}" (${formatBatchTime(live.startTime)}–${formatBatchTime(live.endTime)}) is sold out.`
+        : `Only ${effectiveRemaining} left in the current batch of "${product.name}" (${formatBatchTime(live.startTime)}–${formatBatchTime(live.endTime)}).`
+    );
+  }
+
+  const limit = product.preOrderPurchaseLimit;
+  if (typeof limit === 'number' && limit > 0 && input.customerId) {
+    const alreadyOrdered = usage.items
+      .filter(
+        item =>
+          String(item.productId) === String(product._id) &&
+          String(orderByItemId.get(String(item.orderId))?.customerId ?? '') ===
+            String(input.customerId)
+      )
+      .reduce((sum, item) => sum + item.quantity, 0);
+
+    if (alreadyOrdered + input.requestedTotal > limit) {
+      const remaining = Math.max(0, limit - alreadyOrdered);
+      throw new ApiError(
+        400,
+        'PRE_ORDER_LIMIT_EXCEEDED',
+        remaining === 0
+          ? `"${product.name}" is limited to ${limit} per customer per batch, and you have already ordered ${alreadyOrdered} in this batch.`
+          : `"${product.name}" is limited to ${limit} per customer per batch. You can order ${remaining} more in this batch.`
+      );
+    }
+  }
+}
 
 /**
  * Rejects the cart change when the product is a pre-order that the customer
@@ -21,44 +172,36 @@ import {isPreOrderClosed} from '../config/preOrder';
 export async function assertPreOrderOrderable(input: {
   productId: string;
   requestedTotal: number;
+  customerId?: string;
 }): Promise<void> {
   const product = await productRepository.findById(input.productId);
   if (!product || product.isPreOrder !== true) {
     return;
   }
 
-  if (isPreOrderClosed(product.preOrderDeadline)) {
-    throw new ApiError(
-      400,
-      'PRE_ORDER_CLOSED',
-      `Pre-orders for "${product.name}" have closed. Please pick another item.`
-    );
-  }
-
-  const limit = product.preOrderPurchaseLimit;
-  if (typeof limit === 'number' && limit > 0 && input.requestedTotal > limit) {
-    throw new ApiError(
-      400,
-      'PRE_ORDER_LIMIT_EXCEEDED',
-      `"${product.name}" is limited to ${limit} per customer. You can order up to ${limit}.`
-    );
-  }
+  await assertPreOrderProductOrderable({
+    product,
+    customerId: input.customerId,
+    requestedTotal: input.requestedTotal
+  });
 }
 
 /**
  * Order-time check for every item in a payload at once.
  *
  * Used by both order-creation paths so a stale cart cannot slip a pre-order
- * past the limit or past a deadline that passed since it was added.
+ * past the limit or past a batch window / deadline that passed since it was
+ * added.
  *
  * @param allowPreOrder false for guests, who may never order these.
  */
 export async function assertPreOrderItemsOrderable(input: {
   items: Array<{productId: string; quantity: number}>;
   allowPreOrder: boolean;
-}): Promise<void> {
+  customerId?: string;
+}): Promise<Array<{productId: string; quantity: number; preOrderBatchStart?: string | null}>> {
   const items = input.items ?? [];
-  if (items.length === 0) return;
+  if (items.length === 0) return [];
 
   const productIds = items.map(i => i.productId);
   const products = await productRepository.findManyByIds(productIds);
@@ -66,9 +209,18 @@ export async function assertPreOrderItemsOrderable(input: {
     products.map(p => [String(p._id), p as (typeof products)[number]])
   );
 
+  const stamps: Array<{
+    productId: string;
+    quantity: number;
+    preOrderBatchStart?: string | null;
+  }> = [];
+
   for (const item of items) {
     const product: any = byId.get(String(item.productId));
-    if (!product || product.isPreOrder !== true) continue;
+    if (!product || product.isPreOrder !== true) {
+      stamps.push({...item});
+      continue;
+    }
 
     if (!input.allowPreOrder) {
       throw new ApiError(
@@ -78,23 +230,22 @@ export async function assertPreOrderItemsOrderable(input: {
       );
     }
 
-    if (isPreOrderClosed(product.preOrderDeadline)) {
-      throw new ApiError(
-        400,
-        'PRE_ORDER_CLOSED',
-        `Pre-orders for "${product.name}" have closed. Please remove it from your cart to continue.`
-      );
-    }
+    await assertPreOrderProductOrderable({
+      product,
+      customerId: input.customerId,
+      requestedTotal: item.quantity
+    });
 
-    const limit = product.preOrderPurchaseLimit;
-    if (typeof limit === 'number' && limit > 0 && item.quantity > limit) {
-      throw new ApiError(
-        400,
-        'PRE_ORDER_LIMIT_EXCEEDED',
-        `"${product.name}" is limited to ${limit} per customer. Please reduce the quantity in your cart.`
-      );
-    }
+    // Remember which batch this was bought in so a cancel restores the
+    // stock to the right pool.
+    const state = getPreOrderState(product);
+    stamps.push({
+      ...item,
+      preOrderBatchStart: state.liveBatch?.startTime ?? null
+    });
   }
+
+  return stamps;
 }
 
 export const cartService = {
@@ -124,12 +275,14 @@ export const cartService = {
     if (existing) {
       await assertPreOrderOrderable({
         productId: item.productId,
-        requestedTotal: existing.quantity + quantity
+        requestedTotal: existing.quantity + quantity,
+        customerId
       });
     } else {
       await assertPreOrderOrderable({
         productId: item.productId,
-        requestedTotal: quantity
+        requestedTotal: quantity,
+        customerId
       });
     }
 
@@ -165,7 +318,8 @@ export const cartService = {
 
     await assertPreOrderOrderable({
       productId,
-      requestedTotal: safeQty
+      requestedTotal: safeQty,
+      customerId
     });
 
     item.quantity = safeQty;
