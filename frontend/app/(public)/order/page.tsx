@@ -32,6 +32,7 @@ import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
 import {
   buildFeaturedMenuItems,
   FEATURED_TAB_ID,
+  FEATURED_TAB_IMAGE,
   FEATURED_TAB_LABEL
 } from '@/lib/menu/featured';
 
@@ -404,7 +405,11 @@ function ProductsSection() {
             <MenuCategoryCard
               key={tab.id}
               label={tab.label}
-              imageUrl={categoryImageMap[tab.label]}
+              imageUrl={
+                tab.id === FEATURED_TAB_ID
+                  ? FEATURED_TAB_IMAGE
+                  : categoryImageMap[tab.label]
+              }
               active={tab.id === resolvedActiveTab}
               onClick={() => setActiveTab(tab.id)}
             />
