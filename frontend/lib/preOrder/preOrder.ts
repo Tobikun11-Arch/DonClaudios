@@ -27,6 +27,18 @@ export function isPreOrderCategory(category?: string | null): boolean {
 /** The store is in Cebu, Philippines (UTC+8, no DST). */
 export const PRE_ORDER_TZ_OFFSET_MINUTES = 480;
 
+import {useState, useEffect} from 'react';
+/** Hook that returns current Date, updating every second. */
+export function useNow(interval = 1000): Date {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), interval);
+    return () => clearInterval(id);
+  }, [interval]);
+  return now;
+}
+
+
 /** One batch as stored on the product (see backend Product.model). */
 export type PreOrderBatch = {
   startTime: string;
@@ -47,6 +59,9 @@ export type PreOrderBatchState = {
   sold: number;
   remaining: number;
   status: PreOrderBatchStatus;
+  /** Absolute dates for UI (in store local time context converted to Date) */
+  startsAt?: Date | null;
+  endsAt?: Date | null;
 };
 
 export type PreOrderState = {
@@ -63,6 +78,12 @@ export type PreOrderProduct = {
   preOrderPurchaseLimit?: number | null;
   preOrderDeadline?: string | null;
   preOrderBatches?: PreOrderBatch[] | null;
+  price?: number | null;
+  name?: string;
+  category?: string;
+  imageUrl?: string;
+  description?: string;
+  allergens?: string[] | null;
 };
 
 /** Is this product actually a pre-order? */
@@ -210,7 +231,9 @@ export function getPreOrderState(
       stock: b.stock,
       sold,
       remaining,
-      status
+      status,
+      startsAt: start,
+      endsAt: end
     };
   });
 
@@ -369,4 +392,200 @@ export function preOrderLimitMessage(input: {
 /** Friendly message when the deadline has already passed. */
 export function preOrderClosedMessage(productName: string): string {
   return `Pre-orders for ${productName} have closed.`;
+}
+export function dateLabel(targetDate: Date, now: Date = new Date()): string {
+  const startOfDay = (d: Date) => {
+    const nd = new Date(d.getTime());
+    nd.setHours(0, 0, 0, 0);
+    return nd;
+  };
+  const n = startOfDay(now);
+  const t = startOfDay(targetDate);
+  const diff = Math.floor((t.getTime() - n.getTime()) / (1000 * 60 * 60 * 24));
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  return targetDate.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+}
+
+export function timeRangeLabel(batch: {startTime: string; endTime: string}): string {
+  return `${formatBatchTime(batch.startTime)} – ${formatBatchTime(batch.endTime)}`;
+}
+
+export function scheduleLabel(batch: {startTime: string; endTime: string}, date: Date, now: Date = new Date()): string {
+  return `${dateLabel(date, now)} · ${timeRangeLabel(batch)}`;
+}
+
+export function formatPeso(n: number): string {
+  return `₱${Math.round(n).toLocaleString('en-US')}`;
+}
+
+export function formatCountdown(ms: number): {hours: string; minutes: string; seconds: string} {
+  if (ms < 0) ms = 0;
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return {
+    hours: String(hours).padStart(2, '0'),
+    minutes: String(minutes).padStart(2, '0'),
+    seconds: String(seconds).padStart(2, '0')
+  };
+}
+
+export type PreOrderUiState =
+  | 'live'
+  | 'live_low'
+  | 'waiting'
+  | 'sold_out_next'
+  | 'sold_out_final'
+  | 'closed';
+
+export type PreOrderDisplayExtended = PreOrderDisplay & {
+  uiState: PreOrderUiState;
+  singleBatch: boolean;
+  remaining: number;
+  stock: number;
+  percentLeft: number;
+  startsAt: Date | null;
+  endsAt: Date | null;
+  nextStartAt: Date | null;
+  scheduleLabel: string;
+  dateLabel: string;
+  timeRangeLabel: string;
+  countdownTarget: Date | null;
+  countdownLabel: string;
+  limitLabel: string;
+  badgeText: string;
+  headline: string;
+  buttonLabel: string;
+};
+
+export function preOrderDisplayExtended(
+  p?: PreOrderProduct | null,
+  now: Date = new Date()
+): PreOrderDisplayExtended {
+  const base = preOrderDisplay(p, now);
+  const limit = preOrderLimitLabel(p);
+  const state = getPreOrderState(p, now);
+  const singleBatch = Array.isArray(p?.preOrderBatches) && p.preOrderBatches.length === 1;
+
+  if (!state.hasBatches) {
+    const closed = isPreOrderClosed(p, now);
+    const deadlineDayStr = deadlineDay(p?.preOrderDeadline);
+    const deadlineDate = deadlineDayStr ? new Date(deadlineDayStr + 'T00:00:00') : (p?.preOrderDeadline ? new Date(p.preOrderDeadline) : new Date());
+    return {
+      ...base,
+      uiState: closed ? 'closed' : 'waiting',
+      singleBatch: true,
+      remaining: 0,
+      stock: 0,
+      percentLeft: 0,
+      startsAt: deadlineDate,
+      endsAt: deadlineDate,
+      nextStartAt: null,
+      scheduleLabel: deadlineDayStr ? `${dateLabel(deadlineDate, now)} · Pre-order` : (closed ? 'Pre-order closed' : 'Pre-order'),
+      dateLabel: deadlineDayStr ? dateLabel(deadlineDate, now) : '',
+      timeRangeLabel: '',
+      countdownTarget: closed ? null : deadlineDate,
+      countdownLabel: closed ? '' : 'Opens in',
+      limitLabel: limit,
+      badgeText: closed ? 'Closed' : 'Opens soon',
+      headline: closed ? 'Pre-order closed' : 'Pre-order',
+      buttonLabel: closed ? 'Pre-order closed' : 'Pre-order'
+    };
+  }
+
+  if (state.liveBatch) {
+    const lb = state.liveBatch;
+    const startsAt = lb.startsAt || null;
+    const endsAt = lb.endsAt || null;
+    const remaining = lb.remaining;
+    const stock = lb.stock;
+    const percentLeft = stock <= 0 ? 0 : Math.round((remaining / stock) * 100);
+    const low = remaining <= Math.max(1, Math.floor(stock * 0.2)) || remaining <= 5;
+    const uiState: PreOrderUiState = low ? 'live_low' : 'live';
+    const batch = {startTime: lb.startTime, endTime: lb.endTime};
+    const schedDate = endsAt || (startsAt || new Date());
+    const limitLabel = singleBatch ? (limit.replace(' per batch', '')) : limit;
+    return {
+      ...base,
+      uiState,
+      singleBatch,
+      remaining,
+      stock,
+      percentLeft,
+      startsAt,
+      endsAt,
+      nextStartAt: state.nextBatch?.startsAt || null,
+      scheduleLabel: scheduleLabel(batch, schedDate, now),
+      dateLabel: dateLabel(schedDate, now),
+      timeRangeLabel: timeRangeLabel(batch),
+      countdownTarget: endsAt,
+      countdownLabel: 'Closes in',
+      limitLabel,
+      badgeText: low ? 'Almost gone' : 'Order now',
+      headline: singleBatch ? 'Pre-order is open' : `Batch ${lb.number} is open`,
+      buttonLabel: singleBatch ? `Add to cart · ${formatPeso(p?.price || 0)}` : `Add to cart · ${formatPeso(p?.price || 0)}`
+    };
+  }
+
+  if (state.nextBatch) {
+    const nb = state.nextBatch;
+    const startsAt = nb.startsAt || null;
+    const batch = {startTime: nb.startTime, endTime: nb.endTime};
+    const schedDate = startsAt || new Date();
+    const justEnded = state.batches.find(b => b.status === 'ended') ?? state.batches.find(b => b.status === 'sold_out');
+    const soldOutNext = justEnded?.status === 'sold_out' && !state.liveBatch;
+    const uiState: PreOrderUiState = soldOutNext ? 'sold_out_next' : 'waiting';
+    const limitLabel = singleBatch ? (limit.replace(' per batch', '')) : limit;
+    const dlabel = dateLabel(schedDate, now);
+    return {
+      ...base,
+      uiState,
+      singleBatch,
+      remaining: 0,
+      stock: 0,
+      percentLeft: 0,
+      startsAt,
+      endsAt: nb.endsAt || null,
+      nextStartAt: startsAt,
+      scheduleLabel: scheduleLabel(batch, schedDate, now),
+      dateLabel: dlabel,
+      timeRangeLabel: timeRangeLabel(batch),
+      countdownTarget: startsAt,
+      countdownLabel: 'Opens in',
+      limitLabel,
+      badgeText: soldOutNext ? 'Sold out' : 'Opens soon',
+      headline: singleBatch
+        ? (dlabel === 'Today' ? `Opens today at ${formatBatchTime(nb.startTime)}` : dlabel === 'Tomorrow' ? `Opens tomorrow at ${formatBatchTime(nb.startTime)}` : `Opens ${dlabel} at ${formatBatchTime(nb.startTime)}`)
+        : (soldOutNext ? `Batch ${justEnded?.number} sold out` : `Opens ${dlabel.toLowerCase()} at ${formatBatchTime(nb.startTime)}`),
+      buttonLabel: singleBatch
+        ? (dlabel === 'Today' ? `Opens at ${formatBatchTime(nb.startTime)}` : dlabel === 'Tomorrow' ? `Opens tomorrow ${formatBatchTime(nb.startTime)}` : `Opens ${dlabel}, ${formatBatchTime(nb.startTime)}`)
+        : (soldOutNext ? `Next opens ${formatBatchTime(nb.startTime)}` : `Opens ${formatBatchTime(nb.startTime)}`)
+    };
+  }
+
+  // closed/final sold out
+  const hasAnySoldOut = state.batches.some(b => b.status === 'sold_out');
+  const uiState: PreOrderUiState = hasAnySoldOut ? 'sold_out_final' : 'closed';
+  return {
+    ...base,
+    uiState,
+    singleBatch,
+    remaining: 0,
+    stock: 0,
+    percentLeft: 0,
+    startsAt: null,
+    endsAt: null,
+    nextStartAt: null,
+    scheduleLabel: base.closed ? 'Pre-order closed' : (hasAnySoldOut ? 'Sold out' : 'Pre-order closed'),
+    dateLabel: '',
+    timeRangeLabel: '',
+    countdownTarget: null,
+    countdownLabel: '',
+    limitLabel: singleBatch ? (limit.replace(' per batch', '')) : limit,
+    badgeText: hasAnySoldOut ? 'Sold out' : 'Closed',
+    headline: hasAnySoldOut ? 'Sold out' : 'Pre-order closed',
+    buttonLabel: hasAnySoldOut ? 'Sold out' : 'Pre-order closed'
+  };
 }

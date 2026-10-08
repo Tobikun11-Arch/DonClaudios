@@ -175,10 +175,9 @@ async function resolveCategory(
 
 export const productService = {
   /**
-   * `includePreOrder` is false for guests: pre-order products are exclusive
-   * to signed-in customers, so they are filtered out server-side rather than
-   * merely hidden in the UI. Owners and cashiers still receive them so they
-   * can manage and sell them at the counter.
+   * `includePreOrder` defaults to true: pre-order products are visible to
+   * everyone (guests included) so the menu can advertise them. Ordering them
+   * is still restricted to signed-in customers by the cart/order services.
    */
   async list(includePreOrder = true) {
     const products = await productRepository.listPublic();
@@ -191,8 +190,6 @@ export const productService = {
     if (!product) {
       throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Product not found');
     }
-    // A guest asking for a pre-order product directly gets a 404, so it is
-    // indistinguishable from a product that does not exist.
     if (!includePreOrder && product.isPreOrder === true) {
       throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Product not found');
     }

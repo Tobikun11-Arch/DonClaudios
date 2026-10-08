@@ -53,8 +53,6 @@ import {
   preOrderLimitMessage
 } from '@/lib/preOrder/preOrder';
 
-import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
-
 import {
   buildFeaturedMenuItems,
   FEATURED_TAB_ID,
@@ -68,10 +66,6 @@ export default function OrderSlot() {
   const promosQuery = usePublicPromosQuery();
 
   const publicCategoriesQuery = usePublicCategoriesQuery();
-
-  const {data: me} = useMeQuery();
-
-  const isSignedIn = !!me;
 
   const openCart = useCartUiStore(s => s.open);
 
@@ -131,7 +125,14 @@ export default function OrderSlot() {
   }, [cartItems, promos]);
 
   const availableProducts = useMemo(() => {
-    return products.filter(p => p.isAvailable && p.stock > 0);
+    // A pre-order that is fully done (no live batch and no next batch) is
+    // removed from the menu. One still batching stays visible.
+    return products.filter(
+      p =>
+        p.isAvailable &&
+        p.stock > 0 &&
+        !(isPreOrderProduct(p) && preOrderDisplay(p).closed)
+    );
   }, [products]);
 
   const promoBundles = useMemo(() => {
@@ -148,10 +149,9 @@ export default function OrderSlot() {
       buildFeaturedMenuItems({
         products: availableProducts,
         promos,
-        isSignedIn,
         basePath: 'customer/dashboard'
       }),
-    [availableProducts, isSignedIn, promos]
+    [availableProducts, promos]
   );
 
   const tabs = useMemo(() => {

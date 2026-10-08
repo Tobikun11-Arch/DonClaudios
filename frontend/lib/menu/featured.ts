@@ -5,8 +5,9 @@
  * promo bundles. It is not backed by a Category row — the tab is synthesised
  * here so it always exists and cannot be renamed or deleted by the owner.
  *
- * Shown to signed-in customers only. Guests never receive pre-order products
- * from the API, so a Featured tab with holes in it would just be confusing.
+ * Shown to everyone — guests included — so the menu advertises its limited
+ * pre-orders. Guests still cannot add them to a cart; only signed-in
+ * customers pass the cart/order services.
  */
 
 import {
@@ -50,9 +51,10 @@ export type FeaturedMenuItem = {
 /**
  * Build the Featured item list.
  *
- * @param products the products the viewer is allowed to see. Pre-orders are
- *   already absent for guests, but `isSignedIn` is checked too so the tab can
- *   never render for someone who must not see pre-orders.
+ * @param products the products the viewer sees. Pre-order products are now
+ *   part of the public menu for everyone, so the tab renders for guests and
+ *   signed-in customers alike. Their "add" actions are still blocked for
+ *   guests by the caller (the card/order services also enforce it).
  * @param promos active promos only (`GET /promos` already filters by date and
  *   isActive, so anything handed in here is live).
  * @param basePath route prefix for product and promo detail pages, e.g.
@@ -61,11 +63,8 @@ export type FeaturedMenuItem = {
 export function buildFeaturedMenuItems(input: {
   products: Product[];
   promos: Promo[];
-  isSignedIn: boolean;
   basePath: string;
 }): FeaturedMenuItem[] {
-  if (!input.isSignedIn) return [];
-
   const openPreOrders = input.products
     // A pre-order that is unavailable or out of stock is not "featured", and
     // one with no batch left today must not be advertised. Between batches it

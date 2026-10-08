@@ -32,7 +32,6 @@ import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
 import {
   buildFeaturedMenuItems,
   FEATURED_TAB_ID,
-  FEATURED_TAB_IMAGE,
   FEATURED_TAB_LABEL
 } from '@/lib/menu/featured';
 
@@ -42,10 +41,8 @@ function ProductsSection() {
   const publicCategoriesQuery = usePublicCategoriesQuery();
   const guestOrders = useGuestOrders();
   const {data: me} = useMeQuery();
-
-  // Featured mixes pre-orders in, and guests cannot see or order those, so
-  // the tab is hidden for them entirely rather than shown with gaps.
   const isSignedIn = !!me;
+
 
   const products = useMemo(() => data?.products ?? [], [data?.products]);
 
@@ -63,7 +60,14 @@ function ProductsSection() {
   }, [publicCategoriesQuery.data]);
 
   const availableProducts = useMemo(() => {
-    return products.filter(p => p.isAvailable && p.stock > 0);
+    // A pre-order that is fully done (no live batch and no next batch) is
+    // removed from the menu. One still batching stays visible.
+    return products.filter(
+      p =>
+        p.isAvailable &&
+        p.stock > 0 &&
+        !(isPreOrderProduct(p) && preOrderDisplay(p).closed)
+    );
   }, [products]);
 
   const promoBundles = useMemo(() => {
@@ -78,10 +82,9 @@ function ProductsSection() {
       buildFeaturedMenuItems({
         products: availableProducts,
         promos,
-        isSignedIn,
         basePath: 'order'
       }),
-    [availableProducts, isSignedIn, promos]
+    [availableProducts, promos]
   );
 
   const tabs = useMemo(() => {
@@ -277,9 +280,15 @@ function ProductsSection() {
     preOrderLimit?: number | null;
     preOrderStatusLine?: string;
   }) => {
-    // The guest cart can never hold a pre-order, but a signed-in customer
-    // can reach this page — so check the batch window and limit here too
-    // rather than letting the customer add an item the backend will reject.
+    // Pre-orders are for signed-in customers only. Guests just get a prompt
+    // to create or log into an account instead of a cart error.
+    if (item.isPreOrder && !isSignedIn) {
+      toast.error('Sign in to your customer account to order pre-orders.');
+      return;
+    }
+
+    // Check the batch window and limit here too rather than letting the
+    // backend reject the item at order time.
     if (item.isPreOrder && item.preOrderClosed) {
       toast.error(preOrderClosedMessage(item.name));
       return;
@@ -395,11 +404,7 @@ function ProductsSection() {
             <MenuCategoryCard
               key={tab.id}
               label={tab.label}
-              imageUrl={
-                tab.id === FEATURED_TAB_ID
-                  ? FEATURED_TAB_IMAGE
-                  : categoryImageMap[tab.label]
-              }
+              imageUrl={categoryImageMap[tab.label]}
               active={tab.id === resolvedActiveTab}
               onClick={() => setActiveTab(tab.id)}
             />
@@ -434,14 +439,14 @@ function ProductsSection() {
                   basePath="order"
                   href={item.href}
                   isPreOrder={item.isPreOrder}
+                  preOrderGuestLocked={item.isPreOrder && !isSignedIn}
                   preOrderClosed={item.preOrderClosed}
                   preOrderOrderable={item.preOrderOrderable}
                   preOrderLimit={item.preOrderLimit}
                   preOrderStatusLine={item.preOrderStatusLine}
                   preOrderSubLine={item.preOrderSubLine}
                   badge={
-                    resolvedActiveTab === 'promoBundles' ||
-                    (resolvedActiveTab === FEATURED_TAB_ID && !item.isPreOrder)
+                    resolvedActiveTab === 'promoBundles'
                       ? {
                           label: getBundleBadge()?.label ?? 'BUNDLE',
 

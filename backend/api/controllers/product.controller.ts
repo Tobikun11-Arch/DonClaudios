@@ -3,24 +3,14 @@ import {productService} from '../services/product.service';
 import {ApiError} from '../utils/error';
 
 /**
- * Pre-order products are exclusive to signed-in users.
- *
- * Customers need them; owners and cashiers need them so they can manage and
- * sell them at the counter. Everyone else — i.e. a guest with no valid
- * session — must not receive them at all.
+ * Pre-order products are visible to everyone — guests included, so the menu
+ * advertises them — but only signed-in customers can actually order them.
+ * The cart and guest-order services enforce that server-side.
  */
-function canSeePreOrder(req: Request): boolean {
-  return (
-    req.auth?.type === 'customer' ||
-    req.auth?.type === 'admin' ||
-    req.auth?.type === 'cashier'
-  );
-}
-
 export const productController = {
-  async list(req: Request, res: Response, next: NextFunction) {
+  async list(_req: Request, res: Response, next: NextFunction) {
     try {
-      const products = await productService.list(canSeePreOrder(req));
+      const products = await productService.list(true);
       res.status(200).json({products});
     } catch (error) {
       next(error);
@@ -29,10 +19,7 @@ export const productController = {
 
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const product = await productService.getById(
-        req.params.id,
-        canSeePreOrder(req)
-      );
+      const product = await productService.getById(req.params.id, true);
       res.status(200).json({product});
     } catch (error) {
       next(error);

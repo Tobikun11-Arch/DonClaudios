@@ -202,7 +202,7 @@ export default function OrderPromoBundleDetailsPage({id}: {id: string}) {
 
                 <div className="mt-8">
                   <Label className="text-sm font-semibold text-gray-900">
-                    Special instructions
+                    Order notes
                   </Label>
                   <p className="text-xs text-gray-500 mt-1">
                     Add a note for the kitchen (e.g. no ginger, less spicy).

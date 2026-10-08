@@ -17,6 +17,8 @@ function FeaturedMenuItemCard({
   isPreOrder = false,
   preOrderClosed = false,
   preOrderOrderable = true,
+  /** Guests may view a pre-order but cannot order one — lock the button. */
+  preOrderGuestLocked = false,
   preOrderLimit,
   preOrderStatusLine,
   preOrderSubLine,
@@ -38,6 +40,8 @@ function FeaturedMenuItemCard({
   preOrderClosed?: boolean;
   /** A batch window is open — the plus button may be pressed. */
   preOrderOrderable?: boolean;
+  /** Guest viewer: show the pre-order but keep the add button locked. */
+  preOrderGuestLocked?: boolean;
   preOrderLimit?: number | null;
   preOrderStatusLine?: string;
   preOrderSubLine?: string;
@@ -45,7 +49,8 @@ function FeaturedMenuItemCard({
 }) {
   const linkHref = href ?? `/${basePath}/${encodeURIComponent(id)}`;
   // Waiting for the next batch is a soft "not now" — greyed, not "closed".
-  const addDisabled = !preOrderOrderable || preOrderClosed;
+  // Guests are always locked out even when a batch is open.
+  const addDisabled = preOrderGuestLocked || !preOrderOrderable || preOrderClosed;
 
   return (
     <div className="group relative min-h-[240px] rounded-[20px] bg-white border border-gray-200 shadow-sm px-4 pt-28 pb-6 transition-colors duration-200 hover:bg-[#2d4a35] active:bg-[#2d4a35]">
@@ -78,14 +83,22 @@ function FeaturedMenuItemCard({
           <div
             className={cn(
               'pointer-events-none rounded-full px-2.5 py-1 text-[10px] font-extrabold tracking-wide text-white',
-              preOrderClosed ? 'bg-gray-500' : preOrderOrderable ? 'bg-purple-700' : 'bg-purple-400'
+              preOrderClosed
+                ? 'bg-gray-500'
+                : preOrderGuestLocked
+                  ? 'bg-gray-500'
+                  : preOrderOrderable
+                    ? 'bg-purple-700'
+                    : 'bg-purple-400'
             )}
           >
-            {preOrderClosed
-              ? 'PRE-ORDER CLOSED'
-              : preOrderOrderable
-                ? 'PRE-ORDER LIVE'
-                : 'PRE-ORDER'}
+            {preOrderGuestLocked
+              ? 'PRE-ORDER · SIGN IN'
+              : preOrderClosed
+                ? 'PRE-ORDER CLOSED'
+                : preOrderOrderable
+                  ? 'PRE-ORDER LIVE'
+                  : 'PRE-ORDER'}
           </div>
         )}
       </div>
@@ -100,20 +113,28 @@ function FeaturedMenuItemCard({
             <p
               className={cn(
                 'text-[11px] font-semibold transition-colors duration-200 group-hover:text-white group-active:text-white',
-                preOrderOrderable && !preOrderClosed
-                  ? 'text-purple-700'
-                  : 'text-gray-500'
+                preOrderGuestLocked
+                  ? 'text-gray-500'
+                  : preOrderOrderable && !preOrderClosed
+                    ? 'text-purple-700'
+                    : 'text-gray-500'
               )}
             >
-              {preOrderStatusLine ||
-                (preOrderClosed ? 'Pre-order closed' : 'Pre-order')}
+              {preOrderGuestLocked
+                ? 'Sign in to order pre-orders'
+                : preOrderStatusLine ||
+                  (preOrderClosed ? 'Pre-order closed' : 'Pre-order')}
             </p>
-            {(preOrderSubLine ||
-              (typeof preOrderLimit === 'number' && preOrderLimit >= 1)) && (
+            {preOrderGuestLocked ? (
+              <p className="text-[11px] text-gray-500 transition-colors duration-200 group-hover:text-white/70 group-active:text-white/70">
+                Register / log in as a customer.
+              </p>
+            ) : (preOrderSubLine ||
+                (typeof preOrderLimit === 'number' && preOrderLimit >= 1)) ? (
               <p className="text-[11px] text-gray-500 transition-colors duration-200 group-hover:text-white/70 group-active:text-white/70">
                 {preOrderSubLine || `Max ${preOrderLimit} per customer`}
               </p>
-            )}
+            ) : null}
           </div>
         ) : note ? (
           <p className="text-[12px] text-gray-500 mt-2 leading-snug line-clamp-2 min-h-8 transition-colors duration-200 group-hover:text-white/70 group-active:text-white/70">
@@ -136,9 +157,11 @@ function FeaturedMenuItemCard({
         disabled={addDisabled}
         aria-label={
           addDisabled
-            ? preOrderClosed
-              ? `Pre-order closed for ${name}`
-              : `Pre-order not open yet for ${name}`
+            ? preOrderGuestLocked
+              ? `Sign in to order pre-orders for ${name}`
+              : preOrderClosed
+                ? `Pre-order closed for ${name}`
+                : `Pre-order not open yet for ${name}`
             : `Add ${name} to order`
         }
         className={cn(
