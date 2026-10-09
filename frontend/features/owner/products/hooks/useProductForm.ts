@@ -29,6 +29,21 @@ function timeToMinutes(value: string): number {
   return h * 60 + m;
 }
 
+/**
+ * Promo dates are stored as Date instants and come back from the API as full
+ * ISO strings, but <input type="date"> only renders a `YYYY-MM-DD` value —
+ * anything else silently shows blank. Convert back so re-opening the edit
+ * form reflects the days the owner actually saved. The stored instant was
+ * built from `new Date("YYYY-MM-DD")` (UTC midnight), so its UTC day is the
+ * original pick.
+ */
+function toDateInputValue(value?: string | null): string {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString().slice(0, 10);
+}
+
 export function useProductForm(categories: Category[] = []) {
   const [form, setForm] = useState<ProductFormState>(emptyProductForm);
   const [formError, setFormError] = useState<string | null>(null);
@@ -72,8 +87,8 @@ export function useProductForm(categories: Category[] = []) {
       discountRate: data.discountRate == null ? '' : String(data.discountRate),
       discountAmount:
         data.discountAmount == null ? '' : String(data.discountAmount),
-      promoStartDate: data.promoStartDate ?? '',
-      promoEndDate: data.promoEndDate ?? '',
+      promoStartDate: toDateInputValue(data.promoStartDate),
+      promoEndDate: toDateInputValue(data.promoEndDate),
       isPromoActive: data.isPromoActive ?? true,
       // Existing products default to no pre-order; only honour the stored
       // values if the product is still in an eligible category.
