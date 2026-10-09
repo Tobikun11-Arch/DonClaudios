@@ -50,7 +50,8 @@ import {
   isPreOrderProduct,
   preOrderClosedMessage,
   preOrderDisplay,
-  preOrderLimitMessage
+  preOrderLimitMessage,
+  preOrderRemainingAllowance
 } from '@/lib/preOrder/preOrder';
 
 import {
@@ -266,6 +267,8 @@ export default function OrderSlot() {
         preOrderClosed: false,
         preOrderOrderable: true,
         preOrderLimit: null,
+        preOrderAllowance: null,
+        preOrderOrderedToday: 0,
         preOrderStatusLine: '',
         preOrderSubLine: ''
       }));
@@ -310,6 +313,13 @@ export default function OrderSlot() {
             ? item.preOrderPurchaseLimit
             : null,
 
+        preOrderAllowance: preOrderRemainingAllowance(item),
+
+        preOrderOrderedToday:
+          typeof item.preOrderOrderedToday === 'number'
+            ? item.preOrderOrderedToday
+            : 0,
+
         preOrderStatusLine: display.statusLine,
 
         preOrderSubLine: display.subLine
@@ -335,6 +345,8 @@ export default function OrderSlot() {
     preOrderClosed?: boolean;
     preOrderOrderable?: boolean;
     preOrderLimit?: number | null;
+    preOrderAllowance?: number | null;
+    preOrderOrderedToday?: number;
     preOrderStatusLine?: string;
   }) => {
     // Check the batch window and the owner's limit before the request so the
@@ -353,7 +365,21 @@ export default function OrderSlot() {
       return;
     }
 
-    if (item.isPreOrder && typeof item.preOrderLimit === 'number') {
+    if (item.isPreOrder && item.preOrderAllowance != null) {
+      const currentQty =
+        cartItems.find(i => i.productId === item.id)?.quantity ?? 0;
+      const orderedToday = item.preOrderOrderedToday ?? 0;
+      if (currentQty + 1 > item.preOrderAllowance) {
+        toast.error(
+          preOrderLimitMessage({
+            productName: item.name,
+            limit: orderedToday + item.preOrderAllowance,
+            currentQty: orderedToday + currentQty
+          })
+        );
+        return;
+      }
+    } else if (item.isPreOrder && typeof item.preOrderLimit === 'number') {
       const currentQty =
         cartItems.find(i => i.productId === item.id)?.quantity ?? 0;
       if (currentQty + 1 > item.preOrderLimit) {
@@ -527,6 +553,7 @@ export default function OrderSlot() {
                   preOrderClosed={item.preOrderClosed}
                   preOrderOrderable={item.preOrderOrderable}
                   preOrderLimit={item.preOrderLimit}
+                  preOrderAllowance={item.preOrderAllowance}
                   preOrderStatusLine={item.preOrderStatusLine}
                   preOrderSubLine={item.preOrderSubLine}
                   badge={

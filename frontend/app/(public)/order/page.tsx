@@ -25,7 +25,8 @@ import {
   isPreOrderProduct,
   preOrderClosedMessage,
   preOrderDisplay,
-  preOrderLimitMessage
+  preOrderLimitMessage,
+  preOrderRemainingAllowance
 } from '@/lib/preOrder/preOrder';
 import {useGuestOrders} from '@/lib/hooks/orders/useGuestOrders';
 import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
@@ -210,6 +211,10 @@ function ProductsSection() {
 
         preOrderLimit: null,
 
+        preOrderAllowance: null,
+
+        preOrderOrderedToday: 0,
+
         preOrderStatusLine: '',
 
         preOrderSubLine: ''
@@ -255,6 +260,13 @@ function ProductsSection() {
             ? item.preOrderPurchaseLimit
             : null,
 
+        preOrderAllowance: preOrderRemainingAllowance(item),
+
+        preOrderOrderedToday:
+          typeof item.preOrderOrderedToday === 'number'
+            ? item.preOrderOrderedToday
+            : 0,
+
         preOrderStatusLine: display.statusLine,
 
         preOrderSubLine: display.subLine
@@ -287,6 +299,8 @@ function ProductsSection() {
     preOrderClosed?: boolean;
     preOrderOrderable?: boolean;
     preOrderLimit?: number | null;
+    preOrderAllowance?: number | null;
+    preOrderOrderedToday?: number;
     preOrderStatusLine?: string;
   }) => {
     // Pre-orders are for signed-in customers only. Guests just get a prompt
@@ -312,7 +326,20 @@ function ProductsSection() {
       return;
     }
 
-    if (item.isPreOrder && typeof item.preOrderLimit === 'number') {
+    if (item.isPreOrder && item.preOrderAllowance != null) {
+      const currentQty = cartItems.find(i => i.productId === item.id)?.qty ?? 0;
+      const orderedToday = item.preOrderOrderedToday ?? 0;
+      if (currentQty + 1 > item.preOrderAllowance) {
+        toast.error(
+          preOrderLimitMessage({
+            productName: item.name,
+            limit: orderedToday + item.preOrderAllowance,
+            currentQty: orderedToday + currentQty
+          })
+        );
+        return;
+      }
+    } else if (item.isPreOrder && typeof item.preOrderLimit === 'number') {
       const currentQty = cartItems.find(i => i.productId === item.id)?.qty ?? 0;
       if (currentQty + 1 > item.preOrderLimit) {
         toast.error(
@@ -457,6 +484,7 @@ function ProductsSection() {
                   preOrderClosed={item.preOrderClosed}
                   preOrderOrderable={item.preOrderOrderable}
                   preOrderLimit={item.preOrderLimit}
+                  preOrderAllowance={item.preOrderAllowance}
                   preOrderStatusLine={item.preOrderStatusLine}
                   preOrderSubLine={item.preOrderSubLine}
                   badge={

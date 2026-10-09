@@ -12,7 +12,8 @@
 
 import {
   preOrderDisplay,
-  isPreOrderProduct
+  isPreOrderProduct,
+  preOrderRemainingAllowance
 } from '@/lib/preOrder/preOrder';
 import {type Product} from '@/lib/types/product';
 import {type Promo} from '@/lib/types/promo';
@@ -42,6 +43,10 @@ export type FeaturedMenuItem = {
   /** A batch window is open with stock left — the add button may be used. */
   preOrderOrderable: boolean;
   preOrderLimit: number | null;
+  /** Server-computed daily allowance for the signed-in customer (null = guest). */
+  preOrderAllowance: number | null;
+  /** Units this customer already committed to this pre-order today. */
+  preOrderOrderedToday: number;
   /** Purple status line: "Batch 1 live until 11:00 AM", "Pre-order closed"… */
   preOrderStatusLine: string;
   /** Gray second line: remaining stock and/or "Max N per customer". */
@@ -90,6 +95,11 @@ export function buildFeaturedMenuItems(input: {
           p.preOrderPurchaseLimit >= 1
             ? p.preOrderPurchaseLimit
             : null,
+        preOrderAllowance: preOrderRemainingAllowance(p),
+        preOrderOrderedToday:
+          typeof p.preOrderOrderedToday === 'number'
+            ? p.preOrderOrderedToday
+            : 0,
         preOrderStatusLine: display.statusLine,
         preOrderSubLine: display.subLine
       };
@@ -114,6 +124,8 @@ export function buildFeaturedMenuItems(input: {
       preOrderClosed: false,
       preOrderOrderable: true,
       preOrderLimit: null,
+      preOrderAllowance: null,
+      preOrderOrderedToday: 0,
       preOrderStatusLine: '',
       preOrderSubLine: ''
     }));

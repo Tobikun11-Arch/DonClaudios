@@ -88,15 +88,22 @@ export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
               {po.statusLine}
             </p>
             {poState.hasBatches && poState.batches ? (
-              <p className="text-xs text-gray-500">
-                {poState.batches.length}{' '}
-                {poState.batches.length === 1 ? 'batch' : 'batches'} ·{' '}
-                {poState.batches
-                  .map(b => formatBatchTime(b.startTime))
-                  .join(', ')}{' '}
-                ·{' '}
-                {poState.batches.reduce((sum, b) => sum + b.stock, 0)} stocks
-              </p>
+              <>
+                <p className="text-xs text-gray-500">
+                  {poState.batches.length}{' '}
+                  {poState.batches.length === 1 ? 'batch' : 'batches'} ·{' '}
+                  {poState.batches
+                    .map(
+                      b =>
+                        `${formatBatchTime(b.startTime)} (${b.remaining} left)`
+                    )
+                    .join(', ')}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Total remaining: {p.stock}
+                  {p.stockUnit ? ` ${stockUnitLabel(p.stockUnit)}` : ''}
+                </p>
+              </>
             ) : null}
             {preOrderLimitLabel(p) && (
               <p className="text-xs text-gray-500">

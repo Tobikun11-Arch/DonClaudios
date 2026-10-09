@@ -8,7 +8,8 @@
  * A pre-order product:
  *   - lives in one of PRE_ORDER_CATEGORIES only
  *   - is hidden from guests entirely (server-side filtering)
- *   - has an owner-set purchase limit per batch (whole number >= 1)
+ *   - has an owner-set purchase limit per customer per pre-order day
+ *     (whole number >= 1); all batches of the day share that allowance
  *   - has an owner-set day; within that day it is split into one or more
  *     batches, each with its own time window and stock. A batch only accepts
  *     orders while its window is live — first come, first served.
@@ -103,6 +104,44 @@ export function preOrderDeadlineToInstant(
   }
 
   return instant;
+}
+
+/**
+ * The store-local calendar day (YYYY-MM-DD, UTC+8) a deadline falls on.
+ * Returns null when there is no usable deadline.
+ *
+ * This is the "pre-order day": all batches run inside it and the
+ * per-customer purchase limit is scoped to it.
+ */
+export function preOrderDayKey(
+  deadline?: Date | string | null
+): string | null {
+  if (!deadline) return null;
+  const instant = deadline instanceof Date ? deadline : new Date(deadline);
+  if (Number.isNaN(instant.getTime())) return null;
+  return new Date(
+    instant.getTime() + PRE_ORDER_TZ_OFFSET_MINUTES * 60 * 1000
+  )
+    .toISOString()
+    .slice(0, 10);
+}
+
+/**
+ * Half-open instant range [from, to) covering the store-local day a deadline
+ * falls on. Every order placed for this pre-order edition falls inside it, so
+ * it is the window the per-customer allowance is counted over.
+ */
+export function preOrderDayWindow(
+  deadline?: Date | string | null
+): {from: Date; to: Date} | null {
+  const key = preOrderDayKey(deadline);
+  if (!key) return null;
+  const [y, m, d] = key.split('-').map(Number);
+  const from = new Date(
+    Date.UTC(y, m - 1, d, 0, 0, 0, 0) -
+      PRE_ORDER_TZ_OFFSET_MINUTES * 60 * 1000
+  );
+  return {from, to: new Date(from.getTime() + 24 * 60 * 60 * 1000)};
 }
 
 /** Has the pre-order window closed? A null/missing deadline is NOT closed. */

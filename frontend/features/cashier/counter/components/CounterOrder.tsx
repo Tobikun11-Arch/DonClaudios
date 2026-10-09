@@ -51,7 +51,9 @@ export default function CounterOrder() {
     [productsData?.products]
   );
   const availableProducts = useMemo(
-    () => products.filter(p => p.isAvailable && p.stock > 0),
+    // Counter/walk-in sales never include pre-orders: those are reserved for
+    // signed-in customers and are blocked by the backend regardless.
+    () => products.filter(p => p.isAvailable && p.stock > 0 && !p.isPreOrder),
     [products]
   );
 

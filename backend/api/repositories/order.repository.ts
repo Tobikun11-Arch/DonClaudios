@@ -1,9 +1,10 @@
 import {OrderModel, OrderDocument} from '../models/Order.model';
 import type {OrderStatus} from '../models/Order.model';
-import type {FilterQuery} from 'mongoose';
+import type {FilterQuery, ClientSession} from 'mongoose';
 
 export const orderRepository = {
-  findById: (id: string) => OrderModel.findById(id).exec(),
+  findById: (id: string, session?: ClientSession) =>
+    OrderModel.findById(id, null, {session}).exec(),
 
   listByCustomerId: (customerId: string) =>
     OrderModel.find({customerId}).sort({createdAt: -1}).exec(),
@@ -14,11 +15,12 @@ export const orderRepository = {
    * Bounded, newest-first page of orders. `limit` of 0 disables the limit so
    * callers without `page`/`limit` (the cashier poll) get the full queue.
    */
-  listPaginated: (filter: Record<string, unknown>, page: number, limit: number) => {
+  listPaginated: (filter: Record<string, unknown>, page: number, limit: number, session?: ClientSession) => {
     const query = OrderModel.find(filter as FilterQuery<OrderDocument>).sort({createdAt: -1});
     if (limit > 0) {
       query.skip((page - 1) * limit).limit(limit);
     }
+    if (session) query.session(session);
     return query.exec();
   },
 
@@ -61,7 +63,10 @@ export const orderRepository = {
       .sort({createdAt: -1})
       .exec(),
 
-  create: (data: Partial<OrderDocument>) => OrderModel.create(data),
+  create: (data: Partial<OrderDocument>, session?: ClientSession) =>
+    session
+      ? OrderModel.create([data], {session}).then(rows => rows[0])
+      : OrderModel.create(data),
 
   updateStatus: (orderId: string, orderStatus: string) =>
     OrderModel.updateOne({_id: orderId}, {orderStatus}).exec(),
@@ -108,8 +113,25 @@ export const orderRepository = {
       }
     ).exec(),
 
-  updateStockDeducted: (orderId: string, stockDeducted: boolean) =>
-    OrderModel.updateOne({_id: orderId}, {stockDeducted}).exec(),
+  updateStockDeducted: (orderId: string, stockDeducted: boolean, session?: ClientSession) =>
+    OrderModel.updateOne({_id: orderId}, {stockDeducted}, {session}).exec(),
+
+  /**
+   * Atomic latches for the stock flags. Exactly one caller can flip
+   * `stockDeducted` false->true (deduct) or true->false (restore), so a
+   * retried / concurrent confirm or cancel can never deduct or restore twice.
+   */
+  claimStockDeducted: (orderId: string) =>
+    OrderModel.updateOne(
+      {_id: orderId, stockDeducted: false},
+      {$set: {stockDeducted: true}}
+    ).exec(),
+
+  claimStockRestore: (orderId: string) =>
+    OrderModel.updateOne(
+      {_id: orderId, stockDeducted: true},
+      {$set: {stockDeducted: false}}
+    ).exec(),
 
   /**
    * Atomic idempotency latch for loyalty points. Exactly one caller can flip

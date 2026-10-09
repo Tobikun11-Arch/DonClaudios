@@ -64,7 +64,10 @@ export interface ProductDocument extends mongoose.Document {
    * hidden entirely from guests.
    */
   isPreOrder?: boolean;
-  /** Max quantity one customer may order per batch. Whole number >= 1. */
+  /**
+   * Max quantity one customer may order per pre-order DAY (all batches share
+   * the allowance). Whole number >= 1.
+   */
   preOrderPurchaseLimit?: number | null;
   /** Instant the pre-order DAY ends (end of the owner's chosen day, UTC+8). */
   preOrderDeadline?: Date | null;

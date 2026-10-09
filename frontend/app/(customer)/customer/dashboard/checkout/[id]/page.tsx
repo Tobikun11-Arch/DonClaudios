@@ -31,6 +31,8 @@ import {useCreateCustomerOrderMutation} from '@/lib/hooks/orders/useCustomerOrde
 import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
 import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 import {cn} from '@/lib/utils';
+import {useQueryClient} from '@tanstack/react-query';
+import {PRODUCTS_QUERY_PREFIX} from '@/lib/hooks/products/useProducts';
 
 const STORE = {
   lat: 14.39092185435405,
@@ -85,6 +87,7 @@ const PAYMENT_OPTIONS = [
 export default function CustomerCheckoutPage() {
   const params = useParams<{id: string}>();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const cartQuery = useCustomerCartQuery(true);
   const meQuery = useMeQuery();
@@ -244,6 +247,13 @@ export default function CustomerCheckoutPage() {
       });
 
       const orderId = created?.order?._id;
+      // Placing the order reserved stock and consumed the customer's daily
+      // pre-order allowance, so refresh both the product list and any open
+      // product detail before navigating.
+      await Promise.all([
+        queryClient.invalidateQueries({queryKey: PRODUCTS_QUERY_PREFIX}),
+        queryClient.invalidateQueries({queryKey: ['product']})
+      ]);
       await clearCartMutation.mutateAsync();
       if (orderId) {
         window.location.assign(

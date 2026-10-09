@@ -8,9 +8,11 @@ import {ApiError} from '../utils/error';
  * The cart and guest-order services enforce that server-side.
  */
 export const productController = {
-  async list(_req: Request, res: Response, next: NextFunction) {
+  async list(req: Request, res: Response, next: NextFunction) {
     try {
-      const products = await productService.list(true);
+      const customerId =
+        req.auth?.type === 'customer' ? req.auth.userId : undefined;
+      const products = await productService.list(true, customerId);
       res.status(200).json({products});
     } catch (error) {
       next(error);
@@ -19,7 +21,13 @@ export const productController = {
 
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const product = await productService.getById(req.params.id, true);
+      const customerId =
+        req.auth?.type === 'customer' ? req.auth.userId : undefined;
+      const product = await productService.getById(
+        req.params.id,
+        true,
+        customerId
+      );
       res.status(200).json({product});
     } catch (error) {
       next(error);

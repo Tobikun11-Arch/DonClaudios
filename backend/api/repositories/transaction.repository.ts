@@ -1,3 +1,4 @@
+import type {ClientSession} from 'mongoose';
 import {TransactionModel, TransactionDocument} from '../models/Transaction.model';
 
 export const transactionRepository = {
@@ -11,5 +12,8 @@ export const transactionRepository = {
   listByCashierId: (cashierId: string) =>
     TransactionModel.find({cashierId}).sort({timestamp: -1}).exec(),
 
-  create: (data: Partial<TransactionDocument>) => TransactionModel.create(data)
+  create: (data: Partial<TransactionDocument>, session?: ClientSession) =>
+    session
+      ? TransactionModel.create([data], {session}).then(rows => rows[0])
+      : TransactionModel.create(data)
 };

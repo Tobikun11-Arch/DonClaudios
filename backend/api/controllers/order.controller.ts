@@ -1,8 +1,10 @@
 import {Request, Response, NextFunction} from 'express';
+import mongoose from 'mongoose';
 import {ApiError} from '../utils/error';
 import {orderRepository} from '../repositories/order.repository';
 import {orderItemRepository} from '../repositories/orderItem.repository';
 import {transactionRepository} from '../repositories/transaction.repository';
+import {productRepository} from '../repositories/product.repository';
 import {stockMovementService} from '../services/stockMovement.service';
 import {notificationService} from '../services/notification.service';
 import {cashierRepository} from '../repositories/cashier.repository';
@@ -21,6 +23,7 @@ import type {CashierDocument} from '../models/Cashier.model';
 import {resolveRange} from '../utils/dateRange';
 import {pointsEarnedForOrder} from '../config/rewards';
 import {assertPreOrderItemsOrderable} from '../services/cart.service';
+import {isPositiveInteger, reserveOrderStock} from '../services/preOrder.service';
 import type {ListAllOrdersQuery} from '../dtos/order.dto';
 
 async function notifyCashiersOfNewOrder(orderId: string, totalAmount: number) {
@@ -437,11 +440,20 @@ export const orderController = {
       }
 
       if (order.stockDeducted) {
-        await stockMovementService.restoreOrderStock(
-          String(order._id),
-          (req.auth?.userId as string) ?? 'customer'
-        );
-        await orderRepository.updateStockDeducted(String(order._id), false);
+        // Atomic latch: only the caller that flips the flag actually restores,
+        // so a concurrent/retried cancel cannot add the stock twice.
+        const claim = await orderRepository.claimStockRestore(String(order._id));
+        if (claim.modifiedCount > 0) {
+          try {
+            await stockMovementService.restoreOrderStock(
+              String(order._id),
+              (req.auth?.userId as string) ?? 'customer'
+            );
+          } catch (error) {
+            await orderRepository.updateStockDeducted(String(order._id), true);
+            throw error;
+          }
+        }
       }
 
       const reason =
@@ -535,32 +547,45 @@ export const orderController = {
       const safeDeliveryFee =
         orderType === 'delivery' && items.length > 0 ? 49 : 0;
 
-      // Re-check pre-order limits and batch windows at order time: the cart
-      // may have been sitting open past a batch window, or the owner may have
-      // lowered the limit since it was added.
-      const preOrderStamps = await assertPreOrderItemsOrderable({
-        items: items.map((i: any) => ({
-          productId: i.productId,
-          quantity: Math.max(1, Number(i.quantity ?? i.qty ?? 1))
-        })),
-        allowPreOrder: true,
-        customerId: req.auth.userId as string
+      // Validate and normalise every line once, before touching the database.
+      const normalizedItems = items.map((i: any) => {
+        if (!isNonEmptyString(i.productId)) {
+          throw new ApiError(
+            400,
+            'VALIDATION_ERROR',
+            'items.productId is required'
+          );
+        }
+        const quantity = Number(i.quantity ?? i.qty ?? 1);
+        if (!isPositiveInteger(quantity)) {
+          throw new ApiError(
+            400,
+            'VALIDATION_ERROR',
+            'items.quantity must be a whole number greater than zero'
+          );
+        }
+        const price = Number(i.price);
+        if (!Number.isFinite(price) || price <= 0) {
+          throw new ApiError(400, 'VALIDATION_ERROR', 'items.price is invalid');
+        }
+        return {
+          productId: i.productId as string,
+          quantity,
+          price,
+          specialRequest: isNonEmptyString(i.specialRequest)
+            ? i.specialRequest
+            : isNonEmptyString(i.instructions)
+              ? i.instructions
+              : undefined
+        };
       });
-      const batchStartByProductId = new Map(
-        preOrderStamps.map(s => [
-          String(s.productId),
-          s.preOrderBatchStart ?? null
-        ])
-      );
 
       const customerList = await customerRepository.listByIds([
         req.auth.userId as string
       ]);
       const customerProfile = customerList[0];
 
-      const productIds = items
-        .map((i: any) => i.productId)
-        .filter(isNonEmptyString);
+      const productIds = normalizedItems.map(i => i.productId);
       const {itemPreps, estimatedPrepMinutes, estimatedReadyAt} =
         await buildPrepSnapshot(productIds, orderType);
 
@@ -577,61 +602,71 @@ export const orderController = {
         ? contactInfo.address
         : undefined;
 
-      const order = await orderRepository.create({
-        customerId: req.auth.userId as any,
-        isGuest: false,
-        guestInfo: {
-          firstName: offeredName ?? customerProfile?.firstName ?? '',
-          lastName: offeredLastName ?? customerProfile?.lastName ?? '',
-          phoneNumber: offeredPhone ?? customerProfile?.phoneNumber ?? '',
-          address: offeredAddress ?? customerProfile?.address ?? undefined
-        },
-        orderType,
-        totalAmount: safeTotalAmount,
-        deliveryFee: safeDeliveryFee,
-        riderNotes: isNonEmptyString(riderNotes) ? riderNotes : undefined,
-        changeFor: normalizeChangeFor(changeFor),
-        statusHistory: [{status: 'pending', at: new Date()}],
-        estimatedPrepMinutes,
-        estimatedReadyAt,
-        isOnline: true
-      });
+      // Reserve stock and create the order in ONE transaction. The reservation
+      // validates the per-day pre-order allowance and the live batch stock, and
+      // atomically drops the batches / product totals. Because two concurrent
+      // checkouts write the same product document, one retries, so the
+      // allowance and the stock can never be exceeded.
+      let order: any;
+      const session = await mongoose.startSession();
+      try {
+        await session.withTransaction(async () => {
+          const stamps = await reserveOrderStock({
+            items: normalizedItems.map(i => ({
+              productId: i.productId,
+              quantity: i.quantity
+            })),
+            customerId: req.auth!.userId as string,
+            session
+          });
 
-      const orderItems = items.map((i: any, index: number) => {
-        const safeQty = Math.max(1, Number(i.quantity ?? i.qty ?? 1));
-        const safePrice = Number(i.price);
-
-        if (!isNonEmptyString(i.productId)) {
-          throw new ApiError(
-            400,
-            'VALIDATION_ERROR',
-            'items.productId is required'
+          order = await orderRepository.create(
+            {
+              customerId: req.auth!.userId as any,
+              isGuest: false,
+              guestInfo: {
+                firstName: offeredName ?? customerProfile?.firstName ?? '',
+                lastName: offeredLastName ?? customerProfile?.lastName ?? '',
+                phoneNumber:
+                  offeredPhone ?? customerProfile?.phoneNumber ?? '',
+                address:
+                  offeredAddress ?? customerProfile?.address ?? undefined
+              },
+              orderType,
+              totalAmount: safeTotalAmount,
+              deliveryFee: safeDeliveryFee,
+              riderNotes: isNonEmptyString(riderNotes)
+                ? riderNotes
+                : undefined,
+              changeFor: normalizeChangeFor(changeFor),
+              statusHistory: [{status: 'pending', at: new Date()}],
+              estimatedPrepMinutes,
+              estimatedReadyAt,
+              isOnline: true,
+              // Stock is reserved at placement; the cashier confirm only
+              // advances the status.
+              stockDeducted: true
+            },
+            session
           );
-        }
 
-        if (!Number.isFinite(safePrice) || safePrice <= 0) {
-          throw new ApiError(400, 'VALIDATION_ERROR', 'items.price is invalid');
-        }
+          const orderItems = normalizedItems.map((item, index) => ({
+            orderId: order._id,
+            productId: item.productId as any,
+            quantity: item.quantity,
+            price: item.price,
+            prepTimeMinutes: itemPreps[index] ?? null,
+            // Which pre-order batch this was bought in (null for everything
+            // else), so a cancel restores the stock to the right pool.
+            preOrderBatchStart: stamps.get(item.productId) ?? null,
+            specialRequest: item.specialRequest
+          }));
 
-        return {
-          orderId: order._id,
-          productId: i.productId,
-          quantity: safeQty,
-          price: safePrice,
-          prepTimeMinutes: itemPreps[index] ?? null,
-          // Which pre-order batch this was bought in (null for everything
-          // else), so a cancel restores the stock to the right pool.
-          preOrderBatchStart:
-            batchStartByProductId.get(String(i.productId)) ?? null,
-          specialRequest: isNonEmptyString(i.specialRequest)
-            ? i.specialRequest
-            : isNonEmptyString(i.instructions)
-              ? i.instructions
-              : undefined
-        };
-      });
-
-      await orderItemRepository.createMany(orderItems);
+          await orderItemRepository.createMany(orderItems, session);
+        });
+      } finally {
+        await session.endSession();
+      }
 
       const pm = typeof paymentMethod === 'string' ? paymentMethod : 'cash';
       const allowedPm = ['cash', 'card', 'gcash', 'other'] as const;
@@ -794,7 +829,15 @@ export const orderController = {
       });
 
       const orderItems = items.map((i: any, index: number) => {
-        const safeQty = Math.max(1, Number(i.quantity ?? i.qty ?? 1));
+        const quantity = Number(i.quantity ?? i.qty ?? 1);
+        if (!isPositiveInteger(quantity)) {
+          throw new ApiError(
+            400,
+            'VALIDATION_ERROR',
+            'items.quantity must be a whole number greater than zero'
+          );
+        }
+        const safeQty = quantity;
         const safePrice = Number(i.price);
 
         if (!isNonEmptyString(i.productId)) {
@@ -912,6 +955,56 @@ export const orderController = {
         throw new ApiError(400, 'VALIDATION_ERROR', 'totalAmount is invalid');
       }
 
+      // Normalise every line before creating anything so a rejected item can
+      // never leave an orphan order behind.
+      const normalizedItems = items.map((i: any) => {
+        if (!isNonEmptyString(i.productId)) {
+          throw new ApiError(
+            400,
+            'VALIDATION_ERROR',
+            'items.productId is required'
+          );
+        }
+        const quantity = Number(i.quantity ?? i.qty ?? 1);
+        if (!isPositiveInteger(quantity)) {
+          throw new ApiError(
+            400,
+            'VALIDATION_ERROR',
+            'items.quantity must be a whole number greater than zero'
+          );
+        }
+        const price = Number(i.price);
+        if (!Number.isFinite(price) || price <= 0) {
+          throw new ApiError(
+            400,
+            'VALIDATION_ERROR',
+            'items.price is invalid'
+          );
+        }
+        return {
+          productId: i.productId as string,
+          quantity,
+          price,
+          specialRequest: isNonEmptyString(i.specialRequest)
+            ? i.specialRequest
+            : undefined
+        };
+      });
+
+      // Pre-order items are not sold at the counter (no customer account to
+      // scope the per-day allowance to).
+      const counterProducts = await productRepository.findManyByIds(
+        normalizedItems.map(i => i.productId)
+      );
+      const preOrderProduct = counterProducts.find(p => p.isPreOrder === true);
+      if (preOrderProduct) {
+        throw new ApiError(
+          400,
+          'PRE_ORDER_NOT_ALLOWED',
+          `"${preOrderProduct.name}" is a pre-order item and cannot be sold at the counter.`
+        );
+      }
+
       const order = await orderRepository.create({
         customerId: null,
         isGuest: true,
@@ -932,36 +1025,13 @@ export const orderController = {
         stockDeducted: false
       });
 
-      const orderItems = items.map((i: any) => {
-        const safeQty = Math.max(1, Number(i.quantity ?? i.qty ?? 1));
-        const safePrice = Number(i.price);
-
-        if (!isNonEmptyString(i.productId)) {
-          throw new ApiError(
-            400,
-            'VALIDATION_ERROR',
-            'items.productId is required'
-          );
-        }
-
-        if (!Number.isFinite(safePrice) || safePrice <= 0) {
-          throw new ApiError(
-            400,
-            'VALIDATION_ERROR',
-            'items.price is invalid'
-          );
-        }
-
-        return {
-          orderId: order._id,
-          productId: i.productId,
-          quantity: safeQty,
-          price: safePrice,
-          specialRequest: isNonEmptyString(i.specialRequest)
-            ? i.specialRequest
-            : undefined
-        };
-      });
+      const orderItems = normalizedItems.map(item => ({
+        orderId: order._id,
+        productId: item.productId as any,
+        quantity: item.quantity,
+        price: item.price,
+        specialRequest: item.specialRequest
+      }));
 
       await orderItemRepository.createMany(orderItems);
       await stockMovementService.deductOrderStock(String(order._id));
@@ -1017,11 +1087,18 @@ export const orderController = {
       }
 
       if (order.stockDeducted) {
-        await stockMovementService.restoreOrderStock(
-          String(order._id),
-          req.auth.userId
-        );
-        await orderRepository.updateStockDeducted(String(order._id), false);
+        const claim = await orderRepository.claimStockRestore(String(order._id));
+        if (claim.modifiedCount > 0) {
+          try {
+            await stockMovementService.restoreOrderStock(
+              String(order._id),
+              req.auth.userId
+            );
+          } catch (error) {
+            await orderRepository.updateStockDeducted(String(order._id), true);
+            throw error;
+          }
+        }
       }
 
       await orderRepository.updateStatusWithHistory(
@@ -1079,21 +1156,49 @@ export const orderController = {
         );
       }
 
+      // Legacy pending orders (placed before reserve-at-placement) still
+      // deduct on confirm. Claim the flag atomically first so a retried confirm
+      // cannot deduct twice; new orders arrive already reserved
+      // (stockDeducted true) and skip this entirely.
       if (status !== 'cancelled' && !order.stockDeducted) {
-        await stockMovementService.deductOrderStock(String(order._id));
-        await orderRepository.updateStockDeducted(String(order._id), true);
+        const claim = await orderRepository.claimStockDeducted(
+          String(order._id)
+        );
+        if (claim.modifiedCount > 0) {
+          try {
+            await stockMovementService.deductOrderStock(String(order._id));
+          } catch (error) {
+            await orderRepository.updateStockDeducted(
+              String(order._id),
+              false
+            );
+            throw error;
+          }
+        }
       }
 
-      if (
-        status === 'cancelled' &&
-        order.stockDeducted &&
-        order.orderStatus !== 'pending'
-      ) {
-        await stockMovementService.restoreOrderStock(
-          String(order._id),
-          req.auth.userId
+      // Cancelling frees the stock AND the customer's per-day allowance (the
+      // allowance counts every non-cancelled order). Any status may be
+      // cancelled, including confirmed/completed. Claim first so a double
+      // cancel cannot restore twice.
+      if (status === 'cancelled' && order.stockDeducted) {
+        const claim = await orderRepository.claimStockRestore(
+          String(order._id)
         );
-        await orderRepository.updateStockDeducted(String(order._id), false);
+        if (claim.modifiedCount > 0) {
+          try {
+            await stockMovementService.restoreOrderStock(
+              String(order._id),
+              req.auth.userId
+            );
+          } catch (error) {
+            await orderRepository.updateStockDeducted(
+              String(order._id),
+              true
+            );
+            throw error;
+          }
+        }
       }
 
       // Claw back loyalty points if we are cancelling an order that had

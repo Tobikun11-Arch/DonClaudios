@@ -38,12 +38,22 @@ export type Product = {
   pointsCost?: number | null;
   /** Pre-order: only in the 4 eligible categories, signed-in customers only. */
   isPreOrder?: boolean;
-  /** Max quantity one customer may order per batch. Whole number >= 1. */
+  /**
+   * Max quantity one customer may order per pre-order DAY (all batches share
+   * the allowance). Whole number >= 1.
+   */
   preOrderPurchaseLimit?: number | null;
   /** Instant the pre-order DAY ends (end of the owner's chosen day, UTC+8). */
   preOrderDeadline?: string | null;
   /** The batch windows within that day; each owns its own stock. */
   preOrderBatches?: PreOrderBatch[] | null;
+  /**
+   * Server-computed allowance for the signed-in customer. `null` for guests
+   * or non-pre-order products.
+   */
+  preOrderOrderedToday?: number | null;
+  /** How many more this customer may still order today (null = unknown). */
+  preOrderRemainingAllowance?: number | null;
   promoType?: 'percentage' | 'fixed_amount' | 'bundle';
   discountRate?: number;
   discountAmount?: number;

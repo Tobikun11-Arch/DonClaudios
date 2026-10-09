@@ -33,6 +33,7 @@ import {
   preOrderDisplay,
   preOrderDisplayExtended,
   preOrderLimitMessage,
+  preOrderRemainingAllowance,
   formatPeso,
   formatCountdown,
   useNow
@@ -222,6 +223,14 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
     product.preOrderPurchaseLimit >= 1
       ? product.preOrderPurchaseLimit
       : null;
+  /** Server-reported allowance for the signed-in customer (null = unknown). */
+  const preOrderAllowance = isPreOrder
+    ? preOrderRemainingAllowance(product)
+    : null;
+  const preOrderOrderedToday =
+    isPreOrder && typeof product?.preOrderOrderedToday === 'number'
+      ? product.preOrderOrderedToday
+      : 0;
 
   /** Quantity already in the cart, so the limit applies to the total. */
   const qtyInCart = product
@@ -229,9 +238,16 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
     : 0;
 
   const maxSelectableQty = useMemo(() => {
-    if (preOrderLimit == null) return Infinity;
-    return Math.max(1, preOrderLimit - qtyInCart);
-  }, [preOrderLimit, qtyInCart]);
+    // The backend allowance already subtracts what the customer ordered
+    // today, so the cart may only fill the rest of it.
+    if (preOrderAllowance != null) {
+      return Math.max(0, preOrderAllowance - qtyInCart);
+    }
+    if (preOrderLimit != null) {
+      return Math.max(1, preOrderLimit - qtyInCart);
+    }
+    return Infinity;
+  }, [preOrderAllowance, preOrderLimit, qtyInCart]);
 
   /**
    * What the stepper actually shows and adds.
@@ -267,7 +283,15 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
         ? `${product.name} — ${preOrder.statusLine}. Please check back then.`
         : preOrderClosedMessage(product.name);
     }
-    if (preOrderLimit != null && qtyInCart >= preOrderLimit) {
+    if (preOrderAllowance != null) {
+      if (qtyInCart >= preOrderAllowance) {
+        return preOrderLimitMessage({
+          productName: product.name,
+          limit: preOrderOrderedToday + preOrderAllowance,
+          currentQty: preOrderOrderedToday + qtyInCart
+        });
+      }
+    } else if (preOrderLimit != null && qtyInCart >= preOrderLimit) {
       return preOrderLimitMessage({
         productName: product.name,
         limit: preOrderLimit,
@@ -282,9 +306,17 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
     preOrderOrderable,
     preOrder,
     preOrderLimit,
+    preOrderAllowance,
+    preOrderOrderedToday,
     qtyInCart,
     isSignedIn
   ]);
+
+  const preOrderLive =
+    preOrderExt.uiState === 'live' || preOrderExt.uiState === 'live_low';
+  /** Pre-order add button: blocked by window state or by the daily allowance. */
+  const preOrderAddDisabled =
+    !preOrderGuestLocked && (!preOrderLive || selectableQty <= 0);
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -743,7 +775,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                         <div className="mt-4">
                           <div className="flex items-center gap-2 text-[13px] text-gray-500 mb-2">
                             <Clock className="w-4 h-4" />
-                            <span>Today's batches</span>
+                            <span>Today&apos;s batches</span>
                           </div>
                           <div className="flex gap-2">
                             {preOrderState.batches.map(b => {
@@ -805,6 +837,22 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                           <span>{preOrderExt.limitLabel}</span>
                         </div>
                       )}
+                      {isSignedIn && preOrderAllowance != null && (
+                        <div
+                          className={`flex items-center gap-1 text-[13px] px-3 py-1.5 rounded-full ${
+                            preOrderAllowance > 0
+                              ? 'bg-[#e7f0e3] text-[#2d4a35]'
+                              : 'bg-[#fdecea] text-[#a12622]'
+                          }`}
+                        >
+                          <User className="w-4 h-4" />
+                          <span>
+                            {preOrderAllowance > 0
+                              ? `You can still order ${preOrderAllowance} today`
+                              : 'Daily limit reached'}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-1 text-[13px] px-3 py-1.5 rounded-full bg-gray-100 text-gray-600">
                         <Lock className="w-4 h-4" />
                         <span>Signed-in customers only</span>
@@ -854,27 +902,21 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                           }
                           handleAddToCart();
                         }}
-                        disabled={
-                          !preOrderGuestLocked &&
-                          !(
-                            preOrderExt.uiState === 'live' ||
-                            preOrderExt.uiState === 'live_low'
-                          )
-                        }
+                        disabled={preOrderAddDisabled}
                         className={`flex-1 h-[54px] rounded-full text-[17px] font-medium ${
                           preOrderGuestLocked
                             ? 'bg-[#2F4A3A] text-white hover:bg-[#254133] transition-colors'
-                            : preOrderExt.uiState === 'live' ||
-                                preOrderExt.uiState === 'live_low'
+                            : preOrderLive && selectableQty > 0
                               ? 'bg-[#2F4A3A] text-white'
                               : 'bg-gray-100 text-gray-500 cursor-not-allowed'
                         }`}
                       >
                         {preOrderGuestLocked
                           ? 'Sign in to order'
-                          : preOrderExt.uiState === 'live' ||
-                              preOrderExt.uiState === 'live_low'
-                            ? `Add to cart · ${formatPeso(product?.price || 0)}`
+                          : preOrderLive
+                            ? selectableQty <= 0
+                              ? 'Daily limit reached'
+                              : `Add to cart · ${formatPeso(product?.price || 0)}`
                             : preOrderExt.buttonLabel}
                       </Button>
                     </div>

@@ -9,21 +9,24 @@ import {
   isPreOrderClosed,
   type PreOrderBatchState
 } from '../config/preOrder';
+import {
+  assertWithinLimit,
+  isPositiveInteger,
+  orderedTodayByProduct,
+  type PreOrderProductLike
+} from './preOrder.service';
 
 /**
- * Pre-order guards shared by the cart and both order-creation paths.
+ * Pre-order guards shared by the cart and the guest order-creation path.
  *
  * These are the authoritative checks. The UI mirrors them for a friendly
  * message, but nothing is trusted from the client.
  */
 
 /**
- * Every non-cancelled order created inside the batch's window, plus its
- * items. One query answers both guard questions:
- *   - how many units this customer already claimed in the batch (limit)
- *   - how many units other customers are still holding unconfirmed
- *     (the pool is only reduced when an order is confirmed, so pending
- *     orders must count here or the batch would keep accepting past 0)
+ * Every non-cancelled order created inside the batch's window, plus its items.
+ * Used to account for legacy pending orders that reserved no stock (they only
+ * hold stock once confirmed), so the batch cannot over-accept.
  */
 async function batchWindowUsage(batch: PreOrderBatchState): Promise<{
   orders: Array<any>;
@@ -51,8 +54,7 @@ async function batchWindowUsage(batch: PreOrderBatchState): Promise<{
  * Batch-aware pre-order assertion for one product.
  *
  * Batch products may only be ordered while a batch window is live, and the
- * per-customer limit applies to each batch separately (cart quantity plus
- * whatever they already ordered in this batch).
+ * per-customer limit applies to the whole pre-order DAY (all batches share it).
  */
 async function assertPreOrderProductOrderable(input: {
   product: any;
@@ -71,16 +73,12 @@ async function assertPreOrderProductOrderable(input: {
         `Pre-orders for "${product.name}" have closed. Please pick another item.`
       );
     }
-    const limit = product.preOrderPurchaseLimit;
-    if (
-      typeof limit === 'number' &&
-      limit > 0 &&
-      input.requestedTotal > limit
-    ) {
-      throw new ApiError(
-        400,
-        'PRE_ORDER_LIMIT_EXCEEDED',
-        `"${product.name}" is limited to ${limit} per customer. You can order up to ${limit}.`
+    if (input.customerId) {
+      const ordered = await orderedTodayByProduct(input.customerId, [product]);
+      assertWithinLimit(
+        product as PreOrderProductLike,
+        ordered.get(String(product._id)) ?? 0,
+        input.requestedTotal
       );
     }
     return;
@@ -108,12 +106,11 @@ async function assertPreOrderProductOrderable(input: {
 
   const live = state.liveBatch as PreOrderBatchState;
   const usage = await batchWindowUsage(live);
-  const orderByItemId = new Map(
-    usage.orders.map(o => [String(o._id), o])
-  );
+  const orderByItemId = new Map(usage.orders.map(o => [String(o._id), o]));
 
-  // Units still spoken for in this window: confirmed sales are already in
-  // batch.sold; unconfirmed (pending) orders hold the rest.
+  // Legacy pending orders (stockDeducted === false) have not touched the pool
+  // yet, so subtract them; new orders already reserved at placement and are
+  // reflected in `live.sold`.
   const pendingQty = usage.items
     .filter(item => String(item.productId) === String(product._id))
     .reduce((sum, item) => {
@@ -122,10 +119,7 @@ async function assertPreOrderProductOrderable(input: {
         ? sum + item.quantity
         : sum;
     }, 0);
-  const effectiveRemaining = Math.max(
-    0,
-    live.stock - live.sold - pendingQty
-  );
+  const effectiveRemaining = Math.max(0, live.stock - live.sold - pendingQty);
 
   if (input.requestedTotal > effectiveRemaining) {
     throw new ApiError(
@@ -137,27 +131,13 @@ async function assertPreOrderProductOrderable(input: {
     );
   }
 
-  const limit = product.preOrderPurchaseLimit;
-  if (typeof limit === 'number' && limit > 0 && input.customerId) {
-    const alreadyOrdered = usage.items
-      .filter(
-        item =>
-          String(item.productId) === String(product._id) &&
-          String(orderByItemId.get(String(item.orderId))?.customerId ?? '') ===
-            String(input.customerId)
-      )
-      .reduce((sum, item) => sum + item.quantity, 0);
-
-    if (alreadyOrdered + input.requestedTotal > limit) {
-      const remaining = Math.max(0, limit - alreadyOrdered);
-      throw new ApiError(
-        400,
-        'PRE_ORDER_LIMIT_EXCEEDED',
-        remaining === 0
-          ? `"${product.name}" is limited to ${limit} per customer per batch, and you have already ordered ${alreadyOrdered} in this batch.`
-          : `"${product.name}" is limited to ${limit} per customer per batch. You can order ${remaining} more in this batch.`
-      );
-    }
+  if (input.customerId) {
+    const ordered = await orderedTodayByProduct(input.customerId, [product]);
+    assertWithinLimit(
+      product as PreOrderProductLike,
+      ordered.get(String(product._id)) ?? 0,
+      input.requestedTotal
+    );
   }
 }
 
@@ -189,9 +169,8 @@ export async function assertPreOrderOrderable(input: {
 /**
  * Order-time check for every item in a payload at once.
  *
- * Used by both order-creation paths so a stale cart cannot slip a pre-order
- * past the limit or past a batch window / deadline that passed since it was
- * added.
+ * Used by the guest order-creation path so a stale cart cannot slip a
+ * pre-order past the account requirement, and by counter flows if ever called.
  *
  * @param allowPreOrder false for guests, who may never order these.
  */
@@ -264,7 +243,14 @@ export const cartService = {
       instructions?: string;
     }
   ) {
-    const quantity = Math.max(1, item.quantity);
+    if (!isPositiveInteger(item.quantity)) {
+      throw new ApiError(
+        400,
+        'VALIDATION_ERROR',
+        'Quantity must be a whole number greater than zero.'
+      );
+    }
+    const quantity = item.quantity;
     const cart = await cartRepository.findOrCreateByCustomerId(customerId);
 
     const existing = cart.items.find(
@@ -272,19 +258,11 @@ export const cartService = {
     );
 
     // The limit applies to the quantity the cart ENDS UP at.
-    if (existing) {
-      await assertPreOrderOrderable({
-        productId: item.productId,
-        requestedTotal: existing.quantity + quantity,
-        customerId
-      });
-    } else {
-      await assertPreOrderOrderable({
-        productId: item.productId,
-        requestedTotal: quantity,
-        customerId
-      });
-    }
+    await assertPreOrderOrderable({
+      productId: item.productId,
+      requestedTotal: (existing?.quantity ?? 0) + quantity,
+      customerId
+    });
 
     if (existing) {
       existing.quantity += quantity;
@@ -314,15 +292,21 @@ export const cartService = {
       throw new ApiError(404, 'CART_ITEM_NOT_FOUND', 'Cart item not found');
     }
 
-    const safeQty = Math.max(1, quantity);
+    if (!isPositiveInteger(quantity)) {
+      throw new ApiError(
+        400,
+        'VALIDATION_ERROR',
+        'Quantity must be a whole number greater than zero.'
+      );
+    }
 
     await assertPreOrderOrderable({
       productId,
-      requestedTotal: safeQty,
+      requestedTotal: quantity,
       customerId
     });
 
-    item.quantity = safeQty;
+    item.quantity = quantity;
     await cartRepository.save(cart);
     return cart;
   },

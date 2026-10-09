@@ -30,7 +30,8 @@ import {
   preOrderClosedMessage,
   preOrderDisplay,
   preOrderLimitLabel,
-  preOrderLimitMessage
+  preOrderLimitMessage,
+  preOrderRemainingAllowance
 } from '@/lib/preOrder/preOrder';
 import {type Product} from '@/lib/types/product';
 import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
@@ -248,6 +249,23 @@ export default function CustomerCartDrawer({
         : preOrderClosedMessage(item.name);
     }
 
+    // The backend reports the customer's remaining daily allowance; the cart
+    // may only fill what is left of it (all batches share one allowance).
+    const allowance = preOrderRemainingAllowance(po);
+    if (allowance != null) {
+      const orderedToday =
+        typeof po.preOrderOrderedToday === 'number' ? po.preOrderOrderedToday : 0;
+      if (item.quantity >= allowance) {
+        return preOrderLimitMessage({
+          productName: item.name,
+          limit: orderedToday + allowance,
+          currentQty: orderedToday + item.quantity
+        });
+      }
+      return null;
+    }
+
+    // Fallback for guests / older responses: approximate with the raw limit.
     const limit = po.preOrderPurchaseLimit;
     if (
       typeof limit === 'number' &&

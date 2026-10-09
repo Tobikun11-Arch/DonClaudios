@@ -20,6 +20,7 @@ function FeaturedMenuItemCard({
   /** Guests may view a pre-order but cannot order one — lock the button. */
   preOrderGuestLocked = false,
   preOrderLimit,
+  preOrderAllowance,
   preOrderStatusLine,
   preOrderSubLine,
   onAdd
@@ -43,6 +44,8 @@ function FeaturedMenuItemCard({
   /** Guest viewer: show the pre-order but keep the add button locked. */
   preOrderGuestLocked?: boolean;
   preOrderLimit?: number | null;
+  /** Signed-in customer's remaining daily allowance (null = unknown). */
+  preOrderAllowance?: number | null;
   preOrderStatusLine?: string;
   preOrderSubLine?: string;
   onAdd: () => void;
@@ -50,7 +53,13 @@ function FeaturedMenuItemCard({
   const linkHref = href ?? `/${basePath}/${encodeURIComponent(id)}`;
   // Waiting for the next batch is a soft "not now" — greyed, not "closed".
   // Guests are always locked out even when a batch is open.
-  const addDisabled = preOrderGuestLocked || !preOrderOrderable || preOrderClosed;
+  const allowanceReached =
+    isPreOrder && preOrderAllowance != null && preOrderAllowance <= 0;
+  const addDisabled =
+    preOrderGuestLocked ||
+    !preOrderOrderable ||
+    preOrderClosed ||
+    allowanceReached;
 
   return (
     <div className="group relative min-h-[240px] rounded-[20px] bg-white border border-gray-200 shadow-sm px-4 pt-28 pb-6 transition-colors duration-200 hover:bg-[#2d4a35] active:bg-[#2d4a35]">
@@ -129,10 +138,28 @@ function FeaturedMenuItemCard({
               <p className="text-[11px] text-gray-500 transition-colors duration-200 group-hover:text-white/70 group-active:text-white/70">
                 Register / log in as a customer.
               </p>
-            ) : (preOrderSubLine ||
-                (typeof preOrderLimit === 'number' && preOrderLimit >= 1)) ? (
+            ) : preOrderSubLine ||
+              (typeof preOrderLimit === 'number' && preOrderLimit >= 1) ||
+              preOrderAllowance != null ? (
               <p className="text-[11px] text-gray-500 transition-colors duration-200 group-hover:text-white/70 group-active:text-white/70">
-                {preOrderSubLine || `Max ${preOrderLimit} per customer`}
+                {preOrderSubLine ||
+                  (typeof preOrderLimit === 'number' && preOrderLimit >= 1
+                    ? `Max ${preOrderLimit} per customer`
+                    : '')}
+                {preOrderAllowance != null ? (
+                  <span
+                    className={cn(
+                      'block font-semibold transition-colors duration-200 group-hover:text-white/70 group-active:text-white/70',
+                      preOrderAllowance > 0
+                        ? 'text-purple-700'
+                        : 'text-[#c30010]'
+                    )}
+                  >
+                    {preOrderAllowance > 0
+                      ? `You can still order ${preOrderAllowance} today`
+                      : 'Daily limit reached'}
+                  </span>
+                ) : null}
               </p>
             ) : null}
           </div>
@@ -161,7 +188,9 @@ function FeaturedMenuItemCard({
               ? `Sign in to order pre-orders for ${name}`
               : preOrderClosed
                 ? `Pre-order closed for ${name}`
-                : `Pre-order not open yet for ${name}`
+                : allowanceReached
+                  ? `Daily order limit reached for ${name}`
+                  : `Pre-order not open yet for ${name}`
             : `Add ${name} to order`
         }
         className={cn(

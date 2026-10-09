@@ -78,6 +78,10 @@ export type PreOrderProduct = {
   preOrderPurchaseLimit?: number | null;
   preOrderDeadline?: string | null;
   preOrderBatches?: PreOrderBatch[] | null;
+  /** Server-computed: units this customer already ordered today. */
+  preOrderOrderedToday?: number | null;
+  /** Server-computed: how many more this customer may order today. */
+  preOrderRemainingAllowance?: number | null;
   price?: number | null;
   name?: string;
   category?: string;
@@ -360,17 +364,27 @@ export function preOrderDeadlineLabel(p?: PreOrderProduct | null): string {
   return day ? `Pre-order until ${day}` : 'Pre-order';
 }
 
-/** e.g. "Max 2 per customer" — per batch when the product has batches. */
+/** e.g. "Max 2 per customer" — per pre-order day (all batches share it). */
 export function preOrderLimitLabel(p?: PreOrderProduct | null): string {
   const limit = p?.preOrderPurchaseLimit;
   if (typeof limit !== 'number' || !Number.isFinite(limit) || limit < 1) {
     return '';
   }
-  const perBatch =
-    Array.isArray(p?.preOrderBatches) && p.preOrderBatches.length > 0;
-  return perBatch
-    ? `Max ${limit} per customer per batch`
-    : `Max ${limit} per customer`;
+  return `Max ${limit} per customer`;
+}
+
+/**
+ * The signed-in customer's own remaining allowance for the pre-order day, as
+ * reported by the backend. Returns null when unknown (guest / not loaded).
+ */
+export function preOrderRemainingAllowance(
+  p?: PreOrderProduct | null
+): number | null {
+  const value = p?.preOrderRemainingAllowance;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.max(0, Math.floor(value));
+  }
+  return null;
 }
 
 /**

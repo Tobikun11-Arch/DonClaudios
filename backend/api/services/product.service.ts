@@ -17,6 +17,7 @@ import {
   validatePreOrderFields
 } from '../config/preOrder';
 import {notificationService} from './notification.service';
+import {attachPreOrderAllowance} from './preOrder.service';
 
 /**
  * Tell signed-in customers a pre-order just opened.
@@ -178,14 +179,20 @@ export const productService = {
    * `includePreOrder` defaults to true: pre-order products are visible to
    * everyone (guests included) so the menu can advertise them. Ordering them
    * is still restricted to signed-in customers by the cart/order services.
+   *
+   * When the caller is a signed-in customer, each pre-order product also
+   * carries `preOrderOrderedToday` / `preOrderRemainingAllowance` so the UI can
+   * disable add-to-cart once their per-day limit is reached.
    */
-  async list(includePreOrder = true) {
+  async list(includePreOrder = true, customerId?: string) {
     const products = await productRepository.listPublic();
-    if (includePreOrder) return products;
-    return products.filter(p => p.isPreOrder !== true);
+    const visible = includePreOrder
+      ? products
+      : products.filter(p => p.isPreOrder !== true);
+    return attachPreOrderAllowance(visible, customerId);
   },
 
-  async getById(id: string, includePreOrder = true) {
+  async getById(id: string, includePreOrder = true, customerId?: string) {
     const product = await productRepository.findById(id);
     if (!product) {
       throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Product not found');
@@ -193,7 +200,11 @@ export const productService = {
     if (!includePreOrder && product.isPreOrder === true) {
       throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Product not found');
     }
-    return product;
+    const [withAllowance] = await attachPreOrderAllowance(
+      [product],
+      customerId
+    );
+    return withAllowance;
   },
 
   async create(

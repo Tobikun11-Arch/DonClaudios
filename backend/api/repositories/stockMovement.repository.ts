@@ -1,3 +1,4 @@
+import type {ClientSession} from 'mongoose';
 import {StockMovementModel, StockMovementDocument} from '../models/StockMovement.model';
 
 export const stockMovementRepository = {
@@ -14,6 +15,8 @@ export const stockMovementRepository = {
       .sort({createdAt: -1})
       .exec(),
 
-  create: (data: Partial<StockMovementDocument>) =>
-    StockMovementModel.create(data)
+  create: (data: Partial<StockMovementDocument>, session?: ClientSession) =>
+    session
+      ? StockMovementModel.create([data], {session}).then(rows => rows[0])
+      : StockMovementModel.create(data)
 };
