@@ -61,6 +61,11 @@ function presetRange(key: PresetKey, now = Date.now()): DateRange {
   }
 }
 
+/** The default filter range: today, start of day through end of day. */
+export function todayRange(now = Date.now()): DateRange {
+  return presetRange('today', now);
+}
+
 function isSameRange(a: DateRange, b: DateRange) {
   return a.from === b.from && a.to === b.to;
 }

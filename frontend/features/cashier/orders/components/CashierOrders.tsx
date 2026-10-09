@@ -9,7 +9,7 @@ import OrderChatThread from '@/features/order/components/OrderChatThread';
 import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
 import {Modal} from '@/features/owner/cashiers/components/Modal';
 import {Button} from '@/components/ui/button';
-import {OrderDateFilter} from './OrderDateFilter';
+import {OrderDateFilter, todayRange} from './OrderDateFilter';
 import type {DateRange} from './OrderDateFilter';
 import {OrderPrepBadge, OrderEstimateLabel} from './OrderPrepBadge';
 import {useAllOrdersQuery, useUpdateOrderStatusMutation, useSendCashierOrderMessageMutation} from '@/lib/hooks/orders/useCashierOrder';
@@ -126,7 +126,7 @@ export function CashierOrders() {
   });
   const [orderTypeFilter, setOrderTypeFilter] = useState<string>('all');
   const [cancellingOrder, setCancellingOrder] = useState<OrderHistoryEntry | null>(null);
-  const [dateRange, setDateRange] = useState<DateRange>({from: null, to: null});
+  const [dateRange, setDateRange] = useState<DateRange>(() => todayRange());
 
   const orders = data?.orders ?? [];
   const {highlightId, isOpenChat} = useScrollToHighlight();
