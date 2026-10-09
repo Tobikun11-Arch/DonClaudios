@@ -44,7 +44,6 @@ function ProductsSection() {
   const {data: me} = useMeQuery();
   const isSignedIn = !!me;
 
-
   const products = useMemo(() => data?.products ?? [], [data?.products]);
 
   const promos = useMemo(
@@ -63,11 +62,20 @@ function ProductsSection() {
   const availableProducts = useMemo(() => {
     // A pre-order that is fully done (no live batch and no next batch) is
     // removed from the menu. One still batching stays visible.
+    const now = new Date();
     return products.filter(
       p =>
         p.isAvailable &&
         p.stock > 0 &&
-        !(isPreOrderProduct(p) && preOrderDisplay(p).closed)
+        !(isPreOrderProduct(p) && preOrderDisplay(p).closed) &&
+        // Filter out products with expired embedded promos (but keep upcoming ones)
+        !(
+          p.isPromoActive &&
+          p.promoEndDate &&
+          new Date(p.promoEndDate) < now &&
+          // Also check if it's not upcoming (i.e., it's already passed start date)
+          (!p.promoStartDate || new Date(p.promoStartDate) < now)
+        )
     );
   }, [products]);
 
@@ -305,8 +313,7 @@ function ProductsSection() {
     }
 
     if (item.isPreOrder && typeof item.preOrderLimit === 'number') {
-      const currentQty =
-        cartItems.find(i => i.productId === item.id)?.qty ?? 0;
+      const currentQty = cartItems.find(i => i.productId === item.id)?.qty ?? 0;
       if (currentQty + 1 > item.preOrderLimit) {
         toast.error(
           preOrderLimitMessage({
@@ -360,22 +367,22 @@ function ProductsSection() {
         </div>
       </div>
 
-      <div className='flex justify-between'>
+      <div className="flex justify-between">
         <h1 className="text-2xl font-bold mb-2">DonClaudios Menu</h1>
-      <Link
-        href="/order-history"
-        aria-label="Order history"
-        className="relative inline-flex items-center rounded-full p-2 hover:bg-[#2d4a35]/10 transition-colors -mt-1"
-      >
-        <span className="relative inline-block">
-          <History className="h-6 w-6 text-[#2d4a35]" />
-          {activeOrderCount > 0 && (
-            <span className="absolute -right-1.5 -top-1.5 h-6 min-w-6 px-1.5 rounded-full bg-[#c30010] text-white text-xs font-bold grid place-items-center">
-              {activeOrderCount}
-            </span>
-          )}
-        </span>
-      </Link>
+        <Link
+          href="/order-history"
+          aria-label="Order history"
+          className="relative inline-flex items-center rounded-full p-2 hover:bg-[#2d4a35]/10 transition-colors -mt-1"
+        >
+          <span className="relative inline-block">
+            <History className="h-6 w-6 text-[#2d4a35]" />
+            {activeOrderCount > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 h-6 min-w-6 px-1.5 rounded-full bg-[#c30010] text-white text-xs font-bold grid place-items-center">
+                {activeOrderCount}
+              </span>
+            )}
+          </span>
+        </Link>
       </div>
 
       <section className="mb-10">
@@ -430,7 +437,9 @@ function ProductsSection() {
               ))}
             </div>
           ) : isError ? (
-            <div className="text-sm text-gray-500">Failed to load products.</div>
+            <div className="text-sm text-gray-500">
+              Failed to load products.
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {visibleItems.map(item => (
