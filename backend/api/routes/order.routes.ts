@@ -1,4 +1,5 @@
 import {Router} from 'express';
+import multer from 'multer';
 import {orderController} from '../controllers/order.controller';
 import {orderMessageController} from '../controllers/orderMessage.controller';
 import {
@@ -73,6 +74,28 @@ router.post(
   '/customer/track/:id/cancel',
   optionalAuth,
   orderController.cancelOrder
+);
+
+// MANUAL PAYMENT flow (step 1 — customer): available only while the order is
+// confirmed and not yet verified. Guests identify themselves with the order's
+// phone number (query or body), customers with their JWT; the screenshot is
+// uploaded in the same multipart call and stored on Cloudinary.
+const paymentUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {fileSize: 5 * 1024 * 1024}
+});
+router.post(
+  '/:id/payment',
+  optionalAuth,
+  paymentUpload.single('proof'),
+  orderController.submitPayment
+);
+// Step 2 — staff: mark the submitted payment as verified (or rejected).
+router.patch(
+  '/:id/payment/verify',
+  requireAuth,
+  requireStaff,
+  orderController.verifyPayment
 );
 router.get(
   '/all',

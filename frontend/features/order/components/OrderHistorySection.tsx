@@ -16,7 +16,7 @@ function formatOrderType(orderType: string) {
   return orderType.charAt(0).toUpperCase() + orderType.slice(1);
 }
 
-function formatPaymentMethod(paymentMethod?: string) {
+function formatPaymentMethod(paymentMethod?: string | null) {
   switch (paymentMethod) {
     case 'cash':
       return 'Cash';
@@ -24,8 +24,16 @@ function formatPaymentMethod(paymentMethod?: string) {
       return 'Card';
     case 'gcash':
       return 'GCash';
+    case 'maya':
+      return 'Maya';
+    case 'bdo':
+      return 'BDO Transfer';
+    case 'bpi':
+      return 'BPI Transfer';
+    case 'psbank':
+      return 'PSBank Transfer';
     case 'other':
-      return 'Other';
+      return 'To be arranged with the cashier';
     default:
       return 'Cash';
   }

@@ -1,5 +1,5 @@
 import {OrderModel, OrderDocument} from '../models/Order.model';
-import type {OrderStatus} from '../models/Order.model';
+import type {OrderStatus, PaymentStatus} from '../models/Order.model';
 import type {FilterQuery, ClientSession} from 'mongoose';
 
 export const orderRepository = {
@@ -157,5 +157,35 @@ export const orderRepository = {
     OrderModel.updateOne(
       {_id: orderId, pointsReversed: false},
       {$set: {pointsReversed: true}}
-    ).exec()
+    ).exec(),
+
+  /**
+   * Records the customer's manual-payment claim (status + proof). The guard
+   * `$ne: true` on paymentVerified means a late re-submission can never
+   * overwrite a claim once the cashier has verified it (an absent field —
+   * pre-feature legacy rows — is still eligible, unlike an equality check
+   * against `false`).
+   */
+  submitManualPayment: (
+    orderId: string,
+    patch: {
+      paymentStatus: PaymentStatus;
+      paymentProofUrl: string;
+      paymentNote?: string | null;
+    }
+  ) =>
+    OrderModel.updateOne(
+      {_id: orderId, paymentVerified: {$ne: true}},
+      {$set: patch}
+    ).exec(),
+
+  updatePaymentState: (
+    orderId: string,
+    patch: {
+      paymentStatus?: PaymentStatus;
+      paymentVerified?: boolean;
+      paymentProofUrl?: string | null;
+      paymentNote?: string | null;
+    }
+  ) => OrderModel.updateOne({_id: orderId}, {$set: patch}).exec()
 };

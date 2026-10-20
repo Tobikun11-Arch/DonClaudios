@@ -51,12 +51,17 @@ export async function sendOrderReceiptEmail(orderId: string): Promise<boolean> {
     }[order.orderType] ?? order.orderType;
 
   const paymentLabel =
-    {
+    ({
       cash: 'Cash',
       card: 'Card',
       gcash: 'GCash',
+      maya: 'Maya',
+      bdo: 'BDO Transfer',
+      bpi: 'BPI Transfer',
+      psbank: 'PSBank Transfer',
       other: 'Other'
-    }[transaction?.paymentMethod ?? 'cash'] ?? 'Cash';
+    } as Record<string, string>)[transaction?.paymentMethod ?? 'cash'] ??
+    'Cash';
 
   const businessName = settings.footer?.brandName || 'DonClaudio’s Lechon House';
   const businessAddress = settings.footer?.address || settings.contact?.address;

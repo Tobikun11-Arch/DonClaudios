@@ -2,17 +2,36 @@
 
 import {useState, useSyncExternalStore} from 'react';
 import Image from 'next/image';
-import {X, XCircle, Clock, AlertTriangle} from 'lucide-react';
+import {
+  CheckCircle2,
+  Clock,
+  Loader2,
+  Upload,
+  X,
+  XCircle,
+  AlertTriangle
+} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import FrameLoader from '@/shared/components/FrameLoader';
-import {useCancelTrackedOrderMutation, useTrackOrderQuery} from '@/lib/hooks/orders/useTrackOrder';
+import {
+  useCancelTrackedOrderMutation,
+  useSubmitPaymentMutation,
+  useTrackOrderQuery
+} from '@/lib/hooks/orders/useTrackOrder';
+import {useSettingsQuery} from '@/lib/hooks/useSettings';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
+import {
+  ONLINE_PAYMENT_LABELS,
+  type OnlinePaymentMethod,
+  type OrderHistoryEntry,
+  type OrderHistoryItem
+} from '@/lib/api/orderApi';
 import {getGuestOrderHistory} from '@/lib/orders/orderHistoryStorage';
 import {
   formatMinutes,
   OVERDUE_GRACE_MINUTES,
   useOrderPrepCountdown
 } from '@/lib/hooks/useOrderPrepCountdown';
-import type {OrderHistoryEntry, OrderHistoryItem} from '@/lib/api/orderApi';
 
 const STORE_NAME = "DonClaudio's Lechon House";
 const STORE_ADDRESS =
@@ -85,22 +104,49 @@ function orderTypeDisplay(orderType: string) {
   return 'Reservation';
 }
 
+function itemIsPreOrder(item: OrderHistoryItem) {
+  return item.productId && typeof item.productId === 'object'
+    ? item.productId.isPreOrder === true
+    : false;
+}
+
+/** Down payments only apply to carts made up entirely of pre-order products. */
+function orderIsPreOrderOnly(order: OrderHistoryEntry) {
+  return (
+    order.items.length > 0 && order.items.every(item => itemIsPreOrder(item))
+  );
+}
+
 function paymentDisplay(order: OrderHistoryEntry) {
-  const method = order.paymentMethod ?? 'cash';
+  const method = order.paymentMethod;
+  // Manual payment flow: the channel is agreed with the cashier on the
+  // confirmation call, so nothing is recorded until the customer submits.
+  if (!method || method === 'other') {
+    return 'To be arranged with the cashier';
+  }
   let label: string;
   switch (method) {
     case 'gcash':
       label = 'GCash';
       break;
+    case 'maya':
+      label = 'Maya';
+      break;
+    case 'bdo':
+      label = 'BDO Transfer';
+      break;
+    case 'bpi':
+      label = 'BPI Transfer';
+      break;
+    case 'psbank':
+      label = 'PSBank Transfer';
+      break;
     case 'card':
       label = 'Card';
       break;
-    case 'other':
-      label = 'Other';
-      break;
-    case 'cash':
     default:
-      label = order.orderType === 'delivery' ? 'Cash on Delivery' : 'Cash';
+      // Cash only ever means the counter POS (paid at the register).
+      label = order.orderType === 'delivery' ? 'Cash' : 'Cash';
   }
   if (order.changeFor) {
     label += ` (Change for ₱${order.changeFor})`;
@@ -214,6 +260,11 @@ export default function OrderTracking({
               <StatusTrackerCard order={order} />
             )}
             <OrderSummaryCard order={order} />
+            <ManualPaymentCard
+              order={order}
+              phone={resolvedPhone}
+              variant={variant}
+            />
             <PaymentsDetailsCard order={order} />
             {CANCELLABLE.includes(order.orderStatus) && (
               <CancelOrderButton orderId={orderId} phone={resolvedPhone} />
@@ -527,6 +578,326 @@ function OrderSummaryCard({order}: {order: OrderHistoryEntry}) {
           </span>
         </div>
       </div>
+    </div>
+  );
+}
+
+const PAYMENT_METHOD_OPTIONS = Object.entries(ONLINE_PAYMENT_LABELS) as Array<
+  [OnlinePaymentMethod, string]
+>;
+
+/**
+ * MANUAL PAYMENT card.
+ *
+ * Appears once the cashier confirms the order (never while it is pending).
+ * Shows
+ * the payment instructions configured by the admin, then a submission form:
+ * the customer declares a down payment (pre-order-only carts) or full
+ * payment, picks the channel (GCash/Maya/BDO/BPI/PSBank), and uploads the
+ * screenshot. The cashier verifies it afterwards; a verified payment is
+ * locked and a rejected one drops back to the form.
+ */
+function ManualPaymentCard({
+  order,
+  phone,
+  variant
+}: {
+  order: OrderHistoryEntry;
+  phone?: string;
+  variant: 'guest' | 'customer';
+}) {
+  const paymentOpen = [
+    'confirmed',
+    'preparing',
+    'ready',
+    'on_the_way'
+  ].includes(order.orderStatus);
+  if (!paymentOpen) return null;
+
+  return <ManualPaymentCardBody order={order} phone={phone} variant={variant} />;
+}
+
+function ManualPaymentCardBody({
+  order,
+  phone,
+  variant
+}: {
+  order: OrderHistoryEntry;
+  phone?: string;
+  variant: 'guest' | 'customer';
+}) {
+  const settingsQuery = useSettingsQuery();
+  const paymentSettings = settingsQuery.data?.payment;
+  const submitMutation = useSubmitPaymentMutation(order._id, phone);
+
+  const [formOpen, setFormOpen] = useState(
+    order.paymentStatus !== 'down_payment' && order.paymentStatus !== 'paid'
+  );
+  const [claim, setClaim] = useState<'down_payment' | 'paid'>('paid');
+  const [method, setMethod] = useState<OnlinePaymentMethod>('gcash');
+  const [note, setNote] = useState('');
+  const [proof, setProof] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const verified = order.paymentVerified === true;
+  const alreadyClaimed =
+    order.paymentStatus === 'down_payment' || order.paymentStatus === 'paid';
+  const downPaymentAllowed = orderIsPreOrderOnly(order) && !verified;
+
+  const handleSubmit = async () => {
+    if (!proof) {
+      setError('Please attach a screenshot of your payment.');
+      return;
+    }
+    setError(null);
+    try {
+      await submitMutation.mutateAsync({
+        status: claim,
+        paymentMethod: method,
+        note,
+        proof,
+        phoneNumber: variant === 'guest' ? phone : undefined
+      });
+      setProof(null);
+      setNote('');
+      setFormOpen(false);
+    } catch (e) {
+      setError(
+        getFriendlyErrorMessage(e, 'Could not submit your payment. Please try again.')
+      );
+    }
+  };
+
+  return (
+    <div className="rounded-2xl bg-white shadow p-6">
+      <div className="flex items-center justify-between">
+        <p className="text-base font-bold text-gray-900">Payment</p>
+        {verified ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Payment verified
+          </span>
+        ) : null}
+      </div>
+
+      {verified ? (
+        <div className="mt-4 space-y-3">
+          <p className="text-sm text-gray-600">
+            Your payment has been verified. Thank you!
+          </p>
+          {order.paymentProofUrl ? (
+            <a
+              href={order.paymentProofUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block text-xs font-semibold text-[#3c5e45] hover:underline"
+            >
+              View my submitted proof of payment
+            </a>
+          ) : null}
+        </div>
+      ) : alreadyClaimed && !formOpen ? (
+        <div className="mt-4 space-y-3">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-sm font-bold text-amber-800">
+              Submitted — awaiting verification
+            </p>
+            <p className="mt-1 text-sm text-amber-700">
+              You submitted a{' '}
+              {order.paymentStatus === 'down_payment' ? 'down payment' : 'full payment'}{' '}
+              through {paymentDisplay(order)}. Our cashier will verify it shortly.
+            </p>
+          </div>
+          {order.paymentProofUrl ? (
+            <a
+              href={order.paymentProofUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block text-xs font-semibold text-[#3c5e45] hover:underline"
+            >
+              View submitted screenshot
+            </a>
+          ) : null}
+          <button
+            type="button"
+            className="text-xs font-semibold text-[#3c5e45] hover:underline"
+            onClick={() => setFormOpen(true)}
+          >
+            Something wrong? Re-submit your payment
+          </button>
+        </div>
+      ) : (
+        <>
+          {alreadyClaimed ? (
+            <p className="mt-2 text-xs text-gray-500">
+              You already have a submitted payment. Submitting again replaces it
+              (until it is verified).
+            </p>
+          ) : null}
+
+          {paymentSettings?.image ? (
+            <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
+              <Image
+                src={paymentSettings.image}
+                alt="Payment account details"
+                width={800}
+                height={800}
+                className="h-auto w-full object-contain"
+                unoptimized
+              />
+            </div>
+          ) : null}
+
+          <div className="mt-4 rounded-xl bg-gray-50 p-4 text-sm text-gray-700">
+            {paymentSettings?.accountName ? (
+              <p className="font-semibold">{paymentSettings.accountName}</p>
+            ) : null}
+            {paymentSettings?.accountNumber ? (
+              <p className="mt-1 font-mono text-base font-bold text-gray-900">
+                {paymentSettings.accountNumber}
+              </p>
+            ) : null}
+            {paymentSettings?.instructions ? (
+              <p className="mt-2 whitespace-pre-line">{paymentSettings.instructions}</p>
+            ) : null}
+            {!paymentSettings?.image &&
+            !paymentSettings?.accountName &&
+            !paymentSettings?.accountNumber &&
+            !paymentSettings?.instructions ? (
+              <p className="italic">
+                Send your payment to the store account, then upload the
+                screenshot below. If you need the details, please contact us.
+              </p>
+            ) : null}
+          </div>
+
+          <div className="mt-5 space-y-2">
+            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+              What did you pay?
+            </p>
+            {downPaymentAllowed ? (
+              <button
+                type="button"
+                onClick={() => setClaim('down_payment')}
+                aria-pressed={claim === 'down_payment'}
+                className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
+                  claim === 'down_payment'
+                    ? 'border-[#3c5e45]/40 bg-[#3c5e45]/5'
+                    : 'border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                <span
+                  className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                    claim === 'down_payment'
+                      ? 'border-[#3c5e45] bg-[#3c5e45]'
+                      : 'border-gray-300'
+                  }`}
+                >
+                  {claim === 'down_payment' ? (
+                    <span className="h-2 w-2 rounded-full bg-white" />
+                  ) : null}
+                </span>
+                <span className="text-sm font-bold text-gray-900">
+                  I paid the down payment
+                </span>
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setClaim('paid')}
+              aria-pressed={claim === 'paid'}
+              className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
+                claim === 'paid'
+                  ? 'border-[#3c5e45]/40 bg-[#3c5e45]/5'
+                  : 'border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              <span
+                className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                  claim === 'paid'
+                    ? 'border-[#3c5e45] bg-[#3c5e45]'
+                    : 'border-gray-300'
+                }`}
+              >
+                {claim === 'paid' ? (
+                  <span className="h-2 w-2 rounded-full bg-white" />
+                ) : null}
+              </span>
+              <span className="text-sm font-bold text-gray-900">
+                I paid in full
+              </span>
+            </button>
+          </div>
+
+          <div className="mt-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+              Payment channel
+            </p>
+            <select
+              value={method}
+              onChange={e => setMethod(e.target.value as OnlinePaymentMethod)}
+              className="mt-2 w-full h-11 rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 outline-none focus:border-[#3c5e45] focus:ring-2 focus:ring-[#3c5e45]/20"
+            >
+              {PAYMENT_METHOD_OPTIONS.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mt-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+              Proof of payment
+            </p>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={e => setProof(e.target.files?.[0] ?? null)}
+              className="mt-2 w-full text-sm text-gray-700 file:mr-3 file:rounded-full file:border-0 file:bg-[#3c5e45] file:px-4 file:py-2 file:text-xs file:font-semibold file:text-white"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Upload a screenshot or receipt image (max 5&nbsp;MB).
+            </p>
+          </div>
+
+          <div className="mt-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+              Note (optional)
+            </p>
+            <textarea
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              placeholder="e.g. paid ₱1,500 down payment as agreed over the phone"
+              rows={2}
+              className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#3c5e45] focus:ring-2 focus:ring-[#3c5e45]/20"
+            />
+          </div>
+
+          {error ? (
+            <p className="mt-3 text-xs font-medium text-red-600">{error}</p>
+          ) : null}
+
+          <Button
+            type="button"
+            className="mt-4 w-full h-11 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
+            disabled={submitMutation.isPending}
+            onClick={handleSubmit}
+          >
+            {submitMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              <>
+                <Upload className="mr-2 h-4 w-4" />
+                {alreadyClaimed ? 'Replace payment submission' : 'Submit my payment'}
+              </>
+            )}
+          </Button>
+        </>
+      )}
     </div>
   );
 }

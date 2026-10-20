@@ -22,7 +22,9 @@ import {
   formatStatus,
   orderTypeLabel,
   customerDisplay,
-  statusChipClass
+  statusChipClass,
+  paymentGateBlocks,
+  OrderPaymentPanel
 } from './CashierOrders';
 
 function getItemName(item: OrderHistoryItem) {
@@ -67,6 +69,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
   const order: OrderHistoryEntry = data.order;
   const nextStatus = nextStatusFor(order.orderType, order.orderStatus);
   const canAdvance = nextStatus !== null;
+  const paymentBlocked = paymentGateBlocks(order, nextStatus);
   const canCancel = CANCELLABLE.includes(order.orderStatus as (typeof CANCELLABLE)[number]);
 
   const advance = async () => {
@@ -142,12 +145,22 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
             {canAdvance && (
               <button
                 onClick={advance}
-                disabled={isUpdating}
-                className="min-h-[40px] rounded-xl bg-[#2d4a35] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#3a5c44] disabled:opacity-50"
+                disabled={isUpdating || paymentBlocked}
+                title={
+                  paymentBlocked
+                    ? 'Verify the customer payment first'
+                    : undefined
+                }
+                className="min-h-[40px] rounded-xl bg-[#2d4a35] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#3a5c44] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isUpdating ? 'Updating...' : `Mark ${formatStatus(nextStatus)}`}
               </button>
             )}
+            {canAdvance && paymentBlocked ? (
+              <span className="text-xs font-semibold text-amber-600">
+                Verify the payment before this step
+              </span>
+            ) : null}
             {canCancel && (
               <button
                 onClick={() => setCancelling(true)}
@@ -198,6 +211,8 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
             <p className="text-sm font-semibold text-gray-900">{order.changeFor}</p>
           </div>
         ) : null}
+
+        <OrderPaymentPanel order={order} />
       </div>
 
       <div className="rounded-2xl bg-white shadow p-5 sm:p-6">

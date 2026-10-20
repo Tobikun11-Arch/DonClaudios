@@ -9,13 +9,15 @@ import {SecurityTab} from './SecurityTab';
 import {CashierTab} from './CashierTab';
 import {StoreStatusTab} from './StoreStatusTab';
 import {MenuCategoriesTab} from './MenuCategoriesTab';
+import {PaymentTab} from './PaymentTab';
 
-type TabId = 'profile' | 'store' | 'categories' | 'security' | 'cashier';
+type TabId = 'profile' | 'store' | 'categories' | 'payment' | 'security' | 'cashier';
 
 const TABS: {id: TabId; label: string}[] = [
   {id: 'profile', label: 'Profile & Business Info'},
   {id: 'store', label: 'Store Status'},
   {id: 'categories', label: 'Menu Categories'},
+  {id: 'payment', label: 'Payment'},
   {id: 'security', label: 'Security'},
   {id: 'cashier', label: 'Cashier'}
 ];
@@ -78,6 +80,7 @@ export function SettingsPage() {
         {active === 'profile' && <ProfileTab />}
         {active === 'store' && <StoreStatusTab />}
         {active === 'categories' && <MenuCategoriesTab />}
+        {active === 'payment' && <PaymentTab />}
         {active === 'security' && <SecurityTab />}
         {active === 'cashier' && <CashierTab />}
       </div>

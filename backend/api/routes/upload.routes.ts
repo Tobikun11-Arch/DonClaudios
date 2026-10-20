@@ -59,4 +59,12 @@ router.post(
   uploadController.uploadReviewImage
 );
 
+router.post(
+  '/payment-image',
+  requireAuth,
+  requireAdmin,
+  upload.single('file'),
+  uploadController.uploadPaymentInstructionsImage
+);
+
 export default router;

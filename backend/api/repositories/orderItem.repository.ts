@@ -7,7 +7,7 @@ export const orderItemRepository = {
 
   listByOrderIds: (orderIds: string[], session?: ClientSession) =>
     OrderItemModel.find({orderId: {$in: orderIds}}, null, {session})
-      .populate('productId', 'name imageUrl category')
+      .populate('productId', 'name imageUrl category isPreOrder')
       .exec(),
 
   /**

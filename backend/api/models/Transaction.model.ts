@@ -1,6 +1,14 @@
 import mongoose, {Schema} from 'mongoose';
 
-export type PaymentMethod = 'cash' | 'card' | 'gcash' | 'other';
+export type PaymentMethod =
+  | 'cash'
+  | 'card'
+  | 'gcash'
+  | 'maya'
+  | 'bdo'
+  | 'bpi'
+  | 'psbank'
+  | 'other';
 
 export interface TransactionDocument extends mongoose.Document {
   cashierId?: mongoose.Types.ObjectId | null;
@@ -18,7 +26,7 @@ const TransactionSchema = new Schema<TransactionDocument>(
     timestamp: {type: Date, default: Date.now},
     paymentMethod: {
       type: String,
-      enum: ['cash', 'card', 'gcash', 'other'],
+      enum: ['cash', 'card', 'gcash', 'maya', 'bdo', 'bpi', 'psbank', 'other'],
       default: 'cash'
     },
     totalAmount: {type: Number, required: true},

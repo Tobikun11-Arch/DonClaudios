@@ -13,13 +13,18 @@ import {adminRepository} from '../repositories/admin.repository';
 import {sendOrderReceiptEmail} from '../services/receipt.service';
 import {storeStatusService} from '../services/storeStatus.service';
 import {guestOtpService} from '../services/guestOtp.service';
+import {uploadPaymentProofBuffer} from '../services/cloudinary.service';
 import {
   buildPrepSnapshot,
   evaluateOrderTiming,
   type OrderPrepTiming
 } from '../services/prepTime.service';
 import type {PaymentMethod} from '../models/Transaction.model';
-import type {OrderStatus, OrderDocument} from '../models/Order.model';
+import type {
+  OrderStatus,
+  OrderDocument,
+  PaymentStatus
+} from '../models/Order.model';
 import type {CashierDocument} from '../models/Cashier.model';
 import {resolveRange} from '../utils/dateRange';
 import {pointsEarnedForOrder} from '../config/rewards';
@@ -85,6 +90,111 @@ async function notifyCashiersOfOrderCancelled(
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+/**
+ * Payment channels the customer can pick when submitting manual payment. Cash
+ * is NEVER one of them — cash stays exclusive to the counter (POS) flow, where
+ * the cashier selects the method at the register.
+ */
+const ONLINE_PAYMENT_METHODS = [
+  'gcash',
+  'maya',
+  'bdo',
+  'bpi',
+  'psbank'
+] as const;
+type OnlinePaymentMethod = (typeof ONLINE_PAYMENT_METHODS)[number];
+
+const PAYMENT_STATUS_LABELS: Record<Exclude<PaymentStatus, 'unpaid'>, string> = {
+  down_payment: 'down payment',
+  paid: 'full payment'
+};
+
+/**
+ * Access rule for payment submission — identical to tracking/cancelling: a
+ * guest must know the order's phone number (query or body), an account
+ * customer must own the order.
+ */
+function assertOrderCustomerAccess(
+  order: OrderDocument,
+  req: Request
+): void {
+  if (!req.auth) {
+    const phoneNumber =
+      typeof req.query.phoneNumber === 'string'
+        ? req.query.phoneNumber.trim()
+        : typeof req.body?.phoneNumber === 'string'
+          ? req.body.phoneNumber.trim()
+          : '';
+    if (
+      !phoneNumber ||
+      order.isGuest !== true ||
+      !order.guestInfo ||
+      order.guestInfo.phoneNumber !== phoneNumber
+    ) {
+      throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+    }
+  } else if (req.auth.type === 'customer') {
+    if (
+      order.isGuest ||
+      !order.customerId ||
+      String(order.customerId) !== req.auth.userId
+    ) {
+      throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+    }
+  } else {
+    throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+  }
+}
+
+/**
+ * True when at least one line is a regular (non pre-order) product. It drives
+ * the payment rules: regular products must be FULLY paid before the kitchen
+ * starts; only an order made up entirely of pre-order products may settle for
+ * the negotiated down payment instead of the full amount.
+ */
+async function orderContainsRegularProduct(
+  order: OrderDocument
+): Promise<boolean> {
+  const items = await orderItemRepository.listByOrderIds([String(order._id)]);
+  const products = await productRepository.findByIds(
+    items.map(item => String(item.productId))
+  );
+  // Missing/deleted products count as regular — the safe side of the rule.
+  return products.length > 0 && products.some(p => p?.isPreOrder !== true);
+}
+
+async function notifyCashiersOfPaymentSubmitted(
+  orderId: string,
+  customerLabel: string,
+  statusLabel: string
+) {
+  try {
+    const cashiers = (await cashierRepository.listAll()) as
+      | (CashierDocument & {_id: unknown})[]
+      | null;
+    const orderCode = String(orderId).slice(-6).toUpperCase();
+    for (const cashier of cashiers ?? []) {
+      try {
+        await notificationService.createForCashier({
+          cashierId: String(cashier._id),
+          type: 'order_status',
+          title: 'Payment submitted',
+          message: `${customerLabel} submitted proof of a ${statusLabel} for order (#${orderCode}). Verify it before moving the order forward.`,
+          orderId,
+          link: '/cashier/dashboard?tab=orders'
+        });
+      } catch (error) {
+        console.error(
+          'Failed to create payment-submitted cashier notification',
+          error
+        );
+      }
+    }
+  } catch (error) {
+    console.error('Failed to notify cashiers of submitted payment', error);
+  }
 }
 
 function normalizeChangeFor(value: unknown): string | undefined {
@@ -486,6 +596,257 @@ export const orderController = {
     }
   },
 
+  /**
+   * MANUAL PAYMENT — step 1 (customer).
+   *
+   * Available once the cashier has confirmed the order (that is when the
+   * payment instructions become visible). The customer submits what they paid
+   * (down payment for pre-order-only carts, full payment otherwise), which
+   * channel they used, an optional note, and the screenshot as proof.
+   *
+   * Guests authenticate with the order's phone number (query or body), the
+   * same way tracking does. A verified payment can never be overwritten; a
+   * claim can be re-submitted freely until the cashier verifies it.
+   */
+  async submitPayment(req: Request, res: Response, next: NextFunction) {
+    try {
+      const order = await orderRepository.findById(req.params.id);
+      if (!order) {
+        throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+      }
+
+      assertOrderCustomerAccess(order, req);
+
+      if (order.orderSource === 'in-store') {
+        throw new ApiError(
+          400,
+          'INVALID_OPERATION',
+          'Counter orders are paid directly at the register'
+        );
+      }
+      if (order.orderStatus !== 'confirmed') {
+        throw new ApiError(
+          409,
+          'PAYMENT_NOT_OPEN',
+          'Payment opens once the cashier confirms your order'
+        );
+      }
+      if (order.paymentVerified === true) {
+        throw new ApiError(
+          409,
+          'ALREADY_VERIFIED',
+          'This order has already been verified by the cashier'
+        );
+      }
+
+      const claimedStatus = req.body?.status as
+        | 'down_payment'
+        | 'paid'
+        | undefined;
+      if (claimedStatus !== 'down_payment' && claimedStatus !== 'paid') {
+        throw new ApiError(
+          400,
+          'VALIDATION_ERROR',
+          "status must be 'down_payment' or 'paid'"
+        );
+      }
+
+      const paymentMethod = req.body?.paymentMethod;
+      if (!ONLINE_PAYMENT_METHODS.includes(paymentMethod as any)) {
+        throw new ApiError(
+          400,
+          'VALIDATION_ERROR',
+          `paymentMethod must be one of: ${ONLINE_PAYMENT_METHODS.join(', ')}`
+        );
+      }
+
+      const proof = (req as Request & {file?: Express.Multer.File}).file;
+      if (!proof) {
+        throw new ApiError(
+          400,
+          'NO_PROOF',
+          'Please upload a screenshot of your payment'
+        );
+      }
+      if (!proof.mimetype.startsWith('image/')) {
+        throw new ApiError(400, 'INVALID_FILE', 'Proof of payment must be an image');
+      }
+
+      // Payment rules: a down payment is only for carts made up entirely of
+      // pre-order products; anything with a regular product must be fully paid.
+      if (claimedStatus === 'down_payment') {
+        const hasRegular = await orderContainsRegularProduct(order);
+        if (hasRegular) {
+          throw new ApiError(
+            400,
+            'DOWN_PAYMENT_NOT_ALLOWED',
+            'Orders that include regular products require full payment. Down payments only apply to pre-order products.'
+          );
+        }
+      }
+
+      const {secureUrl} = await uploadPaymentProofBuffer({
+        buffer: proof.buffer,
+        filename: proof.originalname
+      });
+
+      const claim = await orderRepository.submitManualPayment(
+        String(order._id),
+        {
+          paymentStatus: claimedStatus,
+          paymentProofUrl: secureUrl,
+          paymentNote: isNonEmptyString(req.body?.note)
+            ? req.body.note.trim()
+            : null
+        }
+      );
+      if (claim.modifiedCount === 0) {
+        throw new ApiError(
+          409,
+          'ALREADY_VERIFIED',
+          'This order has already been verified by the cashier'
+        );
+      }
+
+      await transactionRepository.updateByOrderId(String(order._id), {
+        paymentMethod: paymentMethod as PaymentMethod
+      });
+
+      const customerLabel = order.isGuest
+        ? [order.guestInfo?.firstName, order.guestInfo?.lastName]
+            .filter(Boolean)
+            .join(' ') || 'A guest'
+        : 'The customer';
+      console.info(
+        `[audit] payment submitted for order ${String(order._id)} (${claimedStatus} via ${paymentMethod}) by ${req.auth?.userId ?? order.guestInfo?.phoneNumber ?? 'guest'}`
+      );
+      await notifyCashiersOfPaymentSubmitted(
+        String(order._id),
+        customerLabel,
+        PAYMENT_STATUS_LABELS[claimedStatus]
+      );
+
+      const updated = await orderRepository.findById(String(order._id));
+      res.status(200).json({order: updated});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * MANUAL PAYMENT — step 2 (cashier/admin).
+   *
+   * `verified: true`  -> confirms the customer's claim; the order can then move
+   *                      towards preparing (the status gate hands the rest).
+   * `verified: false` -> rejects the claim and resets it to unpaid, so the
+   *                      customer can resubmit after talking to the cashier.
+   */
+  async verifyPayment(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+      }
+
+      const order = await orderRepository.findById(req.params.id);
+      if (!order) {
+        throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+      }
+      if (order.orderSource === 'in-store') {
+        throw new ApiError(
+          400,
+          'INVALID_OPERATION',
+          'Counter orders are paid directly at the register'
+        );
+      }
+
+      if (order.orderStatus === 'cancelled') {
+        throw new ApiError(
+          409,
+          'ORDER_CANCELLED',
+          'This order was cancelled'
+        );
+      }
+      const verified = req.body?.verified;
+      if (typeof verified !== 'boolean') {
+        throw new ApiError(
+          400,
+          'VALIDATION_ERROR',
+          'verified must be true or false'
+        );
+      }
+
+      const hasClaim =
+        order.paymentStatus === 'down_payment' || order.paymentStatus === 'paid';
+      if (!hasClaim) {
+        throw new ApiError(
+          409,
+          'NO_PAYMENT_SUBMITTED',
+          'The customer has not submitted a payment yet'
+        );
+      }
+
+      if (verified) {
+        if (order.paymentVerified === true) {
+          throw new ApiError(
+            409,
+            'ALREADY_VERIFIED',
+            'This order has already been verified'
+          );
+        }
+        await orderRepository.updatePaymentState(String(order._id), {
+          paymentVerified: true
+        });
+        const transaction = await transactionRepository.findByOrderId(
+          String(order._id)
+        );
+        const methodLabel = transaction?.paymentMethod ?? 'n/a';
+        console.info(
+          `[audit] payment verified for order ${String(order._id)} (${order.paymentStatus} via ${methodLabel}) by ${req.auth.userId} (${req.auth.type})`
+        );
+
+        if (order.customerId) {
+          await notificationService.createForCustomer({
+            customerId: String(order.customerId),
+            type: 'order_status',
+            title: 'Payment verified',
+            message: `We have verified your payment for order (#${String(order._id).slice(-6).toUpperCase()}). Your order is moving forward!`,
+            orderId: String(order._id),
+            link: '/customer/dashboard?tab=history'
+          });
+        }
+      } else {
+        await orderRepository.updatePaymentState(String(order._id), {
+          paymentStatus: 'unpaid',
+          paymentVerified: false,
+          paymentProofUrl: null,
+          paymentNote: null
+        });
+        await transactionRepository.updateByOrderId(String(order._id), {
+          paymentMethod: 'other'
+        });
+        console.info(
+          `[audit] payment rejected for order ${String(order._id)} by ${req.auth.userId} (${req.auth.type})`
+        );
+
+        if (order.customerId) {
+          await notificationService.createForCustomer({
+            customerId: String(order.customerId),
+            type: 'order_status',
+            title: 'Payment not verified',
+            message: `We could not verify your payment for order (#${String(order._id).slice(-6).toUpperCase()}). Please re-submit it or contact us to sort out the details.`,
+            orderId: String(order._id),
+            link: '/customer/dashboard?tab=history'
+          });
+        }
+      }
+
+      const updated = await orderRepository.findById(req.params.id);
+      res.status(200).json({order: updated});
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async listMyOrders(req: Request, res: Response, next: NextFunction) {
     try {
       if (!req.auth) {
@@ -532,7 +893,7 @@ export const orderController = {
 
       await assertStoreOpen();
 
-      const {orderType, items, totalAmount, riderNotes, paymentMethod, contactInfo, changeFor} =
+      const {orderType, items, totalAmount, riderNotes, contactInfo, changeFor} =
         req.body;
 
       const validOrderTypes = ['pickup', 'delivery', 'reservation'] as const;
@@ -673,16 +1034,14 @@ export const orderController = {
         await session.endSession();
       }
 
-      const pm = typeof paymentMethod === 'string' ? paymentMethod : 'cash';
-      const allowedPm = ['cash', 'card', 'gcash', 'other'] as const;
-      const safePm: PaymentMethod = allowedPm.includes(pm as any)
-        ? (pm as PaymentMethod)
-        : 'cash';
-
+      // Manual payment flow: the payment channel is agreed with the cashier on
+      // the confirmation call, not chosen at checkout. The transaction row
+      // keeps its unique per-order shape with the placeholder'other' and is
+      // updated once the customer submits payment and the cashier verifies it.
       const transaction = await transactionRepository.create({
         cashierId: null,
         orderId: order._id,
-        paymentMethod: safePm,
+        paymentMethod: 'other',
         totalAmount: safeTotalAmount,
         isOnline: true
       });
@@ -748,7 +1107,6 @@ export const orderController = {
         items,
         totalAmount,
         riderNotes,
-        paymentMethod,
         changeFor
       } = req.body;
 
@@ -904,16 +1262,14 @@ export const orderController = {
         await session.endSession();
       }
 
-      const pm = typeof paymentMethod === 'string' ? paymentMethod : 'cash';
-      const allowedPm = ['cash', 'card', 'gcash', 'other'] as const;
-      const safePm: PaymentMethod = allowedPm.includes(pm as any)
-        ? (pm as PaymentMethod)
-        : 'cash';
-
+      // Manual payment flow: the payment channel is agreed with the cashier on
+      // the confirmation call, not chosen at checkout. The transaction row
+      // keeps its unique per-order shape with the placeholder'other' and is
+      // updated once the customer submits payment and the cashier verifies it.
       const transaction = await transactionRepository.create({
         cashierId: null,
         orderId: order._id,
-        paymentMethod: safePm,
+        paymentMethod: 'other',
         totalAmount: safeTotalAmount,
         isOnline: true
       });
@@ -1212,6 +1568,41 @@ export const orderController = {
           'VALIDATION_ERROR',
           'Only delivery orders can be marked as on the way'
         );
+      }
+
+      // MANUAL PAYMENT gate: an online order may only leave the queue for the
+      // kitchen (preparing or beyond) once the cashier has verified the
+      // customer's payment, and only fully-paid orders are allowed to start
+      // when they contain regular products (down payments cover pre-order-only
+      // carts, whose amount was negotiated on the confirmation call).
+      // Pre-feature legacy rows have no payment fields at all (undefined) and
+      // keep the previous behaviour.
+      if (
+        (status === 'preparing' ||
+          status === 'ready' ||
+          status === 'on_the_way' ||
+          status === 'completed') &&
+        order.orderSource !== 'in-store' &&
+        order.orderStatus !== 'completed' &&
+        order.paymentStatus !== undefined
+      ) {
+        if (order.paymentVerified !== true) {
+          throw new ApiError(
+            409,
+            'PAYMENT_REQUIRED',
+            'Verify the customer payment before continuing this order'
+          );
+        }
+        if (
+          order.paymentStatus !== 'paid' &&
+          (await orderContainsRegularProduct(order))
+        ) {
+          throw new ApiError(
+            409,
+            'PAYMENT_REQUIRED',
+            'Orders with regular products require full payment before preparation'
+          );
+        }
       }
 
       // Legacy pending orders (placed before reserve-at-placement) still

@@ -19,8 +19,6 @@ export type CreateGuestOrderInput = {
   items: GuestOrderItemInput[];
   totalAmount: number;
   riderNotes?: string;
-  paymentMethod?: 'cash' | 'card' | 'gcash' | 'other';
-  changeFor?: string;
 };
 
 export type CreateCustomerOrderInput = {
@@ -28,14 +26,12 @@ export type CreateCustomerOrderInput = {
   items: GuestOrderItemInput[];
   totalAmount: number;
   riderNotes?: string;
-  paymentMethod?: 'cash' | 'card' | 'gcash' | 'other';
   contactInfo?: {
     firstName?: string;
     lastName?: string;
     phoneNumber?: string;
     address?: string;
   };
-  changeFor?: string;
 };
 
 export type CreatedGuestOrderResponse = {
@@ -58,6 +54,7 @@ export type OrderHistoryItem = {
         name?: string;
         imageUrl?: string;
         category?: string;
+        isPreOrder?: boolean;
       };
   quantity: number;
   price: number;
@@ -83,7 +80,7 @@ export type OrderHistoryEntry = {
   orderType: 'pickup' | 'delivery' | 'reservation';
   totalAmount: number;
   deliveryFee?: number;
-  paymentMethod?: 'cash' | 'card' | 'gcash' | 'other';
+  paymentMethod?: string | null;
   riderNotes?: string;
   orderStatus: string;
   isGuest: boolean;
@@ -93,6 +90,14 @@ export type OrderHistoryEntry = {
   estimatedReadyAt?: string | null;
   statusHistory?: Array<{status: string; at: string}>;
   prepTiming?: OrderPrepTiming;
+  /** Manual-payment claim ('unpaid' | 'down_payment' | 'paid'). */
+  paymentStatus?: 'unpaid' | 'down_payment' | 'paid' | null;
+  /** Cashier has confirmed the customer's claim. */
+  paymentVerified?: boolean;
+  paymentProofUrl?: string | null;
+  paymentNote?: string | null;
+  /** Set on server docs; missing in some cached local entries. */
+  orderSource?: 'online' | 'in-store' | null;
   guestInfo?: {
     firstName: string;
     lastName: string;
@@ -325,6 +330,68 @@ export async function getGuestOtpStatus(phoneNumber: string) {
   const res = await httpClient.get<GuestOtpStatusResponse>(
     '/orders/guest/otp/status',
     {params: {phoneNumber}}
+  );
+  return res.data;
+}
+
+/* ------------------------------------------------------------------ */
+/* MANUAL PAYMENT flow                                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Channels a customer can pick when submitting proof of payment. Cash is
+ * never one of them — cash lives at the counter (POS) only.
+ */
+export type OnlinePaymentMethod = 'gcash' | 'maya' | 'bdo' | 'bpi' | 'psbank';
+
+export const ONLINE_PAYMENT_LABELS: Record<OnlinePaymentMethod, string> = {
+  gcash: 'GCash',
+  maya: 'Maya',
+  bdo: 'BDO Transfer',
+  bpi: 'BPI Transfer',
+  psbank: 'PSBank Transfer'
+};
+
+export type SubmitPaymentInput = {
+  /** What the customer paid: the agreed partial, or the full amount. */
+  status: 'down_payment' | 'paid';
+  paymentMethod: OnlinePaymentMethod;
+  note?: string;
+  /** Screenshot of the payment receipt. */
+  proof: File;
+  /** Guests authenticate with the order's phone number. */
+  phoneNumber?: string;
+};
+
+export type SubmitPaymentResponse = OrderDetailResponse;
+
+export async function submitOrderPayment(
+  orderId: string,
+  input: SubmitPaymentInput
+) {
+  const data = new FormData();
+  data.append('status', input.status);
+  data.append('paymentMethod', input.paymentMethod);
+  if (input.note && input.note.trim().length > 0) {
+    data.append('note', input.note.trim());
+  }
+  data.append('proof', input.proof);
+
+  const res = await httpClient.post<SubmitPaymentResponse>(
+    `/orders/${orderId}/payment`,
+    data,
+    {
+      params: input.phoneNumber ? {phoneNumber: input.phoneNumber} : undefined,
+      headers: {'Content-Type': 'multipart/form-data'}
+    }
+  );
+  return res.data;
+}
+
+export async function verifyOrderPayment(orderId: string, verified: boolean) {
+  const res = await httpClient.patch<OrderDetailResponse>(
+    `/orders/${orderId}/payment/verify`,
+    {verified}
   );
   return res.data;
 }
