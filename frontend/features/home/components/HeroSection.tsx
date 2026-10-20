@@ -74,7 +74,7 @@ export default function HeroSection({
                 {hero.ctaText}
               </Button>
               <button
-                onClick={() => scrollToSection('highlights')}
+                onClick={() => scrollToSection('promo')}
                 className="text-white hover:text-white/80 transition-colors font-medium text-sm sm:text-base"
               >
                 View Promo →
