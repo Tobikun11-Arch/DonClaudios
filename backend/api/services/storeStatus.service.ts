@@ -2,6 +2,7 @@ import {adminRepository} from '../repositories/admin.repository';
 
 interface StoreStatusResult {
   isOpen: boolean;
+  openingTime: string;
   closingTime: string;
   advanceCloseMinutes: number;
   isManuallyClosed: boolean;
@@ -27,6 +28,7 @@ export const storeStatusService = {
     if (!admin) {
       return {
         isOpen: false,
+        openingTime: '08:00',
         closingTime: '22:00',
         advanceCloseMinutes: 30,
         isManuallyClosed: false,
@@ -37,6 +39,7 @@ export const storeStatusService = {
       };
     }
 
+    const openingTime = admin.openingTime || '08:00';
     const closingTime = admin.closingTime || '22:00';
     const advanceCloseMinutes = admin.advanceCloseMinutes || 30;
     const isManuallyClosed = admin.isManuallyClosed || false;
@@ -45,6 +48,7 @@ export const storeStatusService = {
     if (isManuallyClosed) {
       return {
         isOpen: false,
+        openingTime,
         closingTime,
         advanceCloseMinutes,
         isManuallyClosed,
@@ -56,7 +60,25 @@ export const storeStatusService = {
     }
 
     const now = new Date();
+    const [openingHours, openingMinutes] = openingTime.split(':').map(Number);
     const [closingHours, closingMinutes] = closingTime.split(':').map(Number);
+
+    const openTime = new Date(now);
+    openTime.setHours(openingHours, openingMinutes, 0, 0);
+
+    if (now < openTime) {
+      return {
+        isOpen: false,
+        openingTime,
+        closingTime,
+        advanceCloseMinutes,
+        isManuallyClosed,
+        manualCloseReason,
+        closesAt: formatTime12h(closingTime),
+        reason: 'Store has not opened yet',
+        reopenMessage: `We open at ${formatTime12h(openingTime)}`
+      };
+    }
 
     const effectiveCloseTime = new Date(now);
     effectiveCloseTime.setHours(closingHours, closingMinutes - advanceCloseMinutes, 0, 0);
@@ -66,6 +88,7 @@ export const storeStatusService = {
     if (isPastClosing) {
       return {
         isOpen: false,
+        openingTime,
         closingTime,
         advanceCloseMinutes,
         isManuallyClosed,
@@ -78,6 +101,7 @@ export const storeStatusService = {
 
     return {
       isOpen: true,
+      openingTime,
       closingTime,
       advanceCloseMinutes,
       isManuallyClosed,
@@ -89,6 +113,7 @@ export const storeStatusService = {
   },
 
   async updateStoreSettings(data: {
+    openingTime?: string;
     closingTime?: string;
     advanceCloseMinutes?: number;
     isManuallyClosed?: boolean;
@@ -102,6 +127,7 @@ export const storeStatusService = {
     }
 
     const updateData: Record<string, unknown> = {};
+    if (data.openingTime !== undefined) updateData.openingTime = data.openingTime;
     if (data.closingTime !== undefined) updateData.closingTime = data.closingTime;
     if (data.advanceCloseMinutes !== undefined) updateData.advanceCloseMinutes = data.advanceCloseMinutes;
     if (data.isManuallyClosed !== undefined) updateData.isManuallyClosed = data.isManuallyClosed;
@@ -114,6 +140,7 @@ export const storeStatusService = {
     }
 
     return {
+      openingTime: updated.openingTime,
       closingTime: updated.closingTime,
       advanceCloseMinutes: updated.advanceCloseMinutes,
       isManuallyClosed: updated.isManuallyClosed,

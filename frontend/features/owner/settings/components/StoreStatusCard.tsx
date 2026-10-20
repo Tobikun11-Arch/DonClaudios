@@ -54,10 +54,11 @@ export function StoreStatusCard() {
     );
   }
 
-  return <StoreStatusForm key={data.status.closingTime} initial={data.status} />;
+  return <StoreStatusForm key={`${data.status.openingTime}-${data.status.closingTime}`} initial={data.status} />;
 }
 
 function StoreStatusForm({initial}: {initial: StoreStatus}) {
+  const [openingTime, setOpeningTime] = useState(initial.openingTime || '08:00');
   const [closingTime, setClosingTime] = useState(initial.closingTime || '22:00');
   const [advanceMinutes, setAdvanceMinutes] = useState(
     initial.advanceCloseMinutes || 30
@@ -77,7 +78,7 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
 
   const saveSchedule = () => {
     updateMutation.mutate(
-      {closingTime, advanceCloseMinutes: advanceMinutes},
+      {openingTime, closingTime, advanceCloseMinutes: advanceMinutes},
       {
         onError: err =>
           toast.error(getFriendlyErrorMessage(err, 'Failed to save store hours')),
@@ -131,10 +132,24 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
           ? `Ordering is available to customers until ${effectiveCloseTime}. The store closes at ${initial.closesAt}.`
           : isManuallyClosed
             ? `Manually closed. Customers will see a "we're closed" notice with${manualReason ? ` reason: "${manualReason}"` : 'out a custom reason'}.`
-            : `Ordering closed at ${effectiveCloseTime}. Customers currently see a "we're closed" notice.`}
+            : initial.reason === 'Store has not opened yet'
+              ? `Store opens at ${initial.openingTime ? initial.openingTime.replace(':', ':') : openingTime}. Customers currently see a "we're closed" notice.`
+              : `Ordering closed at ${effectiveCloseTime}. Customers currently see a "we're closed" notice.`}
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="space-y-1.5">
+          <Label htmlFor="opening-time">Opening time</Label>
+          <Input
+            id="opening-time"
+            type="time"
+            value={openingTime}
+            onChange={e => setOpeningTime(e.target.value || '08:00')}
+            className="min-h-[44px]"
+            aria-label="Opening time"
+          />
+        </div>
+
         <div className="space-y-1.5">
           <Label htmlFor="closing-time">Closing time</Label>
           <Input

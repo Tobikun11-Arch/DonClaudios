@@ -14,9 +14,10 @@ export const storeStatusController = {
 
   async updateStoreSettings(req: Request, res: Response, next: NextFunction) {
     try {
-      const {closingTime, advanceCloseMinutes, isManuallyClosed, manualCloseReason} = req.body;
+      const {openingTime, closingTime, advanceCloseMinutes, isManuallyClosed, manualCloseReason} = req.body;
 
       const settings = await storeStatusService.updateStoreSettings({
+        openingTime,
         closingTime,
         advanceCloseMinutes,
         isManuallyClosed,

@@ -2,6 +2,7 @@ import {httpClient} from './httpClient';
 
 export type StoreStatus = {
   isOpen: boolean;
+  openingTime: string;
   closingTime: string;
   advanceCloseMinutes: number;
   isManuallyClosed: boolean;
@@ -16,6 +17,7 @@ type GetStoreStatusResponse = {
 };
 
 type UpdateStoreSettingsBody = {
+  openingTime?: string;
   closingTime?: string;
   advanceCloseMinutes?: number;
   isManuallyClosed?: boolean;
@@ -24,6 +26,7 @@ type UpdateStoreSettingsBody = {
 
 type UpdateStoreSettingsResponse = {
   settings: {
+    openingTime: string;
     closingTime: string;
     advanceCloseMinutes: number;
     isManuallyClosed: boolean;

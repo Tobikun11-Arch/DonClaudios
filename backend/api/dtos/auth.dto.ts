@@ -66,6 +66,7 @@ export const updateProfileDto = z.object({
   operatingHours: z.string().min(1).optional(),
   businessType: z.string().min(1).optional(),
   address: z.string().min(1).optional(),
+  openingTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   closingTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   advanceCloseMinutes: z.number().int().min(5).max(60).optional(),
   defaultPrepMinutes: z.number().int().min(1).max(1440).optional(),

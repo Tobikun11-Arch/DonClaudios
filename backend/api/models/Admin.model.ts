@@ -10,6 +10,7 @@ export interface AdminDocument extends BaseUserDocument {
   businessContactNumber?: string;
   operatingHours?: string;
   businessType?: string;
+  openingTime?: string;
   closingTime?: string;
   advanceCloseMinutes?: number;
   defaultPrepMinutes?: number;
@@ -30,6 +31,7 @@ const AdminSchema = new Schema<AdminDocument>(
     businessContactNumber: {type: String},
     operatingHours: {type: String},
     businessType: {type: String},
+    openingTime: {type: String, default: '08:00'},
     closingTime: {type: String, default: '22:00'},
     advanceCloseMinutes: {type: Number, default: 30, min: 5, max: 60},
     defaultPrepMinutes: {type: Number, default: 20, min: 1, max: 1440},

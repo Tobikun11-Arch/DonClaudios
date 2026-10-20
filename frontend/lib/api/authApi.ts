@@ -39,6 +39,7 @@ type MeResponse = {
     businessContactNumber?: string;
     operatingHours?: string;
     businessType?: string;
+    openingTime?: string;
     closingTime?: string;
     advanceCloseMinutes?: number;
     defaultPrepMinutes?: number;
@@ -67,6 +68,7 @@ export type UpdateProfileBody = {
   businessContactNumber?: string;
   operatingHours?: string;
   businessType?: string;
+  openingTime?: string;
   closingTime?: string;
   advanceCloseMinutes?: number;
   defaultPrepMinutes?: number;
