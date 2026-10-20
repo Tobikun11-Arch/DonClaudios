@@ -10,6 +10,7 @@ import {
   updateProfileDto,
   changePasswordDto,
   forgotPasswordDto,
+  verifyResetCodeDto,
   resetPasswordDto
 } from '../dtos/auth.dto';
 import {
@@ -49,6 +50,13 @@ router.post(
   authLimiter,
   validate(resetPasswordDto),
   authController.resetPassword
+);
+
+router.post(
+  '/verify-reset-code',
+  authLimiter,
+  validate(verifyResetCodeDto),
+  authController.verifyResetCode
 );
 
 router.post(

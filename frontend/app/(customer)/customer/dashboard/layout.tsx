@@ -10,6 +10,7 @@ import CustomerCartDrawer from '@/shared/components/cart/CustomerCartDrawer';
 import CustomerNotificationBell from '@/features/customer/notifications/components/CustomerNotificationBell';
 import SupportChatBubble from '@/features/support/components/SupportChatBubble';
 import {Z} from '@/lib/zIndex';
+import {useBrand} from '@/lib/hooks/useBrand';
 import {Toaster} from 'sonner';
 
 const TABS = [
@@ -59,6 +60,7 @@ export default function DashboardLayout({
   rewards: rewardsSlot
 }: DashboardLayoutProps) {
   const searchParams = useSearchParams();
+  const brand = useBrand();
   const pathname = usePathname();
   const tab = searchParams.get('tab');
   const router = useRouter();
@@ -146,7 +148,7 @@ export default function DashboardLayout({
             }`}
           >
             <Image
-              src="/assets/logo.png"
+              src={brand.logo}
               alt="DC"
               width={36}
               height={36}
@@ -162,7 +164,7 @@ export default function DashboardLayout({
             }`}
           >
             <Image
-              src="/assets/logo.png"
+              src={brand.logo}
               alt="Don Claudio's Lechon House"
               width={130}
               height={130}

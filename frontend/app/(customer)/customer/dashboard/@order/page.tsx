@@ -1,6 +1,7 @@
 'use client';
 
 import {useMemo, useState} from 'react';
+import {useBrand} from '@/lib/hooks/useBrand';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -62,6 +63,7 @@ import {
 } from '@/lib/menu/featured';
 
 export default function OrderSlot() {
+  const brand = useBrand();
   const {data, isLoading, isError} = useProductsQuery();
 
   const promosQuery = usePublicPromosQuery();
@@ -472,7 +474,7 @@ export default function OrderSlot() {
 
           <div className="hidden sm:block w-40 h-40">
             <Image
-              src="/assets/logo.png"
+              src={brand.logo}
               alt="logo"
               width={160}
               height={160}

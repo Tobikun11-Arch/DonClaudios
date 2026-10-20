@@ -3,6 +3,7 @@
 import {useRef, useState, type ReactNode} from 'react';
 import {toast} from 'sonner';
 import {Input} from '@/components/ui/input';
+import {Button} from '@/components/ui/button';
 import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
 import {FALLBACK_PREP_MINUTES} from '@/lib/hooks/useDefaultPrepMinutes';
 import {useUpdateProfileMutation} from '@/lib/hooks/auth/useProfile';
@@ -121,7 +122,7 @@ function InlineField({field, editing}: {field: FieldDef; editing: boolean}) {
 
   const commit = () => {
     const trimmed = value.trim();
-    if (trimmed && trimmed !== field.value.trim()) {
+    if (trimmed !== field.value.trim()) {
       field.save(trimmed);
       setShowSaved(true);
       setTimeout(() => setShowSaved(false), 1500);
@@ -222,7 +223,15 @@ export function ProfileTab() {
   const persist = (body: Partial<MeUser>) => {
     const cleaned: Partial<MeUser> = {};
     for (const [key, value] of Object.entries(body)) {
-      if (typeof value === 'string' && value.trim().length === 0) continue;
+      // Allow clearing business name/logo so they fall back to defaults.
+      if (
+        key !== 'businessName' &&
+        key !== 'businessLogo' &&
+        typeof value === 'string' &&
+        value.trim().length === 0
+      ) {
+        continue;
+      }
       cleaned[key as keyof MeUser] = value as never;
     }
 
@@ -264,7 +273,7 @@ export function ProfileTab() {
   const businessFields: FieldDef[] = [
     {
       label: 'Business/store name',
-      value: user.businessName ?? '',
+      value: user.businessName || "DonClaudio's Lechon House",
       save: v => persist({businessName: v})
     },
     {
@@ -354,6 +363,20 @@ export function ProfileTab() {
               editing={businessEditing}
             />
           ))}
+        </div>
+        <div className="mt-5 flex justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              persist({businessName: '', businessLogo: ''});
+              toast.success('Business details reset to defaults.');
+            }}
+            disabled={updateProfileMutation.isPending}
+          >
+            Reset to defaults
+          </Button>
         </div>
       </Section>
 

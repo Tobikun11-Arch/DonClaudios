@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import {Toaster} from 'sonner';
 import OwnerSupportChatBubble from '@/features/owner/support/components/OwnerSupportChatBubble';
+import {useBrand} from '@/lib/hooks/useBrand';
 
 const PRIMARY_TABS = [
   {
@@ -100,6 +101,7 @@ export default function DashboardLayout({
   const tab = searchParams.get('tab');
   const router = useRouter();
   const logoutMutation = useLogout();
+  const brand = useBrand();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const expandTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -182,8 +184,8 @@ export default function DashboardLayout({
             }`}
           >
             <Image
-              src="/assets/logo.png"
-              alt="DC"
+              src={brand.logo}
+              alt={brand.name}
               width={36}
               height={36}
               className="object-contain"
@@ -198,8 +200,8 @@ export default function DashboardLayout({
             }`}
           >
             <Image
-              src="/assets/logo.png"
-              alt="Don Claudio's Lechon House"
+              src={brand.logo}
+              alt={brand.name}
               width={130}
               height={130}
               className="object-contain drop-shadow-lg"

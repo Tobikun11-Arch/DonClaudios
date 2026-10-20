@@ -1,6 +1,7 @@
 'use client';
 
 import {useState, useSyncExternalStore} from 'react';
+import {useBrand} from '@/lib/hooks/useBrand';
 import Image from 'next/image';
 import {
   CheckCircle2,
@@ -174,6 +175,7 @@ export default function OrderTracking({
   variant: 'guest' | 'customer';
   embedded?: boolean;
 }) {
+  const brand = useBrand();
   const [phone, setPhone] = useState('');
   const [phoneSubmitted, setPhoneSubmitted] = useState(false);
 
@@ -287,13 +289,14 @@ function PhoneGate({
   onSubmit: () => void;
   embedded?: boolean;
 }) {
+  const brand = useBrand();
   return (
     <div className={embedded ? 'bg-gray-50' : 'min-h-screen bg-gray-50'}>
       <div className="w-full max-w-md mx-auto px-4 py-12">
         <div className="rounded-2xl bg-white shadow p-8 text-center">
           <div className="relative w-20 h-20 mx-auto rounded-full bg-[#3c5e45]/10 overflow-hidden">
             <Image
-              src="/assets/logo.png"
+              src={brand.logo}
               alt="DonClaudio's"
               fill
               className="object-contain p-3"
@@ -392,6 +395,7 @@ function CustomerEtaPanel({order}: {order: OrderHistoryEntry}) {
 }
 
 function StatusTrackerCard({order}: {order: OrderHistoryEntry}) {
+  const brand = useBrand();
   const steps = getSteps(order.orderType as OrderType);
   const statusIndex = steps.findIndex(s => s.status === order.orderStatus);
   const currentIndex = order.orderStatus === 'pending' ? -1 : statusIndex;
@@ -401,7 +405,7 @@ function StatusTrackerCard({order}: {order: OrderHistoryEntry}) {
       <div className="flex items-center gap-3">
         <div className="relative w-12 h-12 rounded-full bg-[#3c5e45]/10 overflow-hidden shrink-0">
           <Image
-            src="/assets/logo.png"
+            src={brand.logo}
             alt="DonClaudio's"
             fill
             className="object-contain p-1.5"

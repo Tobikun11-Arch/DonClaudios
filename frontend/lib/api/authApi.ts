@@ -139,6 +139,33 @@ export async function changePassword(body: ChangePasswordBody) {
   return res.data;
 }
 
+export async function forgotPassword(email: string) {
+  const res = await httpClient.post<{message: string}>('/auth/forgot-password', {
+    email
+  });
+  return res.data;
+}
+
+export async function resetPassword(params: {
+  email: string;
+  code: string;
+  newPassword: string;
+}) {
+  const res = await httpClient.post<{message: string}>(
+    '/auth/reset-password',
+    params
+  );
+  return res.data;
+}
+
+export async function verifyResetCode(params: {email: string; code: string}) {
+  const res = await httpClient.post<{message: string}>(
+    '/auth/verify-reset-code',
+    params
+  );
+  return res.data;
+}
+
 export async function getSessions() {
   const res = await httpClient.get<SessionsResponse>('/auth/sessions');
   return res.data;

@@ -180,35 +180,90 @@ export const authService = {
   },
 
   async forgotPassword(email: string) {
-    const customer = await customerRepository.findByEmail(email);
+    const [customer, cashier, admin] = await Promise.all([
+      customerRepository.findByEmail(email),
+      cashierRepository.findByEmail(email),
+      adminRepository.findByEmail(email)
+    ]);
 
-    if (!customer || !customer.isVerified) return;
+    const user =
+      (customer && customer.isVerified && customer) ||
+      (cashier && cashier.isVerified && cashier) ||
+      (admin && admin.isVerified && admin);
+
+    if (!user) return;
 
     const resetCode = generateVerificationCode();
     const resetExpiry = getVerificationExpiry(10);
 
-    await customerRepository.setVerificationCode(email, resetCode, resetExpiry);
+    // Persist the code on the matching user document.
+    if (user === customer) {
+      await customerRepository.setVerificationCode(email, resetCode, resetExpiry);
+    } else if (user === cashier) {
+      await cashierRepository.updateProfile(user.id, {
+        verificationCode: resetCode,
+        verificationExpiry: resetExpiry
+      } as any);
+    } else {
+      await adminRepository.updateProfile(user.id, {
+        verificationCode: resetCode,
+        verificationExpiry: resetExpiry
+      } as any);
+    }
 
     await authService.sendResetPasswordCodeEmail({
       email,
       code: resetCode,
-      recipientName: customer.firstName
+      recipientName: user.firstName
     });
   },
 
-  async resetPassword(email: string, code: string, newPassword: string) {
-    const customer = await customerRepository.findByEmail(email);
+  async verifyResetCode(email: string, code: string) {
+    const [customer, cashier, admin] = await Promise.all([
+      customerRepository.findByEmail(email),
+      cashierRepository.findByEmail(email),
+      adminRepository.findByEmail(email)
+    ]);
+
+    const user = customer || cashier || admin;
 
     if (
-      !customer ||
-      !customer.verificationCode ||
-      !customer.verificationExpiry
+      !user ||
+      !user.verificationCode ||
+      !user.verificationExpiry
     ) {
       throw new ApiError(400, 'INVALID_CODE', 'Invalid or expired reset code');
     }
 
-    const codeMatches = customer.verificationCode === code;
-    const notExpired = customer.verificationExpiry > new Date();
+    const codeMatches = user.verificationCode === code;
+    const notExpired = user.verificationExpiry > new Date();
+
+    if (!codeMatches || !notExpired) {
+      throw new ApiError(400, 'EXPIRED_CODE', 'Reset code expired or invalid');
+    }
+
+    return true;
+  },
+
+  async resetPassword(email: string, code: string, newPassword: string) {
+    const [customer, cashier, admin] = await Promise.all([
+      customerRepository.findByEmail(email),
+      cashierRepository.findByEmail(email),
+      adminRepository.findByEmail(email)
+    ]);
+
+    const user = customer || cashier || admin;
+
+    if (
+      !user ||
+      !user.verificationCode ||
+      !user.verificationExpiry
+    ) {
+      throw new ApiError(400, 'INVALID_CODE', 'Invalid or expired reset code');
+    }
+
+    const codeMatches = user.verificationCode === code;
+    const notExpired = user.verificationExpiry > new Date();
 
     if (!codeMatches || !notExpired) {
       throw new ApiError(400, 'EXPIRED_CODE', 'Reset code expired or invalid');
@@ -216,9 +271,23 @@ export const authService = {
 
     const passwordHash = await bcrypt.hash(newPassword, 10);
 
-    // Clear the code then update the password
-    await customerRepository.clearVerificationCode(email);
-    await customerRepository.updateProfile(customer.id, {passwordHash} as any);
+    // Clear the code then update the password on the matching repository.
+    if (user === customer) {
+      await customerRepository.clearVerificationCode(email);
+      await customerRepository.updateProfile(user.id, {passwordHash} as any);
+    } else if (user === cashier) {
+      await cashierRepository.updateProfile(user.id, {
+        verificationCode: null,
+        verificationExpiry: null,
+        passwordHash
+      } as any);
+    } else {
+      await adminRepository.updateProfile(user.id, {
+        verificationCode: null,
+        verificationExpiry: null,
+        passwordHash
+      } as any);
+    }
   },
 
   async login(email: string, password: string) {

@@ -19,6 +19,13 @@ export default function AppearancePreview() {
   const settingsRef = useRef(settings);
   const mutationRef = useRef(updateMutation);
 
+  // Keep optimistic `local` state until the refetched settings actually change,
+  // so a freshly saved value doesn't revert to stale cached data in between.
+  useEffect(() => {
+    setLocal(null);
+    setLocalStyles({});
+  }, [settings]);
+
   useEffect(() => {
     settingsRef.current = settings;
   }, [settings]);
@@ -35,7 +42,7 @@ export default function AppearancePreview() {
       setLocal(prev => ({...(prev ?? settings!), ...patch}));
       try {
         await updateMutation.mutateAsync(patch);
-        setLocal(null);
+        // Keep optimistic `local` until refetched settings arrive.
         toast.success('Saved', {id: toastId});
       } catch (err: unknown) {
         console.error('Save failed:', err);
@@ -184,7 +191,8 @@ export default function AppearancePreview() {
         await updateMutation.mutateAsync({
           sectionStyles: newSectionStyles
         });
-        setLocal(null);
+        // Keep the optimistic `local` value; it is cleared by the useEffect
+        // above once the refetched settings arrive, preventing a revert.
         setLocalStyles(prev => {
           const next = {...prev};
           delete next[sectionId];

@@ -102,6 +102,9 @@ export type SectionId = 'hero' | 'highlights' | 'promo' | 'about' | 'reviews' | 
 export type SectionStyles = Record<SectionId, SectionStyle>;
 
 export interface SiteSetting {
+  // Public-facing brand identity (sourced from the admin profile).
+  brandName?: string;
+  brandLogo?: string;
   hero: HeroSection;
   highlights: HighlightsSection;
   promo: PromoSection;

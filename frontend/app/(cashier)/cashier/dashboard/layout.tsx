@@ -16,6 +16,7 @@ import {
   ShoppingCart
 } from 'lucide-react';
 import {Toaster} from 'sonner';
+import {useBrand} from '@/lib/hooks/useBrand';
 
 const PRIMARY_TABS = [
   {
@@ -68,6 +69,7 @@ export default function DashboardLayout({
   counter
 }: DashboardLayoutProps) {
   const searchParams = useSearchParams();
+  const brand = useBrand();
   const tab = searchParams.get('tab');
   const router = useRouter();
   const logoutMutation = useLogout();
@@ -147,7 +149,7 @@ export default function DashboardLayout({
             }`}
           >
             <Image
-              src="/assets/logo.png"
+              src={brand.logo}
               alt="DC"
               width={36}
               height={36}
@@ -163,7 +165,7 @@ export default function DashboardLayout({
             }`}
           >
             <Image
-              src="/assets/logo.png"
+              src={brand.logo}
               alt="Cashier Dashboard"
               width={130}
               height={130}

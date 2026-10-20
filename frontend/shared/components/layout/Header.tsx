@@ -4,6 +4,7 @@ import Image from 'next/image';
 import {Button} from '@/components/ui/button';
 import {ShoppingCart, Menu, X} from 'lucide-react';
 import {useEffect, useState} from 'react';
+import {useBrand} from '@/lib/hooks/useBrand';
 import {useRouter} from 'next/navigation';
 import {usePathname} from 'next/navigation';
 import Link from 'next/link';
@@ -19,6 +20,7 @@ import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
 
 export default function Header() {
+  const brand = useBrand();
   const [activeSection, setActiveSection] = useState('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [orderModalOpen, setOrderModalOpen] = useState(false);
@@ -129,16 +131,20 @@ export default function Header() {
           className="flex items-center gap-3 cursor-default"
         >
           <Image
-            src="/assets/logo.png"
+            src={brand.logo}
             alt="DonClaudio's Logo"
             width={48}
             height={48}
           />
           <div>
-            <h1 className="font-bold text-xl text-[#3c5e45]">
-              DonClaudio&apos;s
+            <h1 className="font-bold text-xl text-[#3c5e45] leading-tight">
+              {brand.name.split(' ')[0]}
             </h1>
-            <p className="text-xs text-[#a4bbab]">Lechon House</p>
+            {brand.name.split(' ').length > 1 && (
+              <p className="text-xs" style={{color: '#a4bbab'}}>
+                {brand.name.split(' ').slice(1).join(' ')}
+              </p>
+            )}
           </div>
         </a>
 
@@ -282,13 +288,13 @@ export default function Header() {
             <div className="px-8 pb-8 pt-12 text-center">
               <div className="flex items-center justify-center gap-3">
                 <Image
-                  src="/assets/logo.png"
+                  src={brand.logo}
                   alt="DonClaudio's Logo"
                   width={56}
                   height={56}
                 />
                 <span className="text-2xl font-extrabold text-[#3c5e45]">
-                  DonClaudio&apos;s
+                  {brand.name}
                 </span>
               </div>
 
@@ -296,7 +302,7 @@ export default function Header() {
                 Sign up / Log in
               </h2>
               <p className="mt-2 text-sm text-gray-500">
-                Welcome to DonClaudio&apos;s! Log in or create an account to
+                Welcome to {brand.name}! Log in or create an account to
                 start ordering.
               </p>
 

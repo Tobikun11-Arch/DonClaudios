@@ -10,6 +10,8 @@ export const settingsQueryKey = ['settings'] as const;
 function mergeWithDefaults(raw: Partial<SiteSetting>): SiteSetting {
   const d = DEFAULT_SETTINGS;
   return {
+    brandName: raw.brandName || raw.footer?.brandName || d.footer.brandName,
+    brandLogo: raw.brandLogo || '',
     hero: {
       title: raw.hero?.title || d.hero.title,
       highlightedWord: raw.hero?.highlightedWord || d.hero.highlightedWord,
@@ -100,8 +102,9 @@ export function useSettingsQuery() {
         return DEFAULT_SETTINGS;
       }
     },
-    refetchOnWindowFocus: false,
-    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
+    staleTime: 0,
     placeholderData: DEFAULT_SETTINGS
   });
 }

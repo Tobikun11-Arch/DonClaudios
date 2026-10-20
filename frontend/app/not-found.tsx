@@ -1,12 +1,16 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
+import {useBrand} from '@/lib/hooks/useBrand';
 
 export default function NotFound() {
+  const brand = useBrand();
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center">
       <Image
-        src="/assets/logo.png"
-        alt="App Logo"
+        src={brand.logo}
+        alt={brand.name + ' Logo'}
         width={120}
         height={120}
         className="mb-6"

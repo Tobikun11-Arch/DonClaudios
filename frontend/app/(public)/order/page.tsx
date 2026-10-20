@@ -1,6 +1,7 @@
 'use client';
 
 import {useMemo, useState} from 'react';
+import {useBrand} from '@/lib/hooks/useBrand';
 import Image from 'next/image';
 import {Input} from '@/components/ui/input';
 import {Search, History, SlidersHorizontal} from 'lucide-react';
@@ -38,6 +39,7 @@ import {
 } from '@/lib/menu/featured';
 
 function ProductsSection() {
+  const brand = useBrand();
   const {data, isLoading, isError} = useProductsQuery();
   const promosQuery = usePublicPromosQuery();
   const publicCategoriesQuery = usePublicCategoriesQuery();
@@ -373,8 +375,7 @@ function ProductsSection() {
             </p>
 
             <h1 className="text-white text-3xl font-bold">
-              DonClaudio&apos;s
-              <span className="block text-[#fbd897]">Lechon House</span>
+              {brand.name}
             </h1>
 
             <p className="text-white/60 text-sm mt-2">
@@ -384,7 +385,7 @@ function ProductsSection() {
 
           <div className="hidden sm:block w-40 h-40">
             <Image
-              src="/assets/logo.png"
+              src={brand.logo}
               alt="logo"
               width={160}
               height={160}
@@ -395,7 +396,7 @@ function ProductsSection() {
       </div>
 
       <div className="flex justify-between">
-        <h1 className="text-2xl font-bold mb-2">DonClaudios Menu</h1>
+        <h1 className="text-2xl font-bold mb-2">{brand.name} Menu</h1>
         <Link
           href="/order-history"
           aria-label="Order history"
@@ -518,6 +519,7 @@ function ProductsSection() {
 }
 
 export default function OrderPage() {
+  const brand = useBrand();
   return (
     <div className="min-h-screen">
       <StoreClosedModal />

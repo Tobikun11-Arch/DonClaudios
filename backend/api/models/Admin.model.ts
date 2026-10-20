@@ -25,7 +25,7 @@ const AdminSchema = new Schema<AdminDocument>(
     ...BaseSchema.obj,
     username: {type: String, unique: true, sparse: true},
     profilePhoto: {type: String},
-    businessName: {type: String},
+    businessName: {type: String, default: "DonClaudio's Lechon House"},
     businessLogo: {type: String},
     storeAddress: {type: String},
     businessContactNumber: {type: String},
