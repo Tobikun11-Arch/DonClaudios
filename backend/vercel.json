@@ -16,5 +16,11 @@
       "src": "/(.*)",
       "dest": "index.ts"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/orders/overdue-check",
+      "schedule": "* * * * *"
+    }
   ]
 }

@@ -138,7 +138,7 @@ export const notificationService = {
 
   async createForAdmin(data: {
     adminId: string;
-    type: 'review_submitted' | 'order_message' | 'low_stock' | 'new_order' | 'support_message';
+    type: 'review_submitted' | 'order_message' | 'low_stock' | 'new_order' | 'support_message' | 'points_adjustment';
     title: string;
     message: string;
     reviewId?: string;

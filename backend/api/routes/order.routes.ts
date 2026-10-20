@@ -19,6 +19,18 @@ import type {Request, Response, NextFunction} from 'express';
 
 const router = Router();
 
+/**
+ * Order endpoint map (keep these distinct):
+ *  - /orders/me          -> account customers (auth). Server cart -> order.
+ *  - /orders/guest       -> guests (no auth). Requires phone OTP. No pre-orders,
+ *                          no rewards. Stock reserved at placement.
+ *  - /orders/all         -> staff queue of ONLINE orders only (excludes in-store).
+ *  - /orders/counter     -> in-store (walk-in) orders, created as completed.
+ *  - /orders/customer/track/:id -> tracking; guest needs ?phoneNumber=.
+ * In-store orders are deliberately excluded from /orders/all so the live queue
+ * is not buried under completed counter sales. Use /orders/counter for those.
+ */
+
 function requireStaff(req: Request, _res: Response, next: NextFunction) {
   if (req.auth?.type === 'admin' || req.auth?.type === 'cashier') {
     return next();
@@ -47,6 +59,10 @@ router.post(
   validate(guestOtpVerifyDto),
   orderController.verifyGuestOtp
 );
+
+// Idempotent overdue check, invoked by the Vercel cron (and safe to call
+// manually). The atomic latch inside notifyOverdueOrder prevents duplicates.
+router.get('/overdue-check', orderController.checkOverdueOrders);
 
 router.get(
   '/customer/track/:id',

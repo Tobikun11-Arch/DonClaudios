@@ -78,7 +78,8 @@ export const orderRepository = {
   updateStatusWithHistory: (
     orderId: string,
     orderStatus: OrderStatus,
-    at: Date
+    at: Date,
+    cancelReason?: string
   ) =>
     OrderModel.updateOne(
       {_id: orderId},
@@ -87,6 +88,9 @@ export const orderRepository = {
           orderStatus,
           ...(orderStatus === 'preparing'
             ? {overdueNotifiedAt: null}
+            : {}),
+          ...(orderStatus === 'cancelled' && cancelReason
+            ? {cancelReason}
             : {})
         },
         $push: {statusHistory: {status: orderStatus, at}}

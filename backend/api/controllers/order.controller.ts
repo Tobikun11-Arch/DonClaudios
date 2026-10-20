@@ -9,6 +9,7 @@ import {stockMovementService} from '../services/stockMovement.service';
 import {notificationService} from '../services/notification.service';
 import {cashierRepository} from '../repositories/cashier.repository';
 import {customerRepository} from '../repositories/customer.repository';
+import {adminRepository} from '../repositories/admin.repository';
 import {sendOrderReceiptEmail} from '../services/receipt.service';
 import {storeStatusService} from '../services/storeStatus.service';
 import {guestOtpService} from '../services/guestOtp.service';
@@ -463,6 +464,10 @@ export const orderController = {
 
       await orderRepository.cancel(String(order._id), reason);
 
+      console.info(
+        `[audit] order ${order._id} cancelled by customer ${req.auth?.userId ?? order.guestInfo?.phoneNumber ?? 'guest'} reason="${reason ?? ''}"`
+      );
+
       const customerName = order.isGuest
         ? [order.guestInfo?.firstName, order.guestInfo?.lastName]
             .filter(Boolean)
@@ -800,35 +805,15 @@ export const orderController = {
       const safeDeliveryFee =
         orderType === 'delivery' && items.length > 0 ? 49 : 0;
 
-      const productIds = items
-        .map((i: any) => i.productId)
-        .filter(isNonEmptyString);
-      const {itemPreps, estimatedPrepMinutes, estimatedReadyAt} =
-        await buildPrepSnapshot(productIds, orderType);
-
-      const order = await orderRepository.create({
-        customerId: null,
-        isGuest: true,
-        guestInfo: {
-          firstName: guestInfo.firstName,
-          lastName: guestInfo.lastName,
-          phoneNumber: guestInfo.phoneNumber,
-          address: isNonEmptyString(guestInfo.address)
-            ? guestInfo.address
-            : undefined
-        },
-        orderType,
-        totalAmount: safeTotalAmount,
-        deliveryFee: safeDeliveryFee,
-        riderNotes: isNonEmptyString(riderNotes) ? riderNotes : undefined,
-        changeFor: normalizeChangeFor(changeFor),
-        statusHistory: [{status: 'pending', at: new Date()}],
-        estimatedPrepMinutes,
-        estimatedReadyAt,
-        isOnline: true
-      });
-
-      const orderItems = items.map((i: any, index: number) => {
+      // Validate and normalise every line once, before touching the database.
+      const normalizedItems = items.map((i: any) => {
+        if (!isNonEmptyString(i.productId)) {
+          throw new ApiError(
+            400,
+            'VALIDATION_ERROR',
+            'items.productId is required'
+          );
+        }
         const quantity = Number(i.quantity ?? i.qty ?? 1);
         if (!isPositiveInteger(quantity)) {
           throw new ApiError(
@@ -837,27 +822,14 @@ export const orderController = {
             'items.quantity must be a whole number greater than zero'
           );
         }
-        const safeQty = quantity;
-        const safePrice = Number(i.price);
-
-        if (!isNonEmptyString(i.productId)) {
-          throw new ApiError(
-            400,
-            'VALIDATION_ERROR',
-            'items.productId is required'
-          );
-        }
-
-        if (!Number.isFinite(safePrice) || safePrice <= 0) {
+        const price = Number(i.price);
+        if (!Number.isFinite(price) || price <= 0) {
           throw new ApiError(400, 'VALIDATION_ERROR', 'items.price is invalid');
         }
-
         return {
-          orderId: order._id,
-          productId: i.productId,
-          quantity: safeQty,
-          price: safePrice,
-          prepTimeMinutes: itemPreps[index] ?? null,
+          productId: i.productId as string,
+          quantity,
+          price,
           specialRequest: isNonEmptyString(i.specialRequest)
             ? i.specialRequest
             : isNonEmptyString(i.instructions)
@@ -866,7 +838,71 @@ export const orderController = {
         };
       });
 
-      await orderItemRepository.createMany(orderItems);
+      const productIds = normalizedItems.map(i => i.productId);
+      const {itemPreps, estimatedPrepMinutes, estimatedReadyAt} =
+        await buildPrepSnapshot(productIds, orderType);
+
+      // Reserve stock at placement (like account orders) so two concurrent
+      // guest checkouts cannot oversell. Guests never order pre-orders, so the
+      // allowance path is not exercised here; reserveOrderStock still validates
+      // live batch / product stock atomically.
+      let order: any;
+      const session = await mongoose.startSession();
+      try {
+        await session.withTransaction(async () => {
+          const stamps = await reserveOrderStock({
+            items: normalizedItems.map(i => ({
+              productId: i.productId,
+              quantity: i.quantity
+            })),
+            session
+          });
+
+          order = await orderRepository.create(
+            {
+              customerId: null,
+              isGuest: true,
+              guestInfo: {
+                firstName: guestInfo.firstName,
+                lastName: guestInfo.lastName,
+                phoneNumber: guestInfo.phoneNumber,
+                address: isNonEmptyString(guestInfo.address)
+                  ? guestInfo.address
+                  : undefined
+              },
+              orderType,
+              totalAmount: safeTotalAmount,
+              deliveryFee: safeDeliveryFee,
+              riderNotes: isNonEmptyString(riderNotes)
+                ? riderNotes
+                : undefined,
+              changeFor: normalizeChangeFor(changeFor),
+              statusHistory: [{status: 'pending', at: new Date()}],
+              estimatedPrepMinutes,
+              estimatedReadyAt,
+              isOnline: true,
+              // Stock is reserved at placement; the cashier confirm only
+              // advances the status.
+              stockDeducted: true
+            },
+            session
+          );
+
+          const orderItems = normalizedItems.map((item, index) => ({
+            orderId: order._id,
+            productId: item.productId as any,
+            quantity: item.quantity,
+            price: item.price,
+            prepTimeMinutes: itemPreps[index] ?? null,
+            preOrderBatchStart: stamps.get(item.productId) ?? null,
+            specialRequest: item.specialRequest
+          }));
+
+          await orderItemRepository.createMany(orderItems, session);
+        });
+      } finally {
+        await session.endSession();
+      }
 
       const pm = typeof paymentMethod === 'string' ? paymentMethod : 'cash';
       const allowedPm = ['cash', 'card', 'gcash', 'other'] as const;
@@ -885,6 +921,28 @@ export const orderController = {
       notifyCashiersOfNewOrder(String(order._id), safeTotalAmount);
 
       res.status(201).json({order, transaction});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async checkOverdueOrders(_req: Request, res: Response, next: NextFunction) {
+    try {
+      const now = new Date();
+      const preparing = await orderRepository.listPaginated(
+        {orderStatus: 'preparing', orderSource: {$ne: 'in-store'}},
+        1,
+        0
+      );
+      for (const order of preparing) {
+        const timing = evaluateOrderTiming(order as OrderDocument, now);
+        if (timing.isOverdue) {
+          notifyOverdueOrder(order as OrderDocument, timing).catch(error =>
+            console.error('Failed to process overdue order', error)
+          );
+        }
+      }
+      res.status(200).json({checked: preparing.length});
     } catch (error) {
       next(error);
     }
@@ -1231,6 +1289,29 @@ export const orderController = {
                   ).slice(-6)
                   .toUpperCase()}: customer balance is lower than the awarded amount.`
                 );
+                try {
+                  const admins = await adminRepository.listAll();
+                  for (const admin of admins ?? []) {
+                    await notificationService.createForAdmin({
+                      adminId: String(admin._id),
+                      type: 'points_adjustment',
+                      title: 'Reward points could not be clawed back',
+                      message: `Order #${String(order._id)
+                        .slice(-6)
+                        .toUpperCase()} was cancelled, but ${awarded.toLocaleString(
+                        'en-PH',
+                        {maximumFractionDigits: 0}
+                      )} rewards points could not be removed from the customer's balance (already spent). Please settle manually.`,
+                      orderId: String(order._id),
+                      link: '/owner/dashboard?tab=orders'
+                    });
+                  }
+                } catch (notifyError) {
+                  console.error(
+                    'Failed to notify admins about points clawback failure',
+                    notifyError
+                  );
+                }
               } else {
                 await notificationService.createForCustomer({
                   customerId: String(order.customerId),
@@ -1253,11 +1334,25 @@ export const orderController = {
         }
       }
 
+      const cancelReason =
+        status === 'cancelled' &&
+        typeof req.body?.reason === 'string' &&
+        req.body.reason.trim().length > 0
+          ? req.body.reason.trim()
+          : undefined;
+
       await orderRepository.updateStatusWithHistory(
         req.params.id,
         status,
-        new Date()
+        new Date(),
+        cancelReason
       );
+
+      if (status === 'cancelled') {
+        console.info(
+          `[audit] order ${req.params.id} cancelled by ${req.auth?.userId ?? 'unknown'} (${req.auth?.type ?? 'unknown'}) reason="${cancelReason ?? ''}"`
+        );
+      }
 
       const updated = await orderRepository.findById(req.params.id);
 

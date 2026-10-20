@@ -193,9 +193,18 @@ export default function OrderTracking({
               Order not found
             </p>
             <p className="mt-1 text-sm text-gray-500">
-              We couldn&apos;t find this order. Please check the link or the phone
-              number you entered.
+              {variant === 'customer'
+                ? 'We could not load this order. Make sure you are signed in with the account that placed it.'
+                : 'We couldn\u2019t find this order. Please check the link or the phone number you entered.'}
             </p>
+            {variant === 'customer' ? (
+              <a
+                href="/sign-in"
+                className="mt-4 inline-block rounded-full bg-[#3c5e45] px-5 py-2 text-sm font-semibold text-white"
+              >
+                Sign in
+              </a>
+            ) : null}
           </div>
         ) : (
           <>
