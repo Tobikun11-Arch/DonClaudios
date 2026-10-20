@@ -3,7 +3,7 @@
 import {useState} from 'react';
 import Image from 'next/image';
 import {toast} from 'sonner';
-import {Trash2} from 'lucide-react';
+import {Plus, Trash2} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {
@@ -12,14 +12,52 @@ import {
 } from '@/lib/hooks/useSettings';
 import {uploadPaymentImage} from '@/lib/api/uploadApi';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
-import type {PaymentSection, SiteSetting} from '@/lib/types/settings';
+import type {PaymentChannel, PaymentSection, SiteSetting} from '@/lib/types/settings';
 
 const EMPTY_PAYMENT: PaymentSection = {
   image: '',
   accountName: '',
   accountNumber: '',
-  instructions: ''
+  instructions: '',
+  channels: [],
+  activeChannelId: ''
 };
+
+function createId() {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+  return `ch_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function getDefaultChannels(): PaymentChannel[] {
+  return [
+    {
+      id: createId(),
+      name: 'GCash',
+      image: '',
+      accountName: '',
+      accountNumber: '',
+      instructions: ''
+    },
+    {
+      id: createId(),
+      name: 'Maya',
+      image: '',
+      accountName: '',
+      accountNumber: '',
+      instructions: ''
+    },
+    {
+      id: createId(),
+      name: 'Bank',
+      image: '',
+      accountName: '',
+      accountNumber: '',
+      instructions: ''
+    }
+  ];
+}
 
 /**
  * Owner-facing editor for the MANUAL PAYMENT instructions. Everything saved
@@ -58,15 +96,71 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
   const payment = settings.payment ?? EMPTY_PAYMENT;
   const updateMutation = useUpdateSettingsMutation();
 
-  const [accountName, setAccountName] = useState(payment.accountName);
-  const [accountNumber, setAccountNumber] = useState(payment.accountNumber);
-  const [instructions, setInstructions] = useState(payment.instructions);
-  const [existingImage, setExistingImage] = useState(payment.image);
+  const initialChannels =
+    payment.channels && payment.channels.length > 0
+      ? payment.channels.map(ch => ({
+          id: ch.id || createId(),
+          name: ch.name || '',
+          image: ch.image || '',
+          accountName: ch.accountName || '',
+          accountNumber: ch.accountNumber || '',
+          instructions: ch.instructions || ''
+        }))
+      : getDefaultChannels();
+
+  const [channels, setChannels] = useState<PaymentChannel[]>(initialChannels);
+  const [activeChannelId, setActiveChannelId] = useState(
+    payment.activeChannelId || initialChannels[0]?.id || ''
+  );
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [removeImage, setRemoveImage] = useState(false);
 
+  const activeChannel =
+    channels.find(ch => ch.id === activeChannelId) || channels[0];
+
+  const updateChannel = (id: string, patch: Partial<PaymentChannel>) => {
+    setChannels(prev =>
+      prev.map(ch => (ch.id === id ? {...ch, ...patch} : ch))
+    );
+    setImageFile(null);
+    setImagePreview(null);
+    setRemoveImage(false);
+  };
+
+  const handleAddChannel = () => {
+    const newChannel: PaymentChannel = {
+      id: createId(),
+      name: `Channel ${channels.length + 1}`,
+      image: '',
+      accountName: '',
+      accountNumber: '',
+      instructions: ''
+    };
+    setChannels(prev => [...prev, newChannel]);
+    setActiveChannelId(newChannel.id);
+    setImageFile(null);
+    setImagePreview(null);
+    setRemoveImage(false);
+  };
+
+  const handleRemoveChannel = (id: string) => {
+    if (channels.length <= 1) {
+      toast.error('At least one payment channel is required.');
+      return;
+    }
+    const next = channels.filter(ch => ch.id !== id);
+    setChannels(next);
+    if (activeChannelId === id) {
+      setActiveChannelId(next[0]?.id || '');
+    }
+    setImageFile(null);
+    setImagePreview(null);
+    setRemoveImage(false);
+  };
+
   const handlePickImage = (file: File | null) => {
+    if (!activeChannel) return;
     if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImageFile(file);
     setRemoveImage(false);
@@ -74,17 +168,20 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
   };
 
   const handleRemoveImage = () => {
+    if (!activeChannel) return;
     if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImageFile(null);
     setImagePreview(null);
-    setExistingImage('');
+    updateChannel(activeChannel.id, {image: ''});
     setRemoveImage(true);
   };
 
   const handleSave = async () => {
-    let imageUrl: string | null | undefined;
+    let updatedChannels = [...channels];
+    let uploadedUrl: string | undefined;
+
     try {
-      if (imageFile) {
+      if (activeChannel && imageFile) {
         if (!imageFile.type.startsWith('image/')) {
           toast.error('The payment image must be an image file.');
           return;
@@ -94,9 +191,11 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
           return;
         }
         const res = await uploadPaymentImage(imageFile);
-        imageUrl = res.imageUrl;
-      } else if (removeImage) {
-        imageUrl = null;
+        uploadedUrl = res.imageUrl;
+        updatedChannels = updatedChannels.map(ch =>
+          ch.id === activeChannelId ? {...ch, image: uploadedUrl || ''} : ch
+        );
+        setChannels(updatedChannels);
       }
     } catch (error) {
       toast.error(
@@ -105,15 +204,20 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
       return;
     }
 
+    const paymentPayload = {
+      ...payment,
+      image: updatedChannels[0]?.image || '',
+      accountName: updatedChannels[0]?.accountName || '',
+      accountNumber: updatedChannels[0]?.accountNumber || '',
+      instructions: updatedChannels[0]?.instructions || '',
+      channels: updatedChannels,
+      activeChannelId
+    };
+
     updateMutation.mutate(
       {
         ...settings,
-        payment: {
-          image: imageUrl !== undefined ? (imageUrl ?? '') : existingImage,
-          accountName: accountName.trim(),
-          accountNumber: accountNumber.trim(),
-          instructions
-        }
+        payment: paymentPayload
       },
       {
         onSuccess: () => {
@@ -134,26 +238,73 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
   };
 
   const isSaving = updateMutation.isPending;
-  const shownImage = imagePreview ?? (existingImage || null);
+  const shownImage =
+    imagePreview ?? (activeChannel?.image ? activeChannel.image : null);
 
   return (
     <div className="space-y-6">
       <div className="rounded-2xl bg-white shadow p-6">
         <h2 className="text-lg font-bold text-gray-900">Payment instructions</h2>
         <p className="mt-1 text-sm text-gray-500">
-          Shown to customers on their order page after your cashier confirms
-          the order (never before). Customers upload their payment proof here
-          too, so make the details easy to follow.
+          Add multiple payment channels (e.g., GCash, Maya, Bank). Select a
+          channel above to edit its details and image. Customers will see the
+          selected channel&apos;s details when paying.
         </p>
+
+        <div className="mt-6">
+          <p className="text-sm font-bold text-gray-900 mb-2">
+            Payment channels
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={activeChannelId}
+              onChange={e => {
+                setActiveChannelId(e.target.value);
+                setImageFile(null);
+                setImagePreview(null);
+                setRemoveImage(false);
+              }}
+              className="h-10 rounded-lg border border-gray-200 px-3 text-sm"
+            >
+              {channels.map(ch => (
+                <option key={ch.id} value={ch.id}>
+                  {ch.name || 'Unnamed channel'}
+                </option>
+              ))}
+            </select>
+            <Input
+              value={activeChannel?.name || ''}
+              onChange={e =>
+                activeChannel && updateChannel(activeChannel.id, {name: e.target.value})
+              }
+              className="max-w-xs h-10"
+              placeholder="Channel name"
+            />
+            <Button type="button" variant="outline" size="sm" onClick={handleAddChannel}>
+              <Plus size={14} className="mr-1" />
+              Add channel
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-red-600"
+              onClick={() => activeChannel && handleRemoveChannel(activeChannel.id)}
+            >
+              <Trash2 size={14} className="mr-1" />
+              Remove
+            </Button>
+          </div>
+        </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <div className="space-y-4">
             <div>
               <p className="text-sm font-bold text-gray-900">Account picture</p>
               <p className="text-xs text-gray-500">
-                A QR / screenshot of your GCash, Maya or bank account.
+                A QR / screenshot for this payment channel.
               </p>
-              <label className="mt-2 flex h-36 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 hover:bg-gray-100">
+              <label className="mt-2 flex h-40 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 hover:bg-gray-100">
                 <input
                   type="file"
                   accept="image/*"
@@ -165,7 +316,7 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
                     src={shownImage}
                     alt="Payment account"
                     width={640}
-                    height={288}
+                    height={320}
                     className="h-full w-full object-contain"
                     unoptimized
                   />
@@ -192,8 +343,11 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
             <div>
               <p className="text-sm font-bold text-gray-900">Account name</p>
               <Input
-                value={accountName}
-                onChange={e => setAccountName(e.target.value)}
+                value={activeChannel?.accountName || ''}
+                onChange={e =>
+                  activeChannel &&
+                  updateChannel(activeChannel.id, {accountName: e.target.value})
+                }
                 placeholder="e.g. DonClaudio's Lechon House"
                 className="mt-2"
               />
@@ -201,8 +355,11 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
             <div>
               <p className="text-sm font-bold text-gray-900">Account number</p>
               <Input
-                value={accountNumber}
-                onChange={e => setAccountNumber(e.target.value)}
+                value={activeChannel?.accountNumber || ''}
+                onChange={e =>
+                  activeChannel &&
+                  updateChannel(activeChannel.id, {accountNumber: e.target.value})
+                }
                 placeholder="e.g. 0917 123 4567 / BPI 1234-5678-90"
                 className="mt-2"
               />
@@ -212,10 +369,13 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
                 Payment instructions
               </p>
               <textarea
-                value={instructions}
-                onChange={e => setInstructions(e.target.value)}
+                value={activeChannel?.instructions || ''}
+                onChange={e =>
+                  activeChannel &&
+                  updateChannel(activeChannel.id, {instructions: e.target.value})
+                }
                 rows={5}
-                placeholder="e.g. Send your payment through GCash or bank transfer, take a screenshot of the receipt, then upload it below the instructions on your order page."
+                placeholder="e.g. Send your payment through this channel, take a screenshot of the receipt, then upload it below."
                 className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#3c5e45] focus:ring-2 focus:ring-[#3c5e45]/20"
               />
             </div>

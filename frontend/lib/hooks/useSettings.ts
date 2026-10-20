@@ -86,7 +86,9 @@ function mergeWithDefaults(raw: Partial<SiteSetting>): SiteSetting {
       image: raw.payment?.image ?? '',
       accountName: raw.payment?.accountName ?? '',
       accountNumber: raw.payment?.accountNumber ?? '',
-      instructions: raw.payment?.instructions ?? ''
+      instructions: raw.payment?.instructions ?? '',
+      channels: Array.isArray(raw.payment?.channels) ? raw.payment.channels : [],
+      activeChannelId: raw.payment?.activeChannelId ?? ''
     }
   };
 }

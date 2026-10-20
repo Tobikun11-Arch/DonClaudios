@@ -90,11 +90,22 @@ export interface SectionStyle {
 }
 
 /** MANUAL PAYMENT flow: instructions shown after the cashier confirms. */
+export interface PaymentChannel {
+  id: string;
+  name: string;
+  image: string;
+  accountName: string;
+  accountNumber: string;
+  instructions: string;
+}
+
 export interface PaymentSection {
   image: string;
   accountName: string;
   accountNumber: string;
   instructions: string;
+  channels?: PaymentChannel[];
+  activeChannelId?: string;
 }
 
 export type SectionId = 'hero' | 'highlights' | 'promo' | 'about' | 'reviews' | 'contact';

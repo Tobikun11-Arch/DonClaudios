@@ -77,6 +77,15 @@ export interface SiteSettingDocument extends mongoose.Document {
     accountName: string;
     accountNumber: string;
     instructions: string;
+    channels?: Array<{
+      id: string;
+      name: string;
+      image: string;
+      accountName: string;
+      accountNumber: string;
+      instructions: string;
+    }>;
+    activeChannelId?: string;
   };
 }
 
@@ -175,7 +184,19 @@ const SiteSettingSchema = new Schema<SiteSettingDocument>(
       image: {type: String, default: ''},
       accountName: {type: String, default: ''},
       accountNumber: {type: String, default: ''},
-      instructions: {type: String, default: ''}
+      instructions: {type: String, default: ''},
+      channels: [
+        {
+          id: {type: String, default: ''},
+          name: {type: String, default: ''},
+          image: {type: String, default: ''},
+          accountName: {type: String, default: ''},
+          accountNumber: {type: String, default: ''},
+          instructions: {type: String, default: ''},
+          _id: false
+        }
+      ],
+      activeChannelId: {type: String, default: ''}
     }
   },
   {timestamps: true}

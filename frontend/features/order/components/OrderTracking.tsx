@@ -632,6 +632,23 @@ function ManualPaymentCardBody({
 }) {
   const settingsQuery = useSettingsQuery();
   const paymentSettings = settingsQuery.data?.payment;
+  const channels = (paymentSettings?.channels || []).filter(ch => ch && ch.id);
+  const [selectedChannelId, setSelectedChannelId] = useState(
+    paymentSettings?.activeChannelId || channels[0]?.id || ''
+  );
+  const selectedChannel =
+    channels.find(ch => ch.id === selectedChannelId) ||
+    channels[0] ||
+    (paymentSettings
+      ? {
+          id: 'legacy',
+          name: 'Payment',
+          image: paymentSettings.image || '',
+          accountName: paymentSettings.accountName || '',
+          accountNumber: paymentSettings.accountNumber || '',
+          instructions: paymentSettings.instructions || ''
+        }
+      : null);
   const submitMutation = useSubmitPaymentMutation(order._id, phone);
 
   const [formOpen, setFormOpen] = useState(
@@ -739,35 +756,54 @@ function ManualPaymentCardBody({
             </p>
           ) : null}
 
-          {paymentSettings?.image ? (
-            <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
+          {channels.length > 1 ? (
+            <div className="mt-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                Payment channel
+              </p>
+              <select
+                value={selectedChannelId}
+                onChange={e => setSelectedChannelId(e.target.value)}
+                className="mt-2 w-full h-11 rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 outline-none focus:border-[#3c5e45] focus:ring-2 focus:ring-[#3c5e45]/20"
+              >
+                {channels.map(ch => (
+                  <option key={ch.id} value={ch.id}>
+                    {ch.name || 'Payment channel'}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+
+          {selectedChannel?.image ? (
+            <div className="mt-4 flex justify-center overflow-hidden rounded-xl border border-gray-200">
               <Image
-                src={paymentSettings.image}
-                alt="Payment account details"
-                width={800}
-                height={800}
-                className="h-auto w-full object-contain"
+                src={selectedChannel.image}
+                alt={selectedChannel.name || 'Payment account details'}
+                width={320}
+                height={320}
+                className="h-48 w-auto max-w-full object-contain"
                 unoptimized
               />
             </div>
           ) : null}
 
           <div className="mt-4 rounded-xl bg-gray-50 p-4 text-sm text-gray-700">
-            {paymentSettings?.accountName ? (
-              <p className="font-semibold">{paymentSettings.accountName}</p>
+            {selectedChannel?.accountName ? (
+              <p className="font-semibold">{selectedChannel.accountName}</p>
             ) : null}
-            {paymentSettings?.accountNumber ? (
+            {selectedChannel?.accountNumber ? (
               <p className="mt-1 font-mono text-base font-bold text-gray-900">
-                {paymentSettings.accountNumber}
+                {selectedChannel.accountNumber}
               </p>
             ) : null}
-            {paymentSettings?.instructions ? (
-              <p className="mt-2 whitespace-pre-line">{paymentSettings.instructions}</p>
+            {selectedChannel?.instructions ? (
+              <p className="mt-2 whitespace-pre-line">{selectedChannel.instructions}</p>
             ) : null}
-            {!paymentSettings?.image &&
-            !paymentSettings?.accountName &&
-            !paymentSettings?.accountNumber &&
-            !paymentSettings?.instructions ? (
+            {!selectedChannel?.image &&
+            !selectedChannel?.accountName &&
+            !selectedChannel?.accountNumber &&
+            !selectedChannel?.instructions ? (
               <p className="italic">
                 Send your payment to the store account, then upload the
                 screenshot below. If you need the details, please contact us.
@@ -833,14 +869,11 @@ function ManualPaymentCardBody({
             </button>
           </div>
 
-          <div className="mt-4">
-            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
-              Payment channel
-            </p>
+          <div className="mt-4 hidden">
             <select
               value={method}
               onChange={e => setMethod(e.target.value as OnlinePaymentMethod)}
-              className="mt-2 w-full h-11 rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 outline-none focus:border-[#3c5e45] focus:ring-2 focus:ring-[#3c5e45]/20"
+              className="hidden"
             >
               {PAYMENT_METHOD_OPTIONS.map(([value, label]) => (
                 <option key={value} value={value}>
