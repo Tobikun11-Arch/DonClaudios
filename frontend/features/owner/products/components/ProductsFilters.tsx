@@ -1,5 +1,5 @@
 import {Input} from '@/components/ui/input';
-import {FilterPills} from '@/shared/components/FilterPills';
+import {FilterSelect} from '@/shared/components/FilterPills';
 import {Search} from 'lucide-react';
 
 interface Props {
@@ -30,11 +30,15 @@ export function ProductsFilters({
           className="pl-9"
         />
       </div>
-      <FilterPills
-        items={categories.map(cat => ({key: cat, label: `${cat} (${productCount(cat)})`}))}
+      <FilterSelect
         value={activeCategory}
         onChange={onCategoryChange}
+        options={categories.map(cat => ({
+          value: cat,
+          label: `${cat} (${productCount(cat)})`
+        }))}
         ariaLabel="Filter by category"
+        className="w-full lg:w-56"
       />
     </div>
   );
