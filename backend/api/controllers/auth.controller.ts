@@ -287,6 +287,30 @@ export const authController = {
     }
   },
 
+  async forgotPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      await authService.forgotPassword(req.body.email);
+      res.status(200).json({
+        message: 'If that email exists, a reset code has been sent'
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async resetPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      await authService.resetPassword(
+        req.body.email,
+        req.body.code,
+        req.body.newPassword
+      );
+      res.status(200).json({message: 'Password reset'});
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async login(req: Request, res: Response, next: NextFunction) {
     try {
       const {accessToken, refreshToken, user, userType} =
