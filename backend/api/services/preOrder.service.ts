@@ -200,7 +200,7 @@ export async function attachPreOrderAllowance<T extends PreOrderProductLike>(
 export async function reserveOrderStock(input: {
   items: Array<{productId: string; quantity: number}>;
   customerId?: string;
-  session: ClientSession;
+  session?: ClientSession;
 }): Promise<Map<string, string | null>> {
   const {items, customerId, session} = input;
   const stamps = new Map<string, string | null>();
@@ -221,12 +221,12 @@ export async function reserveOrderStock(input: {
   }
 
   const productIds = [...quantityByProduct.keys()];
-  const products = await productRepository.findManyByIds(productIds, session);
+  const products = await productRepository.findManyByIds(productIds, session as any);
   const byId = new Map(products.map(product => [String(product._id), product]));
   const orderedToday = await orderedTodayByProduct(
     customerId,
     products as PreOrderProductLike[],
-    session
+    session as any
   );
   const now = new Date();
 
@@ -245,7 +245,7 @@ export async function reserveOrderStock(input: {
       const updated = await productRepository.decrementStock(
         productId,
         quantity,
-        session
+        session as any
       );
       if (!updated) {
         throw new ApiError(
@@ -280,7 +280,7 @@ export async function reserveOrderStock(input: {
       const updated = await productRepository.decrementStock(
         productId,
         quantity,
-        session
+        session as any
       );
       if (!updated) {
         throw new ApiError(
@@ -335,7 +335,7 @@ export async function reserveOrderStock(input: {
       live.startTime,
       quantity,
       live.stock - quantity,
-      session
+      session as any
     );
     if (!updated) {
       throw new ApiError(

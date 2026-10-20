@@ -974,47 +974,92 @@ export const orderController = {
       // checkouts write the same product document, one retries, so the
       // allowance and the stock can never be exceeded.
       let order: any;
-      const session = await mongoose.startSession();
       try {
-        await session.withTransaction(async () => {
+        const session = await mongoose.startSession();
+        try {
+          await session.withTransaction(async () => {
+            const stamps = await reserveOrderStock({
+              items: normalizedItems.map(i => ({
+                productId: i.productId,
+                quantity: i.quantity
+              })),
+              customerId: req.auth!.userId as string,
+              session
+            });
+
+            order = await orderRepository.create(
+              {
+                customerId: req.auth!.userId as any,
+                isGuest: false,
+                guestInfo: {
+                  firstName: offeredName ?? customerProfile?.firstName ?? '',
+                  lastName: offeredLastName ?? customerProfile?.lastName ?? '',
+                  phoneNumber:
+                    offeredPhone ?? customerProfile?.phoneNumber ?? '',
+                  address:
+                    offeredAddress ?? customerProfile?.address ?? undefined
+                },
+                orderType,
+                totalAmount: safeTotalAmount,
+                deliveryFee: safeDeliveryFee,
+                riderNotes: isNonEmptyString(riderNotes)
+                  ? riderNotes
+                  : undefined,
+                changeFor: normalizeChangeFor(changeFor),
+                statusHistory: [{status: 'pending', at: new Date()}],
+                estimatedPrepMinutes,
+                estimatedReadyAt,
+                isOnline: true,
+                stockDeducted: true
+              },
+              session
+            );
+
+            const orderItems = normalizedItems.map((item, index) => ({
+              orderId: order._id,
+              productId: item.productId as any,
+              quantity: item.quantity,
+              price: item.price,
+              prepTimeMinutes: itemPreps[index] ?? null,
+              preOrderBatchStart: stamps.get(item.productId) ?? null,
+              specialRequest: item.specialRequest
+            }));
+
+            await orderItemRepository.createMany(orderItems, session);
+          });
+        } finally {
+          await session.endSession();
+        }
+      } catch (e: any) {
+        if (e?.code === 20 || e?.codeName === 'IllegalOperation') {
           const stamps = await reserveOrderStock({
             items: normalizedItems.map(i => ({
               productId: i.productId,
               quantity: i.quantity
             })),
-            customerId: req.auth!.userId as string,
-            session
+            customerId: req.auth!.userId as string
           });
 
-          order = await orderRepository.create(
-            {
-              customerId: req.auth!.userId as any,
-              isGuest: false,
-              guestInfo: {
-                firstName: offeredName ?? customerProfile?.firstName ?? '',
-                lastName: offeredLastName ?? customerProfile?.lastName ?? '',
-                phoneNumber:
-                  offeredPhone ?? customerProfile?.phoneNumber ?? '',
-                address:
-                  offeredAddress ?? customerProfile?.address ?? undefined
-              },
-              orderType,
-              totalAmount: safeTotalAmount,
-              deliveryFee: safeDeliveryFee,
-              riderNotes: isNonEmptyString(riderNotes)
-                ? riderNotes
-                : undefined,
-              changeFor: normalizeChangeFor(changeFor),
-              statusHistory: [{status: 'pending', at: new Date()}],
-              estimatedPrepMinutes,
-              estimatedReadyAt,
-              isOnline: true,
-              // Stock is reserved at placement; the cashier confirm only
-              // advances the status.
-              stockDeducted: true
+          order = await orderRepository.create({
+            customerId: req.auth!.userId as any,
+            isGuest: false,
+            guestInfo: {
+              firstName: offeredName ?? customerProfile?.firstName ?? '',
+              lastName: offeredLastName ?? customerProfile?.lastName ?? '',
+              phoneNumber: offeredPhone ?? customerProfile?.phoneNumber ?? '',
+              address: offeredAddress ?? customerProfile?.address ?? undefined
             },
-            session
-          );
+            orderType,
+            totalAmount: safeTotalAmount,
+            deliveryFee: safeDeliveryFee,
+            riderNotes: isNonEmptyString(riderNotes) ? riderNotes : undefined,
+            changeFor: normalizeChangeFor(changeFor),
+            statusHistory: [{status: 'pending', at: new Date()}],
+            estimatedPrepMinutes,
+            estimatedReadyAt,
+            isOnline: true,
+            stockDeducted: true
+          });
 
           const orderItems = normalizedItems.map((item, index) => ({
             orderId: order._id,
@@ -1022,16 +1067,14 @@ export const orderController = {
             quantity: item.quantity,
             price: item.price,
             prepTimeMinutes: itemPreps[index] ?? null,
-            // Which pre-order batch this was bought in (null for everything
-            // else), so a cancel restores the stock to the right pool.
             preOrderBatchStart: stamps.get(item.productId) ?? null,
             specialRequest: item.specialRequest
           }));
 
-          await orderItemRepository.createMany(orderItems, session);
-        });
-      } finally {
-        await session.endSession();
+          await orderItemRepository.createMany(orderItems);
+        } else {
+          throw e;
+        }
       }
 
       // Manual payment flow: the payment channel is agreed with the cashier on
@@ -1205,46 +1248,92 @@ export const orderController = {
       // allowance path is not exercised here; reserveOrderStock still validates
       // live batch / product stock atomically.
       let order: any;
-      const session = await mongoose.startSession();
       try {
-        await session.withTransaction(async () => {
+        const session = await mongoose.startSession();
+        try {
+          await session.withTransaction(async () => {
+            const stamps = await reserveOrderStock({
+              items: normalizedItems.map(i => ({
+                productId: i.productId,
+                quantity: i.quantity
+              })),
+              session
+            });
+
+            order = await orderRepository.create(
+              {
+                customerId: null,
+                isGuest: true,
+                guestInfo: {
+                  firstName: guestInfo.firstName,
+                  lastName: guestInfo.lastName,
+                  phoneNumber: guestInfo.phoneNumber,
+                  address: isNonEmptyString(guestInfo.address)
+                    ? guestInfo.address
+                    : undefined
+                },
+                orderType,
+                totalAmount: safeTotalAmount,
+                deliveryFee: safeDeliveryFee,
+                riderNotes: isNonEmptyString(riderNotes)
+                  ? riderNotes
+                  : undefined,
+                changeFor: normalizeChangeFor(changeFor),
+                statusHistory: [{status: 'pending', at: new Date()}],
+                estimatedPrepMinutes,
+                estimatedReadyAt,
+                isOnline: true,
+                stockDeducted: true
+              },
+              session
+            );
+
+            const orderItems = normalizedItems.map((item, index) => ({
+              orderId: order._id,
+              productId: item.productId as any,
+              quantity: item.quantity,
+              price: item.price,
+              prepTimeMinutes: itemPreps[index] ?? null,
+              preOrderBatchStart: stamps.get(item.productId) ?? null,
+              specialRequest: item.specialRequest
+            }));
+
+            await orderItemRepository.createMany(orderItems, session);
+          });
+        } finally {
+          await session.endSession();
+        }
+      } catch (e: any) {
+        if (e?.code === 20 || e?.codeName === 'IllegalOperation') {
           const stamps = await reserveOrderStock({
             items: normalizedItems.map(i => ({
               productId: i.productId,
               quantity: i.quantity
-            })),
-            session
+            }))
           });
 
-          order = await orderRepository.create(
-            {
-              customerId: null,
-              isGuest: true,
-              guestInfo: {
-                firstName: guestInfo.firstName,
-                lastName: guestInfo.lastName,
-                phoneNumber: guestInfo.phoneNumber,
-                address: isNonEmptyString(guestInfo.address)
-                  ? guestInfo.address
-                  : undefined
-              },
-              orderType,
-              totalAmount: safeTotalAmount,
-              deliveryFee: safeDeliveryFee,
-              riderNotes: isNonEmptyString(riderNotes)
-                ? riderNotes
-                : undefined,
-              changeFor: normalizeChangeFor(changeFor),
-              statusHistory: [{status: 'pending', at: new Date()}],
-              estimatedPrepMinutes,
-              estimatedReadyAt,
-              isOnline: true,
-              // Stock is reserved at placement; the cashier confirm only
-              // advances the status.
-              stockDeducted: true
+          order = await orderRepository.create({
+            customerId: null,
+            isGuest: true,
+            guestInfo: {
+              firstName: guestInfo.firstName,
+              lastName: guestInfo.lastName,
+              phoneNumber: guestInfo.phoneNumber,
+              address: isNonEmptyString(guestInfo.address)
+                ? guestInfo.address
+                : undefined
             },
-            session
-          );
+            orderType,
+            totalAmount: safeTotalAmount,
+            deliveryFee: safeDeliveryFee,
+            riderNotes: isNonEmptyString(riderNotes) ? riderNotes : undefined,
+            changeFor: normalizeChangeFor(changeFor),
+            statusHistory: [{status: 'pending', at: new Date()}],
+            estimatedPrepMinutes,
+            estimatedReadyAt,
+            isOnline: true,
+            stockDeducted: true
+          });
 
           const orderItems = normalizedItems.map((item, index) => ({
             orderId: order._id,
@@ -1256,10 +1345,10 @@ export const orderController = {
             specialRequest: item.specialRequest
           }));
 
-          await orderItemRepository.createMany(orderItems, session);
-        });
-      } finally {
-        await session.endSession();
+          await orderItemRepository.createMany(orderItems);
+        } else {
+          throw e;
+        }
       }
 
       // Manual payment flow: the payment channel is agreed with the cashier on
