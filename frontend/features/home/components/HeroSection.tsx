@@ -25,7 +25,7 @@ export default function HeroSection({
   return (
     <section
       id="home"
-      className="min-h-screen flex items-center px-4 pt-20 pb-10 relative overflow-hidden"
+      className="min-h-screen flex items-center px-6 sm:px-10 lg:px-16 pt-20 pb-10 relative overflow-hidden"
       style={{
         backgroundColor: sectionStyle?.backgroundColor || c.primary,
         color: sectionStyle?.textColor || '#ffffff',
