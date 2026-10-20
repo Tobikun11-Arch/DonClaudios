@@ -8,7 +8,9 @@ import {
   loginDto,
   refreshDto,
   updateProfileDto,
-  changePasswordDto
+  changePasswordDto,
+  forgotPasswordDto,
+  resetPasswordDto
 } from '../dtos/auth.dto';
 import {
   authLimiter,
@@ -34,6 +36,20 @@ router.post(
 );
 
 router.post('/login', loginLimiter, validate(loginDto), authController.login);
+
+router.post(
+  '/forgot-password',
+  authLimiter,
+  validate(forgotPasswordDto),
+  authController.forgotPassword
+);
+
+router.post(
+  '/reset-password',
+  authLimiter,
+  validate(resetPasswordDto),
+  authController.resetPassword
+);
 
 router.post(
   '/refresh',

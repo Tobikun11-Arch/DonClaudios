@@ -33,6 +33,17 @@ export interface OrderStatusEntry {
   at: Date;
 }
 
+/**
+ * Manual payment flow: the customer claims what they paid (down payment or
+ * full) AFTER the cashier confirms the order, and the cashier verifies it
+ * before the kitchen starts. Nothing here touches the actual money — it
+ * records the agreed arrangement.
+ *   unpaid       -> no claim submitted yet
+ *   down_payment -> customer claims the agreed partial payment (pre-order only)
+ *   paid         -> customer claims the full amount
+ */
+export type PaymentStatus = 'unpaid' | 'down_payment' | 'paid';
+
 export interface OrderDocument extends mongoose.Document {
   customerId?: mongoose.Types.ObjectId | null;
   isGuest: boolean;
@@ -63,6 +74,14 @@ export interface OrderDocument extends mongoose.Document {
    * repeated cancel cannot deduct the same points twice.
    */
   pointsReversed?: boolean;
+  /** Customer's manual-payment claim ('unpaid' | 'down_payment' | 'paid'). */
+  paymentStatus?: PaymentStatus;
+  /** Cashier confirmed the customer's claim. Distinguishes claim from trust. */
+  paymentVerified?: boolean;
+  /** Screenshot the customer uploaded as proof of payment. */
+  paymentProofUrl?: string | null;
+  /** Free-text the customer attached to the submission (negotiated details). */
+  paymentNote?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -138,6 +157,14 @@ const OrderSchema = new Schema<OrderDocument>(
     stockDeducted: {type: Boolean, default: false},
     pointsAwarded: {type: Number, default: null},
     pointsReversed: {type: Boolean, default: false},
+    paymentStatus: {
+      type: String,
+      enum: ['unpaid', 'down_payment', 'paid'],
+      default: 'unpaid'
+    },
+    paymentVerified: {type: Boolean, default: false},
+    paymentProofUrl: {type: String, default: null},
+    paymentNote: {type: String, default: null},
     isOnline: {type: Boolean, default: true}
   },
   {timestamps: true}

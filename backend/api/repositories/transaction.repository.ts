@@ -15,5 +15,9 @@ export const transactionRepository = {
   create: (data: Partial<TransactionDocument>, session?: ClientSession) =>
     session
       ? TransactionModel.create([data], {session}).then(rows => rows[0])
-      : TransactionModel.create(data)
+      : TransactionModel.create(data),
+
+  /** Orders keyed uniquely by orderId (unique index in the model). */
+  updateByOrderId: (orderId: string, data: Partial<TransactionDocument>) =>
+    TransactionModel.findOneAndUpdate({orderId}, data, {new: true}).exec()
 };

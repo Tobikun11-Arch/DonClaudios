@@ -67,6 +67,17 @@ export interface SiteSettingDocument extends mongoose.Document {
     textColor: string;
     fontFamily: string;
   }>;
+  /**
+   * MANUAL PAYMENT flow: instructions shown to the customer AFTER the cashier
+   * confirms the order. The admin edits these in the settings panel; the
+   * account to pay and how to send the money are fully custom.
+   */
+  payment: {
+    image: string;
+    accountName: string;
+    accountNumber: string;
+    instructions: string;
+  };
 }
 
 const StatItemSchema = new Schema<StatItem>(
@@ -159,6 +170,12 @@ const SiteSettingSchema = new Schema<SiteSettingDocument>(
       type: Map,
       of: SectionStyleSchema,
       default: () => ({})
+    },
+    payment: {
+      image: {type: String, default: ''},
+      accountName: {type: String, default: ''},
+      accountNumber: {type: String, default: ''},
+      instructions: {type: String, default: ''}
     }
   },
   {timestamps: true}

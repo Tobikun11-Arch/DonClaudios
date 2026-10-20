@@ -3,7 +3,10 @@
 import {useEffect} from 'react';
 import {
   cancelTrackedOrder,
-  getTrackedOrder
+  getTrackedOrder,
+  submitOrderPayment,
+  verifyOrderPayment,
+  type SubmitPaymentInput
 } from '@/lib/api/orderApi';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {updateGuestOrderHistoryEntry} from '@/lib/orders/orderHistoryStorage';
@@ -73,6 +76,40 @@ export function useCancelTrackedOrderMutation(
       });
       await queryClient.invalidateQueries({queryKey: myOrdersQueryKey});
       await queryClient.invalidateQueries({queryKey: allOrdersQueryKey});
+      await queryClient.invalidateQueries({queryKey: followUpOrdersKey});
+    }
+  });
+}
+
+export function useSubmitPaymentMutation(
+  orderId: string,
+  phoneNumber?: string
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SubmitPaymentInput) =>
+      submitOrderPayment(orderId, input),
+    onSuccess: async data => {
+      const updated = data?.order;
+      if (updated) {
+        updateGuestOrderHistoryEntry(updated);
+      }
+      await queryClient.invalidateQueries({
+        queryKey: trackOrderKey(orderId, phoneNumber)
+      });
+      await queryClient.invalidateQueries({queryKey: myOrdersQueryKey});
+      await queryClient.invalidateQueries({queryKey: allOrdersQueryKey});
+    }
+  });
+}
+
+export function useVerifyPaymentMutation(orderId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (verified: boolean) => verifyOrderPayment(orderId, verified),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({queryKey: allOrdersQueryKey});
+      await queryClient.invalidateQueries({queryKey: myOrdersQueryKey});
       await queryClient.invalidateQueries({queryKey: followUpOrdersKey});
     }
   });

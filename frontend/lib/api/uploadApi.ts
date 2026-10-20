@@ -100,3 +100,15 @@ export async function uploadCategoryImage(file: File) {
 
   return res.data;
 }
+
+export async function uploadPaymentImage(file: File) {
+  const data = new FormData();
+  data.append('file', file);
+
+  const res = await uploadClient.post<UploadSectionImageResponse>(
+    '/upload/payment-image',
+    data
+  );
+
+  return res.data;
+}

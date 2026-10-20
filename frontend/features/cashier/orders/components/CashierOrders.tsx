@@ -13,6 +13,7 @@ import {OrderDateFilter, todayRange} from './OrderDateFilter';
 import type {DateRange} from './OrderDateFilter';
 import {OrderPrepBadge, OrderEstimateLabel} from './OrderPrepBadge';
 import {useAllOrdersQuery, useUpdateOrderStatusMutation, useSendCashierOrderMessageMutation} from '@/lib/hooks/orders/useCashierOrder';
+import {useVerifyPaymentMutation} from '@/lib/hooks/orders/useTrackOrder';
 import {useAdminOrderMessagesQuery} from '@/lib/hooks/orders/useOrderMessage';
 import type {OrderHistoryEntry, OrderHistoryItem} from '@/lib/api/orderApi';
 import type {NormalizedApiError} from '@/lib/api/types';
@@ -94,6 +95,90 @@ export function customerDisplay(order: OrderHistoryEntry) {
   return order.isGuest
     ? 'Guest'
     : `Customer #${String(order._id).slice(-6).toUpperCase()}`;
+}
+
+/* ------------------------------------------------------------------ */
+/* MANUAL PAYMENT helpers                                              */
+/* ------------------------------------------------------------------ */
+
+function itemIsPreOrder(item: OrderHistoryItem) {
+  return item.productId && typeof item.productId === 'object'
+    ? item.productId.isPreOrder === true
+    : false;
+}
+
+/** Down payments only apply to carts made up entirely of pre-order products. */
+function orderIsPreOrderOnly(order: OrderHistoryEntry) {
+  return (
+    order.items.length > 0 && order.items.every(item => itemIsPreOrder(item))
+  );
+}
+
+/**
+ * The small chip shown on each card header. Online orders track the manual
+ * payment lifecycle; legacy rows and counter orders have no payment fields
+ * and are hidden on purpose.
+ */
+export function paymentStatusChip(order: OrderHistoryEntry): {
+  label: string;
+  className: string;
+} | null {
+  if (order.paymentVerified === true) {
+    return {
+      label: 'Payment verified',
+      className: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+    };
+  }
+  if (order.paymentStatus === 'down_payment') {
+    return {
+      label: 'Down payment — to verify',
+      className: 'bg-amber-50 text-amber-700 border-amber-200'
+    };
+  }
+  if (order.paymentStatus === 'paid') {
+    return {
+      label: 'Paid — to verify',
+      className: 'bg-amber-50 text-amber-700 border-amber-200'
+    };
+  }
+  if (order.paymentStatus === 'unpaid') {
+    return {
+      label: 'Awaiting payment',
+      className: 'bg-gray-50 text-gray-500 border-gray-200'
+    };
+  }
+  return null;
+}
+
+/**
+ * Can this order legally move to `next` given the manual-payment gates? This
+ * mirrors the backend `updateStatus` check so the button can be disabled with
+ * a helpful hint rather than a 409 toast after the fact.
+ */
+export function paymentGateBlocks(
+  order: OrderHistoryEntry,
+  next: string | null
+): boolean {
+  if (
+    !next ||
+    !['preparing', 'ready', 'on_the_way', 'completed'].includes(next) ||
+    order.orderSource === 'in-store' ||
+    order.orderStatus === 'completed'
+  ) {
+    return false;
+  }
+  // Pre-feature legacy rows carry no payment fields and keep the old flow.
+  if (order.paymentStatus === undefined || order.paymentStatus === null) {
+    return false;
+  }
+  if (order.paymentVerified !== true) return true;
+  if (
+    order.paymentStatus !== 'paid' &&
+    !orderIsPreOrderOnly(order)
+  ) {
+    return true;
+  }
+  return false;
 }
 
 export function statusChipClass(status: string) {
@@ -402,6 +487,7 @@ function OrderCard({
 
   const nextStatus = nextStatusFor(order.orderType, order.orderStatus);
   const canAdvance = nextStatus !== null;
+  const paymentBlocked = paymentGateBlocks(order, nextStatus);
 
   const handleSend = async (text: string) => {
     try {
@@ -462,6 +548,16 @@ function OrderCard({
                 timing={order.prepTiming}
                 orderType={order.orderType}
               />
+              {(() => {
+                const chip = paymentStatusChip(order);
+                return chip ? (
+                  <span
+                    className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-bold ${chip.className}`}
+                  >
+                    {chip.label}
+                  </span>
+                ) : null;
+              })()}
             </div>
             <p className="mt-1 text-xs text-gray-400">
               Order #{String(order._id).slice(-6).toUpperCase()} •{' '}
@@ -564,6 +660,8 @@ function OrderCard({
             </div>
           ) : null}
 
+          <OrderPaymentPanel order={order} />
+
           <div className="mt-4">
             <h3 className="mb-3 text-sm font-bold text-gray-900">
               Order Items
@@ -656,13 +754,25 @@ function OrderCard({
           <>
             <button
               onClick={onNextStatus}
-              disabled={statusUpdating || cancelUpdating}
-              className="min-h-[40px] rounded-xl bg-[#2d4a35] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#3a5c44] disabled:opacity-50"
+              disabled={
+                statusUpdating || cancelUpdating || paymentBlocked
+              }
+              title={
+                paymentBlocked
+                  ? 'Verify the customer payment first'
+                  : undefined
+              }
+              className="min-h-[40px] rounded-xl bg-[#2d4a35] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#3a5c44] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {statusUpdating
                 ? 'Updating...'
                 : `Mark ${formatStatus(nextStatus)}`}
             </button>
+            {paymentBlocked ? (
+              <span className="text-xs font-semibold text-amber-600">
+                Verify the payment before this step
+              </span>
+            ) : null}
             {CANCELLABLE.includes(order.orderStatus as (typeof CANCELLABLE)[number]) && (
               <button
                 onClick={onCancel}
@@ -714,6 +824,122 @@ function getItemName(item: OrderHistoryItem) {
     return item.productId.name ?? 'Product';
   }
   return 'Product';
+}
+
+/**
+ * MANUAL PAYMENT verification panel (cashier side of the flow). Shows the
+ * customer's claim, the chosen channel, their note and the uploaded proof;
+ * the cashier can mark it paid or reject it (reject resets the claim so the
+ * customer can resubmit).
+ */
+export function OrderPaymentPanel({order}: {order: OrderHistoryEntry}) {
+  const verifyMutation = useVerifyPaymentMutation(order._id);
+
+  if (order.orderSource === 'in-store') return null;
+  if (order.paymentStatus === undefined || order.paymentStatus === null) {
+    return null;
+  }
+
+  const claimedLabel =
+    order.paymentStatus === 'down_payment'
+      ? 'Down payment'
+      : order.paymentStatus === 'paid'
+        ? 'Full payment'
+        : 'Not submitted yet';
+  const methodLabel =
+    order.paymentMethod && order.paymentMethod !== 'other'
+      ? order.paymentMethod.replace(/^\w/, c => c.toUpperCase())
+      : null;
+
+  const handleVerify = async (verified: boolean) => {
+    try {
+      await verifyMutation.mutateAsync(verified);
+      toast.success(
+        verified
+          ? 'Payment marked as verified.'
+          : 'Payment submission rejected.'
+      );
+    } catch (error) {
+      toast.error(
+        (error as NormalizedApiError)?.message ??
+          'Failed to update the payment.'
+      );
+    }
+  };
+
+  return (
+    <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50/60 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+          Manual payment
+        </p>
+        {order.paymentVerified === true ? (
+          <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
+            VERIFIED — {claimedLabel}
+          </span>
+        ) : (
+          <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-700">
+            {claimedLabel === 'Not submitted yet'
+              ? 'AWAITING PAYMENT'
+              : 'TO VERIFY'}
+          </span>
+        )}
+      </div>
+
+      <p className="mt-2 text-sm text-gray-700">
+        {claimedLabel}
+        {methodLabel ? ` claimed via ${methodLabel}` : ''}
+      </p>
+      {order.paymentNote ? (
+        <p className="mt-1 text-xs text-gray-500">
+          Note: {order.paymentNote}
+        </p>
+      ) : null}
+
+      {order.paymentProofUrl ? (
+        <a
+          href={order.paymentProofUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 inline-block"
+        >
+          <Image
+            src={order.paymentProofUrl}
+            alt="Proof of payment"
+            width={320}
+            height={320}
+            className="h-40 w-auto max-w-full rounded-lg border border-gray-200 bg-white object-contain"
+            unoptimized
+          />
+          <span className="mt-1 inline-block text-xs font-semibold text-[#3c5e45] hover:underline">
+            Open full screenshot
+          </span>
+        </a>
+      ) : null}
+
+      {claimedLabel !== 'Not submitted yet' && order.paymentVerified !== true ? (
+        <div className="mt-3 flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={verifyMutation.isPending}
+            onClick={() => handleVerify(false)}
+          >
+            Reject
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            disabled={verifyMutation.isPending}
+            onClick={() => handleVerify(true)}
+          >
+            {verifyMutation.isPending ? 'Saving...' : 'Mark as paid'}
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function getItemImage(item: OrderHistoryItem) {

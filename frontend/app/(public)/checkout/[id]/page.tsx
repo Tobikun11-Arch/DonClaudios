@@ -5,7 +5,6 @@ import {useParams, useRouter} from 'next/navigation';
 import Image from 'next/image';
 import {
   BadgeCheck,
-  Banknote,
   ChevronDown,
   ChevronLeft,
   CreditCard,
@@ -13,7 +12,6 @@ import {
   MapPin,
   Minus,
   Plus,
-  Smartphone,
   Truck
 } from 'lucide-react';
 import {Button} from '@/components/ui/button';
@@ -69,21 +67,6 @@ function buildMapPreviewSrc(userLat: number, userLng: number) {
   );
 }
 
-const PAYMENT_OPTIONS = [
-  {
-    value: 'Cash' as const,
-    label: 'Cash',
-    description: 'Pay in cash upon delivery',
-    icon: Banknote
-  },
-  {
-    value: 'GCash' as const,
-    label: 'GCash',
-    description: 'Pay securely through GCash',
-    icon: Smartphone
-  }
-];
-
 export default function CheckoutGuestPage() {
   const params = useParams<{id: string}>();
   const router = useRouter();
@@ -126,11 +109,8 @@ export default function CheckoutGuestPage() {
     firstName?: string;
     lastName?: string;
     mobileNumber?: string;
-    paymentMethod?: string;
   }>({});
 
-  const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'GCash' | ''>('');
-  const [changeFor, setChangeFor] = useState('');
   const [addressType, setAddressType] = useState<'Residential' | 'Office'>(
     'Residential'
   );
@@ -196,13 +176,6 @@ export default function CheckoutGuestPage() {
       .split(',')
       .map(s => s.trim())
       .includes(suggestion);
-
-  const handleQuickSelectPayment = (
-    method: 'Cash' | 'GCash'
-  ) => {
-    setPaymentMethod(method);
-    setErrors(current => ({...current, paymentMethod: undefined}));
-  };
 
   const isLikelyValidPhone = (value: string) => {
     const digits = value.replace(/\D/g, '');
@@ -313,9 +286,6 @@ export default function CheckoutGuestPage() {
       nextErrors.mobileNumber =
         'Please verify your phone number before placing the order.';
     }
-    if (!paymentMethod) {
-      nextErrors.paymentMethod = 'Please select a payment method.';
-    }
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
@@ -355,14 +325,7 @@ export default function CheckoutGuestPage() {
         totalAmount: total,
         riderNotes: notesToRider.trim().length
           ? notesToRider.trim()
-          : undefined,
-        paymentMethod:
-          paymentMethod === 'GCash'
-            ? 'gcash'
-            : paymentMethod === 'Cash'
-              ? 'cash'
-              : undefined,
-        changeFor: changeFor.trim().length ? changeFor.trim() : undefined
+          : undefined
       });
     } catch (error) {
       setCheckoutError(
@@ -838,90 +801,25 @@ export default function CheckoutGuestPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xl font-bold text-gray-900">
-                    Payment details
+                    Payment after confirmation
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    Choose how you&apos;d like to pay.
+                    No payment is needed yet.
                   </p>
                 </div>
                 <CreditCard className="h-5 w-5 text-[#3c5e45]" />
               </div>
 
-              <div className="mt-5 space-y-3">
-                {PAYMENT_OPTIONS.map(option => {
-                  const Icon = option.icon;
-                  const selected = paymentMethod === option.value;
-
-                  return (
-                    <div
-                      key={option.value}
-                      className={cn(
-                        'rounded-xl border transition-colors',
-                        selected
-                          ? 'border-[#3c5e45]/30 bg-[#3c5e45]/5'
-                          : 'border-gray-200 bg-white hover:bg-gray-50'
-                      )}
-                    >
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleQuickSelectPayment(option.value)
-                        }
-                        aria-pressed={selected}
-                        className="flex w-full items-center gap-3 px-4 py-3.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3c5e45]/30 rounded-xl"
-                      >
-                        <span
-                          className={cn(
-                            'inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border',
-                            selected
-                              ? 'border-[#3c5e45] bg-[#3c5e45]'
-                              : 'border-gray-300 bg-white'
-                          )}
-                        >
-                          {selected ? (
-                            <span className="h-2 w-2 rounded-full bg-white" />
-                          ) : null}
-                        </span>
-                        <span className="h-9 w-9 shrink-0 rounded-full bg-[#3c5e45]/10 inline-flex items-center justify-center">
-                          <Icon className="h-4 w-4 text-[#3c5e45]" />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-bold text-gray-900">
-                            {option.label}
-                          </span>
-                          <span className="block text-xs text-gray-500">
-                            {option.description}
-                          </span>
-                        </span>
-                      </button>
-
-                      {selected && option.value === 'Cash' ? (
-                        <div className="px-4 pb-4">
-                          <p className="text-xs font-semibold text-gray-700">
-                            Change for
-                            <span className="ml-1 font-normal text-gray-500">
-                              (optional)
-                            </span>
-                          </p>
-                          <Input
-                            value={changeFor}
-                            onChange={e => setChangeFor(e.target.value)}
-                            placeholder="e.g. ₱1,000.00"
-                            inputMode="numeric"
-                            className="mt-2"
-                          />
-                        </div>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {errors.paymentMethod ? (
-                <p className="mt-2 text-xs font-medium text-red-600">
-                  {errors.paymentMethod}
-                </p>
-              ) : null}
+              <p className="mt-5 text-sm text-gray-600 leading-relaxed">
+                Once your order is placed, our cashier will give you a call to
+                confirm the details and arrange the payment with you (down
+                payment or full payment &mdash; whatever you both agree on).
+              </p>
+              <p className="mt-3 text-sm text-gray-600 leading-relaxed">
+                After the cashier confirms the order, the payment instructions
+                and the account details will appear on your order page, along
+                with a place to upload your proof of payment.
+              </p>
             </div>
           </div>
 
