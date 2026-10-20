@@ -18,17 +18,17 @@ export default function AppearancePreview() {
 
   const settingsRef = useRef(settings);
   const mutationRef = useRef(updateMutation);
-  const prevSettings = useRef(settings);
+  const [lastSettings, setLastSettings] = useState(settings);
 
   // Keep optimistic `local` state until the refetched settings actually change,
   // so a freshly saved value doesn't revert to stale cached data in between.
-  useEffect(() => {
-    if (prevSettings.current !== settings) {
+  if (lastSettings !== settings) {
+    setLastSettings(settings);
+    if (local !== null || Object.keys(localStyles).length > 0) {
       setLocal(null);
       setLocalStyles({});
-      prevSettings.current = settings;
     }
-  }, [settings]);
+  }
 
   useEffect(() => {
     settingsRef.current = settings;
