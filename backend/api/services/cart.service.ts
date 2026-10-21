@@ -112,7 +112,10 @@ async function assertPreOrderProductOrderable(input: {
   // yet, so subtract them; new orders already reserved at placement and are
   // reflected in `live.sold`.
   const pendingQty = usage.items
-    .filter(item => String(item.productId) === String(product._id))
+    .filter(item => {
+      const pid: any = item.productId;
+      return String(pid?._id ?? pid) === String(product._id);
+    })
     .reduce((sum, item) => {
       const order = orderByItemId.get(String(item.orderId));
       return order && order.stockDeducted === false

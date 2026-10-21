@@ -158,9 +158,11 @@ async function orderContainsRegularProduct(
   order: OrderDocument
 ): Promise<boolean> {
   const items = await orderItemRepository.listByOrderIds([String(order._id)]);
-  const products = await productRepository.findByIds(
-    items.map(item => String(item.productId))
-  );
+  const productIds = items.map(item => {
+    const pid: any = item.productId;
+    return String(pid?._id ?? pid);
+  });
+  const products = await productRepository.findByIds(productIds);
   // Missing/deleted products count as regular — the safe side of the rule.
   return products.length > 0 && products.some(p => p?.isPreOrder !== true);
 }
