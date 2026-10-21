@@ -1,10 +1,18 @@
-import type {Metadata} from 'next';
+import type {Metadata, Viewport} from 'next';
 import {Geist, Geist_Mono, Inter} from 'next/font/google';
 import './globals.css';
 import {cn} from '@/lib/utils';
 import {ReactQueryProvider} from '@/lib/provider/ReactQueryProvider';
+import {ServiceWorkerRegistrar} from '@/components/pwa/ServiceWorkerRegistrar';
+import {InstallPrompt} from '@/components/pwa/InstallPrompt';
 
 const inter = Inter({subsets: ['latin'], variable: '--font-sans'});
+
+export const viewport: Viewport = {
+  themeColor: '#b91c1c',
+  width: 'device-width',
+  initialScale: 1,
+};
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -21,12 +29,18 @@ export const metadata: Metadata = {
   title: "Donclaudio's Lechon House",
   description:
     "Donclaudio's Lechon House is a premier destination for delicious lechon and traditional Filipino cuisine.",
+  appleWebApp: {
+    capable: true,
+    title: "DonClaudio's",
+    statusBarStyle: 'default',
+  },
   icons: {
     icon: [
-      {url: '/assets/logo.png', type: 'image/png', sizes: '32x32'},
-      {url: '/assets/logo.png', type: 'image/png', sizes: '192x192'}
+      {url: '/icons/favicon-32x32.png', type: 'image/png', sizes: '32x32'},
+      {url: '/icons/icon-192x192.png', type: 'image/png', sizes: '192x192'},
+      {url: '/icons/icon-512x512.png', type: 'image/png', sizes: '512x512'}
     ],
-    apple: '/assets/logo.png'
+    apple: '/icons/apple-touch-icon.png'
   },
   openGraph: {
     title: "Donclaudio's Lechon House",
@@ -72,7 +86,9 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Roboto:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        <ServiceWorkerRegistrar />
         <ReactQueryProvider>{children}</ReactQueryProvider>
+        <InstallPrompt />
       </body>
     </html>
   );
