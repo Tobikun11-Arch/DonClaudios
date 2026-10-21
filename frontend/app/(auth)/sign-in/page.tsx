@@ -7,7 +7,9 @@ import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {useRouter} from 'next/navigation';
+import {useQueryClient} from '@tanstack/react-query';
 import {login} from '@/lib/api/authApi';
+import {meQueryKey} from '@/lib/hooks/auth/useMeQuery';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 export default function SignInPage() {
@@ -17,6 +19,7 @@ export default function SignInPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +34,9 @@ export default function SignInPage() {
     setErrorMessage(null);
     try {
       const user = await login({email, password});
+      // Clear any stale cached /auth/me (e.g. a previous 401) so the dashboard
+      // guard re-fetches and sees the new session instead of redirecting back.
+      queryClient.removeQueries({queryKey: meQueryKey});
       if (user.user.type === 'admin') {
         router.push('/owner/dashboard');
       } else if (user.user.type === 'cashier') {

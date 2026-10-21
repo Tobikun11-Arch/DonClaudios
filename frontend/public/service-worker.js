@@ -1,93 +1,17 @@
-/* DonClaudio's Lechon House — Service Worker */
-const CACHE_VERSION = 'donclaudios-v1'
-const STATIC_CACHE = `${CACHE_VERSION}-static`
-const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`
-
-const PRECACHE_URLS = [
-  '/',
-  '/offline',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
-]
+/* DonClaudio's Lechon House — Service Worker (cache disabled for debugging) */
+const CACHE_VERSION = 'donclaudios-v4'
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_URLS)).catch(() => {})
-  )
   self.skipWaiting()
 })
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((k) => !k.startsWith(CACHE_VERSION))
-          .map((k) => caches.delete(k))
-      )
+      Promise.all(keys.map((k) => caches.delete(k)))
     )
   )
   self.clients.claim()
-})
-
-function isApiRequest(url) {
-  return url.pathname.startsWith('/api') || url.hostname !== self.location.hostname
-}
-
-self.addEventListener('fetch', (event) => {
-  const { request } = event
-  if (request.method !== 'GET') return
-
-  const url = new URL(request.url)
-
-  // Navigations: network-first with offline fallback
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((res) => {
-          const copy = res.clone()
-          caches.open(RUNTIME_CACHE).then((c) => c.put(request, copy))
-          return res
-        })
-        .catch(() =>
-          caches.match(request).then((cached) => cached || caches.match('/offline'))
-        )
-    )
-    return
-  }
-
-  // API GET: stale-while-revalidate
-  if (isApiRequest(url)) {
-    event.respondWith(
-      caches.match(request).then((cached) => {
-        const network = fetch(request)
-          .then((res) => {
-            if (res && res.status === 200) {
-              const copy = res.clone()
-              caches.open(RUNTIME_CACHE).then((c) => c.put(request, copy))
-            }
-            return res
-          })
-          .catch(() => cached)
-        return cached || network
-      })
-    )
-    return
-  }
-
-  // Static assets: cache-first
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached
-      return fetch(request).then((res) => {
-        if (res && res.status === 200) {
-          const copy = res.clone()
-          caches.open(STATIC_CACHE).then((c) => c.put(request, copy))
-        }
-        return res
-      })
-    })
-  )
 })
 
 // Push notifications

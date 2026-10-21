@@ -17,7 +17,11 @@ function getCookieOptions(): CookieOptions {
     env.NODE_ENV === 'production' || process.env.VERCEL === '1';
   const sameSite =
     process.env.COOKIE_SAMESITE ?? (isProduction ? 'none' : 'lax');
+  // In production cookies must be Secure when SameSite=None (browsers reject
+  // SameSite=None without Secure). Force Secure in production to avoid a
+  // misconfigured COOKIE_SECURE=false breaking login in the installed PWA.
   const secure =
+    isProduction ||
     process.env.COOKIE_SECURE === 'true' ||
     (process.env.COOKIE_SECURE !== 'false' && sameSite === 'none');
 
