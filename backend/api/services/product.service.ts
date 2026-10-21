@@ -105,10 +105,20 @@ function resolvePreOrderFields(input: {
 
   // undefined means the owner did not touch the schedule — keep what is
   // stored so an unrelated edit (price, description) never wipes it.
+  const toPlainBatch = (b: any) =>
+    b && typeof b.toObject === 'function' ? b.toObject() : (b ?? {});
+  const existingPlain =
+    input.existingBatches == null
+      ? null
+      : input.existingBatches.map(toPlainBatch);
+  const batchesInputPlain =
+    input.batchesInput == null
+      ? input.batchesInput
+      : input.batchesInput.map(toPlainBatch);
   const batches: PreOrderBatchInput[] | null =
     input.batchesInput === undefined
-      ? (input.existingBatches ?? null)
-      : (input.batchesInput ?? null);
+      ? (existingPlain ?? null)
+      : (batchesInputPlain ?? null);
 
   const check = validatePreOrderFields({
     category: input.category,
@@ -137,7 +147,7 @@ function resolvePreOrderFields(input: {
   // so lowering a batch below what customers already bought is rejected
   // instead of silently resurrecting stock.
   const existingSold = (index: number) =>
-    input.existingBatches?.[index]?.sold ?? 0;
+    existingPlain?.[index]?.sold ?? 0;
   const withSold: PreOrderBatchStored[] = batches.map((batch, index) => {
     const sold = existingSold(index);
     if (sold > batch.stock) {

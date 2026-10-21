@@ -277,9 +277,13 @@ export function getPreOrderState(
   }
 
   const batches: PreOrderBatchState[] = raw.map((b, index) => {
-    const start = hasDeadline ? timeOnDeadlineDay(deadline, b.startTime) : null;
-    const end = hasDeadline ? timeOnDeadlineDay(deadline, b.endTime) : null;
-    const remaining = Math.max(0, b.stock - b.sold);
+    const plain =
+      b && typeof (b as any).toObject === 'function'
+        ? (b as any).toObject()
+        : ((b ?? {}) as Record<string, any>);
+    const start = hasDeadline ? timeOnDeadlineDay(deadline, plain.startTime) : null;
+    const end = hasDeadline ? timeOnDeadlineDay(deadline, plain.endTime) : null;
+    const remaining = Math.max(0, Number(plain.stock) - Number(plain.sold));
 
     let status: PreOrderBatchStatus;
     if (!start || !end || now.getTime() >= end.getTime()) {
@@ -293,7 +297,11 @@ export function getPreOrderState(
     }
 
     return {
-      ...b,
+      ...plain,
+      startTime: plain.startTime,
+      endTime: plain.endTime,
+      stock: Number(plain.stock),
+      sold: Number(plain.sold ?? 0),
       index,
       start,
       end,
