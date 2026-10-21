@@ -3,9 +3,9 @@ import Link from 'next/link'
 export default function OfflinePage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-6 text-center">
-      <h1 className="text-2xl font-semibold">You're offline</h1>
+      <h1 className="text-2xl font-semibold">You&apos;re offline</h1>
       <p className="max-w-md text-muted-foreground">
-        It looks like you've lost your connection. Some pages you've visited recently may
+        It looks like you&apos;ve lost your connection. Some pages you&apos;ve visited recently may
         still be available. Reconnect to place orders and see the latest menu.
       </p>
       <Link

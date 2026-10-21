@@ -7,6 +7,7 @@ import {transactionRepository} from '../repositories/transaction.repository';
 import {productRepository} from '../repositories/product.repository';
 import {stockMovementService} from '../services/stockMovement.service';
 import {notificationService} from '../services/notification.service';
+import {pushService} from '../services/push.service';
 import {cashierRepository} from '../repositories/cashier.repository';
 import {customerRepository} from '../repositories/customer.repository';
 import {adminRepository} from '../repositories/admin.repository';
@@ -50,6 +51,25 @@ async function notifyCashiersOfNewOrder(orderId: string, totalAmount: number) {
       } catch (error) {
         console.error('Failed to create new order cashier notification', error);
       }
+    }
+    // Push notification to subscribed cashiers and admins (fire-and-forget).
+    try {
+      await pushService.sendToRole('cashier', {
+        title: 'New order',
+        body: `A new order (#${String(orderId).slice(-6).toUpperCase()}) worth ₱${totalAmount}.00 has been placed.`,
+        url: '/cashier/dashboard?tab=orders'
+      });
+    } catch (error) {
+      console.error('Failed to push new order to cashiers', error);
+    }
+    try {
+      await pushService.sendToRole('admin', {
+        title: 'New order',
+        body: `A new order (#${String(orderId).slice(-6).toUpperCase()}) worth ₱${totalAmount}.00 has been placed.`,
+        url: '/owner/dashboard?tab=orders'
+      });
+    } catch (error) {
+      console.error('Failed to push new order to admins', error);
     }
   } catch (error) {
     console.error('Failed to notify cashiers of new order', error);
@@ -191,6 +211,15 @@ async function notifyCashiersOfPaymentSubmitted(
           error
         );
       }
+    }
+    try {
+      await pushService.sendToRole('cashier', {
+        title: 'Payment submitted',
+        body: `${customerLabel} submitted proof of a ${statusLabel} for order (#${orderCode}).`,
+        url: '/cashier/dashboard?tab=orders'
+      });
+    } catch (error) {
+      console.error('Failed to push payment submitted to cashiers', error);
     }
   } catch (error) {
     console.error('Failed to notify cashiers of submitted payment', error);

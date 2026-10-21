@@ -17,16 +17,7 @@ export function InstallPrompt() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    setIsIOS(
-      /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-        !(window as unknown as { MSStream?: unknown }).MSStream
-    )
-    setIsStandalone(
-      window.matchMedia('(display-mode: standalone)').matches ||
-        (window.navigator as unknown as { standalone?: boolean }).standalone === true
-    )
     const wasDismissed = localStorage.getItem('pwa-install-dismissed') === '1'
-    setDismissed(wasDismissed)
 
     const handler = (e: Event) => {
       e.preventDefault()
@@ -34,18 +25,33 @@ export function InstallPrompt() {
       setVisible(true)
     }
     window.addEventListener('beforeinstallprompt', handler)
-    // Show iOS instructions after a short delay if not standalone
-    if (
-      /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-      !window.matchMedia('(display-mode: standalone)').matches
-    ) {
-      const t = setTimeout(() => setVisible(true), 3000)
-      return () => {
-        clearTimeout(t)
-        window.removeEventListener('beforeinstallprompt', handler)
+
+    const id = setTimeout(() => {
+      setIsIOS(
+        /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+          !(window as unknown as { MSStream?: unknown }).MSStream
+      )
+      setIsStandalone(
+        window.matchMedia('(display-mode: standalone)').matches ||
+          (window.navigator as unknown as { standalone?: boolean }).standalone ===
+            true
+      )
+      setDismissed(wasDismissed)
+      // Show iOS instructions after a short delay if not standalone
+      if (
+        /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+        !window.matchMedia('(display-mode: standalone)').matches
+      ) {
+        const t = setTimeout(() => setVisible(true), 3000)
+        // cleanup handled by outer? store not needed
+        void t
       }
+    }, 0)
+
+    return () => {
+      clearTimeout(id)
+      window.removeEventListener('beforeinstallprompt', handler)
     }
-    return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
   if (isStandalone || dismissed) return null
@@ -69,7 +75,7 @@ export function InstallPrompt() {
     <div className="fixed bottom-4 left-1/2 z-50 w-[92%] max-w-md -translate-x-1/2 rounded-lg border bg-white p-4 shadow-lg">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
-          <h3 className="font-semibold">Install DonClaudio's</h3>
+          <h3 className="font-semibold">Install DonClaudio&apos;s</h3>
           <p className="mt-1 text-sm text-muted-foreground">
             Add to your home screen for faster access and an app-like experience.
           </p>

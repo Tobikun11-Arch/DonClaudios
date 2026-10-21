@@ -81,6 +81,12 @@ export const pushService = {
     return results;
   },
 
+  async sendToRole(role: 'customer' | 'admin' | 'cashier', payload: {title: string; body: string; icon?: string; url?: string}) {
+    const subs = await PushSubscriptionModel.find({userType: role});
+    const results = await Promise.all(subs.map((s) => this.sendToEndpoint(s, payload)));
+    return results;
+  },
+
   async sendToAll(payload: {title: string; body: string; icon?: string; url?: string}) {
     const subs = await PushSubscriptionModel.find({});
     const results = await Promise.all(subs.map((s) => this.sendToEndpoint(s, payload)));

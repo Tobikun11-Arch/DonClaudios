@@ -14,10 +14,13 @@ export function PushNotificationManager() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-      setIsSupported(true)
-      getCurrentSubscription().then(setSubscription)
-    }
+    const id = setTimeout(() => {
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        setIsSupported(true)
+        getCurrentSubscription().then(setSubscription)
+      }
+    }, 0)
+    return () => clearTimeout(id)
   }, [])
 
   const handleSubscribe = async () => {
