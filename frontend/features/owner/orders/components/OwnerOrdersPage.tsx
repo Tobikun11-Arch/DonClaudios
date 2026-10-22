@@ -205,7 +205,7 @@ function OrdersPagination({
 }
 
 export default function OwnerOrdersPage() {
-  const [range, setRange] = useState<ReportRange>({preset: '7d'});
+  const [range, setRange] = useState<ReportRange>({preset: 'today'});
   const [selected, setSelected] = useState<OrderHistoryEntry | null>(null);
 
   const {

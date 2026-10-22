@@ -173,7 +173,7 @@ export function orderCustomerName(order: OrderHistoryEntry) {
 }
 
 export function useOrderFilters() {
-  const [status, setStatus] = useState('pending');
+  const [status, setStatus] = useState(ALL_STATUSES);
   const [search, setSearch] = useState('');
   return {status, setStatus, search, setSearch};
 }

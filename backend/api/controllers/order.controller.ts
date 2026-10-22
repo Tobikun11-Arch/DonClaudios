@@ -183,7 +183,7 @@ async function orderContainsRegularProduct(
     return String(pid?._id ?? pid);
   });
   const products = await productRepository.findManyByIds(productIds);
-  // Missing/deleted products count as regular — the safe side of the rule.
+  // Missing/deleted products count as regular — the safe side of the rule.s
   return products.length > 0 && products.some(p => p?.isPreOrder !== true);
 }
 

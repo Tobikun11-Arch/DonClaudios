@@ -11,7 +11,7 @@ import {ProductsReportView} from './ProductsReportView';
 import {CustomersReportView} from './CustomersReportView';
 import type {ReportRange, ReportView} from '@/lib/types/report';
 
-export const DEFAULT_REPORT_RANGE: ReportRange = {preset: '7d'};
+export const DEFAULT_REPORT_RANGE: ReportRange = {preset: 'today'};
 
 function isValidView(value: string | null): value is ReportView {
   return value === 'overview' || value === 'sales' || value === 'operations' ||
