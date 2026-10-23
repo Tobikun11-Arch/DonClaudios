@@ -1,40 +1,52 @@
-# 🗂️ DonClaudio's Lechon House
+<p align="center">
+  <img src="frontend/public/assets/banner.png" alt="DonClaudio's Lechon House" width="100%">
+</p>
 
-## 📖 Project Overview
+# DonClaudio's Lechon House
 
-**DonClaudio's Lechon House** is a digital ordering and management system for a restaurant. It provides a public storefront where customers can browse the menu, place orders, and track their order history, as well as role-based dashboards that let **owners** and **cashiers** run the business end-to-end.
+A digital ordering and management system for a restaurant, with a public storefront for customers and dashboards for owners and cashiers.
 
-This project is a **monorepo** containing the **Express.js** backend API and **Next.js** frontend application.
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) [![Status](https://img.shields.io/badge/status-in%20development-orange.svg)](#project-overview)
+
+DonClaudio's Lechon House bridges Filipino culinary tradition with modern digital convenience. Customers browse the menu, place orders, and track their order history. Owners and cashiers run the business end-to-end from role-based dashboards.
+
+## Project Overview
+
+This project is a **monorepo** containing the **Express.js** backend API and the **Next.js** frontend application.
 
 ### Key Features
 
-- **Customer** — Browse the menu, place orders, check out, and view order history.
-- **Owner** — Manage products/inventory, cashiers, promos, and customize the storefront appearance.
-- **Cashier** — Handle front-of-house orders from the cashier dashboard.
-- **Authentication** — Sign up / sign in, email verification, forgot & reset password.
-- **Role-based access** — Separate layouts and dashboards for customers, owners, and cashiers.
+- **Customer:** Browse the menu, place orders, check out, and view order history.
+- **Owner:** Manage products/inventory, cashiers, promos, and customize the storefront appearance.
+- **Cashier:** Handle front-of-house orders from the cashier dashboard.
+- **Authentication:** Sign up / sign in, email verification, forgot and reset password.
+- **Role-based access:** Separate layouts and dashboards for customers, owners, and cashiers.
 
 ### Tech Stack
 
-| Layer    | Technology         |
-|----------|--------------------|
-| Backend  | Express.js (Node)  |
-| Frontend | Next.js (React)    |
+| Layer    | Technology        |
+| -------- | ----------------- |
+| Backend  | Express.js (Node) |
+| Frontend | Next.js (React)   |
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 /
 ├── backend/          # Express.js REST API
 ├── frontend/         # Next.js Application
-└── README.md
+├── CODE_OF_CONDUCT.md
+├── CONTRIBUTING.md
+├── LICENSE
+├── README.md
+└── SECURITY.md
 ```
 
 ---
 
-## ⚙️ Prerequisites
+## Prerequisites
 
 - [Node.js](https://nodejs.org/) v18+
 - [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
@@ -42,12 +54,12 @@ This project is a **monorepo** containing the **Express.js** backend API and **N
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/Tobikun11-Arch/DonClaudios.githttps://github.com/Tobikun11-Arch/DonClaudios.git
+git clone https://github.com/Tobikun11-Arch/DonClaudios.git
 cd DonClaudios
 ```
 
@@ -72,18 +84,12 @@ npm run dev
 ```
 
 Frontend runs on: `http://localhost:3000`
----
 
-## 🛠️ Tech Stack
-
-| Layer    | Technology         |
-|----------|--------------------|
-| Backend  | Express.js (Node)  |
-| Frontend | Next.js (React)    |
+Never commit your real `.env` files or any secrets.
 
 ---
 
-## 📂 Backend — `./backend`
+## Backend (`./backend`)
 
 Built with **Express.js**.
 
@@ -94,7 +100,7 @@ backend/
 ├── src/
 │   ├── controllers/    # Route handlers
 │   ├── routes/         # API route definitions
-│   ├── middleware/      # Custom middleware
+│   ├── middleware/     # Custom middleware
 │   ├── models/         # Data models
 │   └── index.js        # Entry point
 ├── .env.example
@@ -111,7 +117,7 @@ npm run lint      # Run linter
 
 ---
 
-## 📂 Frontend — `./frontend`
+## Frontend (`./frontend`)
 
 Built with **Next.js**.
 
@@ -193,42 +199,38 @@ npm run lint      # Run linter
 
 ---
 
-## 🌿 Git Branching Workflow
+## Git Branching Workflow
 
 ### Branch Structure
 
 ```
 production
 └── development
-    ├── feature/homepage    
+    ├── feature/homepage
     ├── feature/user-auth
     ├── fix/header-bug
-    └── hotfix/broken-api             # (urgent production fixes)
-    └── chores/update-dependencies    # (configs, deps, refactors)
+    ├── hotfix/broken-api             # (urgent production fixes)
+    └── chore/update-dependencies     # (configs, deps, refactors)
 ```
 
 ### Main Branches
 
-| Branch        | Purpose                                      |
-|---------------|----------------------------------------------|
-| `production`  | Stable, live/production-ready code           |
-| `development` | Active development and integration testing   |
+| Branch        | Purpose                                    |
+| ------------- | ------------------------------------------ |
+| `production`  | Stable, live/production-ready code         |
+| `development` | Active development and integration testing |
 
-> ⚠️ **Never commit directly to `production` or `development`.**
-
----
+> **Never commit directly to `production` or `development`.**
 
 ### Supporting Branches
 
-| Type        | Pattern                          | Example                          |
-|-------------|----------------------------------|----------------------------------|
-| Feature     | `feature/<short-description>`    | `feature/homepage`               |
-| Bug Fix     | `fix/<short-description>`        | `fix/login-redirect`             |
-| Hotfix      | `hotfix/<short-description>`     | `hotfix/broken-checkout`         |
-| Release     | `release/<version>`              | `release/v1.2.0`                 |
-| Chore       | `chore/<short-description>`      | `chore/update-dependencies`      |
-
----
+| Type    | Pattern                       | Example                     |
+| ------- | ----------------------------- | --------------------------- |
+| Feature | `feature/<short-description>` | `feature/homepage`          |
+| Bug Fix | `fix/<short-description>`     | `fix/login-redirect`        |
+| Hotfix  | `hotfix/<short-description>`  | `hotfix/broken-checkout`    |
+| Release | `release/<version>`           | `release/v1.2.0`            |
+| Chore   | `chore/<short-description>`   | `chore/update-dependencies` |
 
 ### Workflow Step-by-Step
 
@@ -279,8 +281,6 @@ git push origin hotfix/broken-api
 # PR into production, then backmerge into development
 ```
 
----
-
 ### Commit Message Convention
 
 Follow [Conventional Commits](https://www.conventionalcommits.org/):
@@ -295,6 +295,7 @@ docs:     Documentation updates
 ```
 
 **Examples:**
+
 ```bash
 git commit -m "feat: add homepage hero section"
 git commit -m "fix: resolve mobile navbar overflow"
@@ -304,11 +305,19 @@ git commit -m "docs: update README setup steps"
 
 ---
 
-## 🤝 Contributing
+## Contributing
+
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and our [Code of Conduct](CODE_OF_CONDUCT.md) first.
 
 1. Branch off `development`
 2. Follow the branch naming and commit conventions above
 3. Open a Pull Request into `development`
 4. Request a code review before merging
 
----
+## Security
+
+Please do not open public issues for vulnerabilities. See [SECURITY.md](SECURITY.md) for how to report them privately.
+
+## License
+
+Released under the [MIT License](LICENSE). Copyright (c) 2026 Joenel Sevellejo (Dynamic Vars).
