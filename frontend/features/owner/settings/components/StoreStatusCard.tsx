@@ -39,16 +39,16 @@ export function StoreStatusCard() {
   if (isLoading && !data) {
     return (
       <div className="space-y-4">
-        <div className="h-8 bg-gray-100 animate-pulse rounded-lg w-64" />
-        <div className="h-24 bg-gray-100 animate-pulse rounded-xl" />
-        <div className="h-24 bg-gray-100 animate-pulse rounded-xl" />
+        <div className="h-8 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-lg w-64" />
+        <div className="h-24 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl" />
+        <div className="h-24 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl" />
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
+      <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 text-sm text-gray-500 dark:text-gray-400">
         Unable to load store status.
       </div>
     );
@@ -109,9 +109,9 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
   const effectiveCloseTime = formatEffectiveClose(closingTime, advanceMinutes);
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
+    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">
       <div className="mb-5 flex items-center justify-between gap-2">
-        <h2 className="text-lg font-bold text-[#2d4a35]">Store Status</h2>
+        <h2 className="text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">Store Status</h2>
         <span
           className={cn(
             'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide',
@@ -127,7 +127,7 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
         </span>
       </div>
 
-      <p className="text-sm text-gray-500 mb-5 break-words">
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-5 break-words">
         {isOpen
           ? `Ordering is available to customers until ${effectiveCloseTime}. The store closes at ${initial.closesAt}.`
           : isManuallyClosed
@@ -140,10 +140,10 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
       <div className="divide-y divide-gray-100">
         <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold text-gray-900">
+            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               Opening time
             </div>
-            <div className="mt-0.5 text-xs text-gray-500">
+            <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
               When the store starts accepting orders.
             </div>
           </div>
@@ -161,10 +161,10 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
 
         <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold text-gray-900">
+            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               Closing time
             </div>
-            <div className="mt-0.5 text-xs text-gray-500">
+            <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
               When the store stops accepting orders.
             </div>
           </div>
@@ -182,10 +182,10 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
 
         <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold text-gray-900">
+            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               Advance close (minutes)
             </div>
-            <div className="mt-0.5 text-xs text-gray-500">
+            <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
               Ordering stops {advanceMinutes} minutes before closing time.
             </div>
           </div>
@@ -221,21 +221,21 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
           )}
           Save Hours
         </Button>
-        <span className="flex items-center gap-1.5 text-xs text-gray-500">
+        <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
           <Clock className="h-4 w-4" />
           Customers stop ordering at {effectiveCloseTime}
         </span>
       </div>
 
-      <div className="mt-6 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4">
+      <div className="mt-6 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 p-4">
         <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div>
-            <h3 className="text-sm font-semibold text-gray-800">
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
               {isManuallyClosed
                 ? 'Store is closed'
                 : 'Manual close (emergency)'}
             </h3>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
               {isManuallyClosed
                 ? 'Customers currently see a closed notice.'
                 : 'Instantly stop ordering regardless of schedule.'}

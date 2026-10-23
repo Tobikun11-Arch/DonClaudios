@@ -58,12 +58,12 @@ export default function ColorPickerPanel({colors, onChange}: Props) {
       </button>
 
       {open && (
-        <div className="fixed bottom-20 right-6 z-50 bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 w-72">
+        <div className="fixed bottom-20 right-6 z-50 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-5 w-72">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-[#3c5e45]">Brand Colors</h3>
             <button
               onClick={() => setOpen(false)}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"
             >
               <X size={16} />
             </button>
@@ -74,7 +74,7 @@ export default function ColorPickerPanel({colors, onChange}: Props) {
               <div key={key} className="flex items-center gap-3">
                 <label
                   htmlFor={`color-${key}`}
-                  className="relative w-8 h-8 rounded-lg overflow-hidden border border-gray-200 shrink-0 cursor-pointer"
+                  className="relative w-8 h-8 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0 cursor-pointer"
                 >
                   <input
                     id={`color-${key}`}
@@ -91,7 +91,7 @@ export default function ColorPickerPanel({colors, onChange}: Props) {
                   />
                 </label>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-gray-500 mb-1">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                     {label}
                   </p>
                   <input
@@ -108,7 +108,7 @@ export default function ColorPickerPanel({colors, onChange}: Props) {
                         handleColorChange(key, '#000000');
                       }
                     }}
-                    className="w-full px-2 py-1 text-xs font-mono border border-gray-200 rounded-md focus:outline-none focus:border-[#3c5e45]"
+                    className="w-full px-2 py-1 text-xs font-mono border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:border-[#3c5e45]"
                   />
                 </div>
               </div>

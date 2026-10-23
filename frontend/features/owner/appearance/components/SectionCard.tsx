@@ -18,13 +18,13 @@ export default function SectionCard({
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   return (
-    <div className="rounded-xl border bg-white shadow-xs">
+    <div className="rounded-xl border bg-white dark:bg-gray-900 shadow-xs">
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center justify-between px-6 py-4 text-left"
       >
-        <h3 className="text-lg font-bold text-[#2d4a35]">{title}</h3>
+        <h3 className="text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">{title}</h3>
         {expanded ? (
           <ChevronUp className="h-5 w-5 text-[#4a7c59]" />
         ) : (

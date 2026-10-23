@@ -3,6 +3,7 @@ import {Geist, Geist_Mono, Inter} from 'next/font/google';
 import './globals.css';
 import {cn} from '@/lib/utils';
 import {ReactQueryProvider} from '@/lib/provider/ReactQueryProvider';
+import {ThemeProvider} from 'next-themes';
 import {ServiceWorkerRegistrar} from '@/components/pwa/ServiceWorkerRegistrar';
 import {InstallPrompt} from '@/components/pwa/InstallPrompt';
 
@@ -67,6 +68,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={cn(
         'h-full antialiased overflow-x-hidden',
         geistSans.variable,
@@ -87,7 +89,9 @@ export default function RootLayout({
           rel="stylesheet"
         />
         <ServiceWorkerRegistrar />
-        <ReactQueryProvider>{children}</ReactQueryProvider>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+          <ReactQueryProvider>{children}</ReactQueryProvider>
+        </ThemeProvider>
         <InstallPrompt />
       </body>
     </html>

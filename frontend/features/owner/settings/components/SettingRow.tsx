@@ -26,9 +26,9 @@ export function SettingRow({
       )}
     >
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-semibold text-gray-900">{title}</div>
+        <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</div>
         {description && (
-          <div className="mt-0.5 text-xs text-gray-500">{description}</div>
+          <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{description}</div>
         )}
       </div>
       <div className="shrink-0 sm:w-[240px] sm:text-right">{control}</div>
@@ -37,5 +37,5 @@ export function SettingRow({
 }
 
 export function SettingDivider() {
-  return <div className="border-t border-gray-100" />;
+  return <div className="border-t border-gray-100 dark:border-gray-800" />;
 }

@@ -70,7 +70,7 @@ export function PaymentTab() {
 
   if (settingsQuery.isLoading && !settingsQuery.data) {
     return (
-      <div className="rounded-2xl bg-white shadow p-10 text-sm text-gray-500">
+      <div className="rounded-2xl bg-white dark:bg-gray-900 shadow p-10 text-sm text-gray-500 dark:text-gray-400">
         Loading payment settings...
       </div>
     );
@@ -78,7 +78,7 @@ export function PaymentTab() {
 
   if (!settingsQuery.data) {
     return (
-      <div className="rounded-2xl bg-white shadow p-10 text-sm text-red-600">
+      <div className="rounded-2xl bg-white dark:bg-gray-900 shadow p-10 text-sm text-red-600">
         Failed to load payment settings.
       </div>
     );
@@ -243,16 +243,16 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl bg-white shadow p-6">
-        <h2 className="text-lg font-bold text-gray-900">Payment instructions</h2>
-        <p className="mt-1 text-sm text-gray-500">
+      <div className="rounded-2xl bg-white dark:bg-gray-900 shadow p-6">
+        <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Payment instructions</h2>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Add multiple payment channels (e.g., GCash, Maya, Bank). Select a
           channel above to edit its details and image. Customers will see the
           selected channel&apos;s details when paying.
         </p>
 
         <div className="mt-6">
-          <p className="text-sm font-bold text-gray-900 mb-2">
+          <p className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
             Payment channels
           </p>
           <div className="flex flex-wrap items-center gap-2">
@@ -264,7 +264,7 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
                 setImagePreview(null);
                 setRemoveImage(false);
               }}
-              className="h-10 rounded-lg border border-gray-200 px-3 text-sm"
+              className="h-10 rounded-lg border border-gray-200 dark:border-gray-700 px-3 text-sm"
             >
               {channels.map(ch => (
                 <option key={ch.id} value={ch.id}>
@@ -300,11 +300,11 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <div className="space-y-4">
             <div>
-              <p className="text-sm font-bold text-gray-900">Account picture</p>
-              <p className="text-xs text-gray-500">
+              <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Account picture</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 A QR / screenshot for this payment channel.
               </p>
-              <label className="mt-2 flex h-40 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 hover:bg-gray-100">
+              <label className="mt-2 flex h-40 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:bg-gray-800">
                 <input
                   type="file"
                   accept="image/*"
@@ -341,7 +341,7 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
 
           <div className="space-y-4">
             <div>
-              <p className="text-sm font-bold text-gray-900">Account name</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Account name</p>
               <Input
                 value={activeChannel?.accountName || ''}
                 onChange={e =>
@@ -353,7 +353,7 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
               />
             </div>
             <div>
-              <p className="text-sm font-bold text-gray-900">Account number</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Account number</p>
               <Input
                 value={activeChannel?.accountNumber || ''}
                 onChange={e =>
@@ -365,7 +365,7 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
               />
             </div>
             <div>
-              <p className="text-sm font-bold text-gray-900">
+              <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
                 Payment instructions
               </p>
               <textarea
@@ -376,7 +376,7 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
                 }
                 rows={5}
                 placeholder="e.g. Send your payment through this channel, take a screenshot of the receipt, then upload it below."
-                className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#3c5e45] focus:ring-2 focus:ring-[#3c5e45]/20"
+                className="mt-2 w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[#3c5e45] focus:ring-2 focus:ring-[#3c5e45]/20"
               />
             </div>
           </div>

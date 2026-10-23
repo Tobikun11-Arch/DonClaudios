@@ -153,7 +153,7 @@ export default function DashboardLayout({
   const drawerTabActive = DRAWER_ITEMS.some(i => isActive(i.tab));
 
   return (
-    <div className="flex h-screen cursor-default bg-gray-50">
+    <div className="flex h-screen cursor-default bg-gray-50 dark:bg-gray-800">
       {/* ── Desktop Sidebar ── */}
       <aside
         onMouseEnter={handleSidebarEnter}
@@ -231,7 +231,7 @@ export default function DashboardLayout({
                   `}
                 >
                   {active && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-white/80 rounded-r-full" />
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-white/80 dark:bg-gray-900/80 rounded-r-full" />
                   )}
                   <Icon
                     size={20}
@@ -291,7 +291,7 @@ export default function DashboardLayout({
       </aside>
 
       {/* ── Main Content ── */}
-      <main className="flex-1 overflow-y-auto scrollbar-hide bg-gray-50 pb-24 md:pb-0">
+      <main className="flex-1 overflow-y-auto scrollbar-hide bg-gray-50 dark:bg-gray-800 pb-24 md:pb-0">
         {tab === 'appearance' ? (
           <>{appearance}</>
         ) : (

@@ -135,7 +135,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
           hovered && 'sm:pointer-events-auto sm:opacity-100',
           open
             ? 'bg-[#3c5e45] text-white scale-110 sm:pointer-events-auto sm:opacity-100'
-            : 'bg-white/90 text-[#3c5e45] hover:bg-white hover:scale-105'
+            : 'bg-white/90 dark:bg-gray-900/90 text-[#3c5e45] hover:bg-white dark:bg-gray-900 hover:scale-105'
         )}
         title={`Customize ${SECTION_LABELS[sectionId]} section`}
       >
@@ -162,16 +162,16 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
             ref={panelRef}
             role="dialog"
             aria-label={`Customize ${SECTION_LABELS[sectionId]} section`}
-            className="fixed inset-x-3 bottom-24 z-[60] max-h-[70vh] overflow-y-auto overscroll-contain rounded-xl border border-gray-200 bg-white shadow-2xl sm:absolute sm:bottom-auto sm:left-auto sm:right-16 sm:top-4 sm:z-50 sm:max-h-none sm:w-72 sm:overflow-y-visible sm:overscroll-auto"
+            className="fixed inset-x-3 bottom-24 z-[60] max-h-[70vh] overflow-y-auto overscroll-contain rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-2xl sm:absolute sm:bottom-auto sm:left-auto sm:right-16 sm:top-4 sm:z-50 sm:max-h-none sm:w-72 sm:overflow-y-visible sm:overscroll-auto"
           >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
-            <h4 className="text-sm font-bold text-gray-800">
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200">
               {SECTION_LABELS[sectionId]} Section
             </h4>
             <button
               onClick={() => setOpen(false)}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"
             >
               <X className="w-4 h-4" />
             </button>
@@ -180,11 +180,11 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
           <div className="p-4 space-y-4">
             {/* Background color */}
             <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">
                 Background Color
               </label>
               <div className="flex items-center gap-2">
-                <label className="relative w-9 h-9 rounded-lg overflow-hidden border border-gray-200 shrink-0 cursor-pointer">
+                <label className="relative w-9 h-9 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0 cursor-pointer">
                   <input
                     type="color"
                     value={safePickerHex(localBg)}
@@ -210,7 +210,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                     }
                   }}
                   placeholder={defaultBgColor}
-                  className="flex-1 px-2.5 py-1.5 text-xs font-mono border border-gray-200 rounded-md focus:outline-none focus:border-[#3c5e45]"
+                  className="flex-1 px-2.5 py-1.5 text-xs font-mono border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:border-[#3c5e45]"
                 />
                 {style.backgroundColor !== '' && (
                   <button
@@ -218,7 +218,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                       setLocalBg(defaultBgColor);
                       onDraftChange(sectionId, {backgroundColor: ''});
                     }}
-                    className="text-gray-400 hover:text-red-500 shrink-0"
+                    className="text-gray-400 dark:text-gray-500 hover:text-red-500 shrink-0"
                     title="Reset to default"
                   >
                     <RotateCcw className="w-4 h-4" />
@@ -229,11 +229,11 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
 
             {/* Text color */}
             <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">
                 Text Color
               </label>
               <div className="flex items-center gap-2">
-                <label className="relative w-9 h-9 rounded-lg overflow-hidden border border-gray-200 shrink-0 cursor-pointer">
+                <label className="relative w-9 h-9 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0 cursor-pointer">
                   <input
                     type="color"
                     value={safePickerHex(localText)}
@@ -259,7 +259,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                     }
                   }}
                   placeholder={defaultTextColor}
-                  className="flex-1 px-2.5 py-1.5 text-xs font-mono border border-gray-200 rounded-md focus:outline-none focus:border-[#3c5e45]"
+                  className="flex-1 px-2.5 py-1.5 text-xs font-mono border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:border-[#3c5e45]"
                 />
                 {style.textColor !== '' && (
                   <button
@@ -267,7 +267,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                       setLocalText(defaultTextColor);
                       onDraftChange(sectionId, {textColor: ''});
                     }}
-                    className="text-gray-400 hover:text-red-500 shrink-0"
+                    className="text-gray-400 dark:text-gray-500 hover:text-red-500 shrink-0"
                     title="Reset to default"
                   >
                     <RotateCcw className="w-4 h-4" />
@@ -278,7 +278,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
 
             {/* Font family */}
             <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">
                 Font Family
               </label>
               <div className="flex items-center gap-2">
@@ -288,7 +288,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                     setLocalFont(e.target.value);
                     onDraftChange(sectionId, {fontFamily: e.target.value});
                   }}
-                  className="flex-1 px-2.5 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:border-[#3c5e45] bg-white"
+                  className="flex-1 px-2.5 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:border-[#3c5e45] bg-white dark:bg-gray-900"
                 >
                   {FONT_OPTIONS.map(opt => (
                     <option key={opt.value} value={opt.value}>
@@ -302,7 +302,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                       setLocalFont('');
                       onDraftChange(sectionId, {fontFamily: ''});
                     }}
-                    className="text-gray-400 hover:text-red-500 shrink-0"
+                    className="text-gray-400 dark:text-gray-500 hover:text-red-500 shrink-0"
                     title="Reset to default"
                   >
                     <RotateCcw className="w-4 h-4" />
@@ -310,7 +310,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                 )}
               </div>
               {localFont && (
-                <p className="mt-1.5 text-xs text-gray-400 italic" style={{fontFamily: localFont}}>
+                <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500 italic" style={{fontFamily: localFont}}>
                   Preview: The quick brown fox jumps over the lazy dog
                 </p>
               )}
@@ -324,7 +324,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
                 'w-full py-2 rounded-lg text-sm font-semibold transition-colors',
                 hasChanges
                   ? 'bg-[#3c5e45] text-white hover:bg-[#2d4a35]'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
               )}
             >
               OK
