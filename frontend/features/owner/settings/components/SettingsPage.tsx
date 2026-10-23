@@ -62,11 +62,11 @@ const TOP_ITEMS: TopItem[] = [
   {id: 'profile', label: 'Profile & Business Info', icon: UserRound, group: 1},
   {id: 'appearance', label: 'Appearance', icon: Palette, group: 1, hasChildren: true},
   {id: 'notifications', label: 'Notifications', icon: Bell, group: 1, hasChildren: true},
+  {id: 'cashier', label: 'Cashier', icon: UsersRound, group: 1},
   {id: 'store', label: 'Store Status', icon: Clock, group: 1},
-  {id: 'categories', label: 'Menu Categories', icon: Tags, group: 2},
-  {id: 'payment', label: 'Payment', icon: Wallet, group: 2},
-  {id: 'security', label: 'Security', icon: ShieldCheck, group: 3},
-  {id: 'cashier', label: 'Cashier', icon: UsersRound, group: 3}
+  {id: 'categories', label: 'Menu Categories', icon: Tags, group: 1},
+  {id: 'payment', label: 'Payment', icon: Wallet, group: 1},
+  {id: 'security', label: 'Security', icon: ShieldCheck, group: 1}
 ];
 
 const CHILDREN: Record<string, {id: TabId; label: string; icon: typeof Sun}[]> = {
@@ -107,8 +107,8 @@ export function SettingsPage() {
   const [active, setActive] = useState<TabId>('profile');
   const [query, setQuery] = useState('');
   const [openParents, setOpenParents] = useState<Record<string, boolean>>({
-    appearance: true,
-    notifications: true
+    appearance: false,
+    notifications: false
   });
 
   const isChildActive = (parent: string) =>
