@@ -7,6 +7,7 @@ import {Input} from '@/components/ui/input';
 import OwnerNotificationBell from '@/features/owner/notifications/components/OwnerNotificationBell';
 import {ProfileTab} from './ProfileTab';
 import {CustomizeTab} from './CustomizeTab';
+import {NotificationsTab} from './NotificationsTab';
 import {SecurityTab} from './SecurityTab';
 import {CashierTab} from './CashierTab';
 import {StoreStatusTab} from './StoreStatusTab';
@@ -23,6 +24,12 @@ import {
   Palette,
   Sun,
   Home,
+  Bell,
+  ClipboardList,
+  Calendar,
+  Archive,
+  Users,
+  BarChart3,
   ChevronDown,
   Search
 } from 'lucide-react';
@@ -31,6 +38,12 @@ type TabId =
   | 'profile'
   | 'appearanceCustomize'
   | 'appearanceHomepage'
+  | 'notificationsOrders'
+  | 'notificationsPreorders'
+  | 'notificationsInventory'
+  | 'notificationsCustomers'
+  | 'notificationsReports'
+  | 'notificationsAccount'
   | 'store'
   | 'categories'
   | 'payment'
@@ -48,6 +61,7 @@ type TopItem = {
 const TOP_ITEMS: TopItem[] = [
   {id: 'profile', label: 'Profile & Business Info', icon: UserRound, group: 1},
   {id: 'appearance', label: 'Appearance', icon: Palette, group: 1, hasChildren: true},
+  {id: 'notifications', label: 'Notifications', icon: Bell, group: 1, hasChildren: true},
   {id: 'store', label: 'Store Status', icon: Clock, group: 1},
   {id: 'categories', label: 'Menu Categories', icon: Tags, group: 2},
   {id: 'payment', label: 'Payment', icon: Wallet, group: 2},
@@ -55,15 +69,31 @@ const TOP_ITEMS: TopItem[] = [
   {id: 'cashier', label: 'Cashier', icon: UsersRound, group: 3}
 ];
 
-const APPEARANCE_CHILDREN: {id: TabId; label: string; icon: typeof Sun}[] = [
-  {id: 'appearanceCustomize', label: 'Customize', icon: Sun},
-  {id: 'appearanceHomepage', label: 'Homepage', icon: Home}
-];
+const CHILDREN: Record<string, {id: TabId; label: string; icon: typeof Sun}[]> = {
+  appearance: [
+    {id: 'appearanceCustomize', label: 'Customize', icon: Sun},
+    {id: 'appearanceHomepage', label: 'Homepage', icon: Home}
+  ],
+  notifications: [
+    {id: 'notificationsOrders', label: 'Orders', icon: ClipboardList},
+    {id: 'notificationsPreorders', label: 'Pre-orders', icon: Calendar},
+    {id: 'notificationsInventory', label: 'Inventory', icon: Archive},
+    {id: 'notificationsCustomers', label: 'Customers', icon: Users},
+    {id: 'notificationsReports', label: 'Reports', icon: BarChart3},
+    {id: 'notificationsAccount', label: 'Account', icon: ShieldCheck}
+  ]
+};
 
 const TAB_INFO: Record<TabId, {label: string; subtitle: string}> = {
   profile: {label: 'Profile & Business Info', subtitle: 'Manage your account, business details, and prep times.'},
   appearanceCustomize: {label: 'Customize', subtitle: 'Light and dark mode.'},
   appearanceHomepage: {label: 'Homepage', subtitle: 'Customize storefront content, colors, and layout.'},
+  notificationsOrders: {label: 'Orders', subtitle: 'Order-related notifications.'},
+  notificationsPreorders: {label: 'Pre-orders', subtitle: 'Pre-order batch notifications.'},
+  notificationsInventory: {label: 'Inventory', subtitle: 'Stock and inventory notifications.'},
+  notificationsCustomers: {label: 'Customers', subtitle: 'Customer and review notifications.'},
+  notificationsReports: {label: 'Reports', subtitle: 'Reports and performance notifications.'},
+  notificationsAccount: {label: 'Account', subtitle: 'Account security notifications.'},
   store: {label: 'Store Status', subtitle: 'Opening hours and manual close controls.'},
   categories: {label: 'Menu Categories', subtitle: 'Organize how products are grouped.'},
   payment: {label: 'Payment', subtitle: 'Manual payment channels shown to customers.'},
@@ -76,31 +106,35 @@ const GROUPS = [1, 2, 3];
 export function SettingsPage() {
   const [active, setActive] = useState<TabId>('profile');
   const [query, setQuery] = useState('');
-  const [appearanceOpen, setAppearanceOpen] = useState(true);
+  const [openParents, setOpenParents] = useState<Record<string, boolean>>({
+    appearance: true,
+    notifications: true
+  });
 
-  const isAppearanceActive = active === 'appearanceCustomize' || active === 'appearanceHomepage';
+  const isChildActive = (parent: string) =>
+    (CHILDREN[parent] || []).some(c => c.id === active);
 
-  // Auto-expand appearance when a child is active or search matches children
   const filteredTop = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return TOP_ITEMS;
     return TOP_ITEMS.filter(item => {
       if (item.label.toLowerCase().includes(q)) return true;
       if (item.hasChildren) {
-        return APPEARANCE_CHILDREN.some(c => c.label.toLowerCase().includes(q));
+        return (CHILDREN[item.id] || []).some(c => c.label.toLowerCase().includes(q));
       }
       return false;
     });
   }, [query]);
 
-  const filteredChildren = useMemo(() => {
+  const filteredChildren = (parent: string) => {
     const q = query.trim().toLowerCase();
-    if (!q) return APPEARANCE_CHILDREN;
-    return APPEARANCE_CHILDREN.filter(c => c.label.toLowerCase().includes(q));
-  }, [query]);
+    const kids = CHILDREN[parent] || [];
+    if (!q) return kids;
+    return kids.filter(c => c.label.toLowerCase().includes(q));
+  };
 
-  // Force open when searching
-  const openAppearance = appearanceOpen || query.trim().length > 0;
+  const openParent = (parent: string) =>
+    openParents[parent] || query.trim().length > 0;
 
   const activeInfo = TAB_INFO[active];
 
@@ -110,6 +144,15 @@ export function SettingsPage() {
         return <CustomizeTab />;
       case 'appearanceHomepage':
         return <AppearancePreview />;
+      case 'notificationsOrders':
+      case 'notificationsPreorders':
+      case 'notificationsInventory':
+      case 'notificationsCustomers':
+      case 'notificationsReports':
+      case 'notificationsAccount': {
+        const section = active.replace('notifications', '').toLowerCase();
+        return <NotificationsTab section={section === 'preorders' ? 'preorders' : section} />;
+      }
       case 'profile':
         return <ProfileTab />;
       case 'store':
@@ -125,28 +168,26 @@ export function SettingsPage() {
     }
   };
 
-  // Mobile flat options
   const mobileOptions = useMemo(() => {
     const opts: {value: string; label: string}[] = [];
     for (const item of filteredTop) {
       if (item.hasChildren) {
-        for (const c of filteredChildren) {
-          opts.push({value: c.id, label: `Appearance › ${c.label}`});
+        for (const c of filteredChildren(item.id)) {
+          opts.push({value: c.id, label: `${item.label} › ${c.label}`});
         }
       } else {
         opts.push({value: item.id, label: item.label});
       }
     }
-    // include non-appearance top items already added; ensure profile/store etc present when not filtered
     return opts;
-  }, [filteredTop, filteredChildren]);
+  }, [filteredTop]);
 
   return (
     <div className="mx-auto max-w-6xl">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">Settings</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-extrabold text-[#2d4a35]">Settings</h1>
+          <p className="text-sm text-gray-500">
             Manage your profile, business, security, and cashier.
           </p>
         </div>
@@ -158,12 +199,12 @@ export function SettingsPage() {
         <aside className="hidden w-full shrink-0 lg:block lg:w-[280px]">
           <div className="sticky top-0 h-screen overflow-y-auto py-2 space-y-2">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <Input
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder="Search settings"
-                className="min-h-[40px] rounded-xl bg-gray-50 dark:bg-gray-800 pl-9 text-sm"
+                className="min-h-[40px] rounded-xl bg-gray-50 pl-9 text-sm"
                 aria-label="Search settings"
               />
             </div>
@@ -174,22 +215,23 @@ export function SettingsPage() {
                 if (items.length === 0) return null;
                 return (
                   <div key={g}>
-                    {gi > 0 && <div className="my-2 border-t border-gray-200 dark:border-gray-700" />}
+                    {gi > 0 && <div className="my-2 border-t border-gray-200" />}
                     <ul className="space-y-0.5">
                       {items.map(item => {
                         const Icon = item.icon;
-                        const isParentActive = item.hasChildren && isAppearanceActive;
+                        const children = item.hasChildren ? filteredChildren(item.id) : [];
+                        const parentActive = item.hasChildren && isChildActive(item.id);
                         if (item.hasChildren) {
                           return (
                             <li key={item.id}>
                               <button
                                 type="button"
-                                onClick={() => setAppearanceOpen(o => !o)}
+                                onClick={() =>
+                                  setOpenParents(p => ({...p, [item.id]: !p[item.id]}))
+                                }
                                 className={cn(
                                   'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
-                                  isParentActive
-                                    ? 'bg-gray-100 dark:bg-gray-800 font-semibold text-gray-900 dark:text-gray-100'
-                                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-800 hover:text-gray-900 dark:text-gray-100'
+                                  'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                 )}
                               >
                                 <Icon className="h-4 w-4 shrink-0" />
@@ -197,25 +239,25 @@ export function SettingsPage() {
                                 <ChevronDown
                                   className={cn(
                                     'ml-auto h-4 w-4 shrink-0 transition-transform',
-                                    openAppearance && 'rotate-180'
+                                    openParent(item.id) && 'rotate-180'
                                   )}
                                 />
                               </button>
-                              {openAppearance && (
+                              {openParent(item.id) && children.length > 0 && (
                                 <ul className="mt-0.5 space-y-0.5">
-                                  {filteredChildren.map(child => {
+                                  {children.map(child => {
                                     const ChildIcon = child.icon;
                                     const childActive = active === child.id;
                                     return (
                                       <li key={child.id}>
                                         <button
                                           type="button"
-                                          onClick={() => setActive(child.id as TabId)}
+                                          onClick={() => setActive(child.id)}
                                           className={cn(
                                             'flex w-full items-center gap-3 rounded-lg py-2 pl-10 pr-3 text-sm transition-colors',
                                             childActive
-                                              ? 'bg-gray-100 dark:bg-gray-800 font-semibold text-gray-900 dark:text-gray-100'
-                                              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-800 hover:text-gray-900 dark:text-gray-100'
+                                              ? 'bg-gray-100 font-semibold text-gray-900'
+                                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                           )}
                                         >
                                           <ChildIcon className="h-4 w-4 shrink-0" />
@@ -238,8 +280,8 @@ export function SettingsPage() {
                               className={cn(
                                 'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
                                 isActive
-                                  ? 'bg-gray-100 dark:bg-gray-800 font-semibold text-gray-900 dark:text-gray-100'
-                                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-800 hover:text-gray-900 dark:text-gray-100'
+                                  ? 'bg-gray-100 font-semibold text-gray-900'
+                                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                               )}
                             >
                               <Icon className="h-4 w-4 shrink-0" />
@@ -259,12 +301,12 @@ export function SettingsPage() {
         {/* Mobile selector */}
         <div className="space-y-3 lg:hidden">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <Input
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search settings"
-              className="min-h-[40px] rounded-xl bg-gray-50 dark:bg-gray-800 pl-9 text-sm"
+              className="min-h-[40px] rounded-xl bg-gray-50 pl-9 text-sm"
               aria-label="Search settings"
             />
           </div>
@@ -279,8 +321,8 @@ export function SettingsPage() {
         {/* Content panel */}
         <main className="min-w-0 flex-1">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{activeInfo.label}</h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{activeInfo.subtitle}</p>
+            <h2 className="text-2xl font-bold text-gray-900">{activeInfo.label}</h2>
+            <p className="mt-1 text-sm text-gray-500">{activeInfo.subtitle}</p>
           </div>
           {renderContent()}
         </main>
