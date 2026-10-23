@@ -3,8 +3,13 @@ import type {NextConfig} from 'next';
 // Backend API base. Used only by the Next.js server-side rewrite below to proxy
 // /api/* to the real backend. The browser itself always calls the same-origin
 // /api so auth cookies stay first-party (fixes iOS/Safari ITP cookie blocking).
-const backendApiUrl =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000/api';
+// Trim defensively: env vars pasted into Vercel often carry a trailing newline,
+// which would otherwise leak into the rewrite destination as "%0A" and 404.
+const backendApiUrl = (
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000/api'
+)
+  .trim()
+  .replace(/\/+$/, '');
 
 const nextConfig: NextConfig = {
   async rewrites() {
