@@ -15,8 +15,11 @@ const REFRESH_COOKIE = 'dc_refresh_token';
 function getCookieOptions(): CookieOptions {
   const isProduction =
     env.NODE_ENV === 'production' || process.env.VERCEL === '1';
-  const sameSite =
+  const rawSameSite =
     process.env.COOKIE_SAMESITE ?? (isProduction ? 'none' : 'lax');
+  // Never use 'strict': it drops cookies on top-level navigations (e.g. email
+  // verification / reset-password links) and breaks auth flows. Coerce to lax.
+  const sameSite = rawSameSite === 'strict' ? 'lax' : rawSameSite;
   // In production cookies must be Secure when SameSite=None (browsers reject
   // SameSite=None without Secure). Force Secure in production to avoid a
   // misconfigured COOKIE_SECURE=false breaking login in the installed PWA.

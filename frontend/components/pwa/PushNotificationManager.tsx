@@ -43,8 +43,9 @@ export function PushNotificationManager() {
 
   const handleSendTest = async () => {
     if (!subscription || !message.trim()) return
-    const apiBase =
-      process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api'
+    // Same-origin proxy path (see next.config.ts) so this request stays
+    // first-party and carries auth cookies on iOS/Safari.
+    const apiBase = '/api'
     await fetch(`${apiBase}/push/send`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

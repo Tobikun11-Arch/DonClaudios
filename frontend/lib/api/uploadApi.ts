@@ -1,7 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
-const resolvedBaseUrl = API_BASE_URL.length > 0 ? API_BASE_URL : undefined;
+// Same-origin proxy path (see httpClient.ts / next.config.ts) so upload requests
+// stay first-party and carry auth cookies on iOS/Safari.
+const API_BASE_URL = '/api';
+const resolvedBaseUrl = API_BASE_URL;
 
 const uploadClient = axios.create({
   baseURL: resolvedBaseUrl,

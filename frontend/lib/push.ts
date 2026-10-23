@@ -1,4 +1,6 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api'
+// Same-origin proxy path (see next.config.ts) so push subscribe/unsubscribe
+// requests stay first-party and carry auth cookies on iOS/Safari.
+const API_BASE = '/api'
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)

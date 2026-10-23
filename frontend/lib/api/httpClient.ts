@@ -6,8 +6,11 @@ import axios, {
 } from 'axios';
 import type {ApiErrorPayload, NormalizedApiError} from './types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
-const resolvedBaseUrl = API_BASE_URL.length > 0 ? API_BASE_URL : undefined;
+// Hard-coded to the same-origin proxy path. The browser must NEVER call the
+// backend directly: cross-origin requests drop auth cookies on iOS/Safari ITP.
+// The Next.js rewrite (next.config.ts) forwards /api/* to the real backend.
+const API_BASE_URL = '/api';
+const resolvedBaseUrl = API_BASE_URL;
 
 let refreshPromise: Promise<void> | null = null;
 
