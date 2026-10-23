@@ -131,33 +131,37 @@ function InlineField({field, editing}: {field: FieldDef; editing: boolean}) {
 
   if (editing) {
     return (
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-gray-500">
-          {field.label}
-        </label>
-        <Input
-          value={value}
-          onChange={e => setValue(e.target.value)}
-          onBlur={commit}
-          onKeyDown={e => {
-            if (e.key === 'Enter') {
-              (e.target as HTMLInputElement).blur();
-            }
-          }}
-          placeholder={field.placeholder}
-          className="min-h-[44px]"
-        />
+      <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-semibold text-gray-900">
+            {field.label}
+          </div>
+        </div>
+        <div className="shrink-0 sm:w-[240px]">
+          <Input
+            value={value}
+            onChange={e => setValue(e.target.value)}
+            onBlur={commit}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+            placeholder={field.placeholder}
+            className="min-h-[44px]"
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-1">
-      <div className="text-xs font-medium text-gray-500">{field.label}</div>
-      <div className="flex items-center gap-2 text-[15px] text-gray-800 break-words">
-        {field.value || (
-          <span className="text-gray-400">Not set</span>
-        )}
+    <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-semibold text-gray-900">{field.label}</div>
+      </div>
+      <div className="flex items-center gap-2 text-[15px] text-gray-800 break-words sm:w-[240px] sm:justify-end">
+        {field.value || <span className="text-gray-400">Not set</span>}
         {showSaved && (
           <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600">
             <Check className="h-3.5 w-3.5" />
@@ -330,7 +334,7 @@ export function ProfileTab() {
             onSave={url => persist({profilePhoto: url})}
           />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="divide-y divide-gray-100">
           {profileFields.map(f => (
             <InlineField
               key={`${f.label}-${profileEditing}`}
@@ -355,7 +359,7 @@ export function ProfileTab() {
             onSave={url => persist({businessLogo: url})}
           />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="divide-y divide-gray-100">
           {businessFields.map(f => (
             <InlineField
               key={`${f.label}-${businessEditing}`}
@@ -390,7 +394,7 @@ export function ProfileTab() {
           estimated by its slowest item, and cashiers are alerted if an order
           stays in Preparing longer than that.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="divide-y divide-gray-100">
           {prepFields.map(f => (
             <InlineField
               key={`${f.label}-${businessEditing}`}

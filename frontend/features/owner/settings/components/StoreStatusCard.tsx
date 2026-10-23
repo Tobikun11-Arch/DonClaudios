@@ -137,51 +137,75 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
               : `Ordering closed at ${effectiveCloseTime}. Customers currently see a "we're closed" notice.`}
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <div className="space-y-1.5">
-          <Label htmlFor="opening-time">Opening time</Label>
-          <Input
-            id="opening-time"
-            type="time"
-            value={openingTime}
-            onChange={e => setOpeningTime(e.target.value || '08:00')}
-            className="min-h-[44px]"
-            aria-label="Opening time"
-          />
+      <div className="divide-y divide-gray-100">
+        <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold text-gray-900">
+              Opening time
+            </div>
+            <div className="mt-0.5 text-xs text-gray-500">
+              When the store starts accepting orders.
+            </div>
+          </div>
+          <div className="shrink-0 sm:w-[200px]">
+            <Input
+              id="opening-time"
+              type="time"
+              value={openingTime}
+              onChange={e => setOpeningTime(e.target.value || '08:00')}
+              className="min-h-[44px]"
+              aria-label="Opening time"
+            />
+          </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="closing-time">Closing time</Label>
-          <Input
-            id="closing-time"
-            type="time"
-            value={closingTime}
-            onChange={e => setClosingTime(e.target.value || '22:00')}
-            className="min-h-[44px]"
-            aria-label="Closing time"
-          />
+        <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold text-gray-900">
+              Closing time
+            </div>
+            <div className="mt-0.5 text-xs text-gray-500">
+              When the store stops accepting orders.
+            </div>
+          </div>
+          <div className="shrink-0 sm:w-[200px]">
+            <Input
+              id="closing-time"
+              type="time"
+              value={closingTime}
+              onChange={e => setClosingTime(e.target.value || '22:00')}
+              className="min-h-[44px]"
+              aria-label="Closing time"
+            />
+          </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="advance-close">Advance close (minutes)</Label>
-          <Input
-            id="advance-close"
-            type="number"
-            min={5}
-            max={60}
-            step={5}
-            value={advanceMinutes}
-            onChange={e =>
-              setAdvanceMinutes(
-                Math.min(60, Math.max(5, Number(e.target.value) || 30))
-              )
-            }
-            className="min-h-[44px]"
-            aria-label="Advance close minutes"
-          />
-          <p className="text-xs text-gray-400">
-            Ordering stops {advanceMinutes} minutes before closing time.
-          </p>
+        <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold text-gray-900">
+              Advance close (minutes)
+            </div>
+            <div className="mt-0.5 text-xs text-gray-500">
+              Ordering stops {advanceMinutes} minutes before closing time.
+            </div>
+          </div>
+          <div className="shrink-0 sm:w-[200px]">
+            <Input
+              id="advance-close"
+              type="number"
+              min={5}
+              max={60}
+              step={5}
+              value={advanceMinutes}
+              onChange={e =>
+                setAdvanceMinutes(
+                  Math.min(60, Math.max(5, Number(e.target.value) || 30))
+                )
+              }
+              className="min-h-[44px]"
+              aria-label="Advance close minutes"
+            />
+          </div>
         </div>
       </div>
 

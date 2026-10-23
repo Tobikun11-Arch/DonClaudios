@@ -22,15 +22,21 @@ function PasswordField({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        type="password"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="min-h-[44px]"
-      />
+    <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+      <div className="min-w-0 flex-1">
+        <Label htmlFor={id} className="text-sm font-semibold text-gray-900">
+          {label}
+        </Label>
+      </div>
+      <div className="shrink-0 sm:w-[240px]">
+        <Input
+          id={id}
+          type="password"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className="min-h-[44px]"
+        />
+      </div>
     </div>
   );
 }
@@ -92,27 +98,29 @@ export function SecurityTab() {
           </h2>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4">
-          <PasswordField
-            id="currentPassword"
-            label="Current password"
-            value={form.currentPassword}
-            onChange={v =>
-              setForm(f => ({...f, currentPassword: v}))
-            }
-          />
-          <PasswordField
-            id="newPassword"
-            label="New password"
-            value={form.newPassword}
-            onChange={v => setForm(f => ({...f, newPassword: v}))}
-          />
-          <PasswordField
-            id="confirmPassword"
-            label="Confirm new password"
-            value={form.confirmPassword}
-            onChange={v => setForm(f => ({...f, confirmPassword: v}))}
-          />
+        <form onSubmit={onSubmit}>
+          <div className="divide-y divide-gray-100">
+            <PasswordField
+              id="currentPassword"
+              label="Current password"
+              value={form.currentPassword}
+              onChange={v =>
+                setForm(f => ({...f, currentPassword: v}))
+              }
+            />
+            <PasswordField
+              id="newPassword"
+              label="New password"
+              value={form.newPassword}
+              onChange={v => setForm(f => ({...f, newPassword: v}))}
+            />
+            <PasswordField
+              id="confirmPassword"
+              label="Confirm new password"
+              value={form.confirmPassword}
+              onChange={v => setForm(f => ({...f, confirmPassword: v}))}
+            />
+          </div>
 
           {formError && (
             <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
