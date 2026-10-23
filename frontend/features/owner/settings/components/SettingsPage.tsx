@@ -6,6 +6,7 @@ import {FilterSelect} from '@/shared/components/FilterPills';
 import {Input} from '@/components/ui/input';
 import OwnerNotificationBell from '@/features/owner/notifications/components/OwnerNotificationBell';
 import {ProfileTab} from './ProfileTab';
+import AppearancePreview from '@/features/owner/appearance/components/AppearancePreview';
 import {SecurityTab} from './SecurityTab';
 import {CashierTab} from './CashierTab';
 import {StoreStatusTab} from './StoreStatusTab';
@@ -18,10 +19,11 @@ import {
   Wallet,
   ShieldCheck,
   UsersRound,
+  Palette,
   Search
 } from 'lucide-react';
 
-type TabId = 'profile' | 'store' | 'categories' | 'payment' | 'security' | 'cashier';
+type TabId = 'appearance' | 'profile' | 'store' | 'categories' | 'payment' | 'security' | 'cashier';
 
 type TabDef = {
   id: TabId;
@@ -32,6 +34,7 @@ type TabDef = {
 };
 
 const TABS: TabDef[] = [
+  {id: 'appearance', label: 'Appearance', subtitle: 'Customize storefront content, colors, and layout.', icon: Palette, group: 0},
   {id: 'profile', label: 'Profile & Business Info', subtitle: 'Manage your account, business details, and prep times.', icon: UserRound, group: 1},
   {id: 'store', label: 'Store Status', subtitle: 'Opening hours and manual close controls.', icon: Clock, group: 1},
   {id: 'categories', label: 'Menu Categories', subtitle: 'Organize how products are grouped.', icon: Tags, group: 2},
@@ -40,7 +43,7 @@ const TABS: TabDef[] = [
   {id: 'cashier', label: 'Cashier', subtitle: 'Manage cashier accounts.', icon: UsersRound, group: 3}
 ];
 
-const GROUPS = [1, 2, 3];
+const GROUPS = [0, 1, 2, 3];
 
 export function SettingsPage() {
   const [active, setActive] = useState<TabId>('profile');
@@ -56,6 +59,8 @@ export function SettingsPage() {
 
   const renderContent = () => {
     switch (active) {
+      case 'appearance':
+        return <AppearancePreview />;
       case 'profile':
         return <ProfileTab />;
       case 'store':

@@ -11,7 +11,6 @@ import {
   Package,
   ClipboardList,
   Archive,
-  Palette,
   Star,
   Settings,
   LogOut,
@@ -55,12 +54,6 @@ const PRIMARY_TABS = [
 ];
 
 const DRAWER_ITEMS = [
-  {
-    label: 'Appearance',
-    tab: 'appearance',
-    icon: Palette,
-    href: '/owner/dashboard?tab=appearance'
-  },
   {
     label: 'Reviews',
     tab: 'reviews',
