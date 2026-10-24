@@ -1,5 +1,6 @@
 import React from 'react';
 import {MapPin, Phone, Mail, MessageCircle, Clock} from 'lucide-react';
+import Link from 'next/link';
 import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
 import type {FooterSection, Colors} from '@/lib/types/settings';
 
@@ -15,14 +16,14 @@ export default function Footer({
   const c = colors ?? DEFAULT_SETTINGS.colors;
 
   return (
-    <footer className="mt-auto py-12 text-white" style={{backgroundColor: c.primary}}>
+    <footer
+      className="mt-auto py-12 text-white"
+      style={{backgroundColor: c.primary}}
+    >
       <div className="container mx-auto px-4">
         <div className="grid md:grid-cols-3 gap-8 mb-8">
           <div>
-            <h3
-              className="font-bold text-xl mb-4"
-              style={{color: c.accent}}
-            >
+            <h3 className="font-bold text-xl mb-4" style={{color: c.accent}}>
               {footer.brandName}
             </h3>
             <p className="text-sm opacity-90 mb-4">{footer.description}</p>
@@ -33,10 +34,7 @@ export default function Footer({
           </div>
 
           <div>
-            <h4
-              className="font-bold mb-4"
-              style={{color: c.accent}}
-            >
+            <h4 className="font-bold mb-4" style={{color: c.accent}}>
               Contact Us
             </h4>
             <div className="space-y-3 text-sm">
@@ -67,10 +65,7 @@ export default function Footer({
           </div>
 
           <div>
-            <h4
-              className="font-bold mb-4"
-              style={{color: c.accent}}
-            >
+            <h4 className="font-bold mb-4" style={{color: c.accent}}>
               Location
             </h4>
             <div className="flex items-start gap-2 text-sm mb-4">
@@ -88,6 +83,26 @@ export default function Footer({
           <p className="text-sm opacity-75">
             &copy; 2026 {footer.brandName}. All rights reserved.
           </p>
+          <div className="flex flex-wrap justify-center gap-4 text-sm">
+            <Link
+              href="/terms"
+              className="hover:underline opacity-75 hover:opacity-100"
+            >
+              Terms & Conditions
+            </Link>
+            <Link
+              href="/return-policy"
+              className="hover:underline opacity-75 hover:opacity-100"
+            >
+              Return Policy
+            </Link>
+            <Link
+              href="/privacy"
+              className="hover:underline opacity-75 hover:opacity-100"
+            >
+              Privacy Policy
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

@@ -23,16 +23,15 @@ export default function SignUpPage() {
   const [showAutoLocate, setShowAutoLocate] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
 
-  const passwordCheck = useMemo(
-    () => validatePassword(password),
-    [password]
-  );
+  const passwordCheck = useMemo(() => validatePassword(password), [password]);
   const passwordValid = passwordCheck.valid;
-  const passwordsMatch = confirmPassword.length === 0 || password === confirmPassword;
+  const passwordsMatch =
+    confirmPassword.length === 0 || password === confirmPassword;
 
   const handleAddressInteract = () => {
     setShowAutoLocate(true);
@@ -54,6 +53,13 @@ export default function SignUpPage() {
 
     if (password !== confirmPassword) {
       setErrorMessage('Passwords do not match. Please try again.');
+      return;
+    }
+
+    if (!agreedToTerms) {
+      setErrorMessage(
+        'You must agree to the Terms, Return Policy, and Privacy Policy to continue.'
+      );
       return;
     }
 
@@ -222,11 +228,45 @@ export default function SignUpPage() {
           />
         </div>
 
+        <div className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            id="agreeToTerms"
+            checked={agreedToTerms}
+            onChange={e => setAgreedToTerms(e.target.checked)}
+            disabled={isSubmitting}
+            className="mt-1 h-4 w-4 rounded border-gray-300 text-[#3c5e45] focus:ring-[#3c5e45]"
+            required
+          />
+          <label
+            htmlFor="agreeToTerms"
+            className="text-sm text-muted-foreground"
+          >
+            I agree to the{' '}
+            <Link href="/terms" className="text-[#3c5e45] hover:underline">
+              Terms & Conditions
+            </Link>
+            ,{' '}
+            <Link
+              href="/return-policy"
+              className="text-[#3c5e45] hover:underline"
+            >
+              Return Policy
+            </Link>
+            , and{' '}
+            <Link href="/privacy" className="text-[#3c5e45] hover:underline">
+              Privacy Policy
+            </Link>
+          </label>
+        </div>
+
         <Button
           type="submit"
           className="w-full bg-[#3c5e45]"
           size="lg"
-          disabled={isSubmitting || !passwordValid || !passwordsMatch}
+          disabled={
+            isSubmitting || !passwordValid || !passwordsMatch || !agreedToTerms
+          }
         >
           <UserPlus size={18} />
           {isSubmitting ? 'Creating account...' : 'Create Account'}
