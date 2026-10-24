@@ -83,7 +83,7 @@ export const authController = {
           advanceCloseMinutes: admin?.advanceCloseMinutes,
           defaultPrepMinutes: admin?.defaultPrepMinutes,
           isManuallyClosed: admin?.isManuallyClosed,
-          manualCloseReason: admin?.manualCloseReason
+          isManuallyOpen: admin?.isManuallyOpen,
         }
       });
     } catch (error) {
@@ -137,7 +137,7 @@ export const authController = {
             advanceCloseMinutes: updated.advanceCloseMinutes,
             defaultPrepMinutes: updated.defaultPrepMinutes,
             isManuallyClosed: updated.isManuallyClosed,
-            manualCloseReason: updated.manualCloseReason
+            isManuallyOpen: updated.isManuallyOpen,
           }
         });
       }

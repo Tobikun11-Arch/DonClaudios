@@ -6,7 +6,9 @@ export type StoreStatus = {
   closingTime: string;
   advanceCloseMinutes: number;
   isManuallyClosed: boolean;
-  manualCloseReason: string;
+  isManuallyOpen: boolean;
+  forceOpen?: boolean;
+  manualOverride?: 'open' | 'closed' | null;
   closesAt: string;
   reason?: string;
   reopenMessage: string;
@@ -21,7 +23,9 @@ type UpdateStoreSettingsBody = {
   closingTime?: string;
   advanceCloseMinutes?: number;
   isManuallyClosed?: boolean;
-  manualCloseReason?: string;
+  isManuallyOpen?: boolean;
+  forceOpen?: boolean;
+  manualOverride?: 'open' | 'closed' | null;
 };
 
 type UpdateStoreSettingsResponse = {
@@ -30,7 +34,9 @@ type UpdateStoreSettingsResponse = {
     closingTime: string;
     advanceCloseMinutes: number;
     isManuallyClosed: boolean;
-    manualCloseReason: string;
+    isManuallyOpen: boolean;
+    forceOpen?: boolean;
+    manualOverride?: 'open' | 'closed' | null;
   };
 };
 
@@ -49,10 +55,19 @@ export async function updateStoreSettings(body: UpdateStoreSettingsBody) {
 
 export async function toggleManualClose(body: {
   isManuallyClosed: boolean;
-  reason?: string;
 }) {
   const res = await httpClient.patch<UpdateStoreSettingsResponse>(
     '/store-status/manual',
+    body
+  );
+  return res.data;
+}
+
+export async function toggleManualOpen(body: {
+  isManuallyOpen: boolean;
+}) {
+  const res = await httpClient.patch<UpdateStoreSettingsResponse>(
+    '/store-status/manual-open',
     body
   );
   return res.data;

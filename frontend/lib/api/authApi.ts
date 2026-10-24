@@ -44,7 +44,7 @@ type MeResponse = {
     advanceCloseMinutes?: number;
     defaultPrepMinutes?: number;
     isManuallyClosed?: boolean;
-    manualCloseReason?: string;
+    isManuallyOpen?: boolean;
   };
 };
 
@@ -73,7 +73,7 @@ export type UpdateProfileBody = {
   advanceCloseMinutes?: number;
   defaultPrepMinutes?: number;
   isManuallyClosed?: boolean;
-  manualCloseReason?: string;
+  isManuallyOpen?: boolean;
 };
 
 type ChangePasswordBody = {

@@ -4,10 +4,10 @@ import {useState} from 'react';
 import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
-import {Label} from '@/components/ui/label';
 import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 import {
   useToggleManualCloseMutation,
+  useToggleManualOpenMutation,
   useUpdateStoreSettingsMutation
 } from '@/lib/hooks/useStoreStatusMutations';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
@@ -66,15 +66,19 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
   const [isManuallyClosed, setIsManuallyClosed] = useState(
     initial.isManuallyClosed || false
   );
-  const [manualReason, setManualReason] = useState(
-    initial.manualCloseReason || ''
+  const [isManuallyOpen, setIsManuallyOpen] = useState(
+    initial.isManuallyOpen || false
   );
 
   const updateMutation = useUpdateStoreSettingsMutation();
   const toggleMutation = useToggleManualCloseMutation();
+  const toggleOpenMutation = useToggleManualOpenMutation();
 
   const isOpen = initial.isOpen;
-  const isSubmitting = updateMutation.isPending || toggleMutation.isPending;
+  const isSubmitting =
+    updateMutation.isPending ||
+    toggleMutation.isPending ||
+    toggleOpenMutation.isPending;
 
   const saveSchedule = () => {
     updateMutation.mutate(
@@ -90,7 +94,7 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
   const toggleManual = () => {
     const next = !isManuallyClosed;
     toggleMutation.mutate(
-      {isManuallyClosed: next, reason: manualReason},
+      {isManuallyClosed: next},
       {
         onError: err =>
           toast.error(
@@ -98,8 +102,31 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
           ),
         onSuccess: () => {
           setIsManuallyClosed(next);
+          if (next) setIsManuallyOpen(false);
           toast.success(
             next ? 'Store marked as closed.' : 'Store is now open.'
+          );
+        }
+      }
+    );
+  };
+
+  const toggleManualOpenState = () => {
+    const next = !isManuallyOpen;
+    toggleOpenMutation.mutate(
+      {isManuallyOpen: next},
+      {
+        onError: err =>
+          toast.error(
+            getFriendlyErrorMessage(err, 'Failed to update store status')
+          ),
+        onSuccess: () => {
+          setIsManuallyOpen(next);
+          if (next) setIsManuallyClosed(false);
+          toast.success(
+            next
+              ? 'Store manually opened. Ordering is available regardless of schedule.'
+              : 'Manual open disabled. Store follows schedule.'
           );
         }
       }
@@ -128,10 +155,12 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
       </div>
 
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5 break-words">
-        {isOpen
-          ? `Ordering is available to customers until ${effectiveCloseTime}. The store closes at ${initial.closesAt}.`
-          : isManuallyClosed
-            ? `Manually closed. Customers will see a "we're closed" notice with${manualReason ? ` reason: "${manualReason}"` : 'out a custom reason'}.`
+        {isManuallyOpen
+          ? 'Manually opened. Ordering is available regardless of schedule.'
+          : isOpen
+            ? `Ordering is available to customers until ${effectiveCloseTime}. The store closes at ${initial.closesAt}.`
+            : isManuallyClosed
+            ? `Manually closed. Customers will see a "we're closed" notice.`
             : initial.reason === 'Store has not opened yet'
               ? `Store opens at ${initial.openingTime ? initial.openingTime.replace(':', ':') : openingTime}. Customers currently see a "we're closed" notice.`
               : `Ordering closed at ${effectiveCloseTime}. Customers currently see a "we're closed" notice.`}
@@ -231,68 +260,32 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
         <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div>
             <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-              {isManuallyClosed
-                ? 'Store is closed'
-                : 'Manual close (emergency)'}
+              {isOpen ? 'Manual close (emergency)' : 'Store is closed'}
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              {isManuallyClosed
-                ? 'Customers currently see a closed notice.'
-                : 'Instantly stop ordering regardless of schedule.'}
+              {isOpen
+                ? 'Instantly stop ordering regardless of schedule.'
+                : 'Customers currently see a closed notice.'}
             </p>
           </div>
           <Button
             type="button"
-            onClick={toggleManual}
+            onClick={isOpen ? toggleManual : toggleManualOpenState}
             disabled={isSubmitting}
-            variant={isManuallyClosed ? 'outline' : 'destructive'}
+            variant={isOpen ? 'destructive' : 'default'}
             className={cn(
               'shrink-0',
-              isManuallyClosed &&
-                'border-green-500 text-green-600 hover:bg-green-50'
+              !isOpen &&
+                'bg-[#2d4a35] hover:bg-[#3c5e45] text-white'
             )}
           >
-            {toggleMutation.isPending && (
+            {(isOpen ? toggleMutation.isPending : toggleOpenMutation.isPending) && (
               <Loader2 className="h-4 w-4 animate-spin" />
             )}
-            {isManuallyClosed ? 'Reopen Store' : 'Close Store Now'}
+            {isOpen ? 'Close Store Now' : 'Open Store Now'}
           </Button>
         </div>
 
-        {isManuallyClosed && (
-          <div className="mt-4 space-y-1.5">
-            <Label htmlFor="manual-reason">
-              Reason shown to customers (optional)
-            </Label>
-            <Input
-              id="manual-reason"
-              value={manualReason}
-              onChange={e => setManualReason(e.target.value)}
-              placeholder="e.g. Power outage, event, restocking..."
-              className="min-h-[44px]"
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                toggleMutation.mutate(
-                  {isManuallyClosed: true, reason: manualReason},
-                  {
-                    onError: err =>
-                      toast.error(
-                        getFriendlyErrorMessage(err, 'Failed to save reason')
-                      ),
-                    onSuccess: () => toast.success('Reason saved.')
-                  }
-                );
-              }}
-              disabled={isSubmitting}
-            >
-              Save reason
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );

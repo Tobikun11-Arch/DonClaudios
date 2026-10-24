@@ -76,7 +76,9 @@ export const updateProfileDto = z.object({
   advanceCloseMinutes: z.number().int().min(5).max(60).optional(),
   defaultPrepMinutes: z.number().int().min(1).max(1440).optional(),
   isManuallyClosed: z.boolean().optional(),
-  manualCloseReason: z.string().optional()
+  isManuallyOpen: z.boolean().optional(),
+  forceOpen: z.boolean().optional(),
+  manualOverride: z.string().optional()
 });
 
 export const changePasswordDto = z.object({
