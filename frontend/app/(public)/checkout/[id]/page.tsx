@@ -582,7 +582,7 @@ export default function CheckoutGuestPage() {
                         <MapPin className="h-4 w-4 text-[#3c5e45]" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs text-gray-500">Deliver to</p>
+                        <p className="text-xs text-gray-500">Deliver to (Customer address)</p>
                         <p className="text-[11px] text-gray-400 mt-0.5">
                           For your courier booking and our records
                         </p>
