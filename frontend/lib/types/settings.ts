@@ -97,6 +97,7 @@ export interface PaymentChannel {
   accountName: string;
   accountNumber: string;
   instructions: string;
+  enabled?: boolean;
 }
 
 export interface PaymentSection {

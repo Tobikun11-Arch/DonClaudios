@@ -1,6 +1,6 @@
 'use client';
 
-import {useState, useSyncExternalStore} from 'react';
+import {useEffect, useState, useSyncExternalStore} from 'react';
 import {useBrand} from '@/lib/hooks/useBrand';
 import Image from 'next/image';
 import {
@@ -632,7 +632,7 @@ function ManualPaymentCardBody({
 }) {
   const settingsQuery = useSettingsQuery();
   const paymentSettings = settingsQuery.data?.payment;
-  const channels = (paymentSettings?.channels || []).filter(ch => ch && ch.id);
+  const channels = (paymentSettings?.channels || []).filter(ch => ch && ch.id && ch.enabled !== false);
   const [selectedChannelId, setSelectedChannelId] = useState(
     paymentSettings?.activeChannelId || channels[0]?.id || ''
   );
@@ -646,9 +646,16 @@ function ManualPaymentCardBody({
           image: paymentSettings.image || '',
           accountName: paymentSettings.accountName || '',
           accountNumber: paymentSettings.accountNumber || '',
-          instructions: paymentSettings.instructions || ''
+          instructions: paymentSettings.instructions || '',
+          enabled: true
         }
       : null);
+  useEffect(() => {
+    if (channels.length > 0 && !channels.some(ch => ch.id === selectedChannelId)) {
+      setSelectedChannelId(channels[0].id);
+    }
+  }, [channels, selectedChannelId]);
+
   const submitMutation = useSubmitPaymentMutation(order._id, phone);
 
   const [formOpen, setFormOpen] = useState(
@@ -759,7 +766,7 @@ function ManualPaymentCardBody({
           {channels.length > 1 ? (
             <div className="mt-4">
               <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
-                Payment channel
+                Payment method
               </p>
               <select
                 value={selectedChannelId}
@@ -768,7 +775,7 @@ function ManualPaymentCardBody({
               >
                 {channels.map(ch => (
                   <option key={ch.id} value={ch.id}>
-                    {ch.name || 'Payment channel'}
+                    {ch.name || 'Payment method'}
                   </option>
                 ))}
               </select>

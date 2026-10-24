@@ -38,7 +38,8 @@ function getDefaultChannels(): PaymentChannel[] {
       image: '',
       accountName: '',
       accountNumber: '',
-      instructions: ''
+      instructions: '',
+      enabled: true
     },
     {
       id: createId(),
@@ -46,7 +47,8 @@ function getDefaultChannels(): PaymentChannel[] {
       image: '',
       accountName: '',
       accountNumber: '',
-      instructions: ''
+      instructions: '',
+      enabled: true
     },
     {
       id: createId(),
@@ -54,7 +56,8 @@ function getDefaultChannels(): PaymentChannel[] {
       image: '',
       accountName: '',
       accountNumber: '',
-      instructions: ''
+      instructions: '',
+      enabled: true
     }
   ];
 }
@@ -104,7 +107,8 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
           image: ch.image || '',
           accountName: ch.accountName || '',
           accountNumber: ch.accountNumber || '',
-          instructions: ch.instructions || ''
+          instructions: ch.instructions || '',
+          enabled: ch.enabled !== false
         }))
       : getDefaultChannels();
 
@@ -135,7 +139,8 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
       image: '',
       accountName: '',
       accountNumber: '',
-      instructions: ''
+      instructions: '',
+      enabled: true
     };
     setChannels(prev => [...prev, newChannel]);
     setActiveChannelId(newChannel.id);
@@ -253,7 +258,7 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
 
         <div className="mt-6">
           <p className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
-            Payment channels
+            Payment method
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <select
@@ -280,6 +285,38 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
               className="max-w-xs h-10"
               placeholder="Channel name"
             />
+            <button
+              type="button"
+              onClick={() =>
+                activeChannel &&
+                setChannels(prev =>
+                  prev.map(ch =>
+                    ch.id === activeChannel.id
+                      ? {...ch, enabled: !(ch.enabled !== false)}
+                      : ch
+                  )
+                )
+              }
+              className={`inline-flex h-10 items-center gap-2 rounded-full border px-3 text-sm font-semibold transition-colors ${
+                (activeChannel?.enabled !== false)
+                  ? 'border-green-300 bg-green-50 text-green-700'
+                  : 'border-gray-300 bg-gray-100 text-gray-500'
+              }`}
+              aria-pressed={activeChannel?.enabled !== false}
+            >
+              <span
+                className={`relative h-5 w-9 rounded-full transition-colors ${
+                  (activeChannel?.enabled !== false) ? 'bg-green-500' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${
+                    (activeChannel?.enabled !== false) ? 'left-4' : 'left-0.5'
+                  }`}
+                />
+              </span>
+              {(activeChannel?.enabled !== false) ? 'On' : 'Off'}
+            </button>
             <Button type="button" variant="outline" size="sm" onClick={handleAddChannel}>
               <Plus size={14} className="mr-1" />
               Add channel
@@ -297,88 +334,83 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
           </div>
         </div>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Account picture</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                A QR / screenshot for this payment channel.
-              </p>
-              <label className="mt-2 flex h-40 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:bg-gray-800">
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={e => handlePickImage(e.target.files?.[0] ?? null)}
-                />
-                {shownImage ? (
-                  <Image
-                    src={shownImage}
-                    alt="Payment account"
-                    width={640}
-                    height={320}
-                    className="h-full w-full object-contain"
-                    unoptimized
-                  />
-                ) : (
-                  <span className="px-4 text-center text-sm font-semibold text-[#3c5e45]">
-                    Click to upload an image
-                  </span>
-                )}
-              </label>
-              {shownImage ? (
-                <button
-                  type="button"
-                  onClick={handleRemoveImage}
-                  className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline"
-                >
-                  <Trash2 size={12} />
-                  Remove image
-                </button>
-              ) : null}
-            </div>
+        <div className="mt-6 space-y-4">
+          <div>
+            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Account name</p>
+            <Input
+              value={activeChannel?.accountName || ''}
+              onChange={e =>
+                activeChannel &&
+                updateChannel(activeChannel.id, {accountName: e.target.value})
+              }
+              placeholder="e.g. DonClaudio's Lechon House"
+              className="mt-2"
+            />
           </div>
-
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Account name</p>
-              <Input
-                value={activeChannel?.accountName || ''}
-                onChange={e =>
-                  activeChannel &&
-                  updateChannel(activeChannel.id, {accountName: e.target.value})
-                }
-                placeholder="e.g. DonClaudio's Lechon House"
-                className="mt-2"
+          <div>
+            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Account number</p>
+            <Input
+              value={activeChannel?.accountNumber || ''}
+              onChange={e =>
+                activeChannel &&
+                updateChannel(activeChannel.id, {accountNumber: e.target.value})
+              }
+              placeholder="e.g. 0917 123 4567 / BPI 1234-5678-90"
+              className="mt-2"
+            />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+              Payment instructions
+            </p>
+            <textarea
+              value={activeChannel?.instructions || ''}
+              onChange={e =>
+                activeChannel &&
+                updateChannel(activeChannel.id, {instructions: e.target.value})
+              }
+              rows={5}
+              placeholder="e.g. Send your payment through this channel, take a screenshot of the receipt, then upload it below."
+              className="mt-2 w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[#3c5e45] focus:ring-2 focus:ring-[#3c5e45]/20"
+            />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Account picture</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              A QR / screenshot for this payment channel.
+            </p>
+            <label className="mt-2 flex h-40 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:bg-gray-800">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={e => handlePickImage(e.target.files?.[0] ?? null)}
               />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Account number</p>
-              <Input
-                value={activeChannel?.accountNumber || ''}
-                onChange={e =>
-                  activeChannel &&
-                  updateChannel(activeChannel.id, {accountNumber: e.target.value})
-                }
-                placeholder="e.g. 0917 123 4567 / BPI 1234-5678-90"
-                className="mt-2"
-              />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                Payment instructions
-              </p>
-              <textarea
-                value={activeChannel?.instructions || ''}
-                onChange={e =>
-                  activeChannel &&
-                  updateChannel(activeChannel.id, {instructions: e.target.value})
-                }
-                rows={5}
-                placeholder="e.g. Send your payment through this channel, take a screenshot of the receipt, then upload it below."
-                className="mt-2 w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[#3c5e45] focus:ring-2 focus:ring-[#3c5e45]/20"
-              />
-            </div>
+              {shownImage ? (
+                <Image
+                  src={shownImage}
+                  alt="Payment account"
+                  width={640}
+                  height={320}
+                  className="h-full w-full object-contain"
+                  unoptimized
+                />
+              ) : (
+                <span className="px-4 text-center text-sm font-semibold text-[#3c5e45]">
+                  Click to upload an image
+                </span>
+              )}
+            </label>
+            {shownImage ? (
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline"
+              >
+                <Trash2 size={12} />
+                Remove image
+              </button>
+            ) : null}
           </div>
         </div>
 
