@@ -725,7 +725,7 @@ function ManualPaymentCardBody({
           ) : null}
         </div>
       ) : alreadyClaimed && !formOpen ? (
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 space-y-3 space-x-2">
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
             <p className="text-sm font-bold text-amber-800">
               Submitted — awaiting verification
