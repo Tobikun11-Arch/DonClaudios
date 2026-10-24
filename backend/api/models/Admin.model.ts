@@ -13,6 +13,7 @@ export interface AdminDocument extends BaseUserDocument {
   openingTime?: string;
   closingTime?: string;
   advanceCloseMinutes?: number;
+  closedDays?: number[];
   defaultPrepMinutes?: number;
   isManuallyClosed?: boolean;
   isManuallyOpen?: boolean;
@@ -34,6 +35,7 @@ const AdminSchema = new Schema<AdminDocument>(
     openingTime: {type: String, default: '08:00'},
     closingTime: {type: String, default: '22:00'},
     advanceCloseMinutes: {type: Number, default: 30, min: 5, max: 60},
+    closedDays: {type: [Number], default: [1]},
     defaultPrepMinutes: {type: Number, default: 20, min: 1, max: 1440},
     isManuallyClosed: {type: Boolean, default: false},
     isManuallyOpen: {type: Boolean, default: false},

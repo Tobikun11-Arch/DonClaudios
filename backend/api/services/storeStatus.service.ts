@@ -5,6 +5,7 @@ interface StoreStatusResult {
   openingTime: string;
   closingTime: string;
   advanceCloseMinutes: number;
+  closedDays: number[];
   isManuallyClosed: boolean;
   isManuallyOpen: boolean;
   forceOpen: boolean;
@@ -40,6 +41,11 @@ function manilaMsOfDay(now: Date): number {
   );
 }
 
+function manilaDayOfWeek(now: Date): number {
+  const shifted = new Date(now.getTime() + MANILA_OFFSET_MS);
+  return shifted.getUTCDay();
+}
+
 export const storeStatusService = {
   async getStoreStatus(): Promise<StoreStatusResult> {
     const admins = await adminRepository.listAll();
@@ -51,6 +57,7 @@ export const storeStatusService = {
         openingTime: '08:00',
         closingTime: '22:00',
         advanceCloseMinutes: 30,
+        closedDays: [1],
         isManuallyClosed: false,
         isManuallyOpen: false,
         forceOpen: false,
@@ -66,6 +73,9 @@ export const storeStatusService = {
     const advanceCloseMinutes = admin.advanceCloseMinutes || 30;
     const isManuallyClosed = admin.isManuallyClosed || false;
     const isManuallyOpen = admin.isManuallyOpen || false;
+    const closedDays = Array.isArray(admin.closedDays)
+      ? admin.closedDays
+      : [1];
 
     if (isManuallyClosed) {
       return {
@@ -73,6 +83,7 @@ export const storeStatusService = {
         openingTime,
         closingTime,
         advanceCloseMinutes,
+        closedDays,
         isManuallyClosed: true,
         isManuallyOpen: false,
         forceOpen: false,
@@ -83,12 +94,31 @@ export const storeStatusService = {
       };
     }
 
+    const today = manilaDayOfWeek(new Date());
+    if (closedDays.includes(today)) {
+      return {
+        isOpen: false,
+        openingTime,
+        closingTime,
+        advanceCloseMinutes,
+        closedDays,
+        isManuallyClosed: false,
+        isManuallyOpen: false,
+        forceOpen: false,
+        manualOverride: null,
+        closesAt: formatTime12h(closingTime),
+        reason: 'Store is closed today',
+        reopenMessage: 'We open again on our next business day'
+      };
+    }
+
     if (isManuallyOpen) {
       return {
         isOpen: true,
         openingTime,
         closingTime,
         advanceCloseMinutes,
+        closedDays,
         isManuallyClosed: false,
         isManuallyOpen: true,
         forceOpen: true,
@@ -110,6 +140,7 @@ export const storeStatusService = {
         openingTime,
         closingTime,
         advanceCloseMinutes,
+        closedDays,
         isManuallyClosed: false,
         isManuallyOpen: false,
         forceOpen: false,
@@ -128,6 +159,7 @@ export const storeStatusService = {
         openingTime,
         closingTime,
         advanceCloseMinutes,
+        closedDays,
         isManuallyClosed: false,
         isManuallyOpen: false,
         forceOpen: false,
@@ -143,6 +175,7 @@ export const storeStatusService = {
       openingTime,
       closingTime,
       advanceCloseMinutes,
+      closedDays,
       isManuallyClosed: false,
       isManuallyOpen: false,
       forceOpen: false,
@@ -157,6 +190,7 @@ export const storeStatusService = {
     openingTime?: string;
     closingTime?: string;
     advanceCloseMinutes?: number;
+    closedDays?: number[];
     isManuallyClosed?: boolean;
     isManuallyOpen?: boolean;
     forceOpen?: boolean;
@@ -193,6 +227,7 @@ export const storeStatusService = {
     if (data.openingTime !== undefined) updateData.openingTime = data.openingTime;
     if (data.closingTime !== undefined) updateData.closingTime = data.closingTime;
     if (data.advanceCloseMinutes !== undefined) updateData.advanceCloseMinutes = data.advanceCloseMinutes;
+    if (data.closedDays !== undefined) updateData.closedDays = data.closedDays;
     if (nextClosed !== undefined) updateData.isManuallyClosed = nextClosed;
     if (nextOpen !== undefined) updateData.isManuallyOpen = nextOpen;
 
@@ -206,6 +241,7 @@ export const storeStatusService = {
       openingTime: updated.openingTime,
       closingTime: updated.closingTime,
       advanceCloseMinutes: updated.advanceCloseMinutes,
+      closedDays: Array.isArray(updated.closedDays) ? updated.closedDays : [1],
       isManuallyClosed: updated.isManuallyClosed,
       isManuallyOpen: updated.isManuallyOpen,
       forceOpen: updated.isManuallyOpen,

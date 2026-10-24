@@ -54,7 +54,7 @@ export function StoreStatusCard() {
     );
   }
 
-  return <StoreStatusForm key={`${data.status.openingTime}-${data.status.closingTime}`} initial={data.status} />;
+  return <StoreStatusForm key={`${data.status.openingTime}-${data.status.closingTime}-${(data.status.closedDays || []).join(',')}`} initial={data.status} />;
 }
 
 function StoreStatusForm({initial}: {initial: StoreStatus}) {
@@ -62,6 +62,9 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
   const [closingTime, setClosingTime] = useState(initial.closingTime || '22:00');
   const [advanceMinutes, setAdvanceMinutes] = useState(
     initial.advanceCloseMinutes || 30
+  );
+  const [closedDays, setClosedDays] = useState<number[]>(
+    Array.isArray(initial.closedDays) ? initial.closedDays : [1]
   );
   const [isManuallyClosed, setIsManuallyClosed] = useState(
     initial.isManuallyClosed || false
@@ -82,7 +85,12 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
 
   const saveSchedule = () => {
     updateMutation.mutate(
-      {openingTime, closingTime, advanceCloseMinutes: advanceMinutes},
+      {
+        openingTime,
+        closingTime,
+        advanceCloseMinutes: advanceMinutes,
+        closedDays
+      },
       {
         onError: err =>
           toast.error(getFriendlyErrorMessage(err, 'Failed to save store hours')),
@@ -234,6 +242,54 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
               className="min-h-[44px]"
               aria-label="Advance close minutes"
             />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              Closed days
+            </div>
+            <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+              Days the store is closed (recurring weekly).
+            </div>
+          </div>
+          <div className="shrink-0 sm:w-[360px]">
+            <div className="flex flex-wrap gap-2">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((name, day) => {
+                const isClosed = closedDays.includes(day);
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => {
+                      const next = isClosed
+                        ? closedDays.filter(d => d !== day)
+                        : [...closedDays, day];
+                      setClosedDays(next);
+                      updateMutation.mutate(
+                        {closedDays: next},
+                        {
+                          onError: err =>
+                            toast.error(
+                              getFriendlyErrorMessage(err, 'Failed to save closed days')
+                            ),
+                          onSuccess: () => toast.success('Closed days updated.')
+                        }
+                      );
+                    }}
+                    className={`min-h-[36px] rounded-full border px-3 text-xs font-semibold transition-colors ${
+                      isClosed
+                        ? 'border-red-300 bg-red-50 text-red-700'
+                        : 'border-gray-200 bg-white text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'
+                    }`}
+                    aria-pressed={isClosed}
+                  >
+                    {name}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

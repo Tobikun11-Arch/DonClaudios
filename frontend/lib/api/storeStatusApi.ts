@@ -5,6 +5,7 @@ export type StoreStatus = {
   openingTime: string;
   closingTime: string;
   advanceCloseMinutes: number;
+  closedDays: number[];
   isManuallyClosed: boolean;
   isManuallyOpen: boolean;
   forceOpen?: boolean;
@@ -22,6 +23,7 @@ type UpdateStoreSettingsBody = {
   openingTime?: string;
   closingTime?: string;
   advanceCloseMinutes?: number;
+  closedDays?: number[];
   isManuallyClosed?: boolean;
   isManuallyOpen?: boolean;
   forceOpen?: boolean;
@@ -33,6 +35,7 @@ type UpdateStoreSettingsResponse = {
     openingTime: string;
     closingTime: string;
     advanceCloseMinutes: number;
+    closedDays: number[];
     isManuallyClosed: boolean;
     isManuallyOpen: boolean;
     forceOpen?: boolean;
