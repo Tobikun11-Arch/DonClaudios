@@ -8,4 +8,8 @@ router.get('/', settingsController.getSettings);
 
 router.put('/', requireAuth, requireAdmin, settingsController.updateSettings);
 
+router.get('/notification-preferences', requireAuth, requireAdmin, settingsController.getNotificationPreferences);
+
+router.put('/notification-preferences', requireAuth, requireAdmin, settingsController.updateNotificationPreferences);
+
 export default router;

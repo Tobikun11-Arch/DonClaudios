@@ -1,4 +1,4 @@
-import {AdminModel, AdminDocument} from '../models/Admin.model';
+import {AdminModel, AdminDocument, NotificationPreferences} from '../models/Admin.model';
 import {phoneVariants} from '../utils/phone';
 
 export const adminRepository = {
@@ -23,5 +23,20 @@ export const adminRepository = {
   create: (data: Partial<AdminDocument>) => AdminModel.create(data),
 
   updateProfile: (id: string, data: Partial<AdminDocument>) =>
-    AdminModel.findByIdAndUpdate(id, data, {new: true}).exec()
+    AdminModel.findByIdAndUpdate(id, data, {new: true}).exec(),
+
+  getNotificationPreferences: async (adminId: string): Promise<NotificationPreferences> => {
+    const admin = await AdminModel.findById(adminId).exec();
+    if (!admin) {
+      throw new Error('Admin not found');
+    }
+    return admin.notificationPreferences || {};
+  },
+
+  updateNotificationPreferences: (adminId: string, preferences: NotificationPreferences) =>
+    AdminModel.findByIdAndUpdate(
+      adminId,
+      {notificationPreferences: preferences},
+      {new: true}
+    ).exec()
 };

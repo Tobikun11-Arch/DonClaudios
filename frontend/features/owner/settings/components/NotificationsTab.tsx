@@ -1,7 +1,51 @@
 'use client';
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {cn} from '@/lib/utils';
+import {getNotificationPreferences, updateNotificationPreferences} from '@/lib/api/settingsApi';
+import type {NotificationPreferences} from '@/lib/types/settings';
+
+const STORAGE_KEY = 'owner:notification-settings';
+
+function readStorage(): Record<string, Record<string, boolean>> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') return parsed as Record<string, Record<string, boolean>>;
+    return {};
+  } catch {
+    return {};
+  }
+}
+
+function writeStorage(all: Record<string, Record<string, boolean>>) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+  } catch {
+    // Ignore storage errors (private mode, quota, etc.)
+  }
+}
+
+function loadSection(section: string, backendPrefs?: NotificationPreferences): Record<string, boolean> {
+  const cfg = SECTIONS[section];
+  if (!cfg) return {};
+  const stored = (backendPrefs?.[section as keyof NotificationPreferences] || readStorage()[section] || {}) as Record<string, boolean>;
+  return Object.fromEntries(
+    cfg.items.map(item => [
+      item.label,
+      typeof stored[item.label] === 'boolean' ? stored[item.label] : item.defaultOn
+    ])
+  );
+}
+
+function saveSection(section: string, state: Record<string, boolean>) {
+  const all = readStorage();
+  all[section] = state;
+  writeStorage(all);
+}
 
 type Item = {label: string; description: string; defaultOn: boolean};
 
@@ -44,7 +88,8 @@ const SECTIONS: Record<string, {title: string; subtitle?: string; items: Item[]}
   account: {
     title: 'Account',
     items: [
-      {label: 'New login / password change', description: 'Security alert for the owner account', defaultOn: true}
+      {label: 'New login', description: 'Security alert when a new login occurs on the owner account', defaultOn: true},
+      {label: 'Password change', description: 'Security alert when the owner account password is changed', defaultOn: true}
     ]
   }
 };
@@ -73,9 +118,50 @@ function Toggle({on, onChange}: {on: boolean; onChange: (v: boolean) => void}) {
 
 export function NotificationsTab({section}: {section: string}) {
   const cfg = SECTIONS[section];
-  const [state, setState] = useState<Record<string, boolean>>(
-    Object.fromEntries(cfg.items.map(i => [i.label, i.defaultOn]))
-  );
+  const [state, setState] = useState<Record<string, boolean>>(() => {
+    // Start from defaults during SSR / first client render to avoid hydration mismatch.
+    return Object.fromEntries(cfg.items.map(i => [i.label, i.defaultOn]));
+  });
+  const [backendPrefs, setBackendPrefs] = useState<NotificationPreferences | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load preferences from backend on mount and when section changes.
+  useEffect(() => {
+    const loadBackendPreferences = async () => {
+      setIsLoading(true);
+      try {
+        const prefs = await getNotificationPreferences();
+        setBackendPrefs(prefs);
+        setState(loadSection(section, prefs));
+      } catch (error) {
+        console.error('Failed to load notification preferences from backend, falling back to localStorage', error);
+        setState(loadSection(section));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadBackendPreferences();
+  }, [section]);
+
+  const handleToggle = async (label: string, value: boolean) => {
+    const next = {...state, [label]: value};
+    setState(next);
+
+    // Save to localStorage immediately for responsiveness
+    saveSection(section, next);
+
+    // Sync to backend
+    try {
+      const updatedPrefs = await updateNotificationPreferences({
+        ...backendPrefs,
+        [section]: next
+      });
+      setBackendPrefs(updatedPrefs);
+    } catch (error) {
+      console.error('Failed to update notification preferences on backend', error);
+    }
+  };
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
@@ -103,7 +189,7 @@ export function NotificationsTab({section}: {section: string}) {
             <div className="shrink-0">
               <Toggle
                 on={state[item.label]}
-                onChange={v => setState(s => ({...s, [item.label]: v}))}
+                onChange={v => handleToggle(item.label, v)}
               />
             </div>
           </div>

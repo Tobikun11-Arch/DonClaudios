@@ -144,7 +144,8 @@ export function SettingsPage() {
       case 'notificationsReports':
       case 'notificationsAccount': {
         const section = active.replace('notifications', '').toLowerCase();
-        return <NotificationsTab section={section === 'preorders' ? 'preorders' : section} />;
+        const resolved = section === 'preorders' ? 'preorders' : section;
+        return <NotificationsTab key={resolved} section={resolved} />;
       }
       case 'profile':
         return <ProfileTab />;
