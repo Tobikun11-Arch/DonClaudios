@@ -21,7 +21,17 @@ export const registerDto = z.object({
   email: z.string().email(),
   password: passwordSchema,
   phoneNumber: z.string().min(1).optional(),
-  address: z.string().min(1).optional()
+  address: z.string().min(1).optional(),
+  carrier: z.enum(['globe_dito', 'smart_tnt']).optional()
+});
+
+export const verifyEmailDto = z.object({
+  email: z.string().email(),
+  code: z.string().length(6)
+});
+
+export const resendVerificationEmailDto = z.object({
+  email: z.string().email()
 });
 
 export const verifyDto = z.object({

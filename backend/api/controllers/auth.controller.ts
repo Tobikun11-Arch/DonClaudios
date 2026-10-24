@@ -296,6 +296,24 @@ export const authController = {
     }
   },
 
+  async verifyEmail(req: Request, res: Response, next: NextFunction) {
+    try {
+      await authService.verifyEmail(req.body.email, req.body.code);
+      res.status(200).json({message: 'Verified'});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async resendVerificationEmail(req: Request, res: Response, next: NextFunction) {
+    try {
+      await authService.resendVerificationEmail(req.body.email);
+      res.status(200).json({message: 'Verification code resent'});
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async forgotPassword(req: Request, res: Response, next: NextFunction) {
     try {
       await authService.forgotPassword(req.body.email);

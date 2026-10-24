@@ -34,7 +34,10 @@ import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 import {
   getGuestOtpStatus,
   sendGuestOtp,
-  verifyGuestOtp
+  verifyGuestOtp,
+  sendGuestEmailOtp,
+  verifyGuestEmailOtp,
+  getGuestEmailOtpStatus
 } from '@/lib/api/orderApi';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {saveGuestOrderHistoryEntry} from '@/lib/orders/orderHistoryStorage';
@@ -97,7 +100,11 @@ export default function CheckoutGuestPage() {
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  // Trade-off: guests verified via email (Smart/TNT) do not have a verified
+  // phone number at checkout, so security is slightly weaker for this group.
   const [mobileNumber, setMobileNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [carrier, setCarrier] = useState<'globe_dito' | 'smart_tnt' | null>(null);
   const [otpCode, setOtpCode] = useState('');
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
@@ -110,6 +117,7 @@ export default function CheckoutGuestPage() {
     firstName?: string;
     lastName?: string;
     mobileNumber?: string;
+    email?: string;
   }>({});
 
   const [addressType, setAddressType] = useState<'Residential' | 'Office'>(
@@ -206,6 +214,7 @@ export default function CheckoutGuestPage() {
   };
 
   useEffect(() => {
+    if (carrier !== 'globe_dito') return;
     if (!isLikelyValidPhone(mobileNumber)) {
       setPhoneVerified(false);
       return;
@@ -225,7 +234,30 @@ export default function CheckoutGuestPage() {
     }, 700);
 
     return () => clearTimeout(timer);
-  }, [mobileNumber]);
+  }, [mobileNumber, carrier]);
+
+  useEffect(() => {
+    if (carrier !== 'smart_tnt') return;
+    if (!email.trim() || !email.includes('@')) {
+      setPhoneVerified(false);
+      return;
+    }
+
+    setPhoneVerified(false);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await getGuestEmailOtpStatus(email.trim());
+        if (res.verified) {
+          setPhoneVerified(true);
+          setOtpMessage('Your email is already verified.');
+        }
+      } catch {
+        // ignore status check failures
+      }
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [email, carrier]);
 
   useEffect(() => {
     if (!codeSentAt) return;
@@ -238,27 +270,45 @@ export default function CheckoutGuestPage() {
     : 0;
 
   const handleSendOtp = async () => {
-    const phone = mobileNumber.trim();
-    if (!phone) {
-      setErrors(current => ({
-        ...current,
-        mobileNumber: 'Mobile number is required.'
-      }));
-      return;
-    }
     setIsSendingOtp(true);
     setOtpError(null);
     setOtpMessage(null);
     try {
-      const res = await sendGuestOtp(phone);
-      if (res.alreadyVerified) {
-        setPhoneVerified(true);
-        setOtpMessage('Your phone number is already verified.');
+      if (carrier === 'smart_tnt') {
+        const mail = email.trim();
+        if (!mail) {
+          setErrors(current => ({...current, email: 'Email is required.'}));
+          return;
+        }
+        const res = await sendGuestEmailOtp(mail);
+        if (res.alreadyVerified) {
+          setPhoneVerified(true);
+          setOtpMessage('Your email is already verified.');
+        } else {
+          setCodeSentAt(Date.now());
+          setOtpMessage(
+            'A 6-digit code was sent to your email. It expires in 5 minutes.'
+          );
+        }
       } else {
-        setCodeSentAt(Date.now());
-        setOtpMessage(
-          'A 6-digit code was sent to your phone. It expires in 5 minutes.'
-        );
+        const phone = mobileNumber.trim();
+        if (!phone) {
+          setErrors(current => ({
+            ...current,
+            mobileNumber: 'Mobile number is required.'
+          }));
+          return;
+        }
+        const res = await sendGuestOtp(phone);
+        if (res.alreadyVerified) {
+          setPhoneVerified(true);
+          setOtpMessage('Your phone number is already verified.');
+        } else {
+          setCodeSentAt(Date.now());
+          setOtpMessage(
+            'A 6-digit code was sent to your phone. It expires in 5 minutes.'
+          );
+        }
       }
     } catch (error) {
       setOtpError(
@@ -270,15 +320,22 @@ export default function CheckoutGuestPage() {
   };
 
   const handleVerifyOtp = async () => {
-    const phone = mobileNumber.trim();
-    if (!phone || otpCode.length !== 6) return;
+    if (otpCode.length !== 6) return;
     setIsVerifyingOtp(true);
     setOtpError(null);
     setOtpMessage(null);
     try {
-      await verifyGuestOtp(phone, otpCode);
+      if (carrier === 'smart_tnt') {
+        await verifyGuestEmailOtp(email.trim(), otpCode);
+      } else {
+        await verifyGuestOtp(mobileNumber.trim(), otpCode);
+      }
       setPhoneVerified(true);
-      setOtpMessage('Your phone number has been verified.');
+      setOtpMessage(
+        carrier === 'smart_tnt'
+          ? 'Your email has been verified.'
+          : 'Your phone number has been verified.'
+      );
     } catch (error) {
       setOtpError(
         getFriendlyErrorMessage(error, 'Verification failed. Try again.')
@@ -301,9 +358,17 @@ export default function CheckoutGuestPage() {
     const nextErrors: typeof errors = {};
     if (!firstName.trim()) nextErrors.firstName = 'First name is required.';
     if (!lastName.trim()) nextErrors.lastName = 'Last name is required.';
+    if (carrier === 'smart_tnt') {
+      if (!email.trim()) {
+        nextErrors.email = 'Email is required.';
+      } else if (!phoneVerified) {
+        nextErrors.email = 'Please verify your email before placing the order.';
+      }
+    }
+
     if (!mobileNumber.trim()) {
       nextErrors.mobileNumber = 'Mobile number is required.';
-    } else if (!phoneVerified) {
+    } else if (!phoneVerified && carrier !== 'smart_tnt') {
       nextErrors.mobileNumber =
         'Please verify your phone number before placing the order.';
     }
@@ -398,6 +463,7 @@ export default function CheckoutGuestPage() {
           !phoneVerified ||
           isStoreClosed ||
           createOrderMutation.isPending ||
+          carrier === null ||
           (orderType === 'Delivery' && !address.trim())
         }
         onClick={handleCheckout}
@@ -767,6 +833,67 @@ export default function CheckoutGuestPage() {
                 </div>
               </div>
 
+              <div className="mt-4 space-y-2">
+                <p className="text-xs font-semibold text-gray-700">
+                  Is your SIM Globe, DITO, Smart, or TNT?
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={carrier === 'globe_dito' ? 'default' : 'outline'}
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => {
+                      setCarrier('globe_dito');
+                      setPhoneVerified(false);
+                      setOtpCode('');
+                      setCodeSentAt(null);
+                    }}
+                  >
+                    Globe/DITO
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={carrier === 'smart_tnt' ? 'default' : 'outline'}
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => {
+                      setCarrier('smart_tnt');
+                      setPhoneVerified(false);
+                      setOtpCode('');
+                      setCodeSentAt(null);
+                    }}
+                  >
+                    Smart/TNT
+                  </Button>
+                </div>
+              </div>
+
+              {carrier === 'smart_tnt' ? (
+                <div className="mt-4">
+                  <p className="text-xs font-semibold text-gray-700">Email</p>
+                  <Input
+                    value={email}
+                    onChange={e => {
+                      setEmail(e.target.value);
+                      setErrors(current => ({...current, email: undefined}));
+                      setPhoneVerified(false);
+                      setOtpCode('');
+                      setCodeSentAt(null);
+                      setOtpMessage(null);
+                      setOtpError(null);
+                    }}
+                    placeholder="you@example.com"
+                    className="mt-2"
+                  />
+                  {errors.email ? (
+                    <p className="mt-1 text-xs font-medium text-red-600">
+                      {errors.email}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
               <div className="mt-4">
                 <p className="text-xs font-semibold text-gray-700">
                   Mobile Number
@@ -804,8 +931,11 @@ export default function CheckoutGuestPage() {
                         className="rounded-full"
                         disabled={
                           isSendingOtp ||
-                          !mobileNumber.trim() ||
-                          cooldownLeft > 0
+                          cooldownLeft > 0 ||
+                          carrier === null ||
+                          (carrier === 'smart_tnt'
+                            ? !email.trim()
+                            : !mobileNumber.trim())
                         }
                         onClick={handleSendOtp}
                       >

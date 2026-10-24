@@ -1,7 +1,8 @@
 import mongoose, {Schema} from 'mongoose';
 
 export interface GuestVerificationDocument extends mongoose.Document {
-  phoneNumber: string;
+  phoneNumber?: string;
+  email?: string;
   verificationCode: string | null;
   verificationExpiry: Date | null;
   verified: boolean;
@@ -15,7 +16,8 @@ export interface GuestVerificationDocument extends mongoose.Document {
 
 const GuestVerificationSchema = new Schema<GuestVerificationDocument>(
   {
-    phoneNumber: {type: String, required: true, unique: true},
+    phoneNumber: {type: String, sparse: true, unique: true},
+    email: {type: String, sparse: true, unique: true, lowercase: true, trim: true},
     verificationCode: {type: String, default: null},
     verificationExpiry: {type: Date, default: null},
     verified: {type: Boolean, default: false},

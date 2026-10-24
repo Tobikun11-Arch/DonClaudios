@@ -24,7 +24,7 @@ export type OrderStatus =
 export interface GuestInfo {
   firstName: string;
   lastName: string;
-  phoneNumber: string;
+  phoneNumber?: string;
   address?: string;
   email?: string;
 }
@@ -92,7 +92,7 @@ const GuestInfoSchema = new Schema<GuestInfo>(
   {
     firstName: {type: String, required: true},
     lastName: {type: String, required: true},
-    phoneNumber: {type: String, required: true},
+    phoneNumber: {type: String},
     address: {type: String},
     email: {type: String}
   },

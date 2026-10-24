@@ -5,6 +5,8 @@ import {
   registerDto,
   resendVerificationDto,
   verifyDto,
+  verifyEmailDto,
+  resendVerificationEmailDto,
   loginDto,
   refreshDto,
   updateProfileDto,
@@ -30,10 +32,22 @@ router.post(
 );
 router.post('/verify', authLimiter, validate(verifyDto), authController.verify);
 router.post(
+  '/verify-email',
+  authLimiter,
+  validate(verifyEmailDto),
+  authController.verifyEmail
+);
+router.post(
   '/resend-verification',
   authLimiter,
   validate(resendVerificationDto),
   authController.resendVerification
+);
+router.post(
+  '/resend-verification-email',
+  authLimiter,
+  validate(resendVerificationEmailDto),
+  authController.resendVerificationEmail
 );
 
 router.post('/login', loginLimiter, validate(loginDto), authController.login);

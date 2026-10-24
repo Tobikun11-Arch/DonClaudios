@@ -87,6 +87,6 @@ export const customerRepository = {
   markVerified: (identifier: string) =>
     CustomerModel.updateOne(
       matchByIdentifier(identifier),
-      {isVerified: true, verificationCode: null, verificationExpiry: null}
+      {isVerified: true, phoneVerified: true, verificationCode: null, verificationExpiry: null}
     ).exec()
 };

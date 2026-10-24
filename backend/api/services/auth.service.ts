@@ -9,6 +9,7 @@ import {emailService} from './email.service';
 import {smsService} from './sms.service';
 import {toInternationalPhone} from '../utils/phone';
 import {resetPasswordEmailTemplate} from '../templates/resetPasswordEmail';
+import {verificationCodeEmailTemplate} from '../templates/verificationCodeEmail';
 import {
   generateVerificationCode,
   getVerificationExpiry
@@ -22,8 +23,11 @@ export const authService = {
     password: string;
     phoneNumber: string;
     address: string;
+    carrier?: 'globe_dito' | 'smart_tnt';
   }) {
     const email = data.email.toLowerCase().trim();
+    const carrier = data.carrier === 'smart_tnt' ? 'smart_tnt' : 'globe_dito';
+    const useEmailOtp = carrier === 'smart_tnt';
 
     // Validate phone format up front so we never persist a record we cannot
     // send an OTP to (which would leave the user stuck).
@@ -104,21 +108,36 @@ export const authService = {
           address: data.address,
           verificationCode,
           verificationExpiry,
-          isVerified: false
+          isVerified: false,
+          phoneVerified: false
         } as any);
 
         const customer = await customerRepository.findById(String(target._id));
 
         try {
-          await smsService.sendVerificationSms({
-            phoneNumber: customer?.phoneNumber ?? data.phoneNumber,
-            code: verificationCode,
-            expiresMinutes: 10
-          });
-        } catch (smsError) {
+          if (useEmailOtp) {
+            const tpl = verificationCodeEmailTemplate({
+              code: verificationCode,
+              expiresMinutes: 10,
+              recipientName: data.firstName
+            });
+            await emailService.sendEmail({
+              to: email,
+              subject: tpl.subject,
+              text: tpl.text,
+              html: tpl.html
+            });
+          } else {
+            await smsService.sendVerificationSms({
+              phoneNumber: customer?.phoneNumber ?? data.phoneNumber,
+              code: verificationCode,
+              expiresMinutes: 10
+            });
+          }
+        } catch (sendError) {
           // Keep the pending record so the user can request a resend from the
           // verify screen; do not delete (unlike the brand-new case below).
-          throw smsError;
+          throw sendError;
         }
 
         return {
@@ -136,18 +155,33 @@ export const authService = {
         address: data.address,
         verificationCode,
         verificationExpiry,
-        isVerified: false
+        isVerified: false,
+        phoneVerified: false
       });
 
       try {
-        await smsService.sendVerificationSms({
-          phoneNumber: customer.phoneNumber ?? data.phoneNumber,
-          code: verificationCode,
-          expiresMinutes: 10
-        });
-      } catch (smsError) {
+        if (useEmailOtp) {
+          const tpl = verificationCodeEmailTemplate({
+            code: verificationCode,
+            expiresMinutes: 10,
+            recipientName: data.firstName
+          });
+          await emailService.sendEmail({
+            to: email,
+            subject: tpl.subject,
+            text: tpl.text,
+            html: tpl.html
+          });
+        } else {
+          await smsService.sendVerificationSms({
+            phoneNumber: customer.phoneNumber ?? data.phoneNumber,
+            code: verificationCode,
+            expiresMinutes: 10
+          });
+        }
+      } catch (sendError) {
         await customerRepository.deleteById(customer.id).catch(() => {});
-        throw smsError;
+        throw sendError;
       }
 
       return {id: customer.id, phoneNumber: customer.phoneNumber};
@@ -214,6 +248,63 @@ export const authService = {
     }
 
     await customerRepository.markVerified(phoneNumber);
+  },
+
+  async verifyEmail(email: string, code: string) {
+    const customer = await customerRepository.findByEmail(email);
+    if (
+      !customer ||
+      !customer.verificationCode ||
+      !customer.verificationExpiry
+    ) {
+      throw new ApiError(400, 'INVALID_CODE', 'Invalid verification code');
+    }
+
+    const codeMatches = customer.verificationCode === code;
+    const notExpired = customer.verificationExpiry > new Date();
+
+    if (!codeMatches || !notExpired) {
+      throw new ApiError(
+        400,
+        'EXPIRED_CODE',
+        'Verification code expired or invalid'
+      );
+    }
+
+    await customerRepository.update(String(customer._id), {
+      isVerified: true,
+      phoneVerified: false,
+      verificationCode: null,
+      verificationExpiry: null
+    } as any);
+  },
+
+  async resendVerificationEmail(email: string) {
+    const customer = await customerRepository.findByEmail(email);
+    if (!customer) {
+      throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
+    }
+
+    if (customer.isVerified) {
+      throw new ApiError(400, 'ALREADY_VERIFIED', 'Account already verified');
+    }
+
+    const verificationCode = generateVerificationCode();
+    const verificationExpiry = getVerificationExpiry(10);
+
+    await customerRepository.setVerificationCode(email, verificationCode, verificationExpiry);
+
+    const tpl = verificationCodeEmailTemplate({
+      code: verificationCode,
+      expiresMinutes: 10,
+      recipientName: customer.firstName
+    });
+    await emailService.sendEmail({
+      to: email,
+      subject: tpl.subject,
+      text: tpl.text,
+      html: tpl.html
+    });
   },
 
   async resendVerification(phoneNumber: string) {

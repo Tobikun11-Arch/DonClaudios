@@ -9,6 +9,15 @@ export const guestOtpVerifyDto = z.object({
   code: z.string().length(6)
 });
 
+export const guestEmailOtpSendDto = z.object({
+  email: z.string().email()
+});
+
+export const guestEmailOtpVerifyDto = z.object({
+  email: z.string().email(),
+  code: z.string().length(6)
+});
+
 const isoDay = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD');

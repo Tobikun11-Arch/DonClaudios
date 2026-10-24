@@ -285,6 +285,30 @@ export async function sendAdminOrderMessage(orderId: string, body: string) {
   return res.data;
 }
 
+export async function sendGuestEmailOtp(email: string) {
+  const res = await httpClient.post<{message: string; alreadyVerified?: boolean}>(
+    '/orders/guest/otp/email',
+    {email}
+  );
+  return res.data;
+}
+
+export async function verifyGuestEmailOtp(email: string, code: string) {
+  const res = await httpClient.post<{message: string}>(
+    '/orders/guest/otp/email/verify',
+    {email, code}
+  );
+  return res.data;
+}
+
+export async function getGuestEmailOtpStatus(email: string) {
+  const res = await httpClient.get<{verified: boolean; message: string}>(
+    '/orders/guest/otp/email/status',
+    {params: {email}}
+  );
+  return res.data;
+}
+
 export async function getTrackedOrder(orderId: string, phoneNumber?: string) {
   const res = await httpClient.get<OrderDetailResponse>(
     `/orders/customer/track/${orderId}`,

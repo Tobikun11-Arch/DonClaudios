@@ -1189,6 +1189,47 @@ export const orderController = {
     }
   },
 
+  async sendGuestEmailOtp(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await guestOtpService.sendEmailOtp(req.body.email);
+      if (result.alreadyVerified) {
+        return res.status(200).json({
+          message: 'Email already verified',
+          alreadyVerified: true
+        });
+      }
+      res.status(200).json({message: 'Verification code sent'});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async verifyGuestEmailOtp(req: Request, res: Response, next: NextFunction) {
+    try {
+      await guestOtpService.verifyEmailOtp(req.body.email, req.body.code);
+      res.status(200).json({message: 'Email verified'});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async checkGuestEmailOtpStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const email =
+        typeof req.query.email === 'string' ? req.query.email : '';
+      if (!isNonEmptyString(email)) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'email is required');
+      }
+      const verified = await guestOtpService.isEmailVerified(email);
+      res.status(200).json({
+        verified,
+        message: verified ? 'Email verified' : 'Email not verified'
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async createGuestOrder(req: Request, res: Response, next: NextFunction) {
     try {
       await assertStoreOpen();
@@ -1898,6 +1939,25 @@ export const orderController = {
         console.info(
           `[audit] order ${req.params.id} cancelled by ${req.auth?.userId ?? 'unknown'} (${req.auth?.type ?? 'unknown'}) reason="${cancelReason ?? ''}"`
         );
+      }
+
+      if (
+        status === 'completed' &&
+        order.customerId &&
+        order.orderSource !== 'in-store'
+      ) {
+        try {
+          const customer = await customerRepository.findById(
+            String(order.customerId)
+          );
+          if (customer && customer.phoneVerified !== true) {
+            await customerRepository.update(String(order.customerId), {
+              phoneVerified: true
+            } as any);
+          }
+        } catch (error) {
+          console.error('Failed to set phoneVerified on completed order', error);
+        }
       }
 
       const updated = await orderRepository.findById(req.params.id);
