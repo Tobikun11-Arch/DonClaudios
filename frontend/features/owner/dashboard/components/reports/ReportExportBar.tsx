@@ -12,9 +12,7 @@ import {cn} from '@/lib/utils';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {getReportPdf} from '@/lib/api/reportApi';
 import {
-  downloadCsv,
   exportFilename,
-  toCsv,
   triggerBlobDownload
 } from '@/lib/utils/csvExport';
 import type {CsvColumn} from '@/lib/utils/csvExport';
@@ -43,9 +41,7 @@ function Icon({view}: {view: ReportView}) {
  */
 export function ReportExportBar({
   view,
-  range,
-  rows,
-  columns
+  range
 }: {
   view: ReportView;
   range: ReportRange;
@@ -55,9 +51,7 @@ export function ReportExportBar({
     CsvColumn<Record<string, string | number | null | undefined>>
   >;
 }) {
-  const [busy, setBusy] = useState<'pdf' | 'csv' | null>(null);
-
-  const canExportCsv = Boolean(rows && columns && rows.length > 0);
+  const [busy, setBusy] = useState<'pdf' | null>(null);
 
   const handlePdf = async () => {
     setBusy('pdf');
@@ -72,24 +66,6 @@ export function ReportExportBar({
       toast.error(
         getFriendlyErrorMessage(error, 'Failed to generate the PDF report')
       );
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const handleCsv = () => {
-    if (!rows || !columns) return;
-    setBusy('csv');
-    try {
-      downloadCsv(
-        exportFilename(`don-claudios-${view}-report`, 'csv'),
-        toCsv(rows, columns)
-      );
-      toast.success(
-        `${rows.length} row${rows.length === 1 ? '' : 's'} exported`
-      );
-    } catch {
-      toast.error('Failed to build the CSV file');
     } finally {
       setBusy(null);
     }

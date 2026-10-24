@@ -79,7 +79,7 @@ export default function EditableText({
       {value || (
         <span className="italic text-gray-300">{placeholder}</span>
       )}
-      {saving && <span className="ml-1 text-xs text-gray-400">...</span>}
+      {saving && <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">...</span>}
     </Tag>
   );
 }

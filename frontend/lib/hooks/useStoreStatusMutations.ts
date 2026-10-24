@@ -3,6 +3,7 @@
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {
   toggleManualClose,
+  toggleManualOpen,
   updateStoreSettings
 } from '@/lib/api/storeStatusApi';
 import {storeStatusQueryKey} from './useStoreStatus';
@@ -23,6 +24,17 @@ export function useToggleManualCloseMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: toggleManualClose,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({queryKey: storeStatusQueryKey});
+      await queryClient.invalidateQueries({queryKey: meQueryKey});
+    }
+  });
+}
+
+export function useToggleManualOpenMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: toggleManualOpen,
     onSuccess: async () => {
       await queryClient.invalidateQueries({queryKey: storeStatusQueryKey});
       await queryClient.invalidateQueries({queryKey: meQueryKey});

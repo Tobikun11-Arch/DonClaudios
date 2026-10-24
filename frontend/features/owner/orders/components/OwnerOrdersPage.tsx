@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import {useMemo, useState} from 'react';
 import {ChevronDown, ChevronLeft, ChevronRight, Loader2, Search} from 'lucide-react';
 import {cn} from '@/lib/utils';
@@ -330,9 +331,11 @@ export default function OwnerOrdersPage() {
                 <tr>
                   <td colSpan={7} className="px-5 py-12">
                     <div className="flex items-center justify-center">
-                      <img
+                      <Image
                         src="/assets/table/table_1.png"
                         alt=""
+                        width={208}
+                        height={208}
                         className="h-44 w-44 object-contain sm:h-52 sm:w-52"
                       />
                     </div>
@@ -343,9 +346,11 @@ export default function OwnerOrdersPage() {
           </div>
           {/* Mobile: centered character */}
           <div className="flex items-center justify-center rounded-xl border border-[#E5E7EB] bg-white px-5 py-12 lg:hidden">
-            <img
+            <Image
               src="/assets/table/table_1.png"
               alt=""
+              width={176}
+              height={176}
               className="h-44 w-44 object-contain"
             />
           </div>

@@ -4,10 +4,10 @@ import {useState} from 'react';
 import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
-import {Label} from '@/components/ui/label';
 import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 import {
   useToggleManualCloseMutation,
+  useToggleManualOpenMutation,
   useUpdateStoreSettingsMutation
 } from '@/lib/hooks/useStoreStatusMutations';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
@@ -39,22 +39,22 @@ export function StoreStatusCard() {
   if (isLoading && !data) {
     return (
       <div className="space-y-4">
-        <div className="h-8 bg-gray-100 animate-pulse rounded-lg w-64" />
-        <div className="h-24 bg-gray-100 animate-pulse rounded-xl" />
-        <div className="h-24 bg-gray-100 animate-pulse rounded-xl" />
+        <div className="h-8 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-lg w-64" />
+        <div className="h-24 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl" />
+        <div className="h-24 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl" />
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
+      <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 text-sm text-gray-500 dark:text-gray-400">
         Unable to load store status.
       </div>
     );
   }
 
-  return <StoreStatusForm key={`${data.status.openingTime}-${data.status.closingTime}`} initial={data.status} />;
+  return <StoreStatusForm key={`${data.status.openingTime}-${data.status.closingTime}-${(data.status.closedDays || []).join(',')}`} initial={data.status} />;
 }
 
 function StoreStatusForm({initial}: {initial: StoreStatus}) {
@@ -63,22 +63,34 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
   const [advanceMinutes, setAdvanceMinutes] = useState(
     initial.advanceCloseMinutes || 30
   );
+  const [closedDays, setClosedDays] = useState<number[]>(
+    Array.isArray(initial.closedDays) ? initial.closedDays : [1]
+  );
   const [isManuallyClosed, setIsManuallyClosed] = useState(
     initial.isManuallyClosed || false
   );
-  const [manualReason, setManualReason] = useState(
-    initial.manualCloseReason || ''
+  const [isManuallyOpen, setIsManuallyOpen] = useState(
+    initial.isManuallyOpen || false
   );
 
   const updateMutation = useUpdateStoreSettingsMutation();
   const toggleMutation = useToggleManualCloseMutation();
+  const toggleOpenMutation = useToggleManualOpenMutation();
 
   const isOpen = initial.isOpen;
-  const isSubmitting = updateMutation.isPending || toggleMutation.isPending;
+  const isSubmitting =
+    updateMutation.isPending ||
+    toggleMutation.isPending ||
+    toggleOpenMutation.isPending;
 
   const saveSchedule = () => {
     updateMutation.mutate(
-      {openingTime, closingTime, advanceCloseMinutes: advanceMinutes},
+      {
+        openingTime,
+        closingTime,
+        advanceCloseMinutes: advanceMinutes,
+        closedDays
+      },
       {
         onError: err =>
           toast.error(getFriendlyErrorMessage(err, 'Failed to save store hours')),
@@ -90,7 +102,7 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
   const toggleManual = () => {
     const next = !isManuallyClosed;
     toggleMutation.mutate(
-      {isManuallyClosed: next, reason: manualReason},
+      {isManuallyClosed: next},
       {
         onError: err =>
           toast.error(
@@ -98,8 +110,31 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
           ),
         onSuccess: () => {
           setIsManuallyClosed(next);
+          if (next) setIsManuallyOpen(false);
           toast.success(
             next ? 'Store marked as closed.' : 'Store is now open.'
+          );
+        }
+      }
+    );
+  };
+
+  const toggleManualOpenState = () => {
+    const next = !isManuallyOpen;
+    toggleOpenMutation.mutate(
+      {isManuallyOpen: next},
+      {
+        onError: err =>
+          toast.error(
+            getFriendlyErrorMessage(err, 'Failed to update store status')
+          ),
+        onSuccess: () => {
+          setIsManuallyOpen(next);
+          if (next) setIsManuallyClosed(false);
+          toast.success(
+            next
+              ? 'Store manually opened. Ordering is available regardless of schedule.'
+              : 'Manual open disabled. Store follows schedule.'
           );
         }
       }
@@ -109,9 +144,9 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
   const effectiveCloseTime = formatEffectiveClose(closingTime, advanceMinutes);
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
+    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">
       <div className="mb-5 flex items-center justify-between gap-2">
-        <h2 className="text-lg font-bold text-[#2d4a35]">Store Status</h2>
+        <h2 className="text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">Store Status</h2>
         <span
           className={cn(
             'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide',
@@ -127,61 +162,135 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
         </span>
       </div>
 
-      <p className="text-sm text-gray-500 mb-5 break-words">
-        {isOpen
-          ? `Ordering is available to customers until ${effectiveCloseTime}. The store closes at ${initial.closesAt}.`
-          : isManuallyClosed
-            ? `Manually closed. Customers will see a "we're closed" notice with${manualReason ? ` reason: "${manualReason}"` : 'out a custom reason'}.`
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-5 break-words">
+        {isManuallyOpen
+          ? 'Manually opened. Ordering is available regardless of schedule.'
+          : isOpen
+            ? `Ordering is available to customers until ${effectiveCloseTime}. The store closes at ${initial.closesAt}.`
+            : isManuallyClosed
+            ? `Manually closed. Customers will see a "we're closed" notice.`
             : initial.reason === 'Store has not opened yet'
               ? `Store opens at ${initial.openingTime ? initial.openingTime.replace(':', ':') : openingTime}. Customers currently see a "we're closed" notice.`
               : `Ordering closed at ${effectiveCloseTime}. Customers currently see a "we're closed" notice.`}
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <div className="space-y-1.5">
-          <Label htmlFor="opening-time">Opening time</Label>
-          <Input
-            id="opening-time"
-            type="time"
-            value={openingTime}
-            onChange={e => setOpeningTime(e.target.value || '08:00')}
-            className="min-h-[44px]"
-            aria-label="Opening time"
-          />
+      <div className="divide-y divide-gray-100">
+        <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              Opening time
+            </div>
+            <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+              When the store starts accepting orders.
+            </div>
+          </div>
+          <div className="shrink-0 sm:w-[200px]">
+            <Input
+              id="opening-time"
+              type="time"
+              value={openingTime}
+              onChange={e => setOpeningTime(e.target.value || '08:00')}
+              className="min-h-[44px]"
+              aria-label="Opening time"
+            />
+          </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="closing-time">Closing time</Label>
-          <Input
-            id="closing-time"
-            type="time"
-            value={closingTime}
-            onChange={e => setClosingTime(e.target.value || '22:00')}
-            className="min-h-[44px]"
-            aria-label="Closing time"
-          />
+        <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              Closing time
+            </div>
+            <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+              When the store stops accepting orders.
+            </div>
+          </div>
+          <div className="shrink-0 sm:w-[200px]">
+            <Input
+              id="closing-time"
+              type="time"
+              value={closingTime}
+              onChange={e => setClosingTime(e.target.value || '22:00')}
+              className="min-h-[44px]"
+              aria-label="Closing time"
+            />
+          </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="advance-close">Advance close (minutes)</Label>
-          <Input
-            id="advance-close"
-            type="number"
-            min={5}
-            max={60}
-            step={5}
-            value={advanceMinutes}
-            onChange={e =>
-              setAdvanceMinutes(
-                Math.min(60, Math.max(5, Number(e.target.value) || 30))
-              )
-            }
-            className="min-h-[44px]"
-            aria-label="Advance close minutes"
-          />
-          <p className="text-xs text-gray-400">
-            Ordering stops {advanceMinutes} minutes before closing time.
-          </p>
+        <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              Advance close (minutes)
+            </div>
+            <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+              Ordering stops {advanceMinutes} minutes before closing time.
+            </div>
+          </div>
+          <div className="shrink-0 sm:w-[200px]">
+            <Input
+              id="advance-close"
+              type="number"
+              min={5}
+              max={60}
+              step={5}
+              value={advanceMinutes}
+              onChange={e =>
+                setAdvanceMinutes(
+                  Math.min(60, Math.max(5, Number(e.target.value) || 30))
+                )
+              }
+              className="min-h-[44px]"
+              aria-label="Advance close minutes"
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              Closed days
+            </div>
+            <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+              Days the store is closed (recurring weekly).
+            </div>
+          </div>
+          <div className="shrink-0 sm:w-[360px]">
+            <div className="flex flex-wrap gap-2">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((name, day) => {
+                const isClosed = closedDays.includes(day);
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => {
+                      const next = isClosed
+                        ? closedDays.filter(d => d !== day)
+                        : [...closedDays, day];
+                      setClosedDays(next);
+                      updateMutation.mutate(
+                        {closedDays: next},
+                        {
+                          onError: err =>
+                            toast.error(
+                              getFriendlyErrorMessage(err, 'Failed to save closed days')
+                            ),
+                          onSuccess: () => toast.success('Closed days updated.')
+                        }
+                      );
+                    }}
+                    className={`min-h-[36px] rounded-full border px-3 text-xs font-semibold transition-colors ${
+                      isClosed
+                        ? 'border-red-300 bg-red-50 text-red-700'
+                        : 'border-gray-200 bg-white text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'
+                    }`}
+                    aria-pressed={isClosed}
+                  >
+                    {name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -197,78 +306,42 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
           )}
           Save Hours
         </Button>
-        <span className="flex items-center gap-1.5 text-xs text-gray-500">
+        <span className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
           <Clock className="h-4 w-4" />
           Customers stop ordering at {effectiveCloseTime}
         </span>
       </div>
 
-      <div className="mt-6 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4">
+      <div className="mt-6 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 p-4">
         <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div>
-            <h3 className="text-sm font-semibold text-gray-800">
-              {isManuallyClosed
-                ? 'Store is closed'
-                : 'Manual close (emergency)'}
+            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+              {isOpen ? 'Manual close (emergency)' : 'Store is closed'}
             </h3>
-            <p className="text-xs text-gray-500 mt-0.5">
-              {isManuallyClosed
-                ? 'Customers currently see a closed notice.'
-                : 'Instantly stop ordering regardless of schedule.'}
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              {isOpen
+                ? 'Instantly stop ordering regardless of schedule.'
+                : 'Customers currently see a closed notice.'}
             </p>
           </div>
           <Button
             type="button"
-            onClick={toggleManual}
+            onClick={isOpen ? toggleManual : toggleManualOpenState}
             disabled={isSubmitting}
-            variant={isManuallyClosed ? 'outline' : 'destructive'}
+            variant={isOpen ? 'destructive' : 'default'}
             className={cn(
               'shrink-0',
-              isManuallyClosed &&
-                'border-green-500 text-green-600 hover:bg-green-50'
+              !isOpen &&
+                'bg-[#2d4a35] hover:bg-[#3c5e45] text-white'
             )}
           >
-            {toggleMutation.isPending && (
+            {(isOpen ? toggleMutation.isPending : toggleOpenMutation.isPending) && (
               <Loader2 className="h-4 w-4 animate-spin" />
             )}
-            {isManuallyClosed ? 'Reopen Store' : 'Close Store Now'}
+            {isOpen ? 'Close Store Now' : 'Open Store Now'}
           </Button>
         </div>
 
-        {isManuallyClosed && (
-          <div className="mt-4 space-y-1.5">
-            <Label htmlFor="manual-reason">
-              Reason shown to customers (optional)
-            </Label>
-            <Input
-              id="manual-reason"
-              value={manualReason}
-              onChange={e => setManualReason(e.target.value)}
-              placeholder="e.g. Power outage, event, restocking..."
-              className="min-h-[44px]"
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                toggleMutation.mutate(
-                  {isManuallyClosed: true, reason: manualReason},
-                  {
-                    onError: err =>
-                      toast.error(
-                        getFriendlyErrorMessage(err, 'Failed to save reason')
-                      ),
-                    onSuccess: () => toast.success('Reason saved.')
-                  }
-                );
-              }}
-              disabled={isSubmitting}
-            >
-              Save reason
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );

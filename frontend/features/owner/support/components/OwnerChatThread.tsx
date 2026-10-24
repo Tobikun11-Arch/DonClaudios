@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {Send, Loader2, Clock, RotateCw} from 'lucide-react';
 import SupportMessageBubble from '@/features/support/components/SupportMessageBubble';
 import {
@@ -32,7 +32,7 @@ export default function OwnerChatThread({
   const messagesQuery = useAdminSupportMessagesQuery(conversationId, true);
   const sendMutation = useSendAdminSupportMessageMutation(conversationId);
 
-  const messages = messagesQuery.data?.messages ?? [];
+  const messages = useMemo(() => messagesQuery.data?.messages ?? [], [messagesQuery.data?.messages]);
   const sending = sendMutation.isPending;
   const confirmedBodies = new Set(messages.map(m => m.body));
   const visiblePending = pending.filter(

@@ -9,7 +9,6 @@ import {
   Trash2,
   ShoppingCart,
   RotateCcw,
-  Receipt,
   X
 } from 'lucide-react';
 import {toast} from 'sonner';

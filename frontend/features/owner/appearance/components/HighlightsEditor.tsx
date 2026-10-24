@@ -85,7 +85,7 @@ export default function HighlightsEditor({
           </div>
         ))}
         {images.length === 0 && (
-          <p className="text-xs text-gray-400">No images added yet.</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">No images added yet.</p>
         )}
       </div>
     </div>

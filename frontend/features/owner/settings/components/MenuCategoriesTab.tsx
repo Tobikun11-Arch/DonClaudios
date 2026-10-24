@@ -87,7 +87,7 @@ function CategoryImagePicker({
     <div>
       <Label>Image (optional)</Label>
       <div className="mt-1.5 flex items-center gap-3">
-        <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+        <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
           <Image
             src={preview ?? CATEGORY_PLACEHOLDER}
             alt="Category image"
@@ -313,9 +313,9 @@ export function MenuCategoriesTab() {
         onChange={handleFileChange}
         className="hidden"
       />
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
-        <h2 className="text-lg font-bold text-[#2d4a35]">Menu Categories</h2>
-        <p className="mt-1 text-sm text-gray-500">
+      <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">
+        <h2 className="text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">Menu Categories</h2>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Your category list is what Products use when adding or editing menu
           items. The chosen type decides whether Ingredient/Allergen tags apply,
           and the unit is locked to the category for stock tracking.
@@ -323,8 +323,8 @@ export function MenuCategoriesTab() {
 
         <div className="mt-5">
           {editingId ? (
-            <div className="rounded-xl border border-[#2d4a35]/20 bg-[#e9f5ee]/50 p-4">
-              <p className="text-sm font-semibold text-[#2d4a35] mb-3">
+            <div className="rounded-xl border border-[#2d4a35]/20 bg-[#e9f5ee] dark:bg-[#1f3a2a]/50 p-4">
+              <p className="text-sm font-semibold text-[#2d4a35] dark:text-[#7ed4a0] mb-3">
                 Edit category
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -400,7 +400,7 @@ export function MenuCategoriesTab() {
               </div>
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4">
+            <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 p-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Field id="cat-name" label="New category name">
                   <Input
@@ -475,8 +475,8 @@ export function MenuCategoriesTab() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
-        <h3 className="text-sm font-bold text-gray-900">
+      <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">
+        <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">
           Current categories ({categories.length})
         </h3>
 
@@ -485,12 +485,12 @@ export function MenuCategoriesTab() {
             {Array.from({length: 3}).map((_, i) => (
               <div
                 key={i}
-                className="h-14 animate-pulse rounded-xl bg-gray-100"
+                className="h-14 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800"
               />
             ))}
           </div>
         ) : categories.length === 0 ? (
-          <p className="mt-3 text-sm text-gray-500">
+          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
             No categories yet. Add your first one above.
           </p>
         ) : (
@@ -501,7 +501,7 @@ export function MenuCategoriesTab() {
                 className="flex items-center justify-between gap-3 py-3"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="h-12 w-16 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-gray-100">
+                  <div className="h-12 w-16 shrink-0 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
                     <Image
                       src={cat.imageUrl || CATEGORY_PLACEHOLDER}
                       alt={cat.name}
@@ -511,7 +511,7 @@ export function MenuCategoriesTab() {
                     />
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate font-semibold text-gray-900">
+                    <p className="truncate font-semibold text-gray-900 dark:text-gray-100">
                       {cat.name}
                     </p>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -525,7 +525,7 @@ export function MenuCategoriesTab() {
                       >
                         {CATEGORY_TYPE_SHORT[cat.type]}
                       </span>
-                      <span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-bold text-gray-600 uppercase tracking-wide">
+                      <span className="rounded-full border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-2 py-0.5 text-[10px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
                         {STOCK_UNIT_LABELS[cat.stockUnit]} ·{' '}
                         {STOCK_UNIT_HINTS[cat.stockUnit]}
                       </span>
@@ -564,7 +564,7 @@ export function MenuCategoriesTab() {
           </ul>
         )}
 
-        <p className="mt-4 text-xs text-gray-400">
+        <p className="mt-4 text-xs text-gray-400 dark:text-gray-500">
           Deleting a category is blocked while products still use it. Existing
           products keep whatever category text they were saved with.
         </p>

@@ -234,7 +234,7 @@ export default function AppearancePreview() {
     return (
       <div className="space-y-6 p-6">
         {[1, 2, 3].map(i => (
-          <div key={i} className="h-40 bg-gray-200 rounded-2xl animate-pulse" />
+          <div key={i} className="h-40 bg-gray-200 dark:bg-gray-700 rounded-2xl animate-pulse" />
         ))}
       </div>
     );
@@ -337,7 +337,7 @@ export default function AppearancePreview() {
                   onSaved={saveHeroImage}
                 />
               </div>
-              <div className="absolute bottom-4 sm:bottom-8 left-4 sm:left-8 right-4 sm:right-8 bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-xl">
+              <div className="absolute bottom-4 sm:bottom-8 left-4 sm:left-8 right-4 sm:right-8 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-xl">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs sm:text-sm mb-1 text-[#a4bbab]">Opening Hours</p>
@@ -465,7 +465,7 @@ export default function AppearancePreview() {
             </p>
           </div>
 
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
             <p className="text-sm">Promo cards are managed in the Promos tab.</p>
           </div>
         </div>
@@ -583,9 +583,9 @@ export default function AppearancePreview() {
             {/* Left: photo + featured review */}
             <div className="lg:col-span-2 relative rounded-2xl overflow-hidden min-h-80 bg-[#a4bbab]">
               <div className="absolute inset-0 bg-gradient-to-br from-[#8aab8e] to-[#6b8a6e]" />
-              <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg">
+              <div className="absolute bottom-4 left-4 right-4 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-xl p-5 shadow-lg">
                 <span className="text-5xl font-serif text-[#6b8a6e]/40 leading-none select-none">&ldquo;</span>
-                <p className="text-sm sm:text-base text-gray-800 italic leading-relaxed -mt-2 mb-3">
+                <p className="text-sm sm:text-base text-gray-800 dark:text-gray-200 italic leading-relaxed -mt-2 mb-3">
                   {data.reviews.featured.quote}
                 </p>
                 <div className="flex items-center gap-3">
@@ -593,8 +593,8 @@ export default function AppearancePreview() {
                     {data.reviews.featured.name.split(' ').map(n => n[0]).join('')}
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900 text-sm">{data.reviews.featured.name}</p>
-                    <p className="text-xs text-gray-500">{data.reviews.featured.tag}</p>
+                    <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">{data.reviews.featured.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{data.reviews.featured.tag}</p>
                   </div>
                 </div>
               </div>
@@ -603,23 +603,23 @@ export default function AppearancePreview() {
             {/* Right: 2x2 grid */}
             <div className="lg:col-span-3 grid sm:grid-cols-2 auto-rows-fr gap-4 sm:gap-5">
               {data.reviews.items.map((review, i) => (
-                <div key={i} className="bg-white/80 rounded-2xl p-6 sm:p-8 lg:p-10 flex flex-col h-full">
+                <div key={i} className="bg-white/80 dark:bg-gray-900/80 rounded-2xl p-6 sm:p-8 lg:p-10 flex flex-col h-full">
                   <div className="flex gap-0.5">
                     {Array.from({length: review.rating}).map((_, si) => (
                       <Star key={si} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                     ))}
                   </div>
-                  <p className="text-gray-700 text-sm sm:text-base lg:text-lg leading-relaxed flex-1 mt-4 mb-6">
+                  <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base lg:text-lg leading-relaxed flex-1 mt-4 mb-6">
                     &ldquo;{review.quote}&rdquo;
                   </p>
-                  <div className="border-t border-gray-200 pt-4">
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-[#a4bbab] flex items-center justify-center text-white text-sm font-bold shrink-0">
                         {review.name.split(' ').map(n => n[0]).join('')}
                       </div>
                       <div>
-                        <p className="font-bold text-gray-900 text-sm">{review.name}</p>
-                        <p className="text-xs text-gray-500">{review.tag}</p>
+                        <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">{review.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{review.tag}</p>
                       </div>
                     </div>
                   </div>
@@ -632,9 +632,9 @@ export default function AppearancePreview() {
           <div className="md:hidden space-y-5">
             <div className="relative rounded-2xl overflow-hidden h-72 bg-[#a4bbab]">
               <div className="absolute inset-0 bg-gradient-to-br from-[#8aab8e] to-[#6b8a6e]" />
-              <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-lg">
+              <div className="absolute bottom-4 left-4 right-4 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-xl p-4 shadow-lg">
                 <span className="text-4xl font-serif text-[#6b8a6e]/40 leading-none select-none">&ldquo;</span>
-                <p className="text-sm text-gray-800 italic leading-relaxed -mt-1 mb-3">
+                <p className="text-sm text-gray-800 dark:text-gray-200 italic leading-relaxed -mt-1 mb-3">
                   {data.reviews.featured.quote}
                 </p>
                 <div className="flex items-center gap-3">
@@ -642,31 +642,31 @@ export default function AppearancePreview() {
                     {data.reviews.featured.name.split(' ').map(n => n[0]).join('')}
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900 text-sm">{data.reviews.featured.name}</p>
-                    <p className="text-xs text-gray-500">{data.reviews.featured.tag}</p>
+                    <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">{data.reviews.featured.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{data.reviews.featured.tag}</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {data.reviews.items.map((review, i) => (
-              <div key={i} className="bg-white/80 rounded-2xl p-6 sm:p-8 lg:p-10 flex flex-col h-full">
+              <div key={i} className="bg-white/80 dark:bg-gray-900/80 rounded-2xl p-6 sm:p-8 lg:p-10 flex flex-col h-full">
                 <div className="flex gap-0.5">
                   {Array.from({length: review.rating}).map((_, si) => (
                     <Star key={si} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                   ))}
                 </div>
-                <p className="text-gray-700 text-sm sm:text-base lg:text-lg leading-relaxed flex-1 mt-4 mb-6">
+                <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base lg:text-lg leading-relaxed flex-1 mt-4 mb-6">
                   &ldquo;{review.quote}&rdquo;
                 </p>
-                <div className="border-t border-gray-200 pt-4">
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-[#a4bbab] flex items-center justify-center text-white text-sm font-bold shrink-0">
                       {review.name.split(' ').map(n => n[0]).join('')}
                     </div>
                     <div>
-                      <p className="font-bold text-gray-900 text-sm">{review.name}</p>
-                      <p className="text-xs text-gray-500">{review.tag}</p>
+                      <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">{review.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{review.tag}</p>
                     </div>
                   </div>
                 </div>

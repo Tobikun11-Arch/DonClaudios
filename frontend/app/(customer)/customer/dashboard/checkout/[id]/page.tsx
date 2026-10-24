@@ -111,13 +111,11 @@ export default function CustomerCheckoutPage() {
 
   const storeStatusQuery = useStoreStatusQuery();
   const isStoreClosed = storeStatusQuery.data?.status.isOpen === false;
-  const storeClosedReason =
-    storeStatusQuery.data?.status.isOpen === false
-      ? storeStatusQuery.data.status.isManuallyClosed &&
-        storeStatusQuery.data.status.manualCloseReason
-        ? storeStatusQuery.data.status.manualCloseReason
-        : storeStatusQuery.data.status.reason
-      : '';
+  const storeClosedReason = storeStatusQuery.data?.status.isOpen === false
+    ? storeStatusQuery.data.status.isManuallyClosed
+      ? 'Store is temporarily closed'
+      : storeStatusQuery.data.status.reason
+    : '';
 
   const subtotal = useMemo(() => {
     if (promos.length === 0) {
