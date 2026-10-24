@@ -379,7 +379,11 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
             <p className="text-xs text-gray-500 dark:text-gray-400">
               A QR / screenshot for this payment channel.
             </p>
-            <label className="mt-2 flex h-40 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:bg-gray-800">
+            <label
+              className={`mt-2 w-full cursor-pointer overflow-hidden rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:bg-gray-800 ${
+                shownImage ? '' : 'flex h-40 items-center justify-center'
+              }`}
+            >
               <input
                 type="file"
                 accept="image/*"
@@ -390,9 +394,11 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
                 <Image
                   src={shownImage}
                   alt="Payment account"
-                  width={640}
-                  height={320}
-                  className="h-full w-full object-contain"
+                  width={0}
+                  height={0}
+                  sizes="100vw"
+                  style={{width: '100%', height: 'auto'}}
+                  className="block"
                   unoptimized
                 />
               ) : (

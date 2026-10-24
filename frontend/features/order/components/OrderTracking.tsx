@@ -783,13 +783,15 @@ function ManualPaymentCardBody({
           ) : null}
 
           {selectedChannel?.image ? (
-            <div className="mt-4 flex justify-center overflow-hidden rounded-xl border border-gray-200">
+            <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
               <Image
                 src={selectedChannel.image}
                 alt={selectedChannel.name || 'Payment account details'}
-                width={320}
-                height={320}
-                className="h-48 w-auto max-w-full object-contain"
+                width={0}
+                height={0}
+                sizes="100vw"
+                style={{width: '100%', height: 'auto'}}
+                className="block"
                 unoptimized
               />
             </div>
