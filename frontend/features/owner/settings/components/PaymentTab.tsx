@@ -1,6 +1,6 @@
 'use client';
 
-import {useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import Image from 'next/image';
 import {toast} from 'sonner';
 import {Plus, Trash2} from 'lucide-react';
@@ -120,10 +120,10 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
   const [activeChannelId, setActiveChannelId] = useState(
     payment.activeChannelId || initialChannels[0]?.id || ''
   );
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [removeImage, setRemoveImage] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasMounted = useRef(false);
 
   const activeChannel =
     channels.find(ch => ch.id === activeChannelId) || channels[0];
@@ -132,9 +132,7 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
     setChannels(prev =>
       prev.map(ch => (ch.id === id ? {...ch, ...patch} : ch))
     );
-    setImageFile(null);
     setImagePreview(null);
-    setRemoveImage(false);
   };
 
   const handleAddChannel = () => {
@@ -149,9 +147,7 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
     };
     setChannels(prev => [...prev, newChannel]);
     setActiveChannelId(newChannel.id);
-    setImageFile(null);
     setImagePreview(null);
-    setRemoveImage(false);
   };
 
   const handleRemoveChannel = (id: string) => {
@@ -164,73 +160,68 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
     if (activeChannelId === id) {
       setActiveChannelId(next[0]?.id || '');
     }
-    setImageFile(null);
     setImagePreview(null);
-    setRemoveImage(false);
   };
 
-  const handlePickImage = (file: File | null) => {
-    if (!activeChannel) return;
-    if (imagePreview) URL.revokeObjectURL(imagePreview);
-    setImageFile(file);
-    setRemoveImage(false);
-    setImagePreview(file ? URL.createObjectURL(file) : null);
-  };
-
-  const handleRemoveImage = () => {
-    if (!activeChannel) return;
-    if (imagePreview) URL.revokeObjectURL(imagePreview);
-    setImageFile(null);
-    setImagePreview(null);
-    updateChannel(activeChannel.id, {image: ''});
-    setRemoveImage(true);
-  };
-
-  const handleSave = async () => {
-    let updatedChannels = [...channels];
-    let uploadedUrl: string | undefined;
-    const hasImage = !!(activeChannel && imageFile);
-
-    if (hasImage) setIsUploadingImage(true);
-
+  const handlePickImage = async (file: File | null) => {
+    if (!activeChannel || !file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('The payment image must be an image file.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('The payment image must be 5 MB or smaller.');
+      return;
+    }
+    if (imagePreview && imagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    const objectUrl = URL.createObjectURL(file);
+    setImagePreview(objectUrl);
+    setIsUploadingImage(true);
     try {
-      if (activeChannel && imageFile) {
-        if (!imageFile.type.startsWith('image/')) {
-          toast.error('The payment image must be an image file.');
-          setIsUploadingImage(false);
-          return;
-        }
-        if (imageFile.size > 5 * 1024 * 1024) {
-          toast.error('The payment image must be 5 MB or smaller.');
-          setIsUploadingImage(false);
-          return;
-        }
-        const res = await uploadPaymentImage(imageFile);
-        uploadedUrl = res.imageUrl;
-        updatedChannels = updatedChannels.map(ch =>
-          ch.id === activeChannelId ? {...ch, image: uploadedUrl || ''} : ch
-        );
-        setChannels(updatedChannels);
-      }
+      const res = await uploadPaymentImage(file);
+      setChannels(prev =>
+        prev.map(ch =>
+          ch.id === activeChannelId ? {...ch, image: res.imageUrl} : ch
+        )
+      );
+      setImagePreview(res.imageUrl);
     } catch (error) {
       toast.error(
         getFriendlyErrorMessage(error, 'Failed to upload the payment image')
       );
+      setImagePreview(activeChannel?.image || null);
+    } finally {
       setIsUploadingImage(false);
-      return;
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
     }
+  };
 
+  const handleRemoveImage = () => {
+    if (!activeChannel) return;
+    if (imagePreview && imagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    setImagePreview(null);
+    setChannels(prev =>
+      prev.map(ch =>
+        ch.id === activeChannel.id ? {...ch, image: ''} : ch
+      )
+    );
+  };
+
+  const persistPayment = (chs: PaymentChannel[], activeId: string) => {
     const activeUpdatedChannel =
-      updatedChannels.find(ch => ch.id === activeChannelId) ||
-      updatedChannels[0];
+      chs.find(ch => ch.id === activeId) || chs[0];
     const paymentPayload = {
       ...payment,
       image: activeUpdatedChannel?.image || '',
       accountName: activeUpdatedChannel?.accountName || '',
       accountNumber: activeUpdatedChannel?.accountNumber || '',
       instructions: activeUpdatedChannel?.instructions || '',
-      channels: updatedChannels,
-      activeChannelId
+      channels: chs,
+      activeChannelId: activeId
     };
 
     updateMutation.mutate(
@@ -239,25 +230,34 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
         payment: paymentPayload
       },
       {
-        onSuccess: () => {
-          toast.success('Payment instructions updated.');
-          setImageFile(null);
-          setImagePreview(null);
-          setRemoveImage(false);
-          setIsUploadingImage(false);
-        },
-        onError: error => {
+        onError: error =>
           toast.error(
             getFriendlyErrorMessage(
               error,
               'Failed to update payment instructions'
             )
-          );
-          setIsUploadingImage(false);
-        }
+          )
       }
     );
   };
+
+  useEffect(() => {
+    if (!hasMounted.current) {
+      hasMounted.current = true;
+      return;
+    }
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+    }
+    saveTimer.current = setTimeout(() => {
+      persistPayment(channels, activeChannelId);
+    }, 400);
+    return () => {
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+      }
+    };
+  }, [channels, activeChannelId]);
 
   const isSaving = isUploadingImage || updateMutation.isPending;
   const shownImage =
@@ -284,9 +284,7 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
               value={activeChannelId}
               onChange={e => {
                 setActiveChannelId(e.target.value);
-                setImageFile(null);
                 setImagePreview(null);
-                setRemoveImage(false);
               }}
               className="h-10 rounded-lg border border-gray-200 dark:border-gray-700 px-3 text-sm"
             >
@@ -430,14 +428,9 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
         </div>
 
         <div className="mt-6 flex justify-end">
-          <Button
-            type="button"
-            className="rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
-            disabled={isSaving}
-            onClick={handleSave}
-          >
-            {isSaving ? 'Saving...' : 'Save payment instructions'}
-          </Button>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {isSaving ? 'Saving changes...' : 'All changes are saved automatically.'}
+          </span>
         </div>
       </div>
     </div>
