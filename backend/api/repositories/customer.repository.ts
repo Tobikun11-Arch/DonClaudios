@@ -46,6 +46,8 @@ export const customerRepository = {
 
   create: (data: Partial<CustomerDocument>) => CustomerModel.create(data),
 
+  update: (id: string, data: Partial<CustomerDocument>) =>
+    CustomerModel.updateOne({_id: id}, data).exec(),
   addPoints: (customerId: string, points: number) =>
     CustomerModel.updateOne(
       {_id: customerId},
