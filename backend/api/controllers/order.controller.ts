@@ -29,6 +29,7 @@ import type {
 import type {CashierDocument} from '../models/Cashier.model';
 import {resolveRange} from '../utils/dateRange';
 import {pointsEarnedForOrder} from '../config/rewards';
+import {getDeliveryMode} from '../config/delivery';
 import {assertPreOrderItemsOrderable} from '../services/cart.service';
 import {isPositiveInteger, reserveOrderStock} from '../services/preOrder.service';
 import type {ListAllOrdersQuery} from '../dtos/order.dto';
@@ -936,13 +937,10 @@ export const orderController = {
         throw new ApiError(400, 'VALIDATION_ERROR', 'items are required');
       }
 
-      const safeTotalAmount = Number(totalAmount);
+      let safeTotalAmount = Number(totalAmount);
       if (!Number.isFinite(safeTotalAmount) || safeTotalAmount <= 0) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'totalAmount is invalid');
       }
-
-      const safeDeliveryFee =
-        orderType === 'delivery' && items.length > 0 ? 49 : 0;
 
       // Validate and normalise every line once, before touching the database.
       const normalizedItems = items.map((i: any) => {
@@ -976,6 +974,24 @@ export const orderController = {
               : undefined
         };
       });
+
+      const deliveryProducts = await productRepository.findManyByIds(
+        normalizedItems.map(i => i.productId)
+      );
+      const deliveryProductById = new Map(
+        deliveryProducts.map(p => [String(p._id), p])
+      );
+      const deliveryMode = getDeliveryMode(
+        normalizedItems.map(i => ({
+          category: deliveryProductById.get(String(i.productId))?.category,
+          price: i.price,
+          quantity: i.quantity
+        }))
+      );
+      safeTotalAmount = normalizedItems.reduce(
+        (sum: number, i: any) => sum + i.price * i.quantity,
+        0
+      );
 
       const customerList = await customerRepository.listByIds([
         req.auth.userId as string
@@ -1032,7 +1048,8 @@ export const orderController = {
                 },
                 orderType,
                 totalAmount: safeTotalAmount,
-                deliveryFee: safeDeliveryFee,
+                deliveryFee: 0,
+                deliveryMode,
                 riderNotes: isNonEmptyString(riderNotes)
                   ? riderNotes
                   : undefined,
@@ -1082,7 +1099,8 @@ export const orderController = {
             },
             orderType,
             totalAmount: safeTotalAmount,
-            deliveryFee: safeDeliveryFee,
+            deliveryFee: 0,
+            deliveryMode,
             riderNotes: isNonEmptyString(riderNotes) ? riderNotes : undefined,
             changeFor: normalizeChangeFor(changeFor),
             statusHistory: [{status: 'pending', at: new Date()}],
@@ -1229,13 +1247,10 @@ export const orderController = {
         allowPreOrder: false
       });
 
-      const safeTotalAmount = Number(totalAmount);
+      let safeTotalAmount = Number(totalAmount);
       if (!Number.isFinite(safeTotalAmount) || safeTotalAmount <= 0) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'totalAmount is invalid');
       }
-
-      const safeDeliveryFee =
-        orderType === 'delivery' && items.length > 0 ? 49 : 0;
 
       // Validate and normalise every line once, before touching the database.
       const normalizedItems = items.map((i: any) => {
@@ -1274,6 +1289,24 @@ export const orderController = {
       const {itemPreps, estimatedPrepMinutes, estimatedReadyAt} =
         await buildPrepSnapshot(productIds, orderType);
 
+      const guestDeliveryProducts = await productRepository.findManyByIds(
+        normalizedItems.map(i => i.productId)
+      );
+      const guestDeliveryProductById = new Map(
+        guestDeliveryProducts.map(p => [String(p._id), p])
+      );
+      const deliveryMode = getDeliveryMode(
+        normalizedItems.map(i => ({
+          category: guestDeliveryProductById.get(String(i.productId))?.category,
+          price: i.price,
+          quantity: i.quantity
+        }))
+      );
+      safeTotalAmount = normalizedItems.reduce(
+        (sum: number, i: any) => sum + i.price * i.quantity,
+        0
+      );
+
       // Reserve stock at placement (like account orders) so two concurrent
       // guest checkouts cannot oversell. Guests never order pre-orders, so the
       // allowance path is not exercised here; reserveOrderStock still validates
@@ -1305,7 +1338,8 @@ export const orderController = {
                 },
                 orderType,
                 totalAmount: safeTotalAmount,
-                deliveryFee: safeDeliveryFee,
+                deliveryFee: 0,
+                deliveryMode,
                 riderNotes: isNonEmptyString(riderNotes)
                   ? riderNotes
                   : undefined,
@@ -1356,7 +1390,8 @@ export const orderController = {
             },
             orderType,
             totalAmount: safeTotalAmount,
-            deliveryFee: safeDeliveryFee,
+            deliveryFee: 0,
+            deliveryMode,
             riderNotes: isNonEmptyString(riderNotes) ? riderNotes : undefined,
             changeFor: normalizeChangeFor(changeFor),
             statusHistory: [{status: 'pending', at: new Date()}],
@@ -1484,7 +1519,7 @@ export const orderController = {
         ? customerInfo.phoneNumber
         : 'n/a';
 
-      const safeTotalAmount = Number(totalAmount);
+      let safeTotalAmount = Number(totalAmount);
       if (!Number.isFinite(safeTotalAmount) || safeTotalAmount <= 0) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'totalAmount is invalid');
       }

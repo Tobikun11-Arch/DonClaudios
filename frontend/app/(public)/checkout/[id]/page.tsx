@@ -5,14 +5,12 @@ import {useParams, useRouter} from 'next/navigation';
 import Image from 'next/image';
 import {
   BadgeCheck,
-  ChevronDown,
   ChevronLeft,
   CreditCard,
   Loader2,
   MapPin,
   Minus,
-  Plus,
-  Truck
+  Plus
 } from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
@@ -27,7 +25,10 @@ import {useLocationStore} from '@/app/store/locationStore';
 import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
 import LocationPicker from '@/features/order/components/LocationPicker';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
+import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
+import {getDeliveryMode, STORE_ADDRESS} from '@/lib/orders/deliveryMode';
+import OrderTypeSelector from '@/shared/components/order/OrderTypeSelector';
 import {useCreateGuestOrderMutation} from '@/lib/hooks/orders/useGuestOrder';
 import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 import {
@@ -92,6 +93,7 @@ export default function CheckoutGuestPage() {
   const setReservationTime = useOrderDetailsStore(s => s.setReservationTime);
 
   const [address, setAddress] = useState(location?.address ?? '');
+  const [pickupTime, setPickupTime] = useState('12:00');
   const [notesToRider, setNotesToRider] = useState('');
 
   const [firstName, setFirstName] = useState('');
@@ -126,8 +128,26 @@ export default function CheckoutGuestPage() {
       return sum + unitPrice * i.qty;
     }, 0);
   }, [items, promos]);
-  const deliveryFee = orderType === 'Delivery' && items.length > 0 ? 49 : 0;
-  const total = subtotal + deliveryFee;
+  const productsQuery = useProductsQuery();
+  const productCategoryById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of productsQuery.data?.products ?? []) map.set(p._id, p.category);
+    return map;
+  }, [productsQuery.data]);
+
+  const deliveryMode = useMemo(
+    () =>
+      getDeliveryMode(
+        items.map(i => ({
+          category: productCategoryById.get(i.productId),
+          price: i.price,
+          quantity: i.qty
+        }))
+      ),
+    [items, productCategoryById]
+  );
+
+  const total = subtotal;
 
   const createOrderMutation = useCreateGuestOrderMutation();
 
@@ -377,7 +397,8 @@ export default function CheckoutGuestPage() {
           items.length === 0 ||
           !phoneVerified ||
           isStoreClosed ||
-          createOrderMutation.isPending
+          createOrderMutation.isPending ||
+          (orderType === 'Delivery' && !address.trim())
         }
         onClick={handleCheckout}
       >
@@ -438,36 +459,92 @@ export default function CheckoutGuestPage() {
               </div>
 
               <div className="mt-5 space-y-5">
-                <div className="flex items-start gap-3">
-                  <div className="h-9 w-9 rounded-full bg-[#3c5e45]/10 inline-flex items-center justify-center shrink-0">
-                    <Truck className="h-4 w-4 text-[#3c5e45]" />
+                <div>
+                  <p className="text-xs text-gray-500 mb-2">Receive by</p>
+                  <OrderTypeSelector
+                    value={orderType}
+                    onChange={setOrderType}
+                    deliverySubtitle={
+                      deliveryMode === 'LALAMOVE'
+                        ? 'Book your own Lalamove courier'
+                        : "Free delivery by DonClaudio's"
+                    }
+                  />
+                </div>
+
+                {orderType === 'Delivery' ? (
+                  <div
+                    className={
+                      deliveryMode === 'LALAMOVE'
+                        ? 'rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900'
+                        : 'rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900'
+                    }
+                  >
+                    {deliveryMode === 'LALAMOVE' ? (
+                      <>
+                        <p className="font-semibold">
+                          This order will be delivered via Lalamove. You will
+                          book and pay for the courier yourself. Use the pick-up
+                          address below when booking.
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigator.clipboard?.writeText(STORE_ADDRESS)
+                            }
+                            className="rounded-full bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white"
+                          >
+                            Copy address
+                          </button>
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                              STORE_ADDRESS
+                            )}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-full border border-amber-600 px-3 py-1.5 text-xs font-semibold text-amber-700"
+                          >
+                            Open in Google Maps
+                          </a>
+                        </div>
+                        <p className="mt-2 text-xs">
+                          Pick-up address for rider:{' '}
+                          <span className="font-semibold">{STORE_ADDRESS}</span>
+                        </p>
+                      </>
+                    ) : (
+                      <p className="font-semibold">
+                        Free delivery by DonClaudio&apos;s 🎉
+                      </p>
+                    )}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-gray-500">Receive by</p>
-                    <div className="mt-1 relative">
-                      <select
-                        value={orderType}
-                        onChange={e =>
-                          setOrderType(
-                            e.target.value as
-                              | 'Delivery'
-                              | 'Pick-up'
-                              | 'Reservation'
-                          )
-                        }
-                        aria-label="Receive by"
-                        className="w-full cursor-pointer appearance-none rounded-xl border border-gray-200 bg-white py-2 pr-9 pl-3 text-sm font-semibold text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3c5e45]/30"
-                      >
-                        <option value="Delivery">Delivery, Today, ASAP</option>
-                        <option value="Pick-up">Pick-up, Today, ASAP</option>
-                        <option value="Reservation">
-                          Reservation, {reservationDate}, {reservationTime}
-                        </option>
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                ) : null}
+
+                {orderType === 'Pick-up' ? (
+                  <div className="space-y-3">
+                    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                      <p className="text-xs font-semibold text-gray-700">
+                        Pick up at
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-gray-900">
+                        DonClaudio&apos;s Lechon House
+                      </p>
+                      <p className="text-xs text-gray-600">{STORE_ADDRESS}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700">
+                        Pick-up time
+                      </p>
+                      <input
+                        type="time"
+                        value={pickupTime}
+                        onChange={e => setPickupTime(e.target.value)}
+                        className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
+                      />
                     </div>
                   </div>
-                </div>
+                ) : null}
 
                 {orderType === 'Reservation' ? (
                   <div className="flex flex-wrap items-center gap-3">
@@ -496,31 +573,35 @@ export default function CheckoutGuestPage() {
                   </div>
                 ) : null}
 
-                <div className="h-px bg-gray-100" />
+                {orderType === 'Delivery' ? (
+                  <>
+                    <div className="h-px bg-gray-100" />
 
-                <div className="flex items-start gap-3">
-                  <div className="h-9 w-9 rounded-full bg-[#3c5e45]/10 inline-flex items-center justify-center shrink-0">
-                    <MapPin className="h-4 w-4 text-[#3c5e45]" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-gray-500">Deliver to</p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
-                      You can edit this address
-                    </p>
-                    <Input
-                      value={address}
-                      onChange={e => handleAddressChange(e.target.value)}
-                      placeholder={
-                        location?.address
-                          ? 'Edit your delivery address'
-                          : 'Enter your delivery address'
-                      }
-                      className="mt-2"
-                    />
-                  </div>
-                </div>
+                    <div className="flex items-start gap-3">
+                      <div className="h-9 w-9 rounded-full bg-[#3c5e45]/10 inline-flex items-center justify-center shrink-0">
+                        <MapPin className="h-4 w-4 text-[#3c5e45]" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-gray-500">Deliver to</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          For your courier booking and our records
+                        </p>
+                        <Input
+                          value={address}
+                          onChange={e => handleAddressChange(e.target.value)}
+                          placeholder={
+                            location?.address
+                              ? 'Edit your delivery address'
+                              : 'Enter your delivery address'
+                          }
+                          className="mt-2"
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : null}
 
-                {mapPreviewSrc ? (
+                {orderType === 'Delivery' && mapPreviewSrc ? (
                   <div className="h-40 overflow-hidden rounded-xl border border-gray-200">
                     <iframe
                       src={mapPreviewSrc}
@@ -547,10 +628,11 @@ export default function CheckoutGuestPage() {
                   </div>
                 ) : null}
 
-                <div>
-                  <p className="text-xs font-semibold text-gray-700">
-                    Address type
-                  </p>
+                {orderType === 'Delivery' ? (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-700">
+                      Address type
+                    </p>
                   <div className="mt-2 grid grid-cols-2 gap-3">
                     {(['Residential', 'Office'] as const).map(type => (
                       <button
@@ -581,6 +663,7 @@ export default function CheckoutGuestPage() {
                     ))}
                   </div>
                 </div>
+                ) : null}
 
                 <div className="h-px bg-gray-100" />
 
@@ -931,10 +1014,6 @@ export default function CheckoutGuestPage() {
                     <span className="text-gray-500">Subtotal</span>
                     <span className="font-semibold">₱{subtotal}.00</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm text-gray-700">
-                    <span className="text-gray-500">Delivery fee</span>
-                    <span className="font-semibold">₱{deliveryFee}.00</span>
-                  </div>
                 </div>
 
                 <div className="h-px bg-gray-200" />
@@ -947,6 +1026,11 @@ export default function CheckoutGuestPage() {
                     ₱{total}.00
                   </span>
                 </div>
+                {orderType === 'Delivery' && deliveryMode === 'LALAMOVE' ? (
+                  <p className="text-xs text-amber-700">
+                    Courier fee not included, paid by you to Lalamove.
+                  </p>
+                ) : null}
 
                 <div className="hidden lg:block">{checkoutButton}</div>
               </div>

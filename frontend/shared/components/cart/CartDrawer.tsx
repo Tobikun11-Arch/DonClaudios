@@ -15,6 +15,8 @@ import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
 import {getCartSubtotal, useCartStore} from '@/app/store/cartStore';
 import {useCartUiStore} from '@/app/store/cartUiStore';
+import {useProductsQuery} from '@/lib/hooks/products/useProducts';
+import {getDeliveryMode} from '@/lib/orders/deliveryMode';
 import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
@@ -22,11 +24,7 @@ import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 import {Z} from '@/lib/zIndex';
 import CartRemoveConfirmModal from './CartRemoveConfirmModal';
 
-type CartDrawerProps = {
-  deliveryFee?: number;
-};
-
-export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
+export default function CartDrawer() {
   const router = useRouter();
   const isOpen = useCartUiStore(s => s.isOpen);
   const close = useCartUiStore(s => s.close);
@@ -90,9 +88,28 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
       return sum + unitPrice * i.qty;
     }, 0);
   }, [items, promos]);
-  const effectiveDeliveryFee =
-    items.length > 0 && orderType === 'Delivery' ? deliveryFee : 0;
-  const total = subtotal + effectiveDeliveryFee;
+  const productsQuery = useProductsQuery();
+  const productCategoryById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of productsQuery.data?.products ?? []) {
+      map.set(p._id, p.category);
+    }
+    return map;
+  }, [productsQuery.data]);
+
+  const deliveryMode = useMemo(
+    () =>
+      getDeliveryMode(
+        items.map(i => ({
+          category: productCategoryById.get(i.productId),
+          price: i.price,
+          quantity: i.qty
+        }))
+      ),
+    [items, productCategoryById]
+  );
+
+  const total = subtotal;
 
   if (!isOpen) return null;
 
@@ -172,6 +189,13 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
               <span className="min-w-0 truncate">{summaryText}</span>
               <ChevronDown className="h-4 w-4 shrink-0" />
             </button>
+            {orderType === 'Delivery' && items.length > 0 ? (
+              <p className="mt-1 text-[11px] font-medium text-gray-600">
+                {deliveryMode === 'LALAMOVE'
+                  ? "You'll book your own Lalamove courier for this order. Courier fee is paid by you directly to Lalamove."
+                  : "Free delivery by DonClaudio's 🎉"}
+              </p>
+            ) : null}
           </div>
 
           <Button
@@ -287,12 +311,6 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
                 <div className="flex items-center justify-between text-sm text-gray-700">
                   <span>Subtotal</span>
                   <span className="font-semibold">₱{subtotal}.00</span>
-                </div>
-                <div className="flex items-center justify-between text-sm text-gray-700">
-                  <span>Delivery fee</span>
-                  <span className="font-semibold">
-                    ₱{effectiveDeliveryFee}.00
-                  </span>
                 </div>
               </div>
             </div>
@@ -453,7 +471,9 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
                       style={{color: 'var(--text-muted)'}}
                     >
                       {type === 'Delivery'
-                        ? 'To your door'
+                        ? deliveryMode === 'LALAMOVE'
+                          ? 'Book your own Lalamove courier'
+                          : "Free delivery by DonClaudio's"
                         : type === 'Pick-up'
                           ? 'Grab it at the shop'
                           : 'Book a table'}
