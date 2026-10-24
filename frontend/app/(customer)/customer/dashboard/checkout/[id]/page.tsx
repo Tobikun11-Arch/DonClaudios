@@ -2,6 +2,7 @@
 
 import {useMemo, useState} from 'react';
 import {useParams, useRouter} from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import {
   ChevronDown,
@@ -105,6 +106,7 @@ export default function CustomerCheckoutPage() {
   const [addressType, setAddressType] = useState<'Residential' | 'Office'>(
     'Residential'
   );
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
 
   const storeStatusQuery = useStoreStatusQuery();
@@ -178,6 +180,13 @@ export default function CustomerCheckoutPage() {
       return;
     }
 
+    if (!agreedToTerms) {
+      setCheckoutError(
+        'You must agree to the Terms, Return Policy, and Privacy Policy to place your order.'
+      );
+      return;
+    }
+
     try {
       const created = await createOrderMutation.mutateAsync({
         orderType:
@@ -244,7 +253,8 @@ export default function CustomerCheckoutPage() {
         items.length === 0 ||
         isStoreClosed ||
         createOrderMutation.isPending ||
-        clearCartMutation.isPending
+        clearCartMutation.isPending ||
+        !agreedToTerms
       }
       onClick={handleCheckout}
     >
@@ -530,13 +540,13 @@ export default function CustomerCheckoutPage() {
 
             <p className="mt-5 text-sm text-gray-600 leading-relaxed">
               Once your order is placed, our cashier will give you a call to
-              confirm the details and arrange the payment with you (down
-              payment or full payment &mdash; whatever you both agree on).
+              confirm the details and arrange the payment with you (down payment
+              or full payment &mdash; whatever you both agree on).
             </p>
             <p className="mt-3 text-sm text-gray-600 leading-relaxed">
-              After the cashier confirms the order, the payment instructions
-              and the account details will appear on your order page, along
-              with a place to upload your proof of payment.
+              After the cashier confirms the order, the payment instructions and
+              the account details will appear on your order page, along with a
+              place to upload your proof of payment.
             </p>
           </div>
         </div>
@@ -671,6 +681,46 @@ export default function CustomerCheckoutPage() {
                 <span className="text-2xl font-extrabold text-gray-900">
                   ₱{total}.00
                 </span>
+              </div>
+
+              <div className="flex items-start gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="agreeToTermsCheckout"
+                  checked={agreedToTerms}
+                  onChange={e => setAgreedToTerms(e.target.checked)}
+                  disabled={
+                    createOrderMutation.isPending || clearCartMutation.isPending
+                  }
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-[#3c5e45] focus:ring-[#3c5e45]"
+                  required
+                />
+                <label
+                  htmlFor="agreeToTermsCheckout"
+                  className="text-xs text-gray-600"
+                >
+                  I agree to the{' '}
+                  <Link
+                    href="/terms"
+                    className="text-[#3c5e45] hover:underline"
+                  >
+                    Terms & Conditions
+                  </Link>
+                  ,{' '}
+                  <Link
+                    href="/return-policy"
+                    className="text-[#3c5e45] hover:underline"
+                  >
+                    Return Policy
+                  </Link>
+                  , and{' '}
+                  <Link
+                    href="/privacy"
+                    className="text-[#3c5e45] hover:underline"
+                  >
+                    Privacy Policy
+                  </Link>
+                </label>
               </div>
 
               {/*
