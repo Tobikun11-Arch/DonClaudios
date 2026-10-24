@@ -15,7 +15,7 @@ export interface AdminDocument extends BaseUserDocument {
   advanceCloseMinutes?: number;
   defaultPrepMinutes?: number;
   isManuallyClosed?: boolean;
-  manualCloseReason?: string;
+  isManuallyOpen?: boolean;
 }
 
 const BaseSchema = createBaseUserSchema<AdminDocument>();
@@ -36,7 +36,7 @@ const AdminSchema = new Schema<AdminDocument>(
     advanceCloseMinutes: {type: Number, default: 30, min: 5, max: 60},
     defaultPrepMinutes: {type: Number, default: 20, min: 1, max: 1440},
     isManuallyClosed: {type: Boolean, default: false},
-    manualCloseReason: {type: String, default: ''}
+    isManuallyOpen: {type: Boolean, default: false},
   },
   {timestamps: true}
 );

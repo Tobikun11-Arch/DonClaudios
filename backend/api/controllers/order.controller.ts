@@ -297,8 +297,8 @@ async function assertStoreOpen() {
     throw new ApiError(
       423,
       'STORE_CLOSED',
-      status.isManuallyClosed && status.manualCloseReason
-        ? `Store is temporarily closed: ${status.manualCloseReason}`
+      status.isManuallyClosed
+         ? 'Store is temporarily closed'
         : 'Store is currently closed'
     );
   }
