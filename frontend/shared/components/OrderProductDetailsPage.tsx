@@ -43,6 +43,7 @@ import {AllergenBadges} from './AllergenBadges';
 import {IngredientGrid} from './IngredientGrid';
 import ProductDetailSkeleton from './ProductDetailSkeleton';
 import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
+import RelatedProductsCarousel from './RelatedProductsCarousel';
 
 export default function OrderProductDetailsPage({id}: {id: string}) {
   const productQuery = useProductQuery(id);
@@ -360,8 +361,8 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
     >
       <div
         className={
-          'w-full max-w-6xl mx-auto px-4 py-6' +
-          (isCustomerRoute ? ' pb-28' : '')
+          'w-full max-w-6xl mx-auto px-4' +
+          (isCustomerRoute ? ' py-6 pb-28' : ' py-12')
         }
       >
         {isCustomerRoute ? (
@@ -932,6 +933,14 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
               )}
             </div>
           </div>
+        )}
+
+        {product && (
+          <RelatedProductsCarousel
+            categoryName={product.category}
+            currentProductId={product._id}
+            basePath={isCustomerRoute ? 'customer/dashboard' : 'order'}
+          />
         )}
       </div>
     </div>
