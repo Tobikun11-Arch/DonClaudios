@@ -6,15 +6,6 @@ import {cn} from '@/lib/utils';
 type Item = {label: string; description: string; defaultOn: boolean};
 
 const SECTIONS: Record<string, {title: string; subtitle?: string; items: Item[]}> = {
-  orders: {
-    title: 'Orders',
-    items: [
-      {label: 'New orders', description: 'When a customer places an order', defaultOn: true},
-      {label: 'New reservations', description: 'When a customer books a reservation', defaultOn: true},
-      {label: 'Cancelled orders', description: 'When an order is cancelled', defaultOn: true},
-      {label: 'Stuck orders', description: 'Order open 7+ days, never completed or cancelled', defaultOn: true}
-    ]
-  },
   preorders: {
     title: 'Pre-orders',
     subtitle: 'Lechon batches are your biggest-ticket items',

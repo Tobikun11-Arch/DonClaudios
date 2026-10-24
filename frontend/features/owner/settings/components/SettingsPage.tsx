@@ -25,7 +25,6 @@ import {
   Sun,
   Home,
   Bell,
-  ClipboardList,
   Calendar,
   Archive,
   Users,
@@ -38,7 +37,6 @@ type TabId =
   | 'profile'
   | 'appearanceCustomize'
   | 'appearanceHomepage'
-  | 'notificationsOrders'
   | 'notificationsPreorders'
   | 'notificationsInventory'
   | 'notificationsCustomers'
@@ -75,7 +73,6 @@ const CHILDREN: Record<string, {id: TabId; label: string; icon: typeof Sun}[]> =
     {id: 'appearanceHomepage', label: 'Homepage', icon: Home}
   ],
   notifications: [
-    {id: 'notificationsOrders', label: 'Orders', icon: ClipboardList},
     {id: 'notificationsPreorders', label: 'Pre-orders', icon: Calendar},
     {id: 'notificationsInventory', label: 'Inventory', icon: Archive},
     {id: 'notificationsCustomers', label: 'Customers', icon: Users},
@@ -88,7 +85,6 @@ const TAB_INFO: Record<TabId, {label: string; subtitle: string}> = {
   profile: {label: 'Profile & Business Info', subtitle: 'Manage your account, business details, and prep times.'},
   appearanceCustomize: {label: 'Customize', subtitle: 'Light and dark mode.'},
   appearanceHomepage: {label: 'Homepage', subtitle: 'Customize storefront content, colors, and layout.'},
-  notificationsOrders: {label: 'Orders', subtitle: 'Order-related notifications.'},
   notificationsPreorders: {label: 'Pre-orders', subtitle: 'Pre-order batch notifications.'},
   notificationsInventory: {label: 'Inventory', subtitle: 'Stock and inventory notifications.'},
   notificationsCustomers: {label: 'Customers', subtitle: 'Customer and review notifications.'},
@@ -144,7 +140,6 @@ export function SettingsPage() {
         return <CustomizeTab />;
       case 'appearanceHomepage':
         return <AppearancePreview />;
-      case 'notificationsOrders':
       case 'notificationsPreorders':
       case 'notificationsInventory':
       case 'notificationsCustomers':
