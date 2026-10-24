@@ -72,7 +72,8 @@ async function notifyAdminsLowStock(
             message: isOut
               ? `"${product.name}" is now out of stock.`
               : `"${product.name}" is low on stock (${product.stock} remaining).`,
-            link: '/owner/dashboard?tab=inventory'
+            link: '/owner/dashboard?tab=inventory',
+            preferenceKey: 'inventory.Low stock alerts'
           });
         } catch (error) {
           console.error('Failed to create low stock notification for admin', error);

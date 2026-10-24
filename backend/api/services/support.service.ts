@@ -217,7 +217,8 @@ export const supportService = {
             type: 'support_message',
             title: 'New support message',
             message: `${senderName || 'Customer'}: "${body.trim()}"`,
-            link: '/owner/dashboard?tab=support'
+            link: '/owner/dashboard?tab=support',
+            preferenceKey: 'customers.New chat messages'
           });
         } catch (error) {
           console.error(

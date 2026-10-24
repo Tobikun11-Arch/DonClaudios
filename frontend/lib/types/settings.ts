@@ -6,6 +6,35 @@ export interface StatItem {
 export type HeroStat = StatItem;
 export type AboutStat = StatItem;
 
+export interface NotificationPreferences {
+  account?: {
+    'New login'?: boolean;
+    'Password change'?: boolean;
+  };
+  reports?: {
+    'Daily sales summary'?: boolean;
+    'High cancellation rate'?: boolean;
+    'Kitchen prep times missing'?: boolean;
+  };
+  customers?: {
+    'New reviews'?: boolean;
+    'Flagged reviews'?: boolean;
+    'Customer replies'?: boolean;
+    'New chat messages'?: boolean;
+    'New sign-ups'?: boolean;
+  };
+  inventory?: {
+    'Low stock alerts'?: boolean;
+    'Out of stock'?: boolean;
+    'Spoilage / large adjustments'?: boolean;
+  };
+  preorders?: {
+    'Pre-order batch almost full'?: boolean;
+    'Pre-order batch sold out'?: boolean;
+    'Pre-order window closed'?: boolean;
+  };
+}
+
 export interface HighlightImage {
   url: string;
   alt: string;

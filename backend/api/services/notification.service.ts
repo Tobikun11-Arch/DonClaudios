@@ -1,6 +1,7 @@
 import {ApiError} from '../utils/error';
 import {notificationRepository} from '../repositories/notification.repository';
 import {customerRepository} from '../repositories/customer.repository';
+import {adminRepository} from '../repositories/admin.repository';
 import {
   formatBatchTime,
   formatPreOrderDeadlineShort,
@@ -144,7 +145,21 @@ export const notificationService = {
     reviewId?: string;
     orderId?: string;
     link?: string;
+    preferenceKey?: string;
   }) {
+    if (data.preferenceKey) {
+      try {
+        const preferences = await adminRepository.getNotificationPreferences(data.adminId);
+        const [section, item] = data.preferenceKey.split('.');
+        const isEnabled = preferences?.[section as keyof typeof preferences]?.[item as keyof typeof preferences[section]];
+        if (isEnabled === false) {
+          return null;
+        }
+      } catch (error) {
+        console.error('Failed to check notification preferences, defaulting to enabled', error);
+      }
+    }
+
     return notificationRepository.create({
       target: 'admin',
       adminId: data.adminId as any,

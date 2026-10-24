@@ -2,6 +2,8 @@
 
 import {useEffect, useState} from 'react';
 import {cn} from '@/lib/utils';
+import {getNotificationPreferences, updateNotificationPreferences} from '@/lib/api/settingsApi';
+import type {NotificationPreferences} from '@/lib/types/settings';
 
 const STORAGE_KEY = 'owner:notification-settings';
 
@@ -27,10 +29,10 @@ function writeStorage(all: Record<string, Record<string, boolean>>) {
   }
 }
 
-function loadSection(section: string): Record<string, boolean> {
+function loadSection(section: string, backendPrefs?: NotificationPreferences): Record<string, boolean> {
   const cfg = SECTIONS[section];
   if (!cfg) return {};
-  const stored = readStorage()[section] || {};
+  const stored = backendPrefs?.[section as keyof NotificationPreferences] || readStorage()[section] || {};
   return Object.fromEntries(
     cfg.items.map(item => [
       item.label,
@@ -120,18 +122,45 @@ export function NotificationsTab({section}: {section: string}) {
     // Start from defaults during SSR / first client render to avoid hydration mismatch.
     return Object.fromEntries(cfg.items.map(i => [i.label, i.defaultOn]));
   });
+  const [backendPrefs, setBackendPrefs] = useState<NotificationPreferences | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Load persisted values whenever the active section changes.
+  // Load preferences from backend on mount and when section changes.
   useEffect(() => {
-    setState(loadSection(section));
+    const loadBackendPreferences = async () => {
+      setIsLoading(true);
+      try {
+        const prefs = await getNotificationPreferences();
+        setBackendPrefs(prefs);
+        setState(loadSection(section, prefs));
+      } catch (error) {
+        console.error('Failed to load notification preferences from backend, falling back to localStorage', error);
+        setState(loadSection(section));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadBackendPreferences();
   }, [section]);
 
-  const handleToggle = (label: string, value: boolean) => {
-    setState(prev => {
-      const next = {...prev, [label]: value};
-      saveSection(section, next);
-      return next;
-    });
+  const handleToggle = async (label: string, value: boolean) => {
+    const next = {...state, [label]: value};
+    setState(next);
+
+    // Save to localStorage immediately for responsiveness
+    saveSection(section, next);
+
+    // Sync to backend
+    try {
+      const updatedPrefs = await updateNotificationPreferences({
+        ...backendPrefs,
+        [section]: next
+      });
+      setBackendPrefs(updatedPrefs);
+    } catch (error) {
+      console.error('Failed to update notification preferences on backend', error);
+    }
   };
 
   return (

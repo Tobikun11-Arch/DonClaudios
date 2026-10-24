@@ -174,7 +174,8 @@ export const reviewService = {
             title: 'New review awaiting approval',
             message: `${customerName} submitted a ${data.rating}-star review.`,
             reviewId: String(created._id),
-            link: '/owner/dashboard?tab=reviews'
+            link: '/owner/dashboard?tab=reviews',
+            preferenceKey: 'customers.New reviews'
           });
         } catch (error) {
           console.error('Failed to create review notification for admin', error);
@@ -326,7 +327,8 @@ export const reviewService = {
             title: 'Customer replied to a review',
             message: `${senderName} replied: "${reply.trim()}"`,
             reviewId: reviewId,
-            link: '/owner/dashboard?tab=reviews'
+            link: '/owner/dashboard?tab=reviews',
+            preferenceKey: 'customers.Customer replies'
           });
         } catch (error) {
           console.error('Failed to create review reply notification for admin', error);
