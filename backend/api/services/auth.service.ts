@@ -7,6 +7,7 @@ import {adminRepository} from '../repositories/admin.repository';
 import {ApiError} from '../utils/error';
 import {emailService} from './email.service';
 import {smsService} from './sms.service';
+import {toInternationalPhone} from '../utils/phone';
 import {resetPasswordEmailTemplate} from '../templates/resetPasswordEmail';
 import {
   generateVerificationCode,
@@ -22,33 +23,114 @@ export const authService = {
     phoneNumber: string;
     address: string;
   }) {
-    const existingEmail = await customerRepository.findByEmail(data.email);
+    const email = data.email.toLowerCase().trim();
 
-    if (existingEmail) {
+    // Validate phone format up front so we never persist a record we cannot
+    // send an OTP to (which would leave the user stuck).
+    if (data.phoneNumber) {
+      const intl = toInternationalPhone(data.phoneNumber);
+      if (!intl) {
+        throw new ApiError(
+          400,
+          'INVALID_PHONE',
+          'Invalid Philippine mobile number format'
+        );
+      }
+    }
+
+    const existingByEmail = await customerRepository.findByEmail(email);
+    const existingByPhone = data.phoneNumber
+      ? await customerRepository.findByPhoneNumber(data.phoneNumber)
+      : null;
+
+    // Block re-registration when a *verified* account already owns the email or
+    // phone number. Unverified (pending) accounts are reusable below instead of
+    // throwing "already exists", which is what previously trapped users.
+    if (existingByEmail && existingByEmail.isVerified) {
       throw new ApiError(409, 'EMAIL_EXISTS', 'Email already exists');
     }
 
+    if (
+      existingByPhone &&
+      existingByPhone.isVerified &&
+      String(existingByPhone._id) !== String(existingByEmail?._id)
+    ) {
+      throw new ApiError(409, 'PHONE_EXISTS', 'Phone number already exists');
+    }
+
+    // Staff (cashier/admin) phone numbers are never claimable by customers.
     if (data.phoneNumber) {
-      const [customerPhone, cashierPhone, adminPhone] = await Promise.all([
-        customerRepository.findByPhoneNumber(data.phoneNumber),
+      const [cashierPhone, adminPhone] = await Promise.all([
         cashierRepository.findByPhoneNumber(data.phoneNumber),
         adminRepository.findByPhoneNumber(data.phoneNumber)
       ]);
 
-      if (customerPhone || cashierPhone || adminPhone) {
+      if (cashierPhone || adminPhone) {
         throw new ApiError(409, 'PHONE_EXISTS', 'Phone number already exists');
       }
     }
 
+    // If two distinct unverified records exist (one for the email, one for the
+    // phone), consolidate by dropping the email-only one so the update below
+    // does not trip the unique email index.
+    if (
+      existingByEmail &&
+      existingByPhone &&
+      String(existingByEmail._id) !== String(existingByPhone._id) &&
+      !existingByEmail.isVerified &&
+      !existingByPhone.isVerified
+    ) {
+      await customerRepository
+        .deleteById(String(existingByEmail._id))
+        .catch(() => {});
+    }
+
+    const target = existingByPhone || existingByEmail;
+
+    const passwordHash = await bcrypt.hash(data.password, 10);
+    const verificationCode = generateVerificationCode();
+    const verificationExpiry = getVerificationExpiry(10);
+
     try {
-      const passwordHash = await bcrypt.hash(data.password, 10);
-      const verificationCode = generateVerificationCode();
-      const verificationExpiry = getVerificationExpiry(10);
+      if (target) {
+        // Reuse the pending (unverified) account: refresh its details and issue
+        // a fresh OTP. This is the standard "resend on re-signup" behaviour.
+        await customerRepository.update(String(target._id), {
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email,
+          passwordHash,
+          phoneNumber: data.phoneNumber,
+          address: data.address,
+          verificationCode,
+          verificationExpiry,
+          isVerified: false
+        } as any);
+
+        const customer = await customerRepository.findById(String(target._id));
+
+        try {
+          await smsService.sendVerificationSms({
+            phoneNumber: customer?.phoneNumber ?? data.phoneNumber,
+            code: verificationCode,
+            expiresMinutes: 10
+          });
+        } catch (smsError) {
+          // Keep the pending record so the user can request a resend from the
+          // verify screen; do not delete (unlike the brand-new case below).
+          throw smsError;
+        }
+
+        return {
+          id: String(target._id),
+          phoneNumber: customer?.phoneNumber ?? data.phoneNumber
+        };
+      }
 
       const customer = await customerRepository.create({
         firstName: data.firstName,
         lastName: data.lastName,
-        email: data.email,
+        email,
         passwordHash,
         phoneNumber: data.phoneNumber,
         address: data.address,
