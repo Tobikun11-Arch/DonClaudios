@@ -61,7 +61,7 @@ export default function SupportChatBubble() {
           setCreateFailed(true);
         });
     }
-  }, [open, isLoggedIn, conversationId, myQuery.isLoading, createFailed]);
+  }, [open, isLoggedIn, conversationId, myQuery.isLoading, createFailed, getOrCreateMutation]);
 
   const handleOpen = () => {
     setOpen(true);

@@ -172,9 +172,9 @@ export function CashierMenuStock() {
   const promosQuery = usePublicPromosQuery();
   const categoriesQuery = useCategoriesQuery();
 
-  const products = productsQuery.data?.products ?? [];
-  const promos = promosQuery.data?.promos ?? [];
-  const menuCategories = categoriesQuery.data?.categories ?? [];
+  const products = useMemo(() => productsQuery.data?.products ?? [], [productsQuery.data?.products]);
+  const promos = useMemo(() => promosQuery.data?.promos ?? [], [promosQuery.data?.promos]);
+  const menuCategories = useMemo(() => categoriesQuery.data?.categories ?? [], [categoriesQuery.data?.categories]);
 
   const categories = useMemo(
     () => ['all', ...Array.from(new Set(products.map(p => p.category)))],

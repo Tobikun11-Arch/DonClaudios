@@ -5,12 +5,17 @@ interface StoreStatusResult {
   openingTime: string;
   closingTime: string;
   advanceCloseMinutes: number;
+  closedDays: number[];
   isManuallyClosed: boolean;
-  manualCloseReason: string;
+  isManuallyOpen: boolean;
+  forceOpen: boolean;
+  manualOverride: 'open' | 'closed' | null;
   closesAt: string;
   reason?: string;
   reopenMessage: string;
 }
+
+const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
 
 function formatTime12h(time24: string): string {
   const [hours, minutes] = time24.split(':').map(Number);
@@ -18,6 +23,27 @@ function formatTime12h(time24: string): string {
   const period = hours >= 12 ? 'PM' : 'AM';
   const hours12 = hours % 12 || 12;
   return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+}
+
+function timeToMsOfDay(time24: string): number {
+  const [hours, minutes] = time24.split(':').map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return 0;
+  return (hours || 0) * 60 * 60 * 1000 + (minutes || 0) * 60 * 1000;
+}
+
+function manilaMsOfDay(now: Date): number {
+  const shifted = new Date(now.getTime() + MANILA_OFFSET_MS);
+  return (
+    shifted.getUTCHours() * 60 * 60 * 1000 +
+    shifted.getUTCMinutes() * 60 * 1000 +
+    shifted.getUTCSeconds() * 1000 +
+    shifted.getUTCMilliseconds()
+  );
+}
+
+function manilaDayOfWeek(now: Date): number {
+  const shifted = new Date(now.getTime() + MANILA_OFFSET_MS);
+  return shifted.getUTCDay();
 }
 
 export const storeStatusService = {
@@ -31,8 +57,11 @@ export const storeStatusService = {
         openingTime: '08:00',
         closingTime: '22:00',
         advanceCloseMinutes: 30,
+        closedDays: [1],
         isManuallyClosed: false,
-        manualCloseReason: '',
+        isManuallyOpen: false,
+        forceOpen: false,
+        manualOverride: null,
         closesAt: '10:00 PM',
         reason: 'Store not configured',
         reopenMessage: 'Please check back later'
@@ -43,7 +72,10 @@ export const storeStatusService = {
     const closingTime = admin.closingTime || '22:00';
     const advanceCloseMinutes = admin.advanceCloseMinutes || 30;
     const isManuallyClosed = admin.isManuallyClosed || false;
-    const manualCloseReason = admin.manualCloseReason || '';
+    const isManuallyOpen = admin.isManuallyOpen || false;
+    const closedDays = Array.isArray(admin.closedDays)
+      ? admin.closedDays
+      : [1];
 
     if (isManuallyClosed) {
       return {
@@ -51,39 +83,75 @@ export const storeStatusService = {
         openingTime,
         closingTime,
         advanceCloseMinutes,
-        isManuallyClosed,
-        manualCloseReason,
+        closedDays,
+        isManuallyClosed: true,
+        isManuallyOpen: false,
+        forceOpen: false,
+        manualOverride: 'closed',
         closesAt: formatTime12h(closingTime),
-        reason: manualCloseReason || 'Temporarily closed by management',
+        reason: 'Temporarily closed by management',
         reopenMessage: 'We will reopen once the issue is resolved'
       };
     }
 
-    const now = new Date();
-    const [openingHours, openingMinutes] = openingTime.split(':').map(Number);
-    const [closingHours, closingMinutes] = closingTime.split(':').map(Number);
-
-    const openTime = new Date(now);
-    openTime.setHours(openingHours, openingMinutes, 0, 0);
-
-    if (now < openTime) {
+    const today = manilaDayOfWeek(new Date());
+    if (closedDays.includes(today)) {
       return {
         isOpen: false,
         openingTime,
         closingTime,
         advanceCloseMinutes,
-        isManuallyClosed,
-        manualCloseReason,
+        closedDays,
+        isManuallyClosed: false,
+        isManuallyOpen: false,
+        forceOpen: false,
+        manualOverride: null,
+        closesAt: formatTime12h(closingTime),
+        reason: 'Store is closed today',
+        reopenMessage: 'We open again on our next business day'
+      };
+    }
+
+    if (isManuallyOpen) {
+      return {
+        isOpen: true,
+        openingTime,
+        closingTime,
+        advanceCloseMinutes,
+        closedDays,
+        isManuallyClosed: false,
+        isManuallyOpen: true,
+        forceOpen: true,
+        manualOverride: 'open',
+        closesAt: formatTime12h(closingTime),
+        reason: undefined,
+        reopenMessage: 'Manually opened by management'
+      };
+    }
+
+    const nowMs = manilaMsOfDay(new Date());
+    const openMs = timeToMsOfDay(openingTime);
+    const closeMs = timeToMsOfDay(closingTime);
+    const effectiveCloseMs = closeMs - advanceCloseMinutes * 60 * 1000;
+
+    if (nowMs < openMs) {
+      return {
+        isOpen: false,
+        openingTime,
+        closingTime,
+        advanceCloseMinutes,
+        closedDays,
+        isManuallyClosed: false,
+        isManuallyOpen: false,
+        forceOpen: false,
+        manualOverride: null,
         closesAt: formatTime12h(closingTime),
         reason: 'Store has not opened yet',
         reopenMessage: `We open at ${formatTime12h(openingTime)}`
       };
     }
 
-    const effectiveCloseTime = new Date(now);
-    effectiveCloseTime.setHours(closingHours, closingMinutes - advanceCloseMinutes, 0, 0);
-
-    const isPastClosing = now >= effectiveCloseTime;
+    const isPastClosing = nowMs >= effectiveCloseMs;
 
     if (isPastClosing) {
       return {
@@ -91,8 +159,11 @@ export const storeStatusService = {
         openingTime,
         closingTime,
         advanceCloseMinutes,
-        isManuallyClosed,
-        manualCloseReason,
+        closedDays,
+        isManuallyClosed: false,
+        isManuallyOpen: false,
+        forceOpen: false,
+        manualOverride: null,
         closesAt: formatTime12h(closingTime),
         reason: 'Store hours have ended',
         reopenMessage: 'We open again tomorrow'
@@ -104,8 +175,11 @@ export const storeStatusService = {
       openingTime,
       closingTime,
       advanceCloseMinutes,
-      isManuallyClosed,
-      manualCloseReason,
+      closedDays,
+      isManuallyClosed: false,
+      isManuallyOpen: false,
+      forceOpen: false,
+      manualOverride: null,
       closesAt: formatTime12h(closingTime),
       reason: undefined,
       reopenMessage: ''
@@ -116,8 +190,11 @@ export const storeStatusService = {
     openingTime?: string;
     closingTime?: string;
     advanceCloseMinutes?: number;
+    closedDays?: number[];
     isManuallyClosed?: boolean;
-    manualCloseReason?: string;
+    isManuallyOpen?: boolean;
+    forceOpen?: boolean;
+    manualOverride?: string | null;
   }) {
     const admins = await adminRepository.listAll();
     const admin = admins[0];
@@ -126,12 +203,33 @@ export const storeStatusService = {
       throw new Error('No admin found');
     }
 
+    let nextClosed = data.isManuallyClosed;
+    let nextOpen =
+      data.isManuallyOpen !== undefined
+        ? data.isManuallyOpen
+        : data.forceOpen;
+
+    if (data.manualOverride === 'open') {
+      nextOpen = true;
+      nextClosed = false;
+    } else if (data.manualOverride === 'closed') {
+      nextClosed = true;
+      nextOpen = false;
+    } else if (data.manualOverride === null) {
+      nextClosed = false;
+      nextOpen = false;
+    }
+
+    if (nextClosed === true) nextOpen = false;
+    if (nextOpen === true) nextClosed = false;
+
     const updateData: Record<string, unknown> = {};
     if (data.openingTime !== undefined) updateData.openingTime = data.openingTime;
     if (data.closingTime !== undefined) updateData.closingTime = data.closingTime;
     if (data.advanceCloseMinutes !== undefined) updateData.advanceCloseMinutes = data.advanceCloseMinutes;
-    if (data.isManuallyClosed !== undefined) updateData.isManuallyClosed = data.isManuallyClosed;
-    if (data.manualCloseReason !== undefined) updateData.manualCloseReason = data.manualCloseReason;
+    if (data.closedDays !== undefined) updateData.closedDays = data.closedDays;
+    if (nextClosed !== undefined) updateData.isManuallyClosed = nextClosed;
+    if (nextOpen !== undefined) updateData.isManuallyOpen = nextOpen;
 
     const updated = await adminRepository.updateProfile(admin._id.toString(), updateData);
 
@@ -143,8 +241,15 @@ export const storeStatusService = {
       openingTime: updated.openingTime,
       closingTime: updated.closingTime,
       advanceCloseMinutes: updated.advanceCloseMinutes,
+      closedDays: Array.isArray(updated.closedDays) ? updated.closedDays : [1],
       isManuallyClosed: updated.isManuallyClosed,
-      manualCloseReason: updated.manualCloseReason
+      isManuallyOpen: updated.isManuallyOpen,
+      forceOpen: updated.isManuallyOpen,
+      manualOverride: updated.isManuallyClosed
+        ? 'closed'
+        : updated.isManuallyOpen
+          ? 'open'
+          : null
     };
   }
 };

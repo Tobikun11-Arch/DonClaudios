@@ -97,7 +97,7 @@ export default function AboutEditor({
           </div>
         ))}
         {stats.length === 0 && (
-          <p className="text-xs text-gray-400">No stats added yet.</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">No stats added yet.</p>
         )}
       </div>
     </div>

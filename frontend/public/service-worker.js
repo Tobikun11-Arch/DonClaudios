@@ -1,7 +1,5 @@
 /* DonClaudio's Lechon House — Service Worker (cache disabled for debugging) */
-const CACHE_VERSION = 'donclaudios-v4'
-
-self.addEventListener('install', (event) => {
+self.addEventListener('install', () => {
   self.skipWaiting()
 })
 
@@ -20,7 +18,7 @@ self.addEventListener('push', (event) => {
   let data = {}
   try {
     data = event.data.json()
-  } catch (e) {
+  } catch {
     data = { title: 'DonClaudio', body: event.data.text() }
   }
   const title = data.title || "DonClaudio's Lechon House"

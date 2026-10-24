@@ -84,6 +84,7 @@ export interface SiteSettingDocument extends mongoose.Document {
       accountName: string;
       accountNumber: string;
       instructions: string;
+      enabled?: boolean;
     }>;
     activeChannelId?: string;
   };
@@ -193,6 +194,7 @@ const SiteSettingSchema = new Schema<SiteSettingDocument>(
           accountName: {type: String, default: ''},
           accountNumber: {type: String, default: ''},
           instructions: {type: String, default: ''},
+          enabled: {type: Boolean, default: true},
           _id: false
         }
       ],

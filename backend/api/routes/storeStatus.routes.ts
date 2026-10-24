@@ -9,5 +9,5 @@ router.get('/', storeStatusController.getStoreStatus);
 router.put('/', requireAuth, requireAdmin, storeStatusController.updateStoreSettings);
 
 router.patch('/manual', requireAuth, requireAdmin, storeStatusController.toggleManualClose);
-
+router.patch('/manual-open', requireAuth, requireAdmin, storeStatusController.toggleManualOpen);
 export default router;

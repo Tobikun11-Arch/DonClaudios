@@ -175,7 +175,6 @@ export default function OrderTracking({
   variant: 'guest' | 'customer';
   embedded?: boolean;
 }) {
-  const brand = useBrand();
   const [phone, setPhone] = useState('');
   const [phoneSubmitted, setPhoneSubmitted] = useState(false);
 
@@ -632,12 +631,16 @@ function ManualPaymentCardBody({
 }) {
   const settingsQuery = useSettingsQuery();
   const paymentSettings = settingsQuery.data?.payment;
-  const channels = (paymentSettings?.channels || []).filter(ch => ch && ch.id);
-  const [selectedChannelId, setSelectedChannelId] = useState(
+  const channels = (paymentSettings?.channels || []).filter(ch => ch && ch.id && ch.enabled !== false);
+  const [selectedChannelIdState, setSelectedChannelId] = useState(
     paymentSettings?.activeChannelId || channels[0]?.id || ''
   );
+  const selectedChannelId =
+    channels.length > 0 && !channels.some((ch) => ch.id === selectedChannelIdState)
+      ? channels[0].id
+      : selectedChannelIdState;
   const selectedChannel =
-    channels.find(ch => ch.id === selectedChannelId) ||
+    channels.find((ch) => ch.id === selectedChannelId) ||
     channels[0] ||
     (paymentSettings
       ? {
@@ -646,9 +649,11 @@ function ManualPaymentCardBody({
           image: paymentSettings.image || '',
           accountName: paymentSettings.accountName || '',
           accountNumber: paymentSettings.accountNumber || '',
-          instructions: paymentSettings.instructions || ''
+          instructions: paymentSettings.instructions || '',
+          enabled: true
         }
       : null);
+
   const submitMutation = useSubmitPaymentMutation(order._id, phone);
 
   const [formOpen, setFormOpen] = useState(
@@ -718,7 +723,7 @@ function ManualPaymentCardBody({
           ) : null}
         </div>
       ) : alreadyClaimed && !formOpen ? (
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 space-y-3 space-x-2">
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
             <p className="text-sm font-bold text-amber-800">
               Submitted — awaiting verification
@@ -759,7 +764,7 @@ function ManualPaymentCardBody({
           {channels.length > 1 ? (
             <div className="mt-4">
               <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
-                Payment channel
+                Payment method
               </p>
               <select
                 value={selectedChannelId}
@@ -768,7 +773,7 @@ function ManualPaymentCardBody({
               >
                 {channels.map(ch => (
                   <option key={ch.id} value={ch.id}>
-                    {ch.name || 'Payment channel'}
+                    {ch.name || 'Payment method'}
                   </option>
                 ))}
               </select>
@@ -776,13 +781,15 @@ function ManualPaymentCardBody({
           ) : null}
 
           {selectedChannel?.image ? (
-            <div className="mt-4 flex justify-center overflow-hidden rounded-xl border border-gray-200">
+            <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
               <Image
                 src={selectedChannel.image}
                 alt={selectedChannel.name || 'Payment account details'}
-                width={320}
-                height={320}
-                className="h-48 w-auto max-w-full object-contain"
+                width={0}
+                height={0}
+                sizes="100vw"
+                style={{width: '100%', height: 'auto'}}
+                className="block"
                 unoptimized
               />
             </div>

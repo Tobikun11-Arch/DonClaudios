@@ -519,7 +519,6 @@ function ProductsSection() {
 }
 
 export default function OrderPage() {
-  const brand = useBrand();
   return (
     <div className="min-h-screen">
       <StoreClosedModal />

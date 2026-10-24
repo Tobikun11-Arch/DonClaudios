@@ -22,15 +22,21 @@ function PasswordField({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        type="password"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="min-h-[44px]"
-      />
+    <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+      <div className="min-w-0 flex-1">
+        <Label htmlFor={id} className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          {label}
+        </Label>
+      </div>
+      <div className="shrink-0 sm:w-[240px]">
+        <Input
+          id={id}
+          type="password"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className="min-h-[44px]"
+        />
+      </div>
     </div>
   );
 }
@@ -85,34 +91,36 @@ export function SecurityTab() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
+      <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">
         <div className="mb-4">
-          <h2 className="text-lg font-bold text-[#2d4a35]">
+          <h2 className="text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">
             Change Password
           </h2>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4">
-          <PasswordField
-            id="currentPassword"
-            label="Current password"
-            value={form.currentPassword}
-            onChange={v =>
-              setForm(f => ({...f, currentPassword: v}))
-            }
-          />
-          <PasswordField
-            id="newPassword"
-            label="New password"
-            value={form.newPassword}
-            onChange={v => setForm(f => ({...f, newPassword: v}))}
-          />
-          <PasswordField
-            id="confirmPassword"
-            label="Confirm new password"
-            value={form.confirmPassword}
-            onChange={v => setForm(f => ({...f, confirmPassword: v}))}
-          />
+        <form onSubmit={onSubmit}>
+          <div className="divide-y divide-gray-100">
+            <PasswordField
+              id="currentPassword"
+              label="Current password"
+              value={form.currentPassword}
+              onChange={v =>
+                setForm(f => ({...f, currentPassword: v}))
+              }
+            />
+            <PasswordField
+              id="newPassword"
+              label="New password"
+              value={form.newPassword}
+              onChange={v => setForm(f => ({...f, newPassword: v}))}
+            />
+            <PasswordField
+              id="confirmPassword"
+              label="Confirm new password"
+              value={form.confirmPassword}
+              onChange={v => setForm(f => ({...f, confirmPassword: v}))}
+            />
+          </div>
 
           {formError && (
             <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
@@ -132,9 +140,9 @@ export function SecurityTab() {
         </form>
       </div>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
+      <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">
         <div className="mb-4">
-          <h2 className="text-lg font-bold text-[#2d4a35]">
+          <h2 className="text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">
             Login Activity
           </h2>
         </div>
@@ -144,7 +152,7 @@ export function SecurityTab() {
             {Array.from({length: 2}).map((_, i) => (
               <div
                 key={i}
-                className="h-14 bg-gray-100 rounded-lg animate-pulse"
+                className="h-14 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse"
               />
             ))}
           </div>
@@ -155,24 +163,24 @@ export function SecurityTab() {
         ) : (
           <div className="space-y-2">
             {sessions.length === 0 && (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 No other active sessions.
               </p>
             )}
             {sessions.map((s, i) => (
               <div
                 key={i}
-                className="flex flex-col gap-0.5 rounded-xl border border-gray-200 px-4 py-3 sm:flex-row sm:items-center sm:gap-3"
+                className="flex flex-col gap-0.5 rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 sm:flex-row sm:items-center sm:gap-3"
               >
                 <div className="flex items-center gap-3 sm:contents">
-                  <div className="w-9 h-9 shrink-0 rounded-full bg-[#e9f5ee] text-[#2d4a35] flex items-center justify-center">
+                  <div className="w-9 h-9 shrink-0 rounded-full bg-[#e9f5ee] dark:bg-[#1f3a2a] text-[#2d4a35] dark:text-[#7ed4a0] flex items-center justify-center">
                     <Monitor className="h-4 w-4" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-gray-900">
+                    <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {s.device}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                       {s.location}
                     </p>
                   </div>
@@ -183,7 +191,7 @@ export function SecurityTab() {
                   character. It moves to its own line below `sm` instead.
                 */}
                 <div className="pl-12 text-left sm:pl-0 sm:text-right">
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
                     {new Date(s.lastActive).toLocaleString()}
                   </p>
                 </div>

@@ -213,7 +213,7 @@ export function CashierOrders() {
   const [cancellingOrder, setCancellingOrder] = useState<OrderHistoryEntry | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>(() => ({from: null, to: null}));
 
-  const orders = data?.orders ?? [];
+  const orders = useMemo(() => data?.orders ?? [], [data?.orders]);
   const {highlightId, isOpenChat} = useScrollToHighlight();
   const [expandedId, setExpandedId] = useState<string | null>(
     isOpenChat ? highlightId : null
