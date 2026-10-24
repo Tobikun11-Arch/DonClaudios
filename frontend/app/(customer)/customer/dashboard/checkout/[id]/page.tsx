@@ -113,11 +113,12 @@ export default function CustomerCheckoutPage() {
 
   const storeStatusQuery = useStoreStatusQuery();
   const isStoreClosed = storeStatusQuery.data?.status.isOpen === false;
-  const storeClosedReason = storeStatusQuery.data?.status.isOpen === false
-    ? storeStatusQuery.data.status.isManuallyClosed
-      ? 'Store is temporarily closed'
-      : storeStatusQuery.data.status.reason
-    : '';
+  const storeClosedReason =
+    storeStatusQuery.data?.status.isOpen === false
+      ? storeStatusQuery.data.status.isManuallyClosed
+        ? 'Store is temporarily closed'
+        : storeStatusQuery.data.status.reason
+      : '';
 
   const subtotal = useMemo(() => {
     if (promos.length === 0) {
@@ -137,7 +138,8 @@ export default function CustomerCheckoutPage() {
   const productsQuery = useProductsQuery();
   const productCategoryById = useMemo(() => {
     const map = new Map<string, string>();
-    for (const p of productsQuery.data?.products ?? []) map.set(p._id, p.category);
+    for (const p of productsQuery.data?.products ?? [])
+      map.set(p._id, p.category);
     return map;
   }, [productsQuery.data]);
 
@@ -288,7 +290,7 @@ export default function CustomerCheckoutPage() {
   );
 
   return (
-    <div className="min-h-full min-w-0">
+    <div className="min-h-full min-w-0 py-6">
       <div className="flex items-center justify-between">
         <Button
           type="button"
@@ -392,8 +394,8 @@ export default function CustomerCheckoutPage() {
                     <>
                       <p className="font-semibold">
                         This order will be delivered via Lalamove. You will book
-                        and pay for the courier yourself. Use the pick-up address
-                        below when booking.
+                        and pay for the courier yourself. Use the pick-up
+                        address below when booking.
                       </p>
                       <p className="mt-2 text-xs font-medium">
                         Pick-up address for rider: {STORE_ADDRESS}
@@ -504,65 +506,65 @@ export default function CustomerCheckoutPage() {
 
                   {mapPreviewSrc ? (
                     <div className="h-40 overflow-hidden rounded-xl border border-gray-200">
-                  <iframe
-                    src={mapPreviewSrc}
-                    className="w-full h-full"
-                    allowFullScreen
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    title="Delivery location map preview"
-                  />
-                </div>
-              ) : null}
+                      <iframe
+                        src={mapPreviewSrc}
+                        className="w-full h-full"
+                        allowFullScreen
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        title="Delivery location map preview"
+                      />
+                    </div>
+                  ) : null}
 
-              {orderType === 'Delivery' && !location?.lat ? (
-                <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4">
-                  <p className="mb-3 text-xs font-semibold text-gray-700">
-                    Set your delivery location
-                  </p>
-                  <LocationPicker
-                    onConfirm={loc => {
-                      setLocation(loc);
-                      setAddress(loc.address);
-                    }}
-                  />
-                </div>
-              ) : null}
+                  {orderType === 'Delivery' && !location?.lat ? (
+                    <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4">
+                      <p className="mb-3 text-xs font-semibold text-gray-700">
+                        Set your delivery location
+                      </p>
+                      <LocationPicker
+                        onConfirm={loc => {
+                          setLocation(loc);
+                          setAddress(loc.address);
+                        }}
+                      />
+                    </div>
+                  ) : null}
 
-              <div>
-                <p className="text-xs font-semibold text-gray-700">
-                  Address type
-                </p>
-                <div className="mt-2 grid grid-cols-2 gap-3">
-                  {(['Residential', 'Office'] as const).map(type => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setAddressType(type)}
-                      className={cn(
-                        'flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3c5e45]/30',
-                        addressType === type
-                          ? 'border-[#3c5e45]/30 bg-[#3c5e45]/10 text-[#3c5e45]'
-                          : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          'inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
-                          addressType === type
-                            ? 'border-[#3c5e45] bg-[#3c5e45]'
-                            : 'border-gray-300 bg-white'
-                        )}
-                      >
-                        {addressType === type ? (
-                          <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                        ) : null}
-                      </span>
-                      {type}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-700">
+                      Address type
+                    </p>
+                    <div className="mt-2 grid grid-cols-2 gap-3">
+                      {(['Residential', 'Office'] as const).map(type => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => setAddressType(type)}
+                          className={cn(
+                            'flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3c5e45]/30',
+                            addressType === type
+                              ? 'border-[#3c5e45]/30 bg-[#3c5e45]/10 text-[#3c5e45]'
+                              : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              'inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                              addressType === type
+                                ? 'border-[#3c5e45] bg-[#3c5e45]'
+                                : 'border-gray-300 bg-white'
+                            )}
+                          >
+                            {addressType === type ? (
+                              <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                            ) : null}
+                          </span>
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </>
               ) : null}
 

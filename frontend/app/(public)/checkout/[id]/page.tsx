@@ -55,8 +55,7 @@ const NOTE_SUGGESTIONS = [
 function buildMapPreviewSrc(userLat: number, userLng: number) {
   const midLat = (userLat + STORE.lat) / 2;
   const midLng = (userLng + STORE.lng) / 2;
-  const spread =
-    Math.abs(userLat - STORE.lat) + Math.abs(userLng - STORE.lng);
+  const spread = Math.abs(userLat - STORE.lat) + Math.abs(userLng - STORE.lng);
   const zoom = Math.max(5000, Math.round(spread * 80000 + 5000));
 
   return (
@@ -131,7 +130,8 @@ export default function CheckoutGuestPage() {
   const productsQuery = useProductsQuery();
   const productCategoryById = useMemo(() => {
     const map = new Map<string, string>();
-    for (const p of productsQuery.data?.products ?? []) map.set(p._id, p.category);
+    for (const p of productsQuery.data?.products ?? [])
+      map.set(p._id, p.category);
     return map;
   }, [productsQuery.data]);
 
@@ -153,11 +153,12 @@ export default function CheckoutGuestPage() {
 
   const storeStatusQuery = useStoreStatusQuery();
   const isStoreClosed = storeStatusQuery.data?.status.isOpen === false;
-  const storeClosedReason = storeStatusQuery.data?.status.isOpen === false
-    ? storeStatusQuery.data.status.isManuallyClosed
-      ? 'Store is temporarily closed'
-      : storeStatusQuery.data.status.reason
-    : '';
+  const storeClosedReason =
+    storeStatusQuery.data?.status.isOpen === false
+      ? storeStatusQuery.data.status.isManuallyClosed
+        ? 'Store is temporarily closed'
+        : storeStatusQuery.data.status.reason
+      : '';
 
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
@@ -239,7 +240,10 @@ export default function CheckoutGuestPage() {
   const handleSendOtp = async () => {
     const phone = mobileNumber.trim();
     if (!phone) {
-      setErrors(current => ({...current, mobileNumber: 'Mobile number is required.'}));
+      setErrors(current => ({
+        ...current,
+        mobileNumber: 'Mobile number is required.'
+      }));
       return;
     }
     setIsSendingOtp(true);
@@ -290,9 +294,7 @@ export default function CheckoutGuestPage() {
     setCheckoutError(null);
 
     if (isStoreClosed) {
-      setCheckoutError(
-        storeClosedReason || 'Store is currently closed.'
-      );
+      setCheckoutError(storeClosedReason || 'Store is currently closed.');
       return;
     }
 
@@ -342,9 +344,7 @@ export default function CheckoutGuestPage() {
               : 'reservation',
         items: orderItems,
         totalAmount: total,
-        riderNotes: notesToRider.trim().length
-          ? notesToRider.trim()
-          : undefined
+        riderNotes: notesToRider.trim().length ? notesToRider.trim() : undefined
       });
     } catch (error) {
       setCheckoutError(
@@ -427,7 +427,7 @@ export default function CheckoutGuestPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
-      <div className="w-full max-w-6xl mx-auto px-4 py-6">
+      <div className="w-full max-w-6xl mx-auto px-4 py-12">
         <div className="flex items-center justify-between">
           <Button
             type="button"
@@ -633,36 +633,36 @@ export default function CheckoutGuestPage() {
                     <p className="text-xs font-semibold text-gray-700">
                       Address type
                     </p>
-                  <div className="mt-2 grid grid-cols-2 gap-3">
-                    {(['Residential', 'Office'] as const).map(type => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setAddressType(type)}
-                        className={cn(
-                          'flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3c5e45]/30',
-                          addressType === type
-                            ? 'border-[#3c5e45]/30 bg-[#3c5e45]/10 text-[#3c5e45]'
-                            : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-                        )}
-                      >
-                        <span
+                    <div className="mt-2 grid grid-cols-2 gap-3">
+                      {(['Residential', 'Office'] as const).map(type => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => setAddressType(type)}
                           className={cn(
-                            'inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                            'flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3c5e45]/30',
                             addressType === type
-                              ? 'border-[#3c5e45] bg-[#3c5e45]'
-                              : 'border-gray-300 bg-white'
+                              ? 'border-[#3c5e45]/30 bg-[#3c5e45]/10 text-[#3c5e45]'
+                              : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
                           )}
                         >
-                          {addressType === type ? (
-                            <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                          ) : null}
-                        </span>
-                        {type}
-                      </button>
-                    ))}
+                          <span
+                            className={cn(
+                              'inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                              addressType === type
+                                ? 'border-[#3c5e45] bg-[#3c5e45]'
+                                : 'border-gray-300 bg-white'
+                            )}
+                          >
+                            {addressType === type ? (
+                              <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                            ) : null}
+                          </span>
+                          {type}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
                 ) : null}
 
                 <div className="h-px bg-gray-100" />
@@ -717,8 +717,8 @@ export default function CheckoutGuestPage() {
                   Checkout As Guest
                 </p>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Providing this information allows us to contact and update
-                  you about your order.
+                  Providing this information allows us to contact and update you
+                  about your order.
                 </p>
               </div>
 
@@ -803,7 +803,9 @@ export default function CheckoutGuestPage() {
                         size="sm"
                         className="rounded-full"
                         disabled={
-                          isSendingOtp || !mobileNumber.trim() || cooldownLeft > 0
+                          isSendingOtp ||
+                          !mobileNumber.trim() ||
+                          cooldownLeft > 0
                         }
                         onClick={handleSendOtp}
                       >
@@ -824,9 +826,7 @@ export default function CheckoutGuestPage() {
                               maxLength={6}
                               value={otpCode}
                               onChange={(value: string) =>
-                                setOtpCode(
-                                  value.replace(/\D/g, '').slice(0, 6)
-                                )
+                                setOtpCode(value.replace(/\D/g, '').slice(0, 6))
                               }
                               disabled={isVerifyingOtp}
                               autoComplete="one-time-code"
@@ -1019,9 +1019,7 @@ export default function CheckoutGuestPage() {
                 <div className="h-px bg-gray-200" />
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-gray-900">
-                    Total
-                  </span>
+                  <span className="text-sm font-bold text-gray-900">Total</span>
                   <span className="text-2xl font-extrabold text-gray-900">
                     ₱{total}.00
                   </span>
@@ -1043,9 +1041,7 @@ export default function CheckoutGuestPage() {
         <div className="flex items-center gap-4">
           <div className="min-w-0">
             <p className="text-xs text-gray-500">Total</p>
-            <p className="text-xl font-extrabold text-gray-900">
-              ₱{total}.00
-            </p>
+            <p className="text-xl font-extrabold text-gray-900">₱{total}.00</p>
           </div>
           <div className="flex-1">{checkoutButton}</div>
         </div>
