@@ -32,7 +32,7 @@ function writeStorage(all: Record<string, Record<string, boolean>>) {
 function loadSection(section: string, backendPrefs?: NotificationPreferences): Record<string, boolean> {
   const cfg = SECTIONS[section];
   if (!cfg) return {};
-  const stored = backendPrefs?.[section as keyof NotificationPreferences] || readStorage()[section] || {};
+  const stored = (backendPrefs?.[section as keyof NotificationPreferences] || readStorage()[section] || {}) as Record<string, boolean>;
   return Object.fromEntries(
     cfg.items.map(item => [
       item.label,
