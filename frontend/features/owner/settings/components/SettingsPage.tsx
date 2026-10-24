@@ -1,6 +1,6 @@
 'use client';
 
-import {useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 import {cn} from '@/lib/utils';
 import {FilterSelect} from '@/shared/components/FilterPills';
 import {Input} from '@/components/ui/input';
@@ -107,8 +107,6 @@ export function SettingsPage() {
     notifications: false
   });
 
-  const isChildActive = (parent: string) =>
-    (CHILDREN[parent] || []).some(c => c.id === active);
 
   const filteredTop = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -122,12 +120,12 @@ export function SettingsPage() {
     });
   }, [query]);
 
-  const filteredChildren = (parent: string) => {
+  const filteredChildren = useCallback((parent: string) => {
     const q = query.trim().toLowerCase();
     const kids = CHILDREN[parent] || [];
     if (!q) return kids;
     return kids.filter(c => c.label.toLowerCase().includes(q));
-  };
+  }, [query]);
 
   const openParent = (parent: string) =>
     openParents[parent] || query.trim().length > 0;
@@ -175,7 +173,7 @@ export function SettingsPage() {
       }
     }
     return opts;
-  }, [filteredTop]);
+  }, [filteredTop, filteredChildren]);
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -215,7 +213,6 @@ export function SettingsPage() {
                       {items.map(item => {
                         const Icon = item.icon;
                         const children = item.hasChildren ? filteredChildren(item.id) : [];
-                        const parentActive = item.hasChildren && isChildActive(item.id);
                         if (item.hasChildren) {
                           return (
                             <li key={item.id}>

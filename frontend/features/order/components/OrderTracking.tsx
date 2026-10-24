@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useState, useSyncExternalStore} from 'react';
+import {useState, useSyncExternalStore} from 'react';
 import {useBrand} from '@/lib/hooks/useBrand';
 import Image from 'next/image';
 import {
@@ -175,7 +175,6 @@ export default function OrderTracking({
   variant: 'guest' | 'customer';
   embedded?: boolean;
 }) {
-  const brand = useBrand();
   const [phone, setPhone] = useState('');
   const [phoneSubmitted, setPhoneSubmitted] = useState(false);
 
@@ -633,11 +632,15 @@ function ManualPaymentCardBody({
   const settingsQuery = useSettingsQuery();
   const paymentSettings = settingsQuery.data?.payment;
   const channels = (paymentSettings?.channels || []).filter(ch => ch && ch.id && ch.enabled !== false);
-  const [selectedChannelId, setSelectedChannelId] = useState(
+  const [selectedChannelIdState, setSelectedChannelId] = useState(
     paymentSettings?.activeChannelId || channels[0]?.id || ''
   );
+  const selectedChannelId =
+    channels.length > 0 && !channels.some((ch) => ch.id === selectedChannelIdState)
+      ? channels[0].id
+      : selectedChannelIdState;
   const selectedChannel =
-    channels.find(ch => ch.id === selectedChannelId) ||
+    channels.find((ch) => ch.id === selectedChannelId) ||
     channels[0] ||
     (paymentSettings
       ? {
@@ -650,11 +653,6 @@ function ManualPaymentCardBody({
           enabled: true
         }
       : null);
-  useEffect(() => {
-    if (channels.length > 0 && !channels.some(ch => ch.id === selectedChannelId)) {
-      setSelectedChannelId(channels[0].id);
-    }
-  }, [channels, selectedChannelId]);
 
   const submitMutation = useSubmitPaymentMutation(order._id, phone);
 

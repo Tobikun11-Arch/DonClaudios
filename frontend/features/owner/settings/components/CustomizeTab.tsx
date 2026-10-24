@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useState} from 'react';
+import {useSyncExternalStore} from 'react';
 import {useTheme} from 'next-themes';
 import {Sun, Moon, Monitor} from 'lucide-react';
 import {cn} from '@/lib/utils';
@@ -14,9 +14,11 @@ const OPTIONS = [
 
 export function CustomizeTab() {
   const {theme, setTheme, resolvedTheme} = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   return (
     <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">

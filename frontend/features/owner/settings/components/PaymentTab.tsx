@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import Image from 'next/image';
 import {toast} from 'sonner';
 import {Plus, Trash2} from 'lucide-react';
@@ -211,7 +211,7 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
     );
   };
 
-  const persistPayment = (chs: PaymentChannel[], activeId: string) => {
+  const persistPayment = useCallback((chs: PaymentChannel[], activeId: string) => {
     const activeUpdatedChannel =
       chs.find(ch => ch.id === activeId) || chs[0];
     const paymentPayload = {
@@ -239,7 +239,7 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
           )
       }
     );
-  };
+  }, [payment, settings, updateMutation]);
 
   useEffect(() => {
     if (!hasMounted.current) {
@@ -257,7 +257,7 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
         clearTimeout(saveTimer.current);
       }
     };
-  }, [channels, activeChannelId]);
+  }, [channels, activeChannelId, persistPayment]);
 
   const isSaving = isUploadingImage || updateMutation.isPending;
   const shownImage =
