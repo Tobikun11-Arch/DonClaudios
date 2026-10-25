@@ -411,6 +411,18 @@ export default function OwnerOrdersPage() {
                       </td>
                       <td className="px-4 py-3">
                         <OrderStatusPill status={order.orderStatus} />
+                        {order.paymentStatus && (
+                          <span
+                            className={
+                              'ml-1 rounded-md px-1.5 py-0.5 text-[0.68rem] font-semibold ' +
+                              (order.paymentStatus === 'paid'
+                                ? 'bg-green-50 text-green-700'
+                                : 'bg-amber-50 text-amber-700')
+                            }
+                          >
+                            {order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-[0.82rem] text-[#1A1A1A]">
                         {formatNumber(units)} item{units === 1 ? '' : 's'}
@@ -464,6 +476,18 @@ export default function OwnerOrdersPage() {
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       <OrderStatusPill status={order.orderStatus} />
                       <OrderTypePill type={order.orderType} />
+                      {order.paymentStatus && (
+                        <span
+                          className={
+                            'rounded-md px-1.5 py-0.5 text-[0.68rem] font-semibold ' +
+                            (order.paymentStatus === 'paid'
+                              ? 'bg-green-50 text-green-700'
+                              : 'bg-amber-50 text-amber-700')
+                          }
+                        >
+                          {order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
+                        </span>
+                      )}
                     </div>
                   </button>
                 </li>

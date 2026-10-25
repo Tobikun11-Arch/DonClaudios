@@ -305,7 +305,7 @@ async function fetchValueSplit(
     {
       $facet: {
         collected: [
-          {$match: {orderStatus: {$in: REALIZED_STATUSES}}},
+          {$match: {$and: [{orderStatus: {$in: REALIZED_STATUSES}}, {$or: [{orderSource: {$ne: 'in-store'}}, {paymentStatus: 'paid'}, {paymentStatus: {$exists: false}}]}]}},
           {$group: {_id: null, value: {$sum: '$totalAmount'}, orders: {$sum: 1}}}
         ],
         open: [
@@ -391,7 +391,7 @@ export async function getReportSummary(range: ResolvedRange): Promise<ReportSumm
         $match: {
           createdAt: rangeMatch(range.from, range.to).createdAt,
           customerId: {$ne: null},
-          orderStatus: {$in: REALIZED_STATUSES}
+          $and: [{orderStatus: {$in: REALIZED_STATUSES}}, {$or: [{orderSource: {$ne: 'in-store'}}, {paymentStatus: 'paid'}, {paymentStatus: {$exists: false}}]}]
         }
       },
       { $group: {_id: '$customerId'}},
@@ -421,11 +421,11 @@ export async function getReportSummary(range: ResolvedRange): Promise<ReportSumm
       {$count: 'count'}
     ]),
     OrderModel.aggregate([
-      {$match: {createdAt: rangeMatch(range.from, range.to).createdAt, orderStatus: {$in: REALIZED_STATUSES}}},
+      {$match: {createdAt: rangeMatch(range.from, range.to).createdAt, $and: [{orderStatus: {$in: REALIZED_STATUSES}}, {$or: [{orderSource: {$ne: 'in-store'}}, {paymentStatus: 'paid'}, {paymentStatus: {$exists: false}}]}]}},
       {$group: {_id: '$orderType', orders: {$sum: 1}, revenue: {$sum: '$totalAmount'}}}
     ]),
     OrderModel.aggregate([
-      {$match: {createdAt: rangeMatch(range.from, range.to).createdAt, orderStatus: {$in: REALIZED_STATUSES}}},
+      {$match: {createdAt: rangeMatch(range.from, range.to).createdAt, $and: [{orderStatus: {$in: REALIZED_STATUSES}}, {$or: [{orderSource: {$ne: 'in-store'}}, {paymentStatus: 'paid'}, {paymentStatus: {$exists: false}}]}]}},
       {
         // Older orders predate `orderSource`; the schema default is 'online'.
         $group: {
@@ -591,13 +591,13 @@ export async function getReportTimeseries(
       $group: {
         _id: bucketExpression('createdAt', bucketSize),
         collected: {
-          $sum: {$cond: [{$in: ['$orderStatus', REALIZED_STATUSES]}, '$totalAmount', 0]}
+          $sum: {$cond: [{$and: [{$in: ['$orderStatus', REALIZED_STATUSES]}, {$or: [{$ne: ['$orderSource', 'in-store']}, {$eq: ['$paymentStatus', 'paid']}, {$eq: ['$paymentStatus', null]}]}]}, '$totalAmount', 0]}
         },
         open: {
           $sum: {$cond: [{$in: ['$orderStatus', OPEN_STATUSES]}, '$totalAmount', 0]}
         },
         collectedOrders: {
-          $sum: {$cond: [{$in: ['$orderStatus', REALIZED_STATUSES]}, 1, 0]}
+          $sum: {$cond: [{$and: [{$in: ['$orderStatus', REALIZED_STATUSES]}, {$or: [{$ne: ['$orderSource', 'in-store']}, {$eq: ['$paymentStatus', 'paid']}, {$eq: ['$paymentStatus', null]}]}]}, 1, 0]}
         },
         openOrders: {
           $sum: {$cond: [{$in: ['$orderStatus', OPEN_STATUSES]}, 1, 0]}
@@ -693,7 +693,7 @@ async function orderDimension(
   enrich: PipelineStage[]
 ): Promise<RawGroupRow[]> {
   return OrderModel.aggregate([
-    {$match: {createdAt: rangeMatch(from, to).createdAt, orderStatus: {$in: REALIZED_STATUSES}}},
+    {$match: {createdAt: rangeMatch(from, to).createdAt, $and: [{orderStatus: {$in: REALIZED_STATUSES}}, {$or: [{orderSource: {$ne: 'in-store'}}, {paymentStatus: 'paid'}, {paymentStatus: {$exists: false}}]}]}},
     {$group: {_id: `$${groupField}`, orders: {$sum: 1}, revenue: {$sum: '$totalAmount'}}},
     ...enrich
   ]) as Promise<RawGroupRow[]>;
@@ -725,7 +725,7 @@ async function buildBreakdown(
     }));
   } else if (dimension === 'customer') {
     const orderRows = await OrderModel.aggregate([
-      {$match: {createdAt: rangeMatch(range.from, range.to).createdAt, orderStatus: {$in: REALIZED_STATUSES}}},
+      {$match: {createdAt: rangeMatch(range.from, range.to).createdAt, $and: [{orderStatus: {$in: REALIZED_STATUSES}}, {$or: [{orderSource: {$ne: 'in-store'}}, {paymentStatus: 'paid'}, {paymentStatus: {$exists: false}}]}]}},
       {
         $group: {
           _id: '$customerId',
@@ -789,7 +789,7 @@ async function buildBreakdown(
     };
 
     const raw = await OrderModel.aggregate([
-      {$match: {createdAt: rangeMatch(range.from, range.to).createdAt, orderStatus: {$in: REALIZED_STATUSES}}},
+      {$match: {createdAt: rangeMatch(range.from, range.to).createdAt, $and: [{orderStatus: {$in: REALIZED_STATUSES}}, {$or: [{orderSource: {$ne: 'in-store'}}, {paymentStatus: 'paid'}, {paymentStatus: {$exists: false}}]}]}},
       {$lookup: {from: 'transactions', localField: '_id', foreignField: 'orderId', as: 'tx'}},
       {$unwind: '$tx'},
       {$group: group},
@@ -1011,13 +1011,13 @@ export async function getReportOperations(range: ResolvedRange): Promise<ReportO
     ]),
     // Hour buckets are Manila wall-clock, so shift into local time before extracting.
     OrderModel.aggregate([
-      {$match: {createdAt: rangeMatch(range.from, range.to).createdAt, orderStatus: {$in: REALIZED_STATUSES}}},
+      {$match: {createdAt: rangeMatch(range.from, range.to).createdAt, $and: [{orderStatus: {$in: REALIZED_STATUSES}}, {$or: [{orderSource: {$ne: 'in-store'}}, {paymentStatus: 'paid'}, {paymentStatus: {$exists: false}}]}]}},
       {$addFields: {localHour: {$hour: {date: '$createdAt', timezone: 'Asia/Manila'}}}},
       {$group: {_id: '$localHour', orders: {$sum: 1}, revenue: {$sum: '$totalAmount'}}},
       {$sort: {_id: 1}}
     ]),
     OrderModel.aggregate([
-      {$match: {createdAt: rangeMatch(range.from, range.to).createdAt, orderStatus: {$in: REALIZED_STATUSES}}},
+      {$match: {createdAt: rangeMatch(range.from, range.to).createdAt, $and: [{orderStatus: {$in: REALIZED_STATUSES}}, {$or: [{orderSource: {$ne: 'in-store'}}, {paymentStatus: 'paid'}, {paymentStatus: {$exists: false}}]}]}},
       {$addFields: {localWeekday: {$dayOfWeek: {date: '$createdAt', timezone: 'Asia/Manila'}}}},
       {$group: {_id: '$localWeekday', orders: {$sum: 1}, revenue: {$sum: '$totalAmount'}}},
       {$sort: {_id: 1}}

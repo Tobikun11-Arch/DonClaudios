@@ -14,6 +14,7 @@ export type CreateGuestOrderInput = {
     lastName: string;
     phoneNumber: string;
     address?: string;
+    email?: string;
   };
   orderType: 'pickup' | 'delivery' | 'reservation';
   items: GuestOrderItemInput[];
@@ -38,6 +39,7 @@ export type CreatedGuestOrderResponse = {
   order: {
     _id: string;
     orderStatus: string;
+    orderNumber?: string;
   };
   transaction: {
     _id: string;
@@ -98,11 +100,16 @@ export type OrderHistoryEntry = {
   paymentNote?: string | null;
   /** Set on server docs; missing in some cached local entries. */
   orderSource?: 'online' | 'in-store' | null;
+  /** Walk-in order number, e.g. "DC-001". */
+  orderNumber?: string | null;
+  paidAt?: string | null;
+  paidBy?: string | null;
   guestInfo?: {
     firstName: string;
     lastName: string;
     phoneNumber: string;
     address?: string;
+    email?: string;
   };
   customerName?: string;
   items: OrderHistoryItem[];
@@ -158,6 +165,7 @@ export type FollowUpOrder = {
     lastName: string;
     phoneNumber: string;
     address?: string;
+    email?: string;
   };
   customerId?: string | null;
   createdAt: string;
@@ -230,9 +238,9 @@ export async function listFollowUpOrders() {
 }
 
 export type CreateCounterOrderInput = {
-  customerInfo: {
-    firstName: string;
-    lastName: string;
+  customerInfo?: {
+    firstName?: string;
+    lastName?: string;
     phoneNumber?: string;
     email?: string;
   };
@@ -264,6 +272,24 @@ export async function listCounterOrders() {
 export async function voidCounterOrder(orderId: string) {
   const res = await httpClient.post<{order: CounterOrderEntry}>(
     `/orders/counter/${orderId}/void`
+  );
+  return res.data;
+}
+
+export async function markCounterOrderPaid(orderId: string) {
+  const res = await httpClient.patch<{order: CounterOrderEntry; transaction?: unknown}>(
+    `/orders/counter/${orderId}/mark-paid`
+  );
+  return res.data;
+}
+
+export async function updateCounterOrder(
+  orderId: string,
+  body: CreateCounterOrderInput
+) {
+  const res = await httpClient.patch<{order: CounterOrderEntry; transaction?: unknown}>(
+    `/orders/counter/${orderId}`,
+    body
   );
   return res.data;
 }

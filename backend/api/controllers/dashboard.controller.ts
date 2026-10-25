@@ -53,11 +53,26 @@ export const dashboardController = {
       const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
       const weekStart = manilaWeekStart();
 
-      const revenueBetween = (from: Date, to: Date, statuses: string[]) =>
-        OrderModel.aggregate([
-          {$match: {createdAt: {$gte: from, $lt: to}, orderStatus: {$in: statuses}}},
+      const revenueBetween = (from: Date, to: Date, statuses: string[]) => {
+        const match: Record<string, unknown> = {
+          createdAt: {$gte: from, $lt: to},
+          orderStatus: {$in: statuses}
+        };
+        // Walk-in (in-store) orders only count toward collected revenue once
+        // they are marked paid. Legacy rows without paymentStatus keep the
+        // previous behaviour (counted when completed).
+        if (statuses.includes('completed')) {
+          match.$or = [
+            {orderSource: {$ne: 'in-store'}},
+            {paymentStatus: 'paid'},
+            {paymentStatus: {$exists: false}}
+          ];
+        }
+        return OrderModel.aggregate([
+          {$match: match},
           {$group: {_id: null, total: {$sum: '$totalAmount'}, count: {$sum: 1}}}
         ]).then(rows => ({total: rows[0]?.total ?? 0, count: rows[0]?.count ?? 0}));
+      };
 
       // Cards report collected revenue. The placed-but-unfulfilled remainder is
       // carried in `openValue`/`stuckOrders` so the two always reconcile.
@@ -155,9 +170,45 @@ export const dashboardController = {
           $group: {
             _id: bucketExpression('createdAt', granularity),
             revenue: {
-              $sum: {$cond: [{$in: ['$orderStatus', REALIZED_MATCH]}, '$totalAmount', 0]}
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      {$in: ['$orderStatus', REALIZED_MATCH]},
+                      {
+                        $or: [
+                          {$ne: ['$orderSource', 'in-store']},
+                          {$eq: ['$paymentStatus', 'paid']},
+                          {$eq: ['$paymentStatus', null]}
+                        ]
+                      }
+                    ]
+                  },
+                  '$totalAmount',
+                  0
+                ]
+              }
             },
-            orders: {$sum: {$cond: [{$in: ['$orderStatus', REALIZED_MATCH]}, 1, 0]}},
+            orders: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      {$in: ['$orderStatus', REALIZED_MATCH]},
+                      {
+                        $or: [
+                          {$ne: ['$orderSource', 'in-store']},
+                          {$eq: ['$paymentStatus', 'paid']},
+                          {$eq: ['$paymentStatus', null]}
+                        ]
+                      }
+                    ]
+                  },
+                  1,
+                  0
+                ]
+              }
+            },
             openRevenue: {
               $sum: {$cond: [{$in: ['$orderStatus', OPEN_MATCH]}, '$totalAmount', 0]}
             }

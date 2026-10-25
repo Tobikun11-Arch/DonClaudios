@@ -82,6 +82,16 @@ export interface OrderDocument extends mongoose.Document {
   paymentProofUrl?: string | null;
   /** Free-text the customer attached to the submission (negotiated details). */
   paymentNote?: string | null;
+  /**
+   * Walk-in (in-store) order number, e.g. "DC-001". Generated on the backend
+   * when a counter order is created. Separate from the Mongo _id so the UI can
+   * show a stable, human-friendly reference.
+   */
+  orderNumber?: string;
+  /** Timestamp the walk-in order was marked as paid. */
+  paidAt?: Date | null;
+  /** Cashier/admin id that marked the walk-in order as paid. */
+  paidBy?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -165,6 +175,9 @@ const OrderSchema = new Schema<OrderDocument>(
     paymentVerified: {type: Boolean, default: false},
     paymentProofUrl: {type: String, default: null},
     paymentNote: {type: String, default: null},
+    orderNumber: {type: String},
+    paidAt: {type: Date, default: null},
+    paidBy: {type: String, default: null},
     isOnline: {type: Boolean, default: true}
   },
   {timestamps: true}
@@ -174,6 +187,7 @@ OrderSchema.index({customerId: 1, createdAt: -1});
 OrderSchema.index({orderStatus: 1, createdAt: -1});
 OrderSchema.index({orderStatus: 1, overdueNotifiedAt: 1});
 OrderSchema.index({orderSource: 1, createdAt: -1});
+OrderSchema.index({orderNumber: 1}, {unique: true, sparse: true});
 OrderSchema.index({orderType: 1, createdAt: -1});
 
 export const OrderModel = mongoose.model<OrderDocument>(

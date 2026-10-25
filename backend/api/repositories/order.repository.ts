@@ -187,5 +187,23 @@ export const orderRepository = {
       paymentProofUrl?: string | null;
       paymentNote?: string | null;
     }
-  ) => OrderModel.updateOne({_id: orderId}, {$set: patch}).exec()
+  ) => OrderModel.updateOne({_id: orderId}, {$set: patch}).exec(),
+
+  /**
+   * Atomic idempotency latch for marking a walk-in order as paid. Only flips
+   * when the order is currently unpaid, so a duplicate request (or a click
+   * that races with another cashier) cannot overwrite paidAt/paidBy.
+   */
+  markPaidIfUnpaid: (
+    orderId: string,
+    paidAt: Date,
+    paidBy: string
+  ) =>
+    OrderModel.updateOne(
+      {_id: orderId, paymentStatus: {$ne: 'paid'}},
+      {$set: {paymentStatus: 'paid', paidAt, paidBy}}
+    ).exec(),
+
+  updateFields: (orderId: string, patch: Record<string, unknown>) =>
+    OrderModel.findByIdAndUpdate(orderId, {$set: patch}, {new: true}).exec()
 };

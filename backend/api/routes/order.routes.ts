@@ -123,6 +123,18 @@ router.post(
   requireCashier,
   orderController.voidCounterOrder
 );
+router.patch(
+  '/counter/:id/mark-paid',
+  requireAuth,
+  requireStaff,
+  orderController.markCounterOrderPaid
+);
+router.patch(
+  '/counter/:id',
+  requireAuth,
+  requireStaff,
+  orderController.updateCounterOrder
+);
 
 router.get('/:id', requireAuth, requireStaff, orderController.getOrderById);
 router.patch(

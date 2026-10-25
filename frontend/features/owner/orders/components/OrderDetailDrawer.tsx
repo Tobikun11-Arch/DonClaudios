@@ -100,6 +100,18 @@ export function OrderDetailDrawer({
                 {order.paymentMethod}
               </span>
             )}
+            {order.paymentStatus && (
+              <span
+                className={
+                  'rounded-md px-2 py-0.5 text-[0.7rem] font-semibold capitalize ' +
+                  (order.paymentStatus === 'paid'
+                    ? 'bg-green-50 text-green-700'
+                    : 'bg-amber-50 text-amber-700')
+                }
+              >
+                {order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
+              </span>
+            )}
             {order.isGuest && (
               <span className="rounded-md bg-amber-50 px-2 py-0.5 text-[0.7rem] font-semibold text-amber-700">
                 Guest
