@@ -262,9 +262,17 @@ export async function createCounterOrder(body: CreateCounterOrderInput) {
   return res.data;
 }
 
-export async function listCounterOrders() {
+export type ListCounterOrdersParams = {
+  status?: string;
+  preset?: ReportPreset | 'custom';
+  from?: string;
+  to?: string;
+};
+
+export async function listCounterOrders(params?: ListCounterOrdersParams) {
   const res = await httpClient.get<{orders: CounterOrderEntry[]}>(
-    '/orders/counter'
+    '/orders/counter',
+    {params}
   );
   return res.data;
 }

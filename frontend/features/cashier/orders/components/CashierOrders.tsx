@@ -1,6 +1,6 @@
 'use client';
 
-import {useMemo, useState, useEffect} from 'react';
+import {useMemo, useState} from 'react';
 import {useSearchParams, useRouter} from 'next/navigation';
 import Image from 'next/image';
 import {toast} from 'sonner';
@@ -14,6 +14,7 @@ import {OrderDateFilter} from './OrderDateFilter';
 import type {DateRange} from './OrderDateFilter';
 import {OrderPrepBadge, OrderEstimateLabel} from './OrderPrepBadge';
 import {useAllOrdersQuery, useUpdateOrderStatusMutation, useSendCashierOrderMessageMutation} from '@/lib/hooks/orders/useCashierOrder';
+import {useCounterOrdersQuery} from '@/lib/hooks/orders/useCashierCounterOrder';
 import {useVerifyPaymentMutation} from '@/lib/hooks/orders/useTrackOrder';
 import {useAdminOrderMessagesQuery} from '@/lib/hooks/orders/useOrderMessage';
 import type {OrderHistoryEntry, OrderHistoryItem} from '@/lib/api/orderApi';
@@ -207,7 +208,8 @@ export function statusChipClass(status: string) {
 export function CashierOrders() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const {data, isLoading, isError} = useAllOrdersQuery();
+  const {data: allData, isLoading: allLoading, isError: allError} = useAllOrdersQuery();
+  const {data: counterData, isLoading: counterLoading, isError: counterError} = useCounterOrdersQuery();
   const updateStatusMutation = useUpdateOrderStatusMutation();
   const [manualFilter, setManualFilter] = useState<{key: string | null; value: string}>({
     key: null,
@@ -216,28 +218,27 @@ export function CashierOrders() {
   const [orderTypeFilter, setOrderTypeFilter] = useState<string>('all');
   const [cancellingOrder, setCancellingOrder] = useState<OrderHistoryEntry | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>(() => ({from: null, to: null}));
-  const [orderSourceTab, setOrderSourceTab] = useState<'online' | 'walk-in'>('online');
+  const orderSourceTab: 'online' | 'walk-in' =
+    searchParams.get('source') === 'walk-in' ? 'walk-in' : 'online';
 
-  // Sync tab with URL param
-  useEffect(() => {
-    const sourceParam = searchParams.get('source');
-    if (sourceParam === 'walk-in') {
-      setOrderSourceTab('walk-in');
-    } else {
-      setOrderSourceTab('online');
-    }
-  }, [searchParams]);
+  const allOrders = useMemo(() => allData?.orders ?? [], [allData?.orders]);
+  const counterOrders = useMemo(
+    () => (counterData?.orders ?? []) as OrderHistoryEntry[],
+    [counterData?.orders]
+  );
 
-  const orders = useMemo(() => data?.orders ?? [], [data?.orders]);
+  const isLoading = orderSourceTab === 'walk-in' ? counterLoading : allLoading;
+  const isError = orderSourceTab === 'walk-in' ? counterError : allError;
 
-  // Filter orders by source
-  const filteredBySource = useMemo(() => {
-    if (orderSourceTab === 'online') {
-      return orders.filter(o => o.orderSource !== 'in-store');
-    } else {
-      return orders.filter(o => o.orderSource === 'in-store');
-    }
-  }, [orders, orderSourceTab]);
+  // The active tab's source list. Walk-in data comes from the counter endpoint
+  // (in-store orders are deliberately excluded from /orders/all).
+  const orders = useMemo(
+    () => (orderSourceTab === 'walk-in' ? counterOrders : allOrders),
+    [orderSourceTab, counterOrders, allOrders]
+  );
+
+  // Filter orders by source (already source-specific; kept for compatibility)
+  const filteredBySource = orders;
   const {highlightId, isOpenChat} = useScrollToHighlight();
   const [expandedId, setExpandedId] = useState<string | null>(
     isOpenChat ? highlightId : null
@@ -274,19 +275,32 @@ export function CashierOrders() {
   }, [filteredBySource, dateRange]);
 
   const visibleOrders = useMemo(() => {
-    const base =
-      statusFilter === 'all'
-        ? ordersInRange
-        : statusFilter === 'overdue'
-          ? ordersInRange.filter(o => o.prepTiming?.isOverdue)
-          : statusFilter === 'active'
-            ? ordersInRange.filter(o =>
-                ACTIVE_STATUSES.includes(o.orderStatus as (typeof ACTIVE_STATUSES)[number])
-              )
-            : ordersInRange.filter(o => o.orderStatus === statusFilter);
+    let base: OrderHistoryEntry[];
+    if (orderSourceTab === 'walk-in') {
+      base =
+        statusFilter === 'all'
+          ? ordersInRange
+          : statusFilter === 'paid'
+            ? ordersInRange.filter(o => o.paymentStatus === 'paid')
+            : ordersInRange.filter(o => o.paymentStatus !== 'paid');
+    } else {
+      base =
+        statusFilter === 'all'
+          ? ordersInRange
+          : statusFilter === 'overdue'
+            ? ordersInRange.filter(o => o.prepTiming?.isOverdue)
+            : statusFilter === 'active'
+              ? ordersInRange.filter(o =>
+                  ACTIVE_STATUSES.includes(
+                    o.orderStatus as (typeof ACTIVE_STATUSES)[number]
+                  )
+                )
+              : ordersInRange.filter(o => o.orderStatus === statusFilter);
+    }
+    if (orderSourceTab === 'walk-in') return base;
     if (orderTypeFilter === 'all') return base;
     return base.filter(o => o.orderType === orderTypeFilter);
-  }, [ordersInRange, statusFilter, orderTypeFilter]);
+  }, [ordersInRange, statusFilter, orderTypeFilter, orderSourceTab]);
 
   const handleNextStatus = async (order: OrderHistoryEntry) => {
     const next = nextStatusFor(order.orderType, order.orderStatus);
@@ -313,14 +327,23 @@ export function CashierOrders() {
     }
   };
 
-  const countFor = (status: string) =>
-    status === 'active'
+  const countFor = (status: string) => {
+    if (orderSourceTab === 'walk-in') {
+      if (status === 'all') return ordersInRange.length;
+      if (status === 'paid')
+        return ordersInRange.filter(o => o.paymentStatus === 'paid').length;
+      if (status === 'unpaid')
+        return ordersInRange.filter(o => o.paymentStatus !== 'paid').length;
+      return 0;
+    }
+    return status === 'active'
       ? ordersInRange.filter(o =>
           ACTIVE_STATUSES.includes(o.orderStatus as (typeof ACTIVE_STATUSES)[number])
         ).length
       : status === 'all'
         ? ordersInRange.length
         : ordersInRange.filter(o => o.orderStatus === status).length;
+  };
 
   const typeCountFor = (type: string) =>
     type === 'all'
@@ -333,17 +356,10 @@ export function CashierOrders() {
   );
 
   // Count for each tab
-  const onlineCount = useMemo(
-    () => orders.filter(o => o.orderSource !== 'in-store').length,
-    [orders]
-  );
-  const walkInCount = useMemo(
-    () => orders.filter(o => o.orderSource === 'in-store').length,
-    [orders]
-  );
+  const onlineCount = useMemo(() => allOrders.length, [allOrders]);
+  const walkInCount = useMemo(() => counterOrders.length, [counterOrders]);
 
   const handleTabChange = (tab: 'online' | 'walk-in') => {
-    setOrderSourceTab(tab);
     // Reset type filter when switching to walk-in since it doesn't apply
     if (tab === 'walk-in') {
       setOrderTypeFilter('all');
@@ -354,10 +370,15 @@ export function CashierOrders() {
     router.replace(`/cashier/dashboard?${params.toString()}`, {scroll: false});
   };
 
-  const filters = ['overdue', 'active', ...ORDER_STATUSES, 'all'];
+  const statusFilterOptions =
+    orderSourceTab === 'walk-in'
+      ? ['paid', 'unpaid', 'all']
+      : ['overdue', 'active', ...ORDER_STATUSES, 'all'];
   const filterLabel = (f: string) => {
     if (f === 'overdue') return 'Overdue';
     if (f === 'active') return 'Active';
+    if (f === 'paid') return 'Paid';
+    if (f === 'unpaid') return 'Unpaid';
     if (f === 'all') return 'All';
     return formatStatus(f);
   };
@@ -387,7 +408,7 @@ export function CashierOrders() {
               onChange={e => handleStatusFilterChange(e.target.value)}
               className="min-h-[40px] w-full appearance-none rounded-full border border-gray-200 bg-white py-2 pl-4 pr-10 text-sm font-semibold text-[#2d4a35] transition-colors hover:bg-gray-50 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20 sm:w-auto"
             >
-              {filters.map(f => (
+              {statusFilterOptions.map(f => (
                 <option key={f} value={f}>
                   {filterLabel(f)} ({filterCount(f)})
                 </option>
@@ -633,27 +654,40 @@ function OrderCard({
               <p className="truncate text-sm font-bold text-gray-900">
                 {customerDisplay(order)}
               </p>
-              <span
-                className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-bold ${statusChipClass(order.orderStatus)}`}
-              >
-                {formatStatus(order.orderStatus)}
-              </span>
+              {order.orderSource === 'in-store' ? (
+                <span
+                  className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-bold ${
+                    order.paymentStatus === 'paid'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-amber-100 text-amber-700 border-amber-200'
+                  }`}
+                >
+                  {order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
+                </span>
+              ) : (
+                <span
+                  className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-bold ${statusChipClass(order.orderStatus)}`}
+                >
+                  {formatStatus(order.orderStatus)}
+                </span>
+              )}
               {!isWalkIn && (
                 <OrderPrepBadge
                   timing={order.prepTiming}
                   orderType={order.orderType}
                 />
               )}
-              {(() => {
-                const chip = paymentStatusChip(order);
-                return chip ? (
-                  <span
-                    className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-bold ${chip.className}`}
-                  >
-                    {chip.label}
-                  </span>
-                ) : null;
-              })()}
+              {!isWalkIn &&
+                (() => {
+                  const chip = paymentStatusChip(order);
+                  return chip ? (
+                    <span
+                      className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-bold ${chip.className}`}
+                    >
+                      {chip.label}
+                    </span>
+                  ) : null;
+                })()}
             </div>
             <p className="mt-1 text-xs text-gray-400">
               {isWalkIn && order.orderNumber
@@ -723,14 +757,15 @@ function OrderCard({
                   : customerDisplay(order)}
               </span>
             </div>
-            {order.guestInfo?.phoneNumber && (
-              <div className="flex items-center gap-2 rounded-xl border border-gray-100 p-3">
-                <Phone size={16} className="shrink-0 text-[#2d4a35]" />
-                <span className="text-sm text-gray-600">
-                  {order.guestInfo.phoneNumber}
-                </span>
-              </div>
-            )}
+            {order.guestInfo?.phoneNumber &&
+              order.guestInfo.phoneNumber !== 'n/a' && (
+                <div className="flex items-center gap-2 rounded-xl border border-gray-100 p-3">
+                  <Phone size={16} className="shrink-0 text-[#2d4a35]" />
+                  <span className="text-sm text-gray-600">
+                    {order.guestInfo.phoneNumber}
+                  </span>
+                </div>
+              )}
             {order.guestInfo?.address && (
               <div className="flex items-center gap-2 rounded-xl border border-gray-100 p-3 sm:col-span-2">
                 <MapPin size={16} className="shrink-0 text-[#2d4a35]" />

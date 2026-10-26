@@ -1427,7 +1427,21 @@ export const orderController = {
 
   async listCounterOrders(req: Request, res: Response, next: NextFunction) {
     try {
-      const orders = await orderRepository.listInStore();
+      const query = (req as Request & {validatedQuery?: ListAllOrdersQuery})
+        .validatedQuery ?? {};
+      const hasRange =
+        query.preset !== undefined || query.from !== undefined || query.to !== undefined;
+      const range = hasRange
+        ? resolveRange({
+            preset: query.preset ?? (query.from && query.to ? 'custom' : '7d'),
+            from: query.from,
+            to: query.to
+          })
+        : undefined;
+      const filter: Record<string, unknown> = {};
+      if (range) filter.createdAt = {$gte: range.from, $lt: range.to};
+      if (query.status) filter.orderStatus = query.status;
+      const orders = await orderRepository.listInStore(filter);
       const orderIds = orders.map(order => String(order._id));
       const items = await orderItemRepository.listByOrderIds(orderIds);
       const itemsByOrderId = items.reduce<Record<string, typeof items>>(

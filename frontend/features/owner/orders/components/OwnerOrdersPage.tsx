@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import {useMemo, useState, useEffect} from 'react';
+import {useMemo, useState} from 'react';
 import {useSearchParams, useRouter} from 'next/navigation';
 import {ChevronDown, ChevronLeft, ChevronRight, Loader2, Search, Globe, Store} from 'lucide-react';
 import {cn} from '@/lib/utils';
@@ -15,6 +15,7 @@ import {OrderDetailDrawer} from './OrderDetailDrawer';
 import {DownloadOrdersReport} from './DownloadOrdersReport';
 import {ReportRangePicker} from '../../dashboard/components/reports/ReportRangePicker';
 import {orderCustomerName, useOwnerOrders, OWNER_ORDERS_PAGE_SIZE} from '../hooks/useOwnerOrders';
+import {useCounterOrdersQuery} from '@/lib/hooks/orders/useCashierCounterOrder';
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
 import type {ReportRange} from '@/lib/types/report';
 
@@ -211,17 +212,8 @@ export default function OwnerOrdersPage() {
   const router = useRouter();
   const [range, setRange] = useState<ReportRange>({preset: 'today'});
   const [selected, setSelected] = useState<OrderHistoryEntry | null>(null);
-  const [orderSourceTab, setOrderSourceTab] = useState<'online' | 'walk-in'>('online');
-
-  // Sync tab with URL param
-  useEffect(() => {
-    const sourceParam = searchParams.get('source');
-    if (sourceParam === 'walk-in') {
-      setOrderSourceTab('walk-in');
-    } else {
-      setOrderSourceTab('online');
-    }
-  }, [searchParams]);
+  const orderSourceTab: 'online' | 'walk-in' =
+    searchParams.get('source') === 'walk-in' ? 'walk-in' : 'online';
 
   const {
     filters,
@@ -229,7 +221,6 @@ export default function OwnerOrdersPage() {
     page,
     totalPages,
     total,
-    revenue,
     statusCounts,
     isSearching,
     setPage,
@@ -241,20 +232,73 @@ export default function OwnerOrdersPage() {
     isUpdatingStatus
   } = useOwnerOrders(range);
 
+  const {
+    data: counterData,
+    isLoading: counterLoading,
+    isFetching: counterFetching,
+    isError: counterError,
+    error: counterErrorObj
+  } = useCounterOrdersQuery({preset: range.preset, from: range.from, to: range.to});
+  const counterOrders = useMemo(
+    () => (counterData?.orders ?? []) as OrderHistoryEntry[],
+    [counterData?.orders]
+  );
+
+  // Walk-in (counter) orders are filtered client-side by status/search since
+  // /orders/counter already applies the selected date range server-side.
+  const walkInFiltered = useMemo(() => {
+    let base = counterOrders;
+    if (filters.status !== ALL_STATUSES) {
+      base = base.filter(o => o.orderStatus === filters.status);
+    }
+    // text search
+    const needle = filters.search.trim().toLowerCase();
+    if (needle) {
+      base = base.filter(order => {
+        const customer = order.customerName ?? [
+          order.guestInfo?.firstName,
+          order.guestInfo?.lastName
+        ]
+          .filter(Boolean)
+          .join(' ');
+        const haystack = [
+          order._id,
+          customer,
+          order.guestInfo?.phoneNumber,
+          order.paymentMethod,
+          ...(order.items ?? []).map(item =>
+            typeof item.productId === 'string' ? '' : (item.productId?.name ?? '')
+          )
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return haystack.includes(needle);
+      });
+    }
+    return base;
+  }, [counterOrders, filters.status, filters.search]);
+
+  const isWalkIn = orderSourceTab === 'walk-in';
+
   // Filter orders by source
   const filteredBySource = useMemo(() => {
-    if (orderSourceTab === 'online') {
-      return orders.filter(o => o.orderSource !== 'in-store');
-    } else {
-      return orders.filter(o => o.orderSource === 'in-store');
-    }
-  }, [orders, orderSourceTab]);
+    if (isWalkIn) return walkInFiltered;
+    return orders.filter(o => o.orderSource !== 'in-store');
+  }, [isWalkIn, walkInFiltered, orders]);
 
   const visible = filteredBySource;
 
+  const displayIsError = isWalkIn ? counterError : isError;
+  const displayError = isWalkIn ? counterErrorObj : error;
+  const displayIsPending = isWalkIn ? counterLoading : isPending;
+  const displayIsFetching = isWalkIn ? counterFetching : isFetching;
+  const displayTotalPages = isWalkIn ? 1 : totalPages;
+  const displayTotal = isWalkIn ? walkInFiltered.length : total;
+
   // While a request is in flight we render skeleton rows, never the empty state,
   // so there's no "No orders match these filters" flash before data lands.
-  const showSkeleton = visible.length === 0 && (isPending || isFetching);
+  const showSkeleton = visible.length === 0 && (displayIsPending || displayIsFetching);
   const count = isSearching ? visible.length : filteredBySource.length;
   const shownRevenue = isSearching
     ? visible
@@ -272,17 +316,10 @@ export default function OwnerOrdersPage() {
   );
 
   // Count for each tab
-  const onlineCount = useMemo(
-    () => orders.filter(o => o.orderSource !== 'in-store').length,
-    [orders]
-  );
-  const walkInCount = useMemo(
-    () => orders.filter(o => o.orderSource === 'in-store').length,
-    [orders]
-  );
+  const onlineCount = useMemo(() => orders.length, [orders]);
+  const walkInCount = useMemo(() => counterOrders.length, [counterOrders]);
 
   const handleTabChange = (tab: 'online' | 'walk-in') => {
-    setOrderSourceTab(tab);
     // Update URL without full page reload using Next.js router
     const params = new URLSearchParams(searchParams.toString());
     params.set('source', tab);
@@ -383,9 +420,9 @@ export default function OwnerOrdersPage() {
         </div>
       </div>
 
-      {isError ? (
+      {displayIsError ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-8 text-center text-sm text-red-600">
-          {getFriendlyErrorMessage(error, 'Failed to load orders')}
+            {getFriendlyErrorMessage(displayError, 'Failed to load orders')}
         </div>
       ) : showSkeleton ? (
         <>
@@ -498,11 +535,12 @@ export default function OwnerOrdersPage() {
                         <p className="text-[0.85rem] font-medium text-[#1A1A1A]">
                           {orderCustomerName(order)}
                         </p>
-                        {order.guestInfo?.phoneNumber && (
-                          <p className="text-[0.72rem] text-[#6B7280]">
-                            {order.guestInfo.phoneNumber}
-                          </p>
-                        )}
+                        {order.guestInfo?.phoneNumber &&
+                          order.guestInfo.phoneNumber !== 'n/a' && (
+                            <p className="text-[0.72rem] text-[#6B7280]">
+                              {order.guestInfo.phoneNumber}
+                            </p>
+                          )}
                       </td>
                       <td className="px-4 py-3">
                         {order.orderSource !== 'in-store' && <OrderTypePill type={order.orderType} />}
@@ -596,14 +634,19 @@ export default function OwnerOrdersPage() {
             })}
           </ul>
 
-          {!isSearching && totalPages > 1 && (
+          {!isSearching && !isWalkIn && totalPages > 1 && (
             <OrdersPagination
               page={page}
-              totalPages={totalPages}
-              total={total}
+              totalPages={displayTotalPages}
+              total={displayTotal}
               onPageChange={setPage}
-              isFetching={isFetching && !showSkeleton}
+              isFetching={displayIsFetching && !showSkeleton}
             />
+          )}
+          {isWalkIn && walkInFiltered.length > OWNER_ORDERS_PAGE_SIZE && (
+            <p className="text-xs text-gray-500">
+              Showing {walkInFiltered.length} walk-in orders
+            </p>
           )}
         </>
       )}

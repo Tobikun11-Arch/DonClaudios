@@ -58,8 +58,8 @@ export const orderRepository = {
   listByStatus: (orderStatus: string) =>
     OrderModel.find({orderStatus}).sort({createdAt: -1}).exec(),
 
-  listInStore: () =>
-    OrderModel.find({orderSource: 'in-store'})
+  listInStore: (filter: Record<string, unknown> = {}) =>
+    OrderModel.find({orderSource: 'in-store', ...filter})
       .sort({createdAt: -1})
       .exec(),
 

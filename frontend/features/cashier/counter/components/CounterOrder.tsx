@@ -26,7 +26,6 @@ import {
   useUpdateCounterOrderMutation
 } from '@/lib/hooks/orders/useCashierCounterOrder';
 import type {CounterOrderEntry} from '@/lib/api/orderApi';
-import SplashGate from '@/shared/components/SplashGate';
 import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
 
 type CartLine = {
@@ -55,7 +54,7 @@ function paymentMethodLabel(value?: string | null): string {
 }
 
 export default function CounterOrder() {
-  const {data: productsData, isLoading, isError} = useProductsQuery();
+  const {data: productsData, isLoading} = useProductsQuery();
   const products = useMemo(
     () => productsData?.products ?? [],
     [productsData?.products]
@@ -300,7 +299,6 @@ export default function CounterOrder() {
       </div>
 
       <div className="flex flex-1 flex-col gap-4 lg:h-full lg:flex-row">
-        <SplashGate ready={productsData !== undefined || isError} />
         <div className="flex-1 overflow-auto rounded-2xl border border-gray-200 bg-white p-4">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>

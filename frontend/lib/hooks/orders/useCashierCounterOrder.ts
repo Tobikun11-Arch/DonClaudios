@@ -9,13 +9,29 @@ import {
 } from '@/lib/api/orderApi';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import type {CreateCounterOrderInput} from '@/lib/api/orderApi';
+import {allOrdersQueryKey} from './useCashierOrder';
+import type {ReportPreset} from '@/lib/types/report';
 
 export const counterOrdersQueryKey = ['orders', 'counter'] as const;
 
-export function useCounterOrdersQuery() {
+export function counterOrdersQueryKeyFor(params?: {
+  status?: string;
+  preset?: ReportPreset | 'custom';
+  from?: string;
+  to?: string;
+}) {
+  return [...counterOrdersQueryKey, params ?? {}] as const;
+}
+
+export function useCounterOrdersQuery(params?: {
+  status?: string;
+  preset?: ReportPreset | 'custom';
+  from?: string;
+  to?: string;
+}) {
   return useQuery({
-    queryKey: counterOrdersQueryKey,
-    queryFn: listCounterOrders,
+    queryKey: counterOrdersQueryKeyFor(params),
+    queryFn: () => listCounterOrders(params),
     refetchOnWindowFocus: false,
     refetchInterval: 5000,
     staleTime: 1000
@@ -30,6 +46,12 @@ export function useCreateCounterOrderMutation() {
       await queryClient.invalidateQueries({
         queryKey: counterOrdersQueryKey
       });
+      await queryClient.invalidateQueries({
+        queryKey: allOrdersQueryKey
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['owner', 'orders']
+      });
     }
   });
 }
@@ -41,6 +63,12 @@ export function useVoidCounterOrderMutation() {
     onSuccess: async ({order}) => {
       await queryClient.invalidateQueries({
         queryKey: counterOrdersQueryKey
+      });
+      await queryClient.invalidateQueries({
+        queryKey: allOrdersQueryKey
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['owner', 'orders']
       });
       await queryClient.invalidateQueries({
         queryKey: ['orders', String(order._id)]
@@ -63,6 +91,12 @@ export function useMarkCounterOrderPaidMutation() {
       await queryClient.invalidateQueries({
         queryKey: counterOrdersQueryKey
       });
+      await queryClient.invalidateQueries({
+        queryKey: allOrdersQueryKey
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['owner', 'orders']
+      });
     }
   });
 }
@@ -75,6 +109,12 @@ export function useUpdateCounterOrderMutation() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: counterOrdersQueryKey
+      });
+      await queryClient.invalidateQueries({
+        queryKey: allOrdersQueryKey
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['owner', 'orders']
       });
     }
   });

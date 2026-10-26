@@ -108,7 +108,8 @@ router.get(
 router.get(
   '/counter',
   requireAuth,
-  requireCashier,
+  requireStaff,
+  validateQuery(listAllOrdersQueryDto),
   orderController.listCounterOrders
 );
 router.post(
