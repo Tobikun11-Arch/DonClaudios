@@ -120,6 +120,15 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
   const [activeChannelId, setActiveChannelId] = useState(
     payment.activeChannelId || initialChannels[0]?.id || ''
   );
+  const activeChannelIdRef = useRef(activeChannelId);
+  activeChannelIdRef.current = activeChannelId;
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+  const paymentRef = useRef(payment);
+  paymentRef.current = payment;
+  const updateMutationRef = useRef(updateMutation);
+  updateMutationRef.current = updateMutation;
+  const lastSavedRef = useRef<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -212,10 +221,12 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
   };
 
   const persistPayment = useCallback((chs: PaymentChannel[], activeId: string) => {
+    const currentSettings = settingsRef.current;
+    const currentPayment = paymentRef.current;
     const activeUpdatedChannel =
       chs.find(ch => ch.id === activeId) || chs[0];
     const paymentPayload = {
-      ...payment,
+      ...currentPayment,
       image: activeUpdatedChannel?.image || '',
       accountName: activeUpdatedChannel?.accountName || '',
       accountNumber: activeUpdatedChannel?.accountNumber || '',
@@ -224,9 +235,9 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
       activeChannelId: activeId
     };
 
-    updateMutation.mutate(
+    updateMutationRef.current.mutate(
       {
-        ...settings,
+        ...currentSettings,
         payment: paymentPayload
       },
       {
@@ -239,25 +250,37 @@ function PaymentForm({settings}: {settings: SiteSetting}) {
           )
       }
     );
-  }, [payment, settings, updateMutation]);
+  }, []);
 
   useEffect(() => {
     if (!hasMounted.current) {
       hasMounted.current = true;
+      lastSavedRef.current = JSON.stringify({
+        channels,
+        activeId: activeChannelIdRef.current
+      });
+      return;
+    }
+    const currentKey = JSON.stringify({
+      channels,
+      activeId: activeChannelIdRef.current
+    });
+    if (currentKey === lastSavedRef.current) {
       return;
     }
     if (saveTimer.current) {
       clearTimeout(saveTimer.current);
     }
     saveTimer.current = setTimeout(() => {
-      persistPayment(channels, activeChannelId);
+      persistPayment(channels, activeChannelIdRef.current);
+      lastSavedRef.current = currentKey;
     }, 400);
     return () => {
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
       }
     };
-  }, [channels, activeChannelId, persistPayment]);
+  }, [channels, persistPayment]);
 
   const isSaving = isUploadingImage || updateMutation.isPending;
   const shownImage =
