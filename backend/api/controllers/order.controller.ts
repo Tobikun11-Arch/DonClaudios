@@ -1,6 +1,7 @@
 import {Request, Response, NextFunction} from 'express';
 import mongoose from 'mongoose';
 import {ApiError} from '../utils/error';
+import {phoneVariants} from '../utils/phone';
 import {orderRepository} from '../repositories/order.repository';
 import {orderItemRepository} from '../repositories/orderItem.repository';
 import {transactionRepository} from '../repositories/transaction.repository';
@@ -490,12 +491,28 @@ export const orderController = {
           typeof req.query.phoneNumber === 'string'
             ? req.query.phoneNumber.trim()
             : '';
-        if (
-          !phoneNumber ||
-          order.isGuest !== true ||
-          !order.guestInfo ||
-          order.guestInfo.phoneNumber !== phoneNumber
-        ) {
+        const email =
+          typeof req.query.email === 'string'
+            ? req.query.email.trim().toLowerCase()
+            : '';
+        if (!order.isGuest || !order.guestInfo) {
+          throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+        }
+        const phoneMatch =
+          phoneNumber.length > 0 &&
+          !!order.guestInfo.phoneNumber &&
+          phoneVariants(phoneNumber).includes(order.guestInfo.phoneNumber);
+        const emailMatch =
+          email.length > 0 &&
+          !!order.guestInfo.email &&
+          order.guestInfo.email.toLowerCase() === email;
+        if (!phoneMatch && !emailMatch) {
+          console.error('TRACK MISMATCH', {
+            queryPhone: phoneNumber,
+            queryEmail: email,
+            dbPhone: order.guestInfo.phoneNumber,
+            dbEmail: order.guestInfo.email
+          });
           throw new ApiError(403, 'FORBIDDEN', 'Order not found');
         }
       } else if (req.auth.type === 'customer') {
@@ -1253,18 +1270,31 @@ export const orderController = {
       if (!isNonEmptyString(guestInfo.lastName)) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'lastName is required');
       }
-      if (!isNonEmptyString(guestInfo.phoneNumber)) {
-        throw new ApiError(400, 'VALIDATION_ERROR', 'phoneNumber is required');
+      if (
+        !isNonEmptyString(guestInfo.phoneNumber) &&
+        !isNonEmptyString(guestInfo.email)
+      ) {
+        throw new ApiError(
+          400,
+          'VALIDATION_ERROR',
+          'phoneNumber or email is required'
+        );
       }
 
-      const phoneVerified = await guestOtpService.isPhoneVerified(
-        guestInfo.phoneNumber
-      );
-      if (!phoneVerified) {
+      let guestVerified = false;
+      if (isNonEmptyString(guestInfo.phoneNumber)) {
+        guestVerified = await guestOtpService.isPhoneVerified(
+          guestInfo.phoneNumber
+        );
+      }
+      if (!guestVerified && isNonEmptyString(guestInfo.email)) {
+        guestVerified = await guestOtpService.isEmailVerified(guestInfo.email);
+      }
+      if (!guestVerified) {
         throw new ApiError(
           409,
           'PHONE_NOT_VERIFIED',
-          'Verify your phone number before placing the order'
+          'Verify your phone number or email before placing the order'
         );
       }
 

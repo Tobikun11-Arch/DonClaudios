@@ -421,6 +421,14 @@ export default function CustomerCheckoutPage() {
                           Open in Google Maps
                         </a>
                       </div>
+                      <div className="mt-3 h-40 overflow-hidden rounded-xl border border-amber-200">
+                        <iframe
+                          src={`https://maps.google.com/maps?q=${STORE.lat},${STORE.lng}&z=15&output=embed`}
+                          className="w-full h-full"
+                          loading="lazy"
+                          title="DonClaudio's pick-up location"
+                        />
+                      </div>
                     </>
                   ) : (
                     <p className="font-semibold">
@@ -504,7 +512,7 @@ export default function CustomerCheckoutPage() {
                     </div>
                   </div>
 
-                  {mapPreviewSrc ? (
+                  {orderType === 'Delivery' && mapPreviewSrc ? (
                     <div className="h-40 overflow-hidden rounded-xl border border-gray-200">
                       <iframe
                         src={mapPreviewSrc}

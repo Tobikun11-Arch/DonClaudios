@@ -12,7 +12,8 @@ export type CreateGuestOrderInput = {
   guestInfo: {
     firstName: string;
     lastName: string;
-    phoneNumber: string;
+    phoneNumber?: string;
+    email?: string;
     address?: string;
   };
   orderType: 'pickup' | 'delivery' | 'reservation';
@@ -102,7 +103,8 @@ export type OrderHistoryEntry = {
   guestInfo?: {
     firstName: string;
     lastName: string;
-    phoneNumber: string;
+    phoneNumber?: string;
+    email?: string;
     address?: string;
   };
   customerName?: string;
@@ -157,7 +159,8 @@ export type FollowUpOrder = {
   guestInfo?: {
     firstName: string;
     lastName: string;
-    phoneNumber: string;
+    phoneNumber?: string;
+    email?: string;
     address?: string;
   };
   customerId?: string | null;
@@ -309,10 +312,17 @@ export async function getGuestEmailOtpStatus(email: string) {
   return res.data;
 }
 
-export async function getTrackedOrder(orderId: string, phoneNumber?: string) {
+export async function getTrackedOrder(
+  orderId: string,
+  phoneNumber?: string,
+  email?: string
+) {
+  const params: Record<string, string> = {};
+  if (phoneNumber) params.phoneNumber = phoneNumber;
+  if (email) params.email = email;
   const res = await httpClient.get<OrderDetailResponse>(
     `/orders/customer/track/${orderId}`,
-    {params: phoneNumber ? {phoneNumber} : undefined}
+    {params: Object.keys(params).length ? params : undefined}
   );
   return res.data;
 }

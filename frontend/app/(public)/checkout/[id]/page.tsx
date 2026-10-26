@@ -358,17 +358,17 @@ export default function CheckoutGuestPage() {
     const nextErrors: typeof errors = {};
     if (!firstName.trim()) nextErrors.firstName = 'First name is required.';
     if (!lastName.trim()) nextErrors.lastName = 'Last name is required.';
+    if (!mobileNumber.trim()) {
+      nextErrors.mobileNumber = 'Mobile number is required.';
+    }
+
     if (carrier === 'smart_tnt') {
       if (!email.trim()) {
         nextErrors.email = 'Email is required.';
       } else if (!phoneVerified) {
         nextErrors.email = 'Please verify your email before placing the order.';
       }
-    }
-
-    if (!mobileNumber.trim()) {
-      nextErrors.mobileNumber = 'Mobile number is required.';
-    } else if (!phoneVerified && carrier !== 'smart_tnt') {
+    } else if (!phoneVerified) {
       nextErrors.mobileNumber =
         'Please verify your phone number before placing the order.';
     }
@@ -399,6 +399,7 @@ export default function CheckoutGuestPage() {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           phoneNumber: mobileNumber.trim(),
+          email: email.trim().length ? email.trim() : undefined,
           address: address.trim().length ? address.trim() : undefined
         },
         orderType:
@@ -573,6 +574,14 @@ export default function CheckoutGuestPage() {
                           >
                             Open in Google Maps
                           </a>
+                        </div>
+                        <div className="mt-3 h-40 overflow-hidden rounded-xl border border-amber-200">
+                          <iframe
+                            src={`https://maps.google.com/maps?q=${STORE.lat},${STORE.lng}&z=15&output=embed`}
+                            className="w-full h-full"
+                            loading="lazy"
+                            title="DonClaudio's pick-up location"
+                          />
                         </div>
                         <p className="mt-2 text-xs">
                           Pick-up address for rider:{' '}
@@ -906,11 +915,13 @@ export default function CheckoutGuestPage() {
                       ...current,
                       mobileNumber: undefined
                     }));
-                    setPhoneVerified(false);
-                    setOtpCode('');
-                    setCodeSentAt(null);
-                    setOtpMessage(null);
-                    setOtpError(null);
+                    if (carrier !== 'smart_tnt') {
+                      setPhoneVerified(false);
+                      setOtpCode('');
+                      setCodeSentAt(null);
+                      setOtpMessage(null);
+                      setOtpError(null);
+                    }
                   }}
                   placeholder="09xx xxx xxxx"
                   className="mt-2"
@@ -991,7 +1002,7 @@ export default function CheckoutGuestPage() {
                   ) : (
                     <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-semibold text-emerald-700">
                       <BadgeCheck className="h-5 w-5 shrink-0 text-emerald-600" />
-                      Phone verified
+                      {carrier === 'smart_tnt' ? 'Email verified' : 'Phone verified'}
                     </div>
                   )}
 

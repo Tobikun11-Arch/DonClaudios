@@ -21,11 +21,15 @@ export const followUpOrdersKey = ['orders', 'follow-up'] as const;
 const trackOrderKey = (orderId: string, phoneNumber?: string) =>
   ['orders', 'track', orderId, phoneNumber ?? ''] as const;
 
-export function useTrackOrderQuery(orderId: string, phoneNumber?: string) {
-  const enabled = !!orderId && phoneNumber !== '';
+export function useTrackOrderQuery(
+  orderId: string,
+  phoneNumber?: string,
+  email?: string
+) {
+  const enabled = !!orderId && (phoneNumber !== '' || email !== '');
   const query = useQuery({
-    queryKey: trackOrderKey(orderId, phoneNumber),
-    queryFn: () => getTrackedOrder(orderId, phoneNumber),
+    queryKey: trackOrderKey(orderId, phoneNumber ?? email),
+    queryFn: () => getTrackedOrder(orderId, phoneNumber, email),
     enabled,
     refetchOnWindowFocus: false,
     refetchInterval: query => {

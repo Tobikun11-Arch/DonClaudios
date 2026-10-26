@@ -60,7 +60,7 @@ export function getFriendlyErrorMessage(
       case 'EXPIRED_CODE':
         return 'Verification code expired or invalid. Please request a new code.';
       case 'PHONE_NOT_VERIFIED':
-        return 'Please verify your phone number before placing the order.';
+        return 'Please verify your phone number or email before placing the order.';
       case 'RESEND_COOLDOWN':
         return 'Please wait a moment before requesting another code.';
       case 'ATTEMPT_LIMIT':
