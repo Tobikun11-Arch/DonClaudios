@@ -8,6 +8,7 @@ import {
 import {sendAdminOrderMessage} from '@/lib/api/orderApi';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {cashierNotificationsQueryKey} from '@/lib/hooks/notifications/useNotifications';
+import {counterOrdersQueryKey} from './useCashierCounterOrder';
 
 export const allOrdersQueryKey = ['orders', 'all'] as const;
 const orderDetailKey = (orderId: string) => ['orders', orderId] as const;
@@ -45,6 +46,7 @@ export function useUpdateOrderStatusMutation() {
       updateOrderStatus(orderId, status),
     onSuccess: async ({order}) => {
       await queryClient.invalidateQueries({queryKey: allOrdersQueryKey});
+      await queryClient.invalidateQueries({queryKey: counterOrdersQueryKey});
       await queryClient.invalidateQueries({queryKey: followUpOrdersKey});
       await queryClient.invalidateQueries({
         queryKey: orderDetailKey(order._id)
@@ -63,6 +65,7 @@ export function useSendCashierOrderMessageMutation() {
       await queryClient.invalidateQueries({queryKey: orderMessagesKey(message.orderId)});
       await queryClient.invalidateQueries({queryKey: followUpOrdersKey});
       await queryClient.invalidateQueries({queryKey: allOrdersQueryKey});
+      await queryClient.invalidateQueries({queryKey: counterOrdersQueryKey});
       await queryClient.invalidateQueries({queryKey: cashierNotificationsQueryKey});
     }
   });

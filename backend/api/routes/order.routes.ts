@@ -128,7 +128,8 @@ router.get(
 router.get(
   '/counter',
   requireAuth,
-  requireCashier,
+  requireStaff,
+  validateQuery(listAllOrdersQueryDto),
   orderController.listCounterOrders
 );
 router.post(
@@ -142,6 +143,18 @@ router.post(
   requireAuth,
   requireCashier,
   orderController.voidCounterOrder
+);
+router.patch(
+  '/counter/:id/mark-paid',
+  requireAuth,
+  requireStaff,
+  orderController.markCounterOrderPaid
+);
+router.patch(
+  '/counter/:id',
+  requireAuth,
+  requireStaff,
+  orderController.updateCounterOrder
 );
 
 router.get('/:id', requireAuth, requireStaff, orderController.getOrderById);

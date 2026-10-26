@@ -35,9 +35,9 @@ const AuthLayout = ({children}: AuthLayoutProps) => {
         />
         <div className="absolute inset-0 bg-primary/78" />
         <div className="relative z-10 flex flex-col justify-end p-12 text-primary-foreground">
-          <h1 className="text-4xl font-bold mb-3">DonClaudio&apos;s</h1>
+          <h1 className="text-4xl font-bold mb-3">DonClaudio&apos;s Lechon House</h1>
           <p className="text-lg opacity-90">
-            Authentic Filipino Lechon — slow-roasted to perfection since day
+            Authentic Filipino Lechon, slow-roasted to perfection since day
             one.
           </p>
         </div>

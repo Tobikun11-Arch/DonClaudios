@@ -7,6 +7,7 @@ import {orderItemRepository} from '../repositories/orderItem.repository';
 import {transactionRepository} from '../repositories/transaction.repository';
 import {productRepository} from '../repositories/product.repository';
 import {stockMovementService} from '../services/stockMovement.service';
+import {stockMovementRepository} from '../repositories/stockMovement.repository';
 import {notificationService} from '../services/notification.service';
 import {pushService} from '../services/push.service';
 import {cashierRepository} from '../repositories/cashier.repository';
@@ -1532,7 +1533,21 @@ export const orderController = {
 
   async listCounterOrders(req: Request, res: Response, next: NextFunction) {
     try {
-      const orders = await orderRepository.listInStore();
+      const query = (req as Request & {validatedQuery?: ListAllOrdersQuery})
+        .validatedQuery ?? {};
+      const hasRange =
+        query.preset !== undefined || query.from !== undefined || query.to !== undefined;
+      const range = hasRange
+        ? resolveRange({
+            preset: query.preset ?? (query.from && query.to ? 'custom' : '7d'),
+            from: query.from,
+            to: query.to
+          })
+        : undefined;
+      const filter: Record<string, unknown> = {};
+      if (range) filter.createdAt = {$gte: range.from, $lt: range.to};
+      if (query.status) filter.orderStatus = query.status;
+      const orders = await orderRepository.listInStore(filter);
       const orderIds = orders.map(order => String(order._id));
       const items = await orderItemRepository.listByOrderIds(orderIds);
       const itemsByOrderId = items.reduce<Record<string, typeof items>>(
@@ -1570,23 +1585,17 @@ export const orderController = {
 
       const {customerInfo, items, totalAmount, paymentMethod} = req.body;
 
-      if (
-        !customerInfo ||
-        !isNonEmptyString(customerInfo.firstName) ||
-        !isNonEmptyString(customerInfo.lastName)
-      ) {
-        throw new ApiError(
-          400,
-          'VALIDATION_ERROR',
-          'customerInfo.firstName and customerInfo.lastName are required'
-        );
-      }
-
       if (!Array.isArray(items) || items.length === 0) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'items are required');
       }
 
-      const safePhoneNumber = isNonEmptyString(customerInfo.phoneNumber)
+      const safeFirstName = isNonEmptyString(customerInfo?.firstName)
+        ? customerInfo.firstName.trim()
+        : 'Walk-in';
+      const safeLastName = isNonEmptyString(customerInfo?.lastName)
+        ? customerInfo.lastName.trim()
+        : 'Customer';
+      const safePhoneNumber = isNonEmptyString(customerInfo?.phoneNumber)
         ? customerInfo.phoneNumber
         : 'n/a';
 
@@ -1636,6 +1645,9 @@ export const orderController = {
       const counterProducts = await productRepository.findManyByIds(
         normalizedItems.map(i => i.productId)
       );
+      const productById = new Map(
+        counterProducts.map(p => [String(p._id), p])
+      );
       const preOrderProduct = counterProducts.find(p => p.isPreOrder === true);
       if (preOrderProduct) {
         throw new ApiError(
@@ -1644,32 +1656,70 @@ export const orderController = {
           `"${preOrderProduct.name}" is a pre-order item and cannot be sold at the counter.`
         );
       }
+      for (const item of normalizedItems) {
+        const product = productById.get(item.productId);
+        if (!product) {
+          throw new ApiError(
+            404,
+            'PRODUCT_NOT_FOUND',
+            `Product ${item.productId} not found`
+          );
+        }
+        if (product.stock < item.quantity) {
+          throw new ApiError(
+            400,
+            'INSUFFICIENT_STOCK',
+            `Insufficient stock for "${product.name}". Available: ${product.stock}, needed: ${item.quantity}`
+          );
+        }
+      }
+
+      // Recompute the total on the backend from product prices; never trust
+      // the client-supplied total or price.
+      const serverTotal = normalizedItems.reduce((sum, item) => {
+        const product = productById.get(item.productId);
+        return sum + (product?.price ?? item.price) * item.quantity;
+      }, 0);
+
+      // Generate a human-friendly DC-### order number on the backend.
+      const existingInStore = await orderRepository.listInStore();
+      let nextNumber = existingInStore.length + 1;
+      const lastNumbered = existingInStore.find(o => o.orderNumber);
+      if (lastNumbered?.orderNumber) {
+        const match = lastNumbered.orderNumber.match(/DC-(\d+)/);
+        if (match) {
+          nextNumber = Math.max(nextNumber, parseInt(match[1], 10) + 1);
+        }
+      }
+      const orderNumber = `DC-${String(nextNumber).padStart(3, '0')}`;
 
       const order = await orderRepository.create({
         customerId: null,
         isGuest: true,
         guestInfo: {
-          firstName: customerInfo.firstName.trim(),
-          lastName: customerInfo.lastName.trim(),
+          firstName: safeFirstName,
+          lastName: safeLastName,
           phoneNumber: safePhoneNumber,
-          email: isNonEmptyString(customerInfo.email)
+          email: isNonEmptyString(customerInfo?.email)
             ? customerInfo.email.trim()
             : undefined
         },
         orderType: 'pickup',
         orderSource: 'in-store',
-        totalAmount: safeTotalAmount,
+        totalAmount: serverTotal,
         deliveryFee: 0,
         isOnline: true,
         orderStatus: 'completed',
-        stockDeducted: false
+        stockDeducted: false,
+        paymentStatus: 'unpaid',
+        orderNumber
       });
 
       const orderItems = normalizedItems.map(item => ({
         orderId: order._id,
         productId: item.productId as any,
         quantity: item.quantity,
-        price: item.price,
+        price: productById.get(item.productId)?.price ?? item.price,
         specialRequest: item.specialRequest
       }));
 
@@ -1677,29 +1727,297 @@ export const orderController = {
       await stockMovementService.deductOrderStock(String(order._id));
       await orderRepository.updateStockDeducted(String(order._id), true);
 
-      const pm = typeof paymentMethod === 'string' ? paymentMethod : 'cash';
-      const allowedPm = ['cash', 'card', 'gcash', 'other'] as const;
-      const safePm: PaymentMethod = allowedPm.includes(pm as any)
-        ? (pm as PaymentMethod)
-        : 'cash';
-
       const transaction = await transactionRepository.create({
         cashierId: req.auth.userId as any,
         orderId: order._id,
-        paymentMethod: safePm,
-        totalAmount: safeTotalAmount,
+        paymentMethod: 'other',
+        totalAmount: serverTotal,
         isOnline: true
       });
 
-      if (order.guestInfo?.email) {
-        try {
-          await sendOrderReceiptEmail(String(order._id));
-        } catch (error) {
-          console.error('Failed to send counter order receipt email', error);
+      notifyCashiersOfNewOrder(String(order._id), serverTotal);
+
+      res.status(201).json({order, transaction});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async markCounterOrderPaid(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+      }
+
+      const order = await orderRepository.findById(req.params.id);
+      if (!order) {
+        throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+      }
+      if (order.orderSource !== 'in-store') {
+        throw new ApiError(
+          400,
+          'INVALID_OPERATION',
+          'Only in-store walk-in orders can be marked as paid'
+        );
+      }
+
+      if (order.paymentStatus === 'paid') {
+        throw new ApiError(
+          409,
+          'ALREADY_PAID',
+          'Order is already paid'
+        );
+      }
+
+      const pm = req.body?.paymentMethod;
+      const allowedPm = ['cash', 'card', 'gcash', 'other'] as const;
+      if (typeof pm !== 'string' || !allowedPm.includes(pm as any)) {
+        throw new ApiError(
+          400,
+          'VALIDATION_ERROR',
+          'paymentMethod is required and must be one of: cash, card, gcash, other'
+        );
+      }
+      const safePm = pm as 'cash' | 'card' | 'gcash' | 'other';
+
+      const paidAt = new Date();
+      const result = await orderRepository.markPaidIfUnpaid(
+        String(order._id),
+        paidAt,
+        req.auth.userId
+      );
+
+      if (result.modifiedCount === 0) {
+        throw new ApiError(409, 'ALREADY_PAID', 'Order is already paid');
+      }
+
+      await orderRepository.updateFields(String(order._id), {
+        paymentMethod: safePm
+      });
+
+      await transactionRepository.updateByOrderId(String(order._id), {
+        paymentMethod: safePm as any,
+        totalAmount: order.totalAmount
+      });
+
+      const updated = await orderRepository.findById(String(order._id));
+      const transaction = await transactionRepository.findByOrderId(
+        String(order._id)
+      );
+
+      res.status(200).json({order: updated, transaction});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateCounterOrder(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+      }
+
+      const order = await orderRepository.findById(req.params.id);
+      if (!order) {
+        throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+      }
+      if (order.orderSource !== 'in-store') {
+        throw new ApiError(
+          400,
+          'INVALID_OPERATION',
+          'Only in-store walk-in orders can be updated'
+        );
+      }
+      if (order.paymentStatus === 'paid') {
+        throw new ApiError(
+          409,
+          'ORDER_LOCKED',
+          'Paid walk-in orders cannot be edited'
+        );
+      }
+      if (order.orderStatus === 'cancelled') {
+        throw new ApiError(
+          400,
+          'INVALID_OPERATION',
+          'Cancelled orders cannot be edited'
+        );
+      }
+
+      const {customerInfo, items, paymentMethod} = req.body;
+
+      if (!Array.isArray(items) || items.length === 0) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'items are required');
+      }
+
+      const normalizedItems = items.map((i: any) => {
+        if (!isNonEmptyString(i.productId)) {
+          throw new ApiError(
+            400,
+            'VALIDATION_ERROR',
+            'items.productId is required'
+          );
+        }
+        const quantity = Number(i.quantity ?? i.qty ?? 1);
+        if (!isPositiveInteger(quantity)) {
+          throw new ApiError(
+            400,
+            'VALIDATION_ERROR',
+            'items.quantity must be a whole number greater than zero'
+          );
+        }
+        return {productId: i.productId as string, quantity};
+      });
+
+      const products = await productRepository.findManyByIds(
+        normalizedItems.map(i => i.productId)
+      );
+      const productById = new Map(products.map(p => [String(p._id), p]));
+      const preOrderProduct = products.find(p => p.isPreOrder === true);
+      if (preOrderProduct) {
+        throw new ApiError(
+          400,
+          'PRE_ORDER_NOT_ALLOWED',
+          `"${preOrderProduct.name}" is a pre-order item and cannot be sold at the counter.`
+        );
+      }
+      for (const item of normalizedItems) {
+        const product = productById.get(item.productId);
+        if (!product) {
+          throw new ApiError(
+            404,
+            'PRODUCT_NOT_FOUND',
+            `Product ${item.productId} not found`
+          );
         }
       }
 
-      res.status(201).json({order, transaction});
+      // Stock adjustment by difference. Old stock is already deducted, so the
+      // remaining stock is what is available for any INCREASE in quantity.
+      const oldItems = await orderItemRepository.listByOrderId(String(order._id));
+      const oldQtyByProduct = new Map<string, number>();
+      for (const item of oldItems) {
+        const pid = String(item.productId);
+        oldQtyByProduct.set(
+          pid,
+          (oldQtyByProduct.get(pid) ?? 0) + item.quantity
+        );
+      }
+      const newQtyByProduct = new Map<string, number>();
+      for (const item of normalizedItems) {
+        newQtyByProduct.set(
+          item.productId,
+          (newQtyByProduct.get(item.productId) ?? 0) + item.quantity
+        );
+      }
+
+      const allProductIds = new Set([
+        ...oldQtyByProduct.keys(),
+        ...newQtyByProduct.keys()
+      ]);
+
+      // Validate increases first.
+      for (const productId of allProductIds) {
+        const oldQty = oldQtyByProduct.get(productId) ?? 0;
+        const newQty = newQtyByProduct.get(productId) ?? 0;
+        const delta = newQty - oldQty;
+        if (delta > 0) {
+          const product = productById.get(productId);
+          if (!product) {
+            throw new ApiError(404, 'PRODUCT_NOT_FOUND', `Product ${productId} not found`);
+          }
+          if (product.stock < delta) {
+            throw new ApiError(
+              400,
+              'INSUFFICIENT_STOCK',
+              `Insufficient stock for "${product.name}". Available: ${product.stock}, needed: ${delta}`
+            );
+          }
+        }
+      }
+
+      // Recompute total on the backend from (current) product prices.
+      const serverTotal = normalizedItems.reduce((sum, item) => {
+        const product = productById.get(item.productId);
+        return sum + (product?.price ?? 0) * item.quantity;
+      }, 0);
+      if (!Number.isFinite(serverTotal) || serverTotal <= 0) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'totalAmount is invalid');
+      }
+
+      // Apply stock changes.
+      for (const productId of allProductIds) {
+        const oldQty = oldQtyByProduct.get(productId) ?? 0;
+        const newQty = newQtyByProduct.get(productId) ?? 0;
+        const delta = newQty - oldQty;
+        if (delta === 0) continue;
+        const product = await productRepository.findById(productId);
+        if (!product) continue;
+        const previousStock = product.stock;
+        // delta > 0 means more consumed -> stock decreases.
+        const newStock = previousStock - delta;
+        if (newStock < 0) {
+          throw new ApiError(
+            400,
+            'INSUFFICIENT_STOCK',
+            `Insufficient stock for "${product.name}"`
+          );
+        }
+        product.stock = newStock;
+        await product.save();
+        try {
+          await stockMovementRepository.create({
+            productId: productId as any,
+            type: 'adjustment',
+            quantity: -delta,
+            previousStock,
+            newStock,
+            note: 'Walk-in order edited',
+            performedBy: req.auth.userId as any
+          });
+        } catch (error) {
+          console.error('Failed to record stock movement for order edit', error);
+        }
+      }
+
+      // Replace order items.
+      await orderItemRepository.deleteByOrderId(String(order._id));
+      const newOrderItems = normalizedItems.map(item => ({
+        orderId: order._id,
+        productId: item.productId as any,
+        quantity: item.quantity,
+        price: productById.get(item.productId)?.price ?? 0,
+        specialRequest: undefined
+      }));
+      await orderItemRepository.createMany(newOrderItems);
+
+      // Update order totals / guest info.
+      const patch: Record<string, unknown> = {totalAmount: serverTotal};
+      if (customerInfo && isNonEmptyString(customerInfo.firstName)) {
+        patch['guestInfo.firstName'] = customerInfo.firstName.trim();
+      }
+      if (customerInfo && isNonEmptyString(customerInfo.lastName)) {
+        patch['guestInfo.lastName'] = customerInfo.lastName.trim();
+      }
+      if (customerInfo && isNonEmptyString(customerInfo.phoneNumber)) {
+        patch['guestInfo.phoneNumber'] = customerInfo.phoneNumber.trim();
+      }
+      if (customerInfo && isNonEmptyString(customerInfo.email)) {
+        patch['guestInfo.email'] = customerInfo.email.trim();
+      }
+      await orderRepository.updateFields(String(order._id), patch);
+
+      // Walk-in orders do not carry a payment method until they are marked as
+      // paid, so only the total is updated here.
+      await transactionRepository.updateByOrderId(String(order._id), {
+        totalAmount: serverTotal
+      });
+
+      const updated = await orderRepository.findById(String(order._id));
+      const transaction = await transactionRepository.findByOrderId(
+        String(order._id)
+      );
+
+      res.status(200).json({order: updated, transaction});
     } catch (error) {
       next(error);
     }

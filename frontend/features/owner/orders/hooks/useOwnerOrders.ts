@@ -3,6 +3,7 @@
 import {useCallback, useMemo, useState} from 'react';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {toast} from 'sonner';
+import {counterOrdersQueryKey} from '@/lib/hooks/orders/useCashierCounterOrder';
 import {listAllOrders, updateOrderStatus} from '@/lib/api/orderApi';
 import type {ListAllOrdersParams} from '@/lib/api/orderApi';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
@@ -95,6 +96,7 @@ export function useOwnerOrders(range: ReportRange) {
       updateOrderStatus(orderId, status),
     onSuccess: (_data, variables) => {
       invalidate();
+      queryClient.invalidateQueries({queryKey: counterOrdersQueryKey});
       toast.success(`Order moved to ${variables.status.replace(/_/g, ' ')}`);
     },
     onError: (error, variables) => {

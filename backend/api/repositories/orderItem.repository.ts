@@ -26,5 +26,8 @@ export const orderItemRepository = {
   createMany: (
     items: Array<Partial<OrderItemDocument>>,
     session?: ClientSession
-  ) => OrderItemModel.insertMany(items, {session})
+  ) => OrderItemModel.insertMany(items, {session}),
+
+  deleteByOrderId: (orderId: string, session?: ClientSession) =>
+    OrderItemModel.deleteMany({orderId}, {session}).exec()
 };

@@ -2,6 +2,7 @@
 
 import {useState} from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {Eye, EyeOff, LogIn} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
@@ -52,17 +53,29 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight text-foreground">
+    <div className="mx-auto w-full max-w-[400px]">
+      <div className="mb-8 flex flex-col items-center text-center">
+        <Image
+          src="/assets/logo.png"
+          alt="DonClaudio's logo"
+          width={128}
+          height={128}
+          className="h-auto w-[128px] max-[819px]:w-[104px]"
+          style={{filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.18))'}}
+        />
+        <h2
+          className="mt-5 text-[32px] font-bold leading-[1.15] text-[#1D211E] max-[819px]:text-[28px]"
+        >
           Welcome back
         </h2>
-        <p className="text-muted-foreground">
+        <p
+          className="mt-2 text-[16px] font-normal leading-[1.4] text-[#6B736D]"
+        >
           Sign in to your account to continue
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-0">
         <div className="space-y-2">
           <Label htmlFor="email">Email or Phone Number</Label>
           <Input
@@ -76,7 +89,7 @@ export default function SignInPage() {
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="mt-5 space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
             <Link
@@ -109,8 +122,7 @@ export default function SignInPage() {
 
         <Button
           type="submit"
-          className="w-full bg-[#3c5e45]"
-          size="lg"
+          className="mt-6 h-[48px] w-full rounded-[10px] bg-[#3c5e45]"
           disabled={isSubmitting}
         >
           <LogIn size={18} />
@@ -118,13 +130,13 @@ export default function SignInPage() {
         </Button>
 
         {errorMessage && (
-          <div className="rounded-md border border-destructive/30 px-3 py-2 text-sm text-destructive">
+          <div className="mt-2 rounded-md border border-destructive/30 px-3 py-2 text-sm text-destructive">
             {errorMessage}
           </div>
         )}
       </form>
 
-      <p className="text-center text-sm text-muted-foreground">
+      <p className="mt-6 text-center text-[15px] text-muted-foreground">
         Don&apos;t have an account?{' '}
         <Link
           href="/sign-up"
@@ -133,6 +145,19 @@ export default function SignInPage() {
           Sign up
         </Link>
       </p>
+
+      <div className="mt-5 mb-5 flex items-center gap-3">
+        <div className="h-px flex-1 bg-[#D9DCD5]" />
+        <span className="text-[13px] text-[#6B736D]">or</span>
+        <div className="h-px flex-1 bg-[#D9DCD5]" />
+      </div>
+
+      <Link
+        href="/order"
+        className="mb-6 flex h-[46px] w-full items-center justify-center rounded-[10px] border-[1.5px] border-[#D9DCD5] bg-transparent font-semibold text-[#2C4A3A] transition-colors hover:border-[#2C4A3A]"
+      >
+        Continue as guest
+      </Link>
     </div>
   );
 }

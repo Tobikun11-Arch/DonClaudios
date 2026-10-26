@@ -23,7 +23,6 @@ import {
 } from './reports/ReportsWorkspace';
 import OwnerNotificationBell from '@/features/owner/notifications/components/OwnerNotificationBell';
 import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
-import SplashGate from '@/shared/components/SplashGate';
 import {cn} from '@/lib/utils';
 import type {ReportRange, ReportView} from '@/lib/types/report';
 
@@ -48,23 +47,10 @@ function DashboardPageContent() {
   const topProductsQuery = useTopProductsQuery(5);
   const lowStockQuery = useLowStockQuery(10);
 
-  // When the legacy widgets are hidden there is nothing to wait for.
-  const ready =
-    mode === 'reports' ||
-    [
-      summaryQuery,
-      salesTrendQuery,
-      inventoryQuery,
-      topProductsQuery,
-      lowStockQuery
-    ].every(q => q.data !== undefined || q.isError);
-
   const cards = summaryQuery.data?.cards ?? [];
 
   return (
     <div className="space-y-5">
-      <SplashGate ready={ready} />
-
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-[1.5rem] font-bold text-[#1A1A1A]">Dashboard</h1>
@@ -159,7 +145,7 @@ function DashboardPageContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<SplashGate ready={false} />}>
+    <Suspense fallback={null}>
       <DashboardPageContent />
     </Suspense>
   );
