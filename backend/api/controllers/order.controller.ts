@@ -1573,12 +1573,6 @@ export const orderController = {
       }
       const orderNumber = `DC-${String(nextNumber).padStart(3, '0')}`;
 
-      const pm = typeof paymentMethod === 'string' ? paymentMethod : 'cash';
-      const allowedPm = ['cash', 'card', 'gcash', 'other'] as const;
-      const safePm: PaymentMethod = allowedPm.includes(pm as any)
-        ? (pm as PaymentMethod)
-        : 'cash';
-
       const order = await orderRepository.create({
         customerId: null,
         isGuest: true,
@@ -1616,7 +1610,7 @@ export const orderController = {
       const transaction = await transactionRepository.create({
         cashierId: req.auth.userId as any,
         orderId: order._id,
-        paymentMethod: safePm,
+        paymentMethod: 'other',
         totalAmount: serverTotal,
         isOnline: true
       });
@@ -1655,6 +1649,17 @@ export const orderController = {
         );
       }
 
+      const pm = req.body?.paymentMethod;
+      const allowedPm = ['cash', 'card', 'gcash', 'other'] as const;
+      if (typeof pm !== 'string' || !allowedPm.includes(pm as any)) {
+        throw new ApiError(
+          400,
+          'VALIDATION_ERROR',
+          'paymentMethod is required and must be one of: cash, card, gcash, other'
+        );
+      }
+      const safePm = pm as 'cash' | 'card' | 'gcash' | 'other';
+
       const paidAt = new Date();
       const result = await orderRepository.markPaidIfUnpaid(
         String(order._id),
@@ -1665,6 +1670,15 @@ export const orderController = {
       if (result.modifiedCount === 0) {
         throw new ApiError(409, 'ALREADY_PAID', 'Order is already paid');
       }
+
+      await orderRepository.updateFields(String(order._id), {
+        paymentMethod: safePm
+      });
+
+      await transactionRepository.updateByOrderId(String(order._id), {
+        paymentMethod: safePm as any,
+        totalAmount: order.totalAmount
+      });
 
       const updated = await orderRepository.findById(String(order._id));
       const transaction = await transactionRepository.findByOrderId(
@@ -1872,19 +1886,11 @@ export const orderController = {
       }
       await orderRepository.updateFields(String(order._id), patch);
 
-      // Update payment method via transaction row.
-      const pm = typeof paymentMethod === 'string' ? paymentMethod : undefined;
-      const allowedPm = ['cash', 'card', 'gcash', 'other'] as const;
-      if (pm && allowedPm.includes(pm as any)) {
-        await transactionRepository.updateByOrderId(String(order._id), {
-          paymentMethod: pm as PaymentMethod,
-          totalAmount: serverTotal
-        });
-      } else {
-        await transactionRepository.updateByOrderId(String(order._id), {
-          totalAmount: serverTotal
-        });
-      }
+      // Walk-in orders do not carry a payment method until they are marked as
+      // paid, so only the total is updated here.
+      await transactionRepository.updateByOrderId(String(order._id), {
+        totalAmount: serverTotal
+      });
 
       const updated = await orderRepository.findById(String(order._id));
       const transaction = await transactionRepository.findByOrderId(

@@ -69,8 +69,8 @@ export default function CounterOrder() {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
-  const [paymentMethod, setPaymentMethod] =
-    useState<(typeof PAYMENT_METHODS)[number]['value']>('cash');
+  const [paidMethod, setPaidMethod] =
+    useState<(typeof PAYMENT_METHODS)[number]['value'] | null>(null);
 
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [editingOrderNumber, setEditingOrderNumber] = useState<string | null>(
@@ -175,7 +175,6 @@ export default function CounterOrder() {
 
   const resetForm = () => {
     setCart([]);
-    setPaymentMethod('cash');
     setEditingOrderId(null);
     setEditingOrderNumber(null);
   };
@@ -218,10 +217,6 @@ export default function CounterOrder() {
     });
 
     setCart(lines);
-    setPaymentMethod(
-      (order.paymentMethod as (typeof PAYMENT_METHODS)[number]['value']) ??
-        'cash'
-    );
     setEditingOrderId(order._id);
     setEditingOrderNumber(orderLabel(order));
   };
@@ -238,8 +233,7 @@ export default function CounterOrder() {
         quantity: c.qty,
         price: c.price
       })),
-      totalAmount: orderTotal,
-      paymentMethod
+      totalAmount: orderTotal
     };
 
     try {
@@ -267,16 +261,23 @@ export default function CounterOrder() {
     resetForm();
   };
 
+  const [markPaidError, setMarkPaidError] = useState<string | null>(null);
+
   const confirmMarkPaid = async () => {
-    if (!markPaidTarget) return;
+    if (!markPaidTarget || !paidMethod) return;
+    setMarkPaidError(null);
     try {
-      await markPaid.mutateAsync(markPaidTarget._id);
+      await markPaid.mutateAsync({
+        orderId: markPaidTarget._id,
+        paymentMethod: paidMethod
+      });
       toast.success(`${orderLabel(markPaidTarget)} marked as paid.`);
       setMarkPaidTarget(null);
+      setPaidMethod(null);
     } catch (err: unknown) {
       const message =
         (err as {message?: string})?.message ?? 'Failed to mark as paid';
-      toast.error(message);
+      setMarkPaidError(message);
     }
   };
 
@@ -510,33 +511,12 @@ export default function CounterOrder() {
 
                 <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
                   <span className="text-sm text-gray-500">Order Total</span>
-                  <span className="text-xl font-bold text-gray-900">
+                  <span className="text-base font-medium text-gray-900">
                     ₱{orderTotal.toLocaleString()}
                   </span>
                 </div>
 
                 <div className="mt-4 space-y-3">
-                  <div>
-                    <Label className="text-xs font-medium">Payment method</Label>
-                    <div className="mt-1 flex flex-wrap gap-2">
-                      {PAYMENT_METHODS.map(method => (
-                        <button
-                          key={method.value}
-                          type="button"
-                          onClick={() => setPaymentMethod(method.value)}
-                          className={
-                            'rounded-full px-3 py-1.5 min-h-[40px] text-sm font-medium transition-colors ' +
-                            (paymentMethod === method.value
-                              ? 'bg-[#3c5e45] text-white'
-                              : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50')
-                          }
-                        >
-                          {method.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
                   <div className="sticky bottom-20 z-10 -mx-4 mt-1 bg-white px-4 py-3 md:bottom-0 lg:static lg:mx-0 lg:mt-4 lg:p-0">
                     <div className="flex gap-2">
                       {editingOrderId && (
@@ -637,6 +617,11 @@ export default function CounterOrder() {
                                 <Pencil className="h-4 w-4" />
                               </button>
                             )}
+                            {paid && order.paymentMethod && (
+                              <span className="text-xs text-gray-500">
+                                {paymentMethodLabel(order.paymentMethod)}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -695,18 +680,43 @@ export default function CounterOrder() {
           <div className="absolute inset-0 flex items-center justify-center p-4">
             <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
               <h3 className="text-lg font-bold text-gray-900">
-                Mark as paid?
+                Mark {markPaidTarget ? orderLabel(markPaidTarget) : ''} as paid?
               </h3>
               <p className="mt-2 text-sm text-gray-600">
-                Mark {orderLabel(markPaidTarget)} (₱
-                {markPaidTarget.totalAmount.toLocaleString()}) as paid via{' '}
-                {paymentMethodLabel(markPaidTarget.paymentMethod)}?
+                Total: ₱{markPaidTarget.totalAmount.toLocaleString()}
               </p>
+              <div className="mt-4">
+                <Label className="text-xs font-medium">Payment method</Label>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {PAYMENT_METHODS.map(method => (
+                    <button
+                      key={method.value}
+                      type="button"
+                      onClick={() => setPaidMethod(method.value)}
+                      className={
+                        'rounded-full px-3 py-1.5 min-h-[40px] text-sm font-medium transition-colors ' +
+                        (paidMethod === method.value
+                          ? 'bg-[#3c5e45] text-white'
+                          : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50')
+                      }
+                    >
+                      {method.label}
+                    </button>
+                  ))}
+                </div>
+                {markPaidError && (
+                  <p className="mt-2 text-xs text-red-500">{markPaidError}</p>
+                )}
+              </div>
               <div className="mt-4 flex justify-end gap-2">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setMarkPaidTarget(null)}
+                  onClick={() => {
+                    setMarkPaidTarget(null);
+                    setPaidMethod(null);
+                    setMarkPaidError(null);
+                  }}
                   disabled={markPaid.isPending}
                 >
                   Cancel
@@ -715,7 +725,7 @@ export default function CounterOrder() {
                   type="button"
                   className="bg-[#3c5e45] hover:bg-[#2d4a35]"
                   onClick={confirmMarkPaid}
-                  disabled={markPaid.isPending}
+                  disabled={!paidMethod || markPaid.isPending}
                 >
                   {markPaid.isPending ? 'Saving...' : 'Confirm'}
                 </Button>

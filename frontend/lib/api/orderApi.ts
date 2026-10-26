@@ -276,9 +276,13 @@ export async function voidCounterOrder(orderId: string) {
   return res.data;
 }
 
-export async function markCounterOrderPaid(orderId: string) {
+export async function markCounterOrderPaid(
+  orderId: string,
+  paymentMethod: 'cash' | 'card' | 'gcash' | 'other'
+) {
   const res = await httpClient.patch<{order: CounterOrderEntry; transaction?: unknown}>(
-    `/orders/counter/${orderId}/mark-paid`
+    `/orders/counter/${orderId}/mark-paid`,
+    {paymentMethod}
   );
   return res.data;
 }

@@ -52,7 +52,13 @@ export function useVoidCounterOrderMutation() {
 export function useMarkCounterOrderPaidMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: markCounterOrderPaid,
+    mutationFn: ({
+      orderId,
+      paymentMethod
+    }: {
+      orderId: string;
+      paymentMethod: 'cash' | 'card' | 'gcash' | 'other';
+    }) => markCounterOrderPaid(orderId, paymentMethod),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: counterOrdersQueryKey
