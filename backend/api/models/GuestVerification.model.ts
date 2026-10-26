@@ -44,3 +44,6 @@ export const GuestVerificationModel =
     GuestVerificationSchema,
     'guest_verifications'
   );
+
+// Drop legacy non-partial unique indexes left over from earlier schema versions.
+void GuestVerificationModel.syncIndexes().catch(() => {});
