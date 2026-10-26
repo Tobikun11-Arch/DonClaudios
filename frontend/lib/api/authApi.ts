@@ -1,5 +1,27 @@
 import {httpClient} from './httpClient';
 
+export type CustomerAddress = {
+  _id?: string;
+  label: string;
+  line: string;
+  landmark?: string;
+  riderNotes?: string;
+  isDefault?: boolean;
+};
+
+export type CustomerPreferences = {
+  defaultFulfillment?: 'pickup' | 'delivery';
+  preferredLeadTimeDays?: number;
+  servingStyle?: 'whole' | 'chopped' | 'plated';
+  sauceCount?: number;
+};
+
+export type CustomerOccasion = {
+  _id?: string;
+  label: string;
+  date: string;
+};
+
 type RegisterRequest = {
   firstName: string;
   lastName: string;
@@ -33,8 +55,13 @@ type MeResponse = {
     email?: string;
     phoneNumber?: string;
     address?: string;
-    username?: string;    profilePhoto?: string;
-    businessName?: string;
+  username?: string;
+  profilePhoto?: string;
+  createdAt?: string;
+  addresses?: CustomerAddress[];
+  preferences?: CustomerPreferences;
+  occasions?: CustomerOccasion[];
+  businessName?: string;
     businessLogo?: string;
     storeAddress?: string;
     businessContactNumber?: string;
@@ -62,7 +89,10 @@ export type UpdateProfileBody = {
   phoneNumber?: string;
   address?: string;
   username?: string;
-  profilePhoto?: string;
+    profilePhoto?: string;
+    addresses?: CustomerAddress[];
+  preferences?: CustomerPreferences;
+  occasions?: CustomerOccasion[];
   businessName?: string;
   businessLogo?: string;
   storeAddress?: string;
@@ -182,5 +212,17 @@ export async function verifyResetCode(params: {email: string; code: string}) {
 
 export async function getSessions() {
   const res = await httpClient.get<SessionsResponse>('/auth/sessions');
+  return res.data;
+}
+
+export async function deleteAccount() {
+  const res = await httpClient.delete<{message: string}>('/auth/account');
+  return res.data;
+}
+
+export async function downloadMyData() {
+  const res = await httpClient.get<{user: unknown; orders: unknown[]}>(
+    '/auth/me/data'
+  );
   return res.data;
 }
