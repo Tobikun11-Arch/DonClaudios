@@ -4,7 +4,12 @@ import {useEffect, useState} from 'react';
 import Image from 'next/image';
 import {Star} from 'lucide-react';
 import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
-import type {Colors, ReviewsSection as ReviewsSectionType, ReviewItem, SectionStyle} from '@/lib/types/settings';
+import type {
+  Colors,
+  ReviewsSection as ReviewsSectionType,
+  ReviewItem,
+  SectionStyle
+} from '@/lib/types/settings';
 
 const GRID_SIZE = 4; // 2x2
 
@@ -20,10 +25,7 @@ function Stars({rating}: {rating: number}) {
   return (
     <div className="flex gap-0.5">
       {Array.from({length: Math.min(5, Math.max(0, rating))}).map((_, i) => (
-        <Star
-          key={i}
-          className="w-4 h-4 fill-yellow-400 text-yellow-400"
-        />
+        <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
       ))}
     </div>
   );
@@ -83,14 +85,14 @@ function ReviewCard({review}: {review: ReviewItem}) {
 function FeaturedPanel({review}: {review: ReviewItem}) {
   const coverImage = review.images?.[0]?.url;
   return (
-    <div className="relative rounded-2xl overflow-hidden h-full min-h-80 bg-[#a4bbab]">
+    <div className="relative rounded-2xl overflow-hidden h-full min-h-80 lg:min-h-[640px] bg-[#a4bbab]">
       {coverImage ? (
         <Image
           src={coverImage}
           alt={review.name}
           fill
           sizes="(max-width: 1024px) 100vw, 40vw"
-          className="object-contain"
+          className="object-cover"
         />
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-[#8aab8e] to-[#6b8a6e]" />
@@ -174,10 +176,7 @@ function ReviewGridCarousel({items}: {items: ReviewItem[]}) {
           style={{transform: `translateX(-${page * 100}%)`}}
         >
           {pages.map((group, groupIndex) => (
-            <div
-              key={groupIndex}
-              className={`w-full shrink-0 ${gridClasses}`}
-            >
+            <div key={groupIndex} className={`w-full shrink-0 ${gridClasses}`}>
               {renderGroup(group, groupIndex)}
             </div>
           ))}
@@ -220,10 +219,14 @@ export default function ReviewsSection({reviews, colors, sectionStyle}: Props) {
       id="reviews"
       className="min-h-screen flex items-center py-20 px-4"
       style={{
-        backgroundColor: sectionStyle?.backgroundColor || `color-mix(in srgb, ${c.primary} 12%, white)`,
+        backgroundColor:
+          sectionStyle?.backgroundColor ||
+          `color-mix(in srgb, ${c.primary} 12%, white)`,
         color: sectionStyle?.textColor || undefined,
         fontFamily: sectionStyle?.fontFamily || undefined,
-        ...(sectionStyle?.textColor ? {'--dc-text': sectionStyle.textColor} : {})
+        ...(sectionStyle?.textColor
+          ? {'--dc-text': sectionStyle.textColor}
+          : {})
       }}
     >
       <div className="container mx-auto max-w-6xl">
