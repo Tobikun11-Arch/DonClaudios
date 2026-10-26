@@ -185,6 +185,12 @@ export default function OrderTracking({
         ?.phoneNumber ?? '',
     () => ''
   );
+  const storedEmail = useSyncExternalStore(
+    () => () => {},
+    () =>
+      getGuestOrderHistory().find(o => o._id === orderId)?.guestInfo?.email ?? '',
+    () => ''
+  );
 
   const autoPhone = variant === 'guest' ? storedPhone : '';
   const needsPhoneGate =
@@ -196,7 +202,8 @@ export default function OrderTracking({
         : autoPhone
       : undefined;
 
-  const query = useTrackOrderQuery(orderId, resolvedPhone);
+  const resolvedEmail = variant === 'guest' ? storedEmail : undefined;
+  const query = useTrackOrderQuery(orderId, resolvedPhone, resolvedEmail);
   const order = query.data?.order;
 
   if (needsPhoneGate) {
@@ -255,6 +262,19 @@ export default function OrderTracking({
           </div>
         ) : (
           <>
+            {order.orderStatus === 'pending' ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                <p className="font-semibold">Awaiting confirmation call</p>
+                <p className="mt-1">
+                  Our team will call{' '}
+                  {order.guestInfo?.phoneNumber
+                    ? order.guestInfo.phoneNumber
+                    : 'you'}{' '}
+                  to confirm this order before we start preparing it. Please keep
+                  your line open.
+                </p>
+              </div>
+            ) : null}
             {order.orderStatus === 'cancelled' ? (
               <CancelledCard order={order} />
             ) : (
@@ -712,14 +732,21 @@ function ManualPaymentCardBody({
             Your payment has been verified. Thank you!
           </p>
           {order.paymentProofUrl ? (
-            <a
-              href={order.paymentProofUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-block text-xs font-semibold text-[#3c5e45] hover:underline"
-            >
-              View my submitted proof of payment
-            </a>
+            <div className="space-y-2">
+              <img
+                src={order.paymentProofUrl}
+                alt="Submitted proof of payment"
+                className="max-h-72 w-full rounded-xl border border-gray-200 object-contain"
+              />
+              <a
+                href={order.paymentProofUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block text-xs font-semibold text-[#3c5e45] hover:underline"
+              >
+                Open full image
+              </a>
+            </div>
           ) : null}
         </div>
       ) : alreadyClaimed && !formOpen ? (
@@ -735,14 +762,21 @@ function ManualPaymentCardBody({
             </p>
           </div>
           {order.paymentProofUrl ? (
-            <a
-              href={order.paymentProofUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-block text-xs font-semibold text-[#3c5e45] hover:underline"
-            >
-              View submitted screenshot
-            </a>
+            <div className="space-y-2">
+              <img
+                src={order.paymentProofUrl}
+                alt="Submitted proof of payment"
+                className="max-h-72 w-full rounded-xl border border-gray-200 object-contain"
+              />
+              <a
+                href={order.paymentProofUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block text-xs font-semibold text-[#3c5e45] hover:underline"
+              >
+                Open full image
+              </a>
+            </div>
           ) : null}
           <button
             type="button"
@@ -903,6 +937,18 @@ function ManualPaymentCardBody({
             <p className="mt-1 text-xs text-gray-500">
               Upload a screenshot or receipt image (max 5&nbsp;MB).
             </p>
+            {proof ? (
+              <div className="mt-3">
+                <p className="mb-1 text-xs font-semibold text-gray-600">
+                  Preview
+                </p>
+                <img
+                  src={URL.createObjectURL(proof)}
+                  alt="Selected proof preview"
+                  className="max-h-64 w-full rounded-xl border border-gray-200 object-contain"
+                />
+              </div>
+            ) : null}
           </div>
 
           <div className="mt-4">

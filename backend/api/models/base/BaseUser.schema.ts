@@ -8,6 +8,7 @@ export interface BaseUserDocument extends mongoose.Document {
   phoneNumber?: string;
   address?: string;
   isVerified: boolean;
+  phoneVerified: boolean;
   verificationCode?: string | null;
   verificationExpiry?: Date | null;
 }
@@ -28,6 +29,7 @@ export function createBaseUserSchema<T extends BaseUserDocument>() {
       phoneNumber: {type: String},
       address: {type: String},
       isVerified: {type: Boolean, default: false},
+      phoneVerified: {type: Boolean, default: false},
       verificationCode: {type: String, default: null},
       verificationExpiry: {type: Date, default: null}
     },

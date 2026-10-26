@@ -12,7 +12,8 @@ export type CreateGuestOrderInput = {
   guestInfo: {
     firstName: string;
     lastName: string;
-    phoneNumber: string;
+    phoneNumber?: string;
+    email?: string;
     address?: string;
   };
   orderType: 'pickup' | 'delivery' | 'reservation';
@@ -80,6 +81,7 @@ export type OrderHistoryEntry = {
   orderType: 'pickup' | 'delivery' | 'reservation';
   totalAmount: number;
   deliveryFee?: number;
+  deliveryMode?: 'DONCLAUDIO' | 'LALAMOVE';
   paymentMethod?: string | null;
   riderNotes?: string;
   orderStatus: string;
@@ -101,7 +103,8 @@ export type OrderHistoryEntry = {
   guestInfo?: {
     firstName: string;
     lastName: string;
-    phoneNumber: string;
+    phoneNumber?: string;
+    email?: string;
     address?: string;
   };
   customerName?: string;
@@ -156,7 +159,8 @@ export type FollowUpOrder = {
   guestInfo?: {
     firstName: string;
     lastName: string;
-    phoneNumber: string;
+    phoneNumber?: string;
+    email?: string;
     address?: string;
   };
   customerId?: string | null;
@@ -284,10 +288,41 @@ export async function sendAdminOrderMessage(orderId: string, body: string) {
   return res.data;
 }
 
-export async function getTrackedOrder(orderId: string, phoneNumber?: string) {
+export async function sendGuestEmailOtp(email: string) {
+  const res = await httpClient.post<{message: string; alreadyVerified?: boolean}>(
+    '/orders/guest/otp/email',
+    {email}
+  );
+  return res.data;
+}
+
+export async function verifyGuestEmailOtp(email: string, code: string) {
+  const res = await httpClient.post<{message: string}>(
+    '/orders/guest/otp/email/verify',
+    {email, code}
+  );
+  return res.data;
+}
+
+export async function getGuestEmailOtpStatus(email: string) {
+  const res = await httpClient.get<{verified: boolean; message: string}>(
+    '/orders/guest/otp/email/status',
+    {params: {email}}
+  );
+  return res.data;
+}
+
+export async function getTrackedOrder(
+  orderId: string,
+  phoneNumber?: string,
+  email?: string
+) {
+  const params: Record<string, string> = {};
+  if (phoneNumber) params.phoneNumber = phoneNumber;
+  if (email) params.email = email;
   const res = await httpClient.get<OrderDetailResponse>(
     `/orders/customer/track/${orderId}`,
-    {params: phoneNumber ? {phoneNumber} : undefined}
+    {params: Object.keys(params).length ? params : undefined}
   );
   return res.data;
 }

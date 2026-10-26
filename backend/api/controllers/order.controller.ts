@@ -1,6 +1,7 @@
 import {Request, Response, NextFunction} from 'express';
 import mongoose from 'mongoose';
 import {ApiError} from '../utils/error';
+import {phoneVariants} from '../utils/phone';
 import {orderRepository} from '../repositories/order.repository';
 import {orderItemRepository} from '../repositories/orderItem.repository';
 import {transactionRepository} from '../repositories/transaction.repository';
@@ -29,6 +30,7 @@ import type {
 import type {CashierDocument} from '../models/Cashier.model';
 import {resolveRange} from '../utils/dateRange';
 import {pointsEarnedForOrder} from '../config/rewards';
+import {getDeliveryMode} from '../config/delivery';
 import {assertPreOrderItemsOrderable} from '../services/cart.service';
 import {isPositiveInteger, reserveOrderStock} from '../services/preOrder.service';
 import type {ListAllOrdersQuery} from '../dtos/order.dto';
@@ -489,12 +491,28 @@ export const orderController = {
           typeof req.query.phoneNumber === 'string'
             ? req.query.phoneNumber.trim()
             : '';
-        if (
-          !phoneNumber ||
-          order.isGuest !== true ||
-          !order.guestInfo ||
-          order.guestInfo.phoneNumber !== phoneNumber
-        ) {
+        const email =
+          typeof req.query.email === 'string'
+            ? req.query.email.trim().toLowerCase()
+            : '';
+        if (!order.isGuest || !order.guestInfo) {
+          throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+        }
+        const phoneMatch =
+          phoneNumber.length > 0 &&
+          !!order.guestInfo.phoneNumber &&
+          phoneVariants(phoneNumber).includes(order.guestInfo.phoneNumber);
+        const emailMatch =
+          email.length > 0 &&
+          !!order.guestInfo.email &&
+          order.guestInfo.email.toLowerCase() === email;
+        if (!phoneMatch && !emailMatch) {
+          console.error('TRACK MISMATCH', {
+            queryPhone: phoneNumber,
+            queryEmail: email,
+            dbPhone: order.guestInfo.phoneNumber,
+            dbEmail: order.guestInfo.email
+          });
           throw new ApiError(403, 'FORBIDDEN', 'Order not found');
         }
       } else if (req.auth.type === 'customer') {
@@ -936,13 +954,10 @@ export const orderController = {
         throw new ApiError(400, 'VALIDATION_ERROR', 'items are required');
       }
 
-      const safeTotalAmount = Number(totalAmount);
+      let safeTotalAmount = Number(totalAmount);
       if (!Number.isFinite(safeTotalAmount) || safeTotalAmount <= 0) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'totalAmount is invalid');
       }
-
-      const safeDeliveryFee =
-        orderType === 'delivery' && items.length > 0 ? 49 : 0;
 
       // Validate and normalise every line once, before touching the database.
       const normalizedItems = items.map((i: any) => {
@@ -976,6 +991,24 @@ export const orderController = {
               : undefined
         };
       });
+
+      const deliveryProducts = await productRepository.findManyByIds(
+        normalizedItems.map(i => i.productId)
+      );
+      const deliveryProductById = new Map(
+        deliveryProducts.map(p => [String(p._id), p])
+      );
+      const deliveryMode = getDeliveryMode(
+        normalizedItems.map(i => ({
+          category: deliveryProductById.get(String(i.productId))?.category,
+          price: i.price,
+          quantity: i.quantity
+        }))
+      );
+      safeTotalAmount = normalizedItems.reduce(
+        (sum: number, i: any) => sum + i.price * i.quantity,
+        0
+      );
 
       const customerList = await customerRepository.listByIds([
         req.auth.userId as string
@@ -1032,7 +1065,8 @@ export const orderController = {
                 },
                 orderType,
                 totalAmount: safeTotalAmount,
-                deliveryFee: safeDeliveryFee,
+                deliveryFee: 0,
+                deliveryMode,
                 riderNotes: isNonEmptyString(riderNotes)
                   ? riderNotes
                   : undefined,
@@ -1082,7 +1116,8 @@ export const orderController = {
             },
             orderType,
             totalAmount: safeTotalAmount,
-            deliveryFee: safeDeliveryFee,
+            deliveryFee: 0,
+            deliveryMode,
             riderNotes: isNonEmptyString(riderNotes) ? riderNotes : undefined,
             changeFor: normalizeChangeFor(changeFor),
             statusHistory: [{status: 'pending', at: new Date()}],
@@ -1171,6 +1206,47 @@ export const orderController = {
     }
   },
 
+  async sendGuestEmailOtp(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await guestOtpService.sendEmailOtp(req.body.email);
+      if (result.alreadyVerified) {
+        return res.status(200).json({
+          message: 'Email already verified',
+          alreadyVerified: true
+        });
+      }
+      res.status(200).json({message: 'Verification code sent'});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async verifyGuestEmailOtp(req: Request, res: Response, next: NextFunction) {
+    try {
+      await guestOtpService.verifyEmailOtp(req.body.email, req.body.code);
+      res.status(200).json({message: 'Email verified'});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async checkGuestEmailOtpStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const email =
+        typeof req.query.email === 'string' ? req.query.email : '';
+      if (!isNonEmptyString(email)) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'email is required');
+      }
+      const verified = await guestOtpService.isEmailVerified(email);
+      res.status(200).json({
+        verified,
+        message: verified ? 'Email verified' : 'Email not verified'
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async createGuestOrder(req: Request, res: Response, next: NextFunction) {
     try {
       await assertStoreOpen();
@@ -1194,18 +1270,31 @@ export const orderController = {
       if (!isNonEmptyString(guestInfo.lastName)) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'lastName is required');
       }
-      if (!isNonEmptyString(guestInfo.phoneNumber)) {
-        throw new ApiError(400, 'VALIDATION_ERROR', 'phoneNumber is required');
+      if (
+        !isNonEmptyString(guestInfo.phoneNumber) &&
+        !isNonEmptyString(guestInfo.email)
+      ) {
+        throw new ApiError(
+          400,
+          'VALIDATION_ERROR',
+          'phoneNumber or email is required'
+        );
       }
 
-      const phoneVerified = await guestOtpService.isPhoneVerified(
-        guestInfo.phoneNumber
-      );
-      if (!phoneVerified) {
+      let guestVerified = false;
+      if (isNonEmptyString(guestInfo.phoneNumber)) {
+        guestVerified = await guestOtpService.isPhoneVerified(
+          guestInfo.phoneNumber
+        );
+      }
+      if (!guestVerified && isNonEmptyString(guestInfo.email)) {
+        guestVerified = await guestOtpService.isEmailVerified(guestInfo.email);
+      }
+      if (!guestVerified) {
         throw new ApiError(
           409,
           'PHONE_NOT_VERIFIED',
-          'Verify your phone number before placing the order'
+          'Verify your phone number or email before placing the order'
         );
       }
 
@@ -1229,13 +1318,10 @@ export const orderController = {
         allowPreOrder: false
       });
 
-      const safeTotalAmount = Number(totalAmount);
+      let safeTotalAmount = Number(totalAmount);
       if (!Number.isFinite(safeTotalAmount) || safeTotalAmount <= 0) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'totalAmount is invalid');
       }
-
-      const safeDeliveryFee =
-        orderType === 'delivery' && items.length > 0 ? 49 : 0;
 
       // Validate and normalise every line once, before touching the database.
       const normalizedItems = items.map((i: any) => {
@@ -1274,6 +1360,24 @@ export const orderController = {
       const {itemPreps, estimatedPrepMinutes, estimatedReadyAt} =
         await buildPrepSnapshot(productIds, orderType);
 
+      const guestDeliveryProducts = await productRepository.findManyByIds(
+        normalizedItems.map(i => i.productId)
+      );
+      const guestDeliveryProductById = new Map(
+        guestDeliveryProducts.map(p => [String(p._id), p])
+      );
+      const deliveryMode = getDeliveryMode(
+        normalizedItems.map(i => ({
+          category: guestDeliveryProductById.get(String(i.productId))?.category,
+          price: i.price,
+          quantity: i.quantity
+        }))
+      );
+      safeTotalAmount = normalizedItems.reduce(
+        (sum: number, i: any) => sum + i.price * i.quantity,
+        0
+      );
+
       // Reserve stock at placement (like account orders) so two concurrent
       // guest checkouts cannot oversell. Guests never order pre-orders, so the
       // allowance path is not exercised here; reserveOrderStock still validates
@@ -1305,7 +1409,8 @@ export const orderController = {
                 },
                 orderType,
                 totalAmount: safeTotalAmount,
-                deliveryFee: safeDeliveryFee,
+                deliveryFee: 0,
+                deliveryMode,
                 riderNotes: isNonEmptyString(riderNotes)
                   ? riderNotes
                   : undefined,
@@ -1356,7 +1461,8 @@ export const orderController = {
             },
             orderType,
             totalAmount: safeTotalAmount,
-            deliveryFee: safeDeliveryFee,
+            deliveryFee: 0,
+            deliveryMode,
             riderNotes: isNonEmptyString(riderNotes) ? riderNotes : undefined,
             changeFor: normalizeChangeFor(changeFor),
             statusHistory: [{status: 'pending', at: new Date()}],
@@ -1484,7 +1590,7 @@ export const orderController = {
         ? customerInfo.phoneNumber
         : 'n/a';
 
-      const safeTotalAmount = Number(totalAmount);
+      let safeTotalAmount = Number(totalAmount);
       if (!Number.isFinite(safeTotalAmount) || safeTotalAmount <= 0) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'totalAmount is invalid');
       }
@@ -1863,6 +1969,25 @@ export const orderController = {
         console.info(
           `[audit] order ${req.params.id} cancelled by ${req.auth?.userId ?? 'unknown'} (${req.auth?.type ?? 'unknown'}) reason="${cancelReason ?? ''}"`
         );
+      }
+
+      if (
+        status === 'completed' &&
+        order.customerId &&
+        order.orderSource !== 'in-store'
+      ) {
+        try {
+          const customer = await customerRepository.findById(
+            String(order.customerId)
+          );
+          if (customer && customer.phoneVerified !== true) {
+            await customerRepository.update(String(order.customerId), {
+              phoneVerified: true
+            } as any);
+          }
+        } catch (error) {
+          console.error('Failed to set phoneVerified on completed order', error);
+        }
       }
 
       const updated = await orderRepository.findById(req.params.id);

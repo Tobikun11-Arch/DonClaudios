@@ -74,11 +74,13 @@ export default function LocationPicker({
       async pos => {
         const {latitude: lat, longitude: lng} = pos.coords;
         const address = await reverseGeocode(lat, lng);
-        setLocation({lat, lng, address});
+        const next = {lat, lng, address};
+        setLocation(next);
         setMapSrc(buildTwoPinSrc(lat, lng));
         setPermissionDenied(false);
         setStatusMsg('Location detected. Confirm when ready.');
         setIsLocating(false);
+        onConfirm?.(next);
       },
       err => {
         setIsLocating(false);
@@ -115,9 +117,11 @@ export default function LocationPicker({
         if (results?.length > 0) {
           const lat = parseFloat(results[0].lat);
           const lng = parseFloat(results[0].lon);
-          setLocation({lat, lng, address: value});
+          const next = {lat, lng, address: value};
+          setLocation(next);
           setMapSrc(buildTwoPinSrc(lat, lng));
           setStatusMsg('Address found. Confirm when ready.');
+          onConfirm?.(next);
         } else {
           setStatusMsg('Address not found. Try a more specific search.');
         }

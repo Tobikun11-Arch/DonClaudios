@@ -95,6 +95,13 @@ export function OrderDetailDrawer({
           <div className="flex flex-wrap items-center gap-2">
             <OrderStatusPill status={order.orderStatus} />
             <OrderTypePill type={order.orderType} />
+            {order.deliveryMode ? (
+              <span className="rounded-md bg-gray-50 px-2 py-0.5 text-[0.7rem] font-semibold text-gray-600">
+                {order.deliveryMode === 'DONCLAUDIO'
+                  ? 'DonClaudio delivery'
+                  : 'Lalamove (customer-booked)'}
+              </span>
+            ) : null}
             {order.paymentMethod && (
               <span className="rounded-md bg-gray-50 px-2 py-0.5 text-[0.7rem] font-semibold capitalize text-gray-600">
                 {order.paymentMethod}

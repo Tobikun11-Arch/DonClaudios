@@ -7,6 +7,7 @@ type RegisterRequest = {
   password: string;
   phoneNumber: string;
   address: string;
+  carrier?: 'globe_dito' | 'smart_tnt';
 };
 
 type RegisterResponse = {
@@ -106,6 +107,19 @@ export async function verifyCustomerPhone(params: {
 export async function resendVerificationCode(params: {phoneNumber: string}) {
   const res = await httpClient.post<{message: string}>(
     '/auth/resend-verification',
+    params
+  );
+  return res.data;
+}
+
+export async function verifyCustomerEmail(params: {email: string; code: string}) {
+  const res = await httpClient.post<{message: string}>('/auth/verify-email', params);
+  return res.data;
+}
+
+export async function resendVerificationEmailCode(params: {email: string}) {
+  const res = await httpClient.post<{message: string}>(
+    '/auth/resend-verification-email',
     params
   );
   return res.data;

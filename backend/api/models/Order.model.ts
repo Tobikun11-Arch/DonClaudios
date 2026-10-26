@@ -1,6 +1,7 @@
 import mongoose, {Schema} from 'mongoose';
 
 export type OrderType = 'pickup' | 'delivery' | 'reservation';
+export type DeliveryMode = 'DONCLAUDIO' | 'LALAMOVE';
 export type OrderStatus =
   | 'pending'
   | 'confirmed'
@@ -23,7 +24,7 @@ export type OrderStatus =
 export interface GuestInfo {
   firstName: string;
   lastName: string;
-  phoneNumber: string;
+  phoneNumber?: string;
   address?: string;
   email?: string;
 }
@@ -49,6 +50,7 @@ export interface OrderDocument extends mongoose.Document {
   isGuest: boolean;
   guestInfo?: GuestInfo;
   orderType: OrderType;
+  deliveryMode?: DeliveryMode;
   orderSource: 'online' | 'in-store';
   totalAmount: number;
   deliveryFee: number;
@@ -90,7 +92,7 @@ const GuestInfoSchema = new Schema<GuestInfo>(
   {
     firstName: {type: String, required: true},
     lastName: {type: String, required: true},
-    phoneNumber: {type: String, required: true},
+    phoneNumber: {type: String},
     address: {type: String},
     email: {type: String}
   },
@@ -126,6 +128,11 @@ const OrderSchema = new Schema<OrderDocument>(
       type: String,
       enum: ['pickup', 'delivery', 'reservation'],
       required: true
+    },
+    deliveryMode: {
+      type: String,
+      enum: ['DONCLAUDIO', 'LALAMOVE'],
+      default: 'LALAMOVE'
     },
     orderSource: {
       type: String,

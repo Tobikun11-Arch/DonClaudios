@@ -4,7 +4,7 @@ import {Button} from '@/components/ui/button';
 import {Label} from '@/components/ui/label';
 import {useProductQuery} from '@/lib/hooks/products/useProducts';
 import {
-  ArrowLeft,
+  ChevronLeft,
   Minus,
   Plus,
   ShoppingCart,
@@ -391,16 +391,15 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
           </div>
         ) : null}
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white hover:bg-gray-50"
-            aria-label="Back"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <h1 className="text-lg font-bold text-gray-900">Back</h1>
-        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          className="text-[#3c5e45] hover:text-[#3c5e45] hover:bg-[#3c5e45]/10"
+          onClick={() => router.back()}
+        >
+          <ChevronLeft className="h-5 w-5 mr-2" />
+          Back
+        </Button>
 
         {productQuery.isLoading && <ProductDetailSkeleton />}
 

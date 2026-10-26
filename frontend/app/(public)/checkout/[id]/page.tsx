@@ -5,14 +5,12 @@ import {useParams, useRouter} from 'next/navigation';
 import Image from 'next/image';
 import {
   BadgeCheck,
-  ChevronDown,
   ChevronLeft,
   CreditCard,
   Loader2,
   MapPin,
   Minus,
-  Plus,
-  Truck
+  Plus
 } from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
@@ -27,13 +25,19 @@ import {useLocationStore} from '@/app/store/locationStore';
 import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
 import LocationPicker from '@/features/order/components/LocationPicker';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
+import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
+import {getDeliveryMode, STORE_ADDRESS} from '@/lib/orders/deliveryMode';
+import OrderTypeSelector from '@/shared/components/order/OrderTypeSelector';
 import {useCreateGuestOrderMutation} from '@/lib/hooks/orders/useGuestOrder';
 import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 import {
   getGuestOtpStatus,
   sendGuestOtp,
-  verifyGuestOtp
+  verifyGuestOtp,
+  sendGuestEmailOtp,
+  verifyGuestEmailOtp,
+  getGuestEmailOtpStatus
 } from '@/lib/api/orderApi';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {saveGuestOrderHistoryEntry} from '@/lib/orders/orderHistoryStorage';
@@ -54,8 +58,7 @@ const NOTE_SUGGESTIONS = [
 function buildMapPreviewSrc(userLat: number, userLng: number) {
   const midLat = (userLat + STORE.lat) / 2;
   const midLng = (userLng + STORE.lng) / 2;
-  const spread =
-    Math.abs(userLat - STORE.lat) + Math.abs(userLng - STORE.lng);
+  const spread = Math.abs(userLat - STORE.lat) + Math.abs(userLng - STORE.lng);
   const zoom = Math.max(5000, Math.round(spread * 80000 + 5000));
 
   return (
@@ -92,11 +95,16 @@ export default function CheckoutGuestPage() {
   const setReservationTime = useOrderDetailsStore(s => s.setReservationTime);
 
   const [address, setAddress] = useState(location?.address ?? '');
+  const [pickupTime, setPickupTime] = useState('12:00');
   const [notesToRider, setNotesToRider] = useState('');
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  // Trade-off: guests verified via email (Smart/TNT) do not have a verified
+  // phone number at checkout, so security is slightly weaker for this group.
   const [mobileNumber, setMobileNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [carrier, setCarrier] = useState<'globe_dito' | 'smart_tnt' | null>(null);
   const [otpCode, setOtpCode] = useState('');
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
@@ -109,6 +117,7 @@ export default function CheckoutGuestPage() {
     firstName?: string;
     lastName?: string;
     mobileNumber?: string;
+    email?: string;
   }>({});
 
   const [addressType, setAddressType] = useState<'Residential' | 'Office'>(
@@ -126,18 +135,38 @@ export default function CheckoutGuestPage() {
       return sum + unitPrice * i.qty;
     }, 0);
   }, [items, promos]);
-  const deliveryFee = orderType === 'Delivery' && items.length > 0 ? 49 : 0;
-  const total = subtotal + deliveryFee;
+  const productsQuery = useProductsQuery();
+  const productCategoryById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of productsQuery.data?.products ?? [])
+      map.set(p._id, p.category);
+    return map;
+  }, [productsQuery.data]);
+
+  const deliveryMode = useMemo(
+    () =>
+      getDeliveryMode(
+        items.map(i => ({
+          category: productCategoryById.get(i.productId),
+          price: i.price,
+          quantity: i.qty
+        }))
+      ),
+    [items, productCategoryById]
+  );
+
+  const total = subtotal;
 
   const createOrderMutation = useCreateGuestOrderMutation();
 
   const storeStatusQuery = useStoreStatusQuery();
   const isStoreClosed = storeStatusQuery.data?.status.isOpen === false;
-  const storeClosedReason = storeStatusQuery.data?.status.isOpen === false
-    ? storeStatusQuery.data.status.isManuallyClosed
-      ? 'Store is temporarily closed'
-      : storeStatusQuery.data.status.reason
-    : '';
+  const storeClosedReason =
+    storeStatusQuery.data?.status.isOpen === false
+      ? storeStatusQuery.data.status.isManuallyClosed
+        ? 'Store is temporarily closed'
+        : storeStatusQuery.data.status.reason
+      : '';
 
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
@@ -185,6 +214,7 @@ export default function CheckoutGuestPage() {
   };
 
   useEffect(() => {
+    if (carrier !== 'globe_dito') return;
     if (!isLikelyValidPhone(mobileNumber)) {
       setPhoneVerified(false);
       return;
@@ -204,7 +234,30 @@ export default function CheckoutGuestPage() {
     }, 700);
 
     return () => clearTimeout(timer);
-  }, [mobileNumber]);
+  }, [mobileNumber, carrier]);
+
+  useEffect(() => {
+    if (carrier !== 'smart_tnt') return;
+    if (!email.trim() || !email.includes('@')) {
+      setPhoneVerified(false);
+      return;
+    }
+
+    setPhoneVerified(false);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await getGuestEmailOtpStatus(email.trim());
+        if (res.verified) {
+          setPhoneVerified(true);
+          setOtpMessage('Your email is already verified.');
+        }
+      } catch {
+        // ignore status check failures
+      }
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [email, carrier]);
 
   useEffect(() => {
     if (!codeSentAt) return;
@@ -217,24 +270,45 @@ export default function CheckoutGuestPage() {
     : 0;
 
   const handleSendOtp = async () => {
-    const phone = mobileNumber.trim();
-    if (!phone) {
-      setErrors(current => ({...current, mobileNumber: 'Mobile number is required.'}));
-      return;
-    }
     setIsSendingOtp(true);
     setOtpError(null);
     setOtpMessage(null);
     try {
-      const res = await sendGuestOtp(phone);
-      if (res.alreadyVerified) {
-        setPhoneVerified(true);
-        setOtpMessage('Your phone number is already verified.');
+      if (carrier === 'smart_tnt') {
+        const mail = email.trim();
+        if (!mail) {
+          setErrors(current => ({...current, email: 'Email is required.'}));
+          return;
+        }
+        const res = await sendGuestEmailOtp(mail);
+        if (res.alreadyVerified) {
+          setPhoneVerified(true);
+          setOtpMessage('Your email is already verified.');
+        } else {
+          setCodeSentAt(Date.now());
+          setOtpMessage(
+            'A 6-digit code was sent to your email. It expires in 5 minutes.'
+          );
+        }
       } else {
-        setCodeSentAt(Date.now());
-        setOtpMessage(
-          'A 6-digit code was sent to your phone. It expires in 5 minutes.'
-        );
+        const phone = mobileNumber.trim();
+        if (!phone) {
+          setErrors(current => ({
+            ...current,
+            mobileNumber: 'Mobile number is required.'
+          }));
+          return;
+        }
+        const res = await sendGuestOtp(phone);
+        if (res.alreadyVerified) {
+          setPhoneVerified(true);
+          setOtpMessage('Your phone number is already verified.');
+        } else {
+          setCodeSentAt(Date.now());
+          setOtpMessage(
+            'A 6-digit code was sent to your phone. It expires in 5 minutes.'
+          );
+        }
       }
     } catch (error) {
       setOtpError(
@@ -246,15 +320,22 @@ export default function CheckoutGuestPage() {
   };
 
   const handleVerifyOtp = async () => {
-    const phone = mobileNumber.trim();
-    if (!phone || otpCode.length !== 6) return;
+    if (otpCode.length !== 6) return;
     setIsVerifyingOtp(true);
     setOtpError(null);
     setOtpMessage(null);
     try {
-      await verifyGuestOtp(phone, otpCode);
+      if (carrier === 'smart_tnt') {
+        await verifyGuestEmailOtp(email.trim(), otpCode);
+      } else {
+        await verifyGuestOtp(mobileNumber.trim(), otpCode);
+      }
       setPhoneVerified(true);
-      setOtpMessage('Your phone number has been verified.');
+      setOtpMessage(
+        carrier === 'smart_tnt'
+          ? 'Your email has been verified.'
+          : 'Your phone number has been verified.'
+      );
     } catch (error) {
       setOtpError(
         getFriendlyErrorMessage(error, 'Verification failed. Try again.')
@@ -270,9 +351,7 @@ export default function CheckoutGuestPage() {
     setCheckoutError(null);
 
     if (isStoreClosed) {
-      setCheckoutError(
-        storeClosedReason || 'Store is currently closed.'
-      );
+      setCheckoutError(storeClosedReason || 'Store is currently closed.');
       return;
     }
 
@@ -281,6 +360,14 @@ export default function CheckoutGuestPage() {
     if (!lastName.trim()) nextErrors.lastName = 'Last name is required.';
     if (!mobileNumber.trim()) {
       nextErrors.mobileNumber = 'Mobile number is required.';
+    }
+
+    if (carrier === 'smart_tnt') {
+      if (!email.trim()) {
+        nextErrors.email = 'Email is required.';
+      } else if (!phoneVerified) {
+        nextErrors.email = 'Please verify your email before placing the order.';
+      }
     } else if (!phoneVerified) {
       nextErrors.mobileNumber =
         'Please verify your phone number before placing the order.';
@@ -312,6 +399,7 @@ export default function CheckoutGuestPage() {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           phoneNumber: mobileNumber.trim(),
+          email: email.trim().length ? email.trim() : undefined,
           address: address.trim().length ? address.trim() : undefined
         },
         orderType:
@@ -322,9 +410,7 @@ export default function CheckoutGuestPage() {
               : 'reservation',
         items: orderItems,
         totalAmount: total,
-        riderNotes: notesToRider.trim().length
-          ? notesToRider.trim()
-          : undefined
+        riderNotes: notesToRider.trim().length ? notesToRider.trim() : undefined
       });
     } catch (error) {
       setCheckoutError(
@@ -377,7 +463,9 @@ export default function CheckoutGuestPage() {
           items.length === 0 ||
           !phoneVerified ||
           isStoreClosed ||
-          createOrderMutation.isPending
+          createOrderMutation.isPending ||
+          carrier === null ||
+          (orderType === 'Delivery' && !address.trim())
         }
         onClick={handleCheckout}
       >
@@ -406,7 +494,7 @@ export default function CheckoutGuestPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
-      <div className="w-full max-w-6xl mx-auto px-4 py-6">
+      <div className="w-full max-w-6xl mx-auto px-4 py-12">
         <div className="flex items-center justify-between">
           <Button
             type="button"
@@ -438,36 +526,100 @@ export default function CheckoutGuestPage() {
               </div>
 
               <div className="mt-5 space-y-5">
-                <div className="flex items-start gap-3">
-                  <div className="h-9 w-9 rounded-full bg-[#3c5e45]/10 inline-flex items-center justify-center shrink-0">
-                    <Truck className="h-4 w-4 text-[#3c5e45]" />
+                <div>
+                  <p className="text-xs text-gray-500 mb-2">Receive by</p>
+                  <OrderTypeSelector
+                    value={orderType}
+                    onChange={setOrderType}
+                    deliverySubtitle={
+                      deliveryMode === 'LALAMOVE'
+                        ? 'Book your own Lalamove courier'
+                        : "Free delivery by DonClaudio's"
+                    }
+                  />
+                </div>
+
+                {orderType === 'Delivery' ? (
+                  <div
+                    className={
+                      deliveryMode === 'LALAMOVE'
+                        ? 'rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900'
+                        : 'rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900'
+                    }
+                  >
+                    {deliveryMode === 'LALAMOVE' ? (
+                      <>
+                        <p className="font-semibold">
+                          This order will be delivered via Lalamove. You will
+                          book and pay for the courier yourself. Use the pick-up
+                          address below when booking.
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigator.clipboard?.writeText(STORE_ADDRESS)
+                            }
+                            className="rounded-full bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white"
+                          >
+                            Copy address
+                          </button>
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                              STORE_ADDRESS
+                            )}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-full border border-amber-600 px-3 py-1.5 text-xs font-semibold text-amber-700"
+                          >
+                            Open in Google Maps
+                          </a>
+                        </div>
+                        <div className="mt-3 h-40 overflow-hidden rounded-xl border border-amber-200">
+                          <iframe
+                            src={`https://maps.google.com/maps?q=${STORE.lat},${STORE.lng}&z=15&output=embed`}
+                            className="w-full h-full"
+                            loading="lazy"
+                            title="DonClaudio's pick-up location"
+                          />
+                        </div>
+                        <p className="mt-2 text-xs">
+                          Pick-up address for rider:{' '}
+                          <span className="font-semibold">{STORE_ADDRESS}</span>
+                        </p>
+                      </>
+                    ) : (
+                      <p className="font-semibold">
+                        Free delivery by DonClaudio&apos;s 🎉
+                      </p>
+                    )}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-gray-500">Receive by</p>
-                    <div className="mt-1 relative">
-                      <select
-                        value={orderType}
-                        onChange={e =>
-                          setOrderType(
-                            e.target.value as
-                              | 'Delivery'
-                              | 'Pick-up'
-                              | 'Reservation'
-                          )
-                        }
-                        aria-label="Receive by"
-                        className="w-full cursor-pointer appearance-none rounded-xl border border-gray-200 bg-white py-2 pr-9 pl-3 text-sm font-semibold text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3c5e45]/30"
-                      >
-                        <option value="Delivery">Delivery, Today, ASAP</option>
-                        <option value="Pick-up">Pick-up, Today, ASAP</option>
-                        <option value="Reservation">
-                          Reservation, {reservationDate}, {reservationTime}
-                        </option>
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                ) : null}
+
+                {orderType === 'Pick-up' ? (
+                  <div className="space-y-3">
+                    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                      <p className="text-xs font-semibold text-gray-700">
+                        Pick up at
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-gray-900">
+                        DonClaudio&apos;s Lechon House
+                      </p>
+                      <p className="text-xs text-gray-600">{STORE_ADDRESS}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700">
+                        Pick-up time
+                      </p>
+                      <input
+                        type="time"
+                        value={pickupTime}
+                        onChange={e => setPickupTime(e.target.value)}
+                        className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
+                      />
                     </div>
                   </div>
-                </div>
+                ) : null}
 
                 {orderType === 'Reservation' ? (
                   <div className="flex flex-wrap items-center gap-3">
@@ -496,31 +648,35 @@ export default function CheckoutGuestPage() {
                   </div>
                 ) : null}
 
-                <div className="h-px bg-gray-100" />
+                {orderType === 'Delivery' ? (
+                  <>
+                    <div className="h-px bg-gray-100" />
 
-                <div className="flex items-start gap-3">
-                  <div className="h-9 w-9 rounded-full bg-[#3c5e45]/10 inline-flex items-center justify-center shrink-0">
-                    <MapPin className="h-4 w-4 text-[#3c5e45]" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-gray-500">Deliver to</p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
-                      You can edit this address
-                    </p>
-                    <Input
-                      value={address}
-                      onChange={e => handleAddressChange(e.target.value)}
-                      placeholder={
-                        location?.address
-                          ? 'Edit your delivery address'
-                          : 'Enter your delivery address'
-                      }
-                      className="mt-2"
-                    />
-                  </div>
-                </div>
+                    <div className="flex items-start gap-3">
+                      <div className="h-9 w-9 rounded-full bg-[#3c5e45]/10 inline-flex items-center justify-center shrink-0">
+                        <MapPin className="h-4 w-4 text-[#3c5e45]" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-gray-500">Deliver to (Customer address)</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          For your courier booking and our records
+                        </p>
+                        <Input
+                          value={address}
+                          onChange={e => handleAddressChange(e.target.value)}
+                          placeholder={
+                            location?.address
+                              ? 'Edit your delivery address'
+                              : 'Enter your delivery address'
+                          }
+                          className="mt-2"
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : null}
 
-                {mapPreviewSrc ? (
+                {orderType === 'Delivery' && mapPreviewSrc ? (
                   <div className="h-40 overflow-hidden rounded-xl border border-gray-200">
                     <iframe
                       src={mapPreviewSrc}
@@ -547,40 +703,42 @@ export default function CheckoutGuestPage() {
                   </div>
                 ) : null}
 
-                <div>
-                  <p className="text-xs font-semibold text-gray-700">
-                    Address type
-                  </p>
-                  <div className="mt-2 grid grid-cols-2 gap-3">
-                    {(['Residential', 'Office'] as const).map(type => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setAddressType(type)}
-                        className={cn(
-                          'flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3c5e45]/30',
-                          addressType === type
-                            ? 'border-[#3c5e45]/30 bg-[#3c5e45]/10 text-[#3c5e45]'
-                            : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-                        )}
-                      >
-                        <span
+                {orderType === 'Delivery' ? (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-700">
+                      Address type
+                    </p>
+                    <div className="mt-2 grid grid-cols-2 gap-3">
+                      {(['Residential', 'Office'] as const).map(type => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => setAddressType(type)}
                           className={cn(
-                            'inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                            'flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3c5e45]/30',
                             addressType === type
-                              ? 'border-[#3c5e45] bg-[#3c5e45]'
-                              : 'border-gray-300 bg-white'
+                              ? 'border-[#3c5e45]/30 bg-[#3c5e45]/10 text-[#3c5e45]'
+                              : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
                           )}
                         >
-                          {addressType === type ? (
-                            <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                          ) : null}
-                        </span>
-                        {type}
-                      </button>
-                    ))}
+                          <span
+                            className={cn(
+                              'inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                              addressType === type
+                                ? 'border-[#3c5e45] bg-[#3c5e45]'
+                                : 'border-gray-300 bg-white'
+                            )}
+                          >
+                            {addressType === type ? (
+                              <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                            ) : null}
+                          </span>
+                          {type}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                ) : null}
 
                 <div className="h-px bg-gray-100" />
 
@@ -634,8 +792,8 @@ export default function CheckoutGuestPage() {
                   Checkout As Guest
                 </p>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Providing this information allows us to contact and update
-                  you about your order.
+                  Providing this information allows us to contact and update you
+                  about your order.
                 </p>
               </div>
 
@@ -684,6 +842,67 @@ export default function CheckoutGuestPage() {
                 </div>
               </div>
 
+              <div className="mt-4 space-y-2">
+                <p className="text-xs font-semibold text-gray-700">
+                  Is your SIM Globe, DITO, Smart, or TNT?
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={carrier === 'globe_dito' ? 'default' : 'outline'}
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => {
+                      setCarrier('globe_dito');
+                      setPhoneVerified(false);
+                      setOtpCode('');
+                      setCodeSentAt(null);
+                    }}
+                  >
+                    Globe/DITO
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={carrier === 'smart_tnt' ? 'default' : 'outline'}
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => {
+                      setCarrier('smart_tnt');
+                      setPhoneVerified(false);
+                      setOtpCode('');
+                      setCodeSentAt(null);
+                    }}
+                  >
+                    Smart/TNT
+                  </Button>
+                </div>
+              </div>
+
+              {carrier === 'smart_tnt' ? (
+                <div className="mt-4">
+                  <p className="text-xs font-semibold text-gray-700">Email</p>
+                  <Input
+                    value={email}
+                    onChange={e => {
+                      setEmail(e.target.value);
+                      setErrors(current => ({...current, email: undefined}));
+                      setPhoneVerified(false);
+                      setOtpCode('');
+                      setCodeSentAt(null);
+                      setOtpMessage(null);
+                      setOtpError(null);
+                    }}
+                    placeholder="you@example.com"
+                    className="mt-2"
+                  />
+                  {errors.email ? (
+                    <p className="mt-1 text-xs font-medium text-red-600">
+                      {errors.email}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
               <div className="mt-4">
                 <p className="text-xs font-semibold text-gray-700">
                   Mobile Number
@@ -696,11 +915,13 @@ export default function CheckoutGuestPage() {
                       ...current,
                       mobileNumber: undefined
                     }));
-                    setPhoneVerified(false);
-                    setOtpCode('');
-                    setCodeSentAt(null);
-                    setOtpMessage(null);
-                    setOtpError(null);
+                    if (carrier !== 'smart_tnt') {
+                      setPhoneVerified(false);
+                      setOtpCode('');
+                      setCodeSentAt(null);
+                      setOtpMessage(null);
+                      setOtpError(null);
+                    }
                   }}
                   placeholder="09xx xxx xxxx"
                   className="mt-2"
@@ -720,7 +941,12 @@ export default function CheckoutGuestPage() {
                         size="sm"
                         className="rounded-full"
                         disabled={
-                          isSendingOtp || !mobileNumber.trim() || cooldownLeft > 0
+                          isSendingOtp ||
+                          cooldownLeft > 0 ||
+                          carrier === null ||
+                          (carrier === 'smart_tnt'
+                            ? !email.trim()
+                            : !mobileNumber.trim())
                         }
                         onClick={handleSendOtp}
                       >
@@ -741,9 +967,7 @@ export default function CheckoutGuestPage() {
                               maxLength={6}
                               value={otpCode}
                               onChange={(value: string) =>
-                                setOtpCode(
-                                  value.replace(/\D/g, '').slice(0, 6)
-                                )
+                                setOtpCode(value.replace(/\D/g, '').slice(0, 6))
                               }
                               disabled={isVerifyingOtp}
                               autoComplete="one-time-code"
@@ -778,7 +1002,7 @@ export default function CheckoutGuestPage() {
                   ) : (
                     <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-semibold text-emerald-700">
                       <BadgeCheck className="h-5 w-5 shrink-0 text-emerald-600" />
-                      Phone verified
+                      {carrier === 'smart_tnt' ? 'Email verified' : 'Phone verified'}
                     </div>
                   )}
 
@@ -931,22 +1155,21 @@ export default function CheckoutGuestPage() {
                     <span className="text-gray-500">Subtotal</span>
                     <span className="font-semibold">₱{subtotal}.00</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm text-gray-700">
-                    <span className="text-gray-500">Delivery fee</span>
-                    <span className="font-semibold">₱{deliveryFee}.00</span>
-                  </div>
                 </div>
 
                 <div className="h-px bg-gray-200" />
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-gray-900">
-                    Total
-                  </span>
+                  <span className="text-sm font-bold text-gray-900">Total</span>
                   <span className="text-2xl font-extrabold text-gray-900">
                     ₱{total}.00
                   </span>
                 </div>
+                {orderType === 'Delivery' && deliveryMode === 'LALAMOVE' ? (
+                  <p className="text-xs text-amber-700">
+                    Courier fee not included, paid by you to Lalamove.
+                  </p>
+                ) : null}
 
                 <div className="hidden lg:block">{checkoutButton}</div>
               </div>
@@ -959,9 +1182,7 @@ export default function CheckoutGuestPage() {
         <div className="flex items-center gap-4">
           <div className="min-w-0">
             <p className="text-xs text-gray-500">Total</p>
-            <p className="text-xl font-extrabold text-gray-900">
-              ₱{total}.00
-            </p>
+            <p className="text-xl font-extrabold text-gray-900">₱{total}.00</p>
           </div>
           <div className="flex-1">{checkoutButton}</div>
         </div>

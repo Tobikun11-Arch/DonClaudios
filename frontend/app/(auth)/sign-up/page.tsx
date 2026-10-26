@@ -19,6 +19,7 @@ export default function SignUpPage() {
   const [lastName, setlastname] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [isGlobeDito, setIsGlobeDito] = useState<boolean | null>(null);
   const [houseAddress, setHouseAddress] = useState('');
   const [showAutoLocate, setShowAutoLocate] = useState(false);
   const [password, setPassword] = useState('');
@@ -40,6 +41,11 @@ export default function SignUpPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
+
+    if (isGlobeDito === null) {
+      setErrorMessage('Please answer whether you use a Globe or DITO SIM.');
+      return;
+    }
 
     if (!houseAddress.trim()) {
       setErrorMessage('Please provide your delivery address.');
@@ -72,9 +78,14 @@ export default function SignUpPage() {
         email,
         password,
         phoneNumber,
-        address: houseAddress
+        address: houseAddress,
+        carrier: isGlobeDito ? 'globe_dito' : 'smart_tnt'
       });
-      router.push(`/verify-phone?phone=${encodeURIComponent(phoneNumber)}`);
+      if (isGlobeDito) {
+        router.push(`/verify-phone?phone=${encodeURIComponent(phoneNumber)}`);
+      } else {
+        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+      }
     } catch (error) {
       setErrorMessage(
         getFriendlyErrorMessage(
@@ -136,6 +147,31 @@ export default function SignUpPage() {
             disabled={isSubmitting}
             required
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Are you a Globe or DITO SIM user?</Label>
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              variant={isGlobeDito === true ? 'default' : 'outline'}
+              onClick={() => setIsGlobeDito(true)}
+              disabled={isSubmitting}
+            >
+              Yes
+            </Button>
+            <Button
+              type="button"
+              variant={isGlobeDito === false ? 'default' : 'outline'}
+              onClick={() => setIsGlobeDito(false)}
+              disabled={isSubmitting}
+            >
+              No
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Globe/DITO: OTP by SMS. Smart/TNT: OTP by email.
+          </p>
         </div>
 
         <div className="space-y-2">

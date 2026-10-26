@@ -14,6 +14,8 @@ import {guestOtpLimiter} from '../middleware/rateLimit';
 import {
   guestOtpSendDto,
   guestOtpVerifyDto,
+  guestEmailOtpSendDto,
+  guestEmailOtpVerifyDto,
   listAllOrdersQueryDto
 } from '../dtos/order.dto';
 import type {Request, Response, NextFunction} from 'express';
@@ -59,6 +61,24 @@ router.post(
   guestOtpLimiter,
   validate(guestOtpVerifyDto),
   orderController.verifyGuestOtp
+);
+
+router.get(
+  '/guest/otp/email/status',
+  guestOtpLimiter,
+  orderController.checkGuestEmailOtpStatus
+);
+router.post(
+  '/guest/otp/email',
+  guestOtpLimiter,
+  validate(guestEmailOtpSendDto),
+  orderController.sendGuestEmailOtp
+);
+router.post(
+  '/guest/otp/email/verify',
+  guestOtpLimiter,
+  validate(guestEmailOtpVerifyDto),
+  orderController.verifyGuestEmailOtp
 );
 
 // Idempotent overdue check, invoked by the Vercel cron (and safe to call

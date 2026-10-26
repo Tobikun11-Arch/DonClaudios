@@ -10,6 +10,9 @@ export const guestVerificationRepository = {
       phoneNumber: {$in: phoneVariants(phoneNumber)}
     }).exec(),
 
+  findByEmail: (email: string) =>
+    GuestVerificationModel.findOne({email: email.toLowerCase().trim()}).exec(),
+
   upsertCode: (phoneNumber: string, code: string, expiry: Date) =>
     GuestVerificationModel.findOneAndUpdate(
       {phoneNumber},
@@ -46,6 +49,51 @@ export const guestVerificationRepository = {
       {
         $set: {
           phoneNumber,
+          verified: true,
+          verifiedExpiry,
+          verificationCode: null,
+          verificationExpiry: null
+        }
+      },
+      {upsert: true, new: true, setDefaultsOnInsert: true}
+    ).exec(),
+
+  upsertEmailCode: (email: string, code: string, expiry: Date) =>
+    GuestVerificationModel.findOneAndUpdate(
+      {email: email.toLowerCase().trim()},
+      {
+        $set: {
+          email: email.toLowerCase().trim(),
+          verificationCode: code,
+          verificationExpiry: expiry,
+          verified: false,
+          verifiedExpiry: null,
+          attempts: 0,
+          lastSentAt: new Date()
+        },
+        $inc: {resendCount: 1}
+      },
+      {upsert: true, new: true, setDefaultsOnInsert: true}
+    ).exec(),
+
+  incrementEmailAttempts: (email: string) =>
+    GuestVerificationModel.updateOne(
+      {email: email.toLowerCase().trim()},
+      {$inc: {attempts: 1}}
+    ).exec(),
+
+  invalidateEmailCode: (email: string) =>
+    GuestVerificationModel.updateOne(
+      {email: email.toLowerCase().trim()},
+      {verificationCode: null, verificationExpiry: null}
+    ).exec(),
+
+  markEmailVerified: (email: string, verifiedExpiry: Date) =>
+    GuestVerificationModel.findOneAndUpdate(
+      {email: email.toLowerCase().trim()},
+      {
+        $set: {
+          email: email.toLowerCase().trim(),
           verified: true,
           verifiedExpiry,
           verificationCode: null,
