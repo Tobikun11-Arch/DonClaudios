@@ -1,9 +1,10 @@
 'use client';
 
-import {useMemo, useState} from 'react';
+import {useMemo, useState, useEffect} from 'react';
+import {useSearchParams, useRouter} from 'next/navigation';
 import Image from 'next/image';
 import {toast} from 'sonner';
-import {MessageCircle, Package, ChevronRight, ChevronDown, ChevronUp, User, Phone, MapPin, Clock} from 'lucide-react';
+import {MessageCircle, Package, ChevronRight, ChevronDown, ChevronUp, User, Phone, MapPin, Clock, Globe, Store} from 'lucide-react';
 import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
 import OrderChatThread from '@/features/order/components/OrderChatThread';
 import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
@@ -17,6 +18,7 @@ import {useVerifyPaymentMutation} from '@/lib/hooks/orders/useTrackOrder';
 import {useAdminOrderMessagesQuery} from '@/lib/hooks/orders/useOrderMessage';
 import type {OrderHistoryEntry, OrderHistoryItem} from '@/lib/api/orderApi';
 import type {NormalizedApiError} from '@/lib/api/types';
+import {cn} from '@/lib/utils';
 
 export const ORDER_STATUSES = [
   'pending',
@@ -203,6 +205,8 @@ export function statusChipClass(status: string) {
 }
 
 export function CashierOrders() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const {data, isLoading, isError} = useAllOrdersQuery();
   const updateStatusMutation = useUpdateOrderStatusMutation();
   const [manualFilter, setManualFilter] = useState<{key: string | null; value: string}>({
@@ -212,8 +216,28 @@ export function CashierOrders() {
   const [orderTypeFilter, setOrderTypeFilter] = useState<string>('all');
   const [cancellingOrder, setCancellingOrder] = useState<OrderHistoryEntry | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>(() => ({from: null, to: null}));
+  const [orderSourceTab, setOrderSourceTab] = useState<'online' | 'walk-in'>('online');
+
+  // Sync tab with URL param
+  useEffect(() => {
+    const sourceParam = searchParams.get('source');
+    if (sourceParam === 'walk-in') {
+      setOrderSourceTab('walk-in');
+    } else {
+      setOrderSourceTab('online');
+    }
+  }, [searchParams]);
 
   const orders = useMemo(() => data?.orders ?? [], [data?.orders]);
+
+  // Filter orders by source
+  const filteredBySource = useMemo(() => {
+    if (orderSourceTab === 'online') {
+      return orders.filter(o => o.orderSource !== 'in-store');
+    } else {
+      return orders.filter(o => o.orderSource === 'in-store');
+    }
+  }, [orders, orderSourceTab]);
   const {highlightId, isOpenChat} = useScrollToHighlight();
   const [expandedId, setExpandedId] = useState<string | null>(
     isOpenChat ? highlightId : null
@@ -238,16 +262,16 @@ export function CashierOrders() {
     setManualFilter({key: highlightKey, value});
 
   const ordersInRange = useMemo(() => {
-    if (dateRange.from === null && dateRange.to === null) return orders;
+    if (dateRange.from === null && dateRange.to === null) return filteredBySource;
     const {from, to} = dateRange;
-    return orders.filter(order => {
+    return filteredBySource.filter(order => {
       const ts = new Date(order.createdAt ?? '').getTime();
       if (Number.isNaN(ts)) return false;
       if (from !== null && ts < from) return false;
       if (to !== null && ts > to) return false;
       return true;
     });
-  }, [orders, dateRange]);
+  }, [filteredBySource, dateRange]);
 
   const visibleOrders = useMemo(() => {
     const base =
@@ -308,6 +332,28 @@ export function CashierOrders() {
     [ordersInRange]
   );
 
+  // Count for each tab
+  const onlineCount = useMemo(
+    () => orders.filter(o => o.orderSource !== 'in-store').length,
+    [orders]
+  );
+  const walkInCount = useMemo(
+    () => orders.filter(o => o.orderSource === 'in-store').length,
+    [orders]
+  );
+
+  const handleTabChange = (tab: 'online' | 'walk-in') => {
+    setOrderSourceTab(tab);
+    // Reset type filter when switching to walk-in since it doesn't apply
+    if (tab === 'walk-in') {
+      setOrderTypeFilter('all');
+    }
+    // Update URL without full page reload using Next.js router
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('source', tab);
+    router.replace(`/cashier/dashboard?${params.toString()}`, {scroll: false});
+  };
+
   const filters = ['overdue', 'active', ...ORDER_STATUSES, 'all'];
   const filterLabel = (f: string) => {
     if (f === 'overdue') return 'Overdue';
@@ -331,45 +377,90 @@ export function CashierOrders() {
         <CashierNotificationBell />
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="relative w-full sm:w-auto">
-          <select
-            id="order-status-filter"
-            aria-label="Filter by status"
-            value={statusFilter}
-            onChange={e => handleStatusFilterChange(e.target.value)}
-            className="min-h-[40px] w-full appearance-none rounded-full border border-gray-200 bg-white py-2 pl-4 pr-10 text-sm font-semibold text-[#2d4a35] transition-colors hover:bg-gray-50 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20 sm:w-auto"
-          >
-            {filters.map(f => (
-              <option key={f} value={f}>
-                {filterLabel(f)} ({filterCount(f)})
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-          />
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative w-full sm:w-auto">
+            <select
+              id="order-status-filter"
+              aria-label="Filter by status"
+              value={statusFilter}
+              onChange={e => handleStatusFilterChange(e.target.value)}
+              className="min-h-[40px] w-full appearance-none rounded-full border border-gray-200 bg-white py-2 pl-4 pr-10 text-sm font-semibold text-[#2d4a35] transition-colors hover:bg-gray-50 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20 sm:w-auto"
+            >
+              {filters.map(f => (
+                <option key={f} value={f}>
+                  {filterLabel(f)} ({filterCount(f)})
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+            />
+          </div>
+          {orderSourceTab === 'online' && (
+            <div className="relative w-full sm:w-auto">
+              <select
+                id="order-type-filter"
+                aria-label="Filter by order type"
+                value={orderTypeFilter}
+                onChange={e => setOrderTypeFilter(e.target.value)}
+                className="min-h-[40px] w-full appearance-none rounded-full border border-gray-200 bg-white py-2 pl-4 pr-10 text-sm font-semibold text-[#2d4a35] transition-colors hover:bg-gray-50 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20 sm:w-auto"
+              >
+                <option value="all">All types ({typeCountFor('all')})</option>
+                {ORDER_TYPES.map(t => (
+                  <option key={t} value={t}>
+                    {orderTypeLabel(t)} ({typeCountFor(t)})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+              />
+            </div>
+          )}
+          <OrderDateFilter value={dateRange} onChange={setDateRange} />
         </div>
-        <div className="relative w-full sm:w-auto">
-          <select
-            id="order-type-filter"
-            aria-label="Filter by order type"
-            value={orderTypeFilter}
-            onChange={e => setOrderTypeFilter(e.target.value)}
-            className="min-h-[40px] w-full appearance-none rounded-full border border-gray-200 bg-white py-2 pl-4 pr-10 text-sm font-semibold text-[#2d4a35] transition-colors hover:bg-gray-50 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20 sm:w-auto"
+
+        <div
+          role="tablist"
+          aria-label="Order source"
+          className="flex shrink-0 rounded-full border border-gray-200 bg-white p-1"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={orderSourceTab === 'online'}
+            aria-controls="orders-list"
+            onClick={() => handleTabChange('online')}
+            className={cn(
+              'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
+              orderSourceTab === 'online'
+                ? 'bg-[#2d4a35] text-white'
+                : 'text-gray-600 hover:bg-gray-50'
+            )}
           >
-            <option value="all">All types ({typeCountFor('all')})</option>
-            {ORDER_TYPES.map(t => (
-              <option key={t} value={t}>
-                {orderTypeLabel(t)} ({typeCountFor(t)})
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-          />
+            <Globe size={14} />
+            Online Orders
+            <span className="ml-0.5 opacity-70">({onlineCount})</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={orderSourceTab === 'walk-in'}
+            aria-controls="orders-list"
+            onClick={() => handleTabChange('walk-in')}
+            className={cn(
+              'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
+              orderSourceTab === 'walk-in'
+                ? 'bg-[#2d4a35] text-white'
+                : 'text-gray-600 hover:bg-gray-50'
+            )}
+          >
+            <Store size={14} />
+            Walk-in Orders
+            <span className="ml-0.5 opacity-70">({walkInCount})</span>
+          </button>
         </div>
-        <OrderDateFilter value={dateRange} onChange={setDateRange} />
       </div>
 
       {isLoading ? (
@@ -384,9 +475,11 @@ export function CashierOrders() {
         <div className="rounded-2xl bg-white shadow p-10 text-center">
           <Package className="mx-auto h-10 w-10 text-gray-300 mb-3" />
           <p className="text-sm text-gray-500">
-            {dateRange.from !== null || dateRange.to !== null
-              ? 'No orders match these filters within the selected date range.'
-              : 'No orders match these filters.'}
+            {orderSourceTab === 'walk-in'
+              ? 'No walk-in orders yet.'
+              : dateRange.from !== null || dateRange.to !== null
+                ? 'No orders match these filters within the selected date range.'
+                : 'No orders match these filters.'}
           </p>
         </div>
       ) : (
@@ -485,6 +578,7 @@ function OrderCard({
   const sendMutation = useSendCashierOrderMessageMutation();
   const [detailsOpen, setDetailsOpen] = useState(false);
 
+  const isWalkIn = order.orderSource === 'in-store';
   const nextStatus = nextStatusFor(order.orderType, order.orderStatus);
   const canAdvance = nextStatus !== null;
   const paymentBlocked = paymentGateBlocks(order, nextStatus);
@@ -544,10 +638,12 @@ function OrderCard({
               >
                 {formatStatus(order.orderStatus)}
               </span>
-              <OrderPrepBadge
-                timing={order.prepTiming}
-                orderType={order.orderType}
-              />
+              {!isWalkIn && (
+                <OrderPrepBadge
+                  timing={order.prepTiming}
+                  orderType={order.orderType}
+                />
+              )}
               {(() => {
                 const chip = paymentStatusChip(order);
                 return chip ? (
@@ -560,8 +656,11 @@ function OrderCard({
               })()}
             </div>
             <p className="mt-1 text-xs text-gray-400">
-              Order #{String(order._id).slice(-6).toUpperCase()} •{' '}
-              {orderTypeLabel(order.orderType)} • ₱{order.totalAmount}.00
+              {isWalkIn && order.orderNumber
+                ? `Order ${order.orderNumber}`
+                : `Order #${String(order._id).slice(-6).toUpperCase()}`}
+              {!isWalkIn && ` • ${orderTypeLabel(order.orderType)}`}
+              {' • '}₱{order.totalAmount}.00
               {order.isGuest && (
                 <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">
                   GUEST
@@ -585,21 +684,23 @@ function OrderCard({
           </div>
 
           <div className="flex w-full items-center justify-end gap-2 sm:w-auto sm:shrink-0">
-            <button
-              type="button"
-              onClick={e => {
-                e.stopPropagation();
-                onToggle();
-              }}
-              className="flex min-h-[40px] items-center gap-1.5 rounded-xl border border-gray-200 px-3.5 py-2 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50"
-            >
-              <MessageCircle size={14} />
-              Follow-up
-              <ChevronRight
-                size={14}
-                className={`transition-transform ${expanded ? 'rotate-90' : ''}`}
-              />
-            </button>
+            {!isWalkIn && (
+              <button
+                type="button"
+                onClick={e => {
+                  e.stopPropagation();
+                  onToggle();
+                }}
+                className="flex min-h-[40px] items-center gap-1.5 rounded-xl border border-gray-200 px-3.5 py-2 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50"
+              >
+                <MessageCircle size={14} />
+                Follow-up
+                <ChevronRight
+                  size={14}
+                  className={`transition-transform ${expanded ? 'rotate-90' : ''}`}
+                />
+              </button>
+            )}
             <span className="text-gray-400">
               {detailsOpen ? (
                 <ChevronUp size={18} />
