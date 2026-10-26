@@ -135,25 +135,35 @@ export default function CounterOrder() {
     });
   };
 
+  const [removeTarget, setRemoveTarget] = useState<string | null>(null);
+
   const changeQty = (productId: string, delta: number) => {
-    setCart(prev =>
-      prev
-        .map(c => {
-          if (c.productId !== productId) return c;
-          const next = c.qty + delta;
-          if (next < 1) return null;
-          if (next > c.maxQty) {
-            toast.warning(`Only ${c.maxQty} left in stock`);
-            return c;
-          }
-          return {...c, qty: next};
-        })
-        .filter(Boolean) as CartLine[]
-    );
+    setCart(prev => {
+      const target = prev.find(c => c.productId === productId);
+      if (!target) return prev;
+      const next = target.qty + delta;
+      if (next < 1) {
+        setRemoveTarget(productId);
+        return prev;
+      }
+      if (next > target.maxQty) {
+        toast.warning(`Only ${target.maxQty} left in stock`);
+        return prev;
+      }
+      return prev.map(c =>
+        c.productId === productId ? {...c, qty: next} : c
+      );
+    });
   };
 
   const removeLine = (productId: string) => {
-    setCart(prev => prev.filter(c => c.productId !== productId));
+    setRemoveTarget(productId);
+  };
+
+  const confirmRemoveItem = () => {
+    if (!removeTarget) return;
+    setCart(prev => prev.filter(c => c.productId !== removeTarget));
+    setRemoveTarget(null);
   };
 
   const createOrder = useCreateCounterOrderMutation();
@@ -372,8 +382,7 @@ export default function CounterOrder() {
                   <Button
                     type="button"
                     size="sm"
-                    variant="outline"
-                    className="mt-2 border-[#3c5e45] text-[#3c5e45] hover:bg-[#3c5e45]/10"
+                    className="mt-2 bg-[#3c5e45] text-white hover:bg-[#2d4a35]"
                     onClick={() => addToCart(product)}
                   >
                     <Plus className="h-4 w-4" /> Add to order
@@ -409,13 +418,28 @@ export default function CounterOrder() {
                         key={line.productId}
                         className="flex items-center justify-between gap-2 rounded-xl border border-gray-100 p-2"
                       >
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-gray-800">
-                            {line.name}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            ₱{line.price.toLocaleString()}
-                          </p>
+                        <div className="flex min-w-0 flex-1 items-center gap-2">
+                          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                            <Image
+                              src={
+                                line.imageUrl && line.imageUrl.length > 0
+                                  ? line.imageUrl
+                                  : '/assets/sample_menu.png'
+                              }
+                              alt={line.name}
+                              fill
+                              sizes="40px"
+                              className="object-cover"
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-gray-800">
+                              {line.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              ₱{line.price.toLocaleString()}
+                            </p>
+                          </div>
                         </div>
                         <div className="flex items-center gap-1">
                           <button
@@ -588,6 +612,43 @@ export default function CounterOrder() {
           </div>
         )}
       </div>
+
+      {removeTarget && (
+        <div className="fixed inset-0 z-100">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setRemoveTarget(null)}
+          />
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+              <h3 className="text-lg font-bold text-gray-900">Remove item?</h3>
+              <p className="mt-2 text-sm text-gray-600">
+                Are you sure you want to remove{' '}
+                <span className="font-bold text-gray-900">
+                  {cart.find(c => c.productId === removeTarget)?.name ?? 'this item'}
+                </span>{' '}
+                from the order?
+              </p>
+              <div className="mt-4 flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setRemoveTarget(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  className="bg-red-600 text-white hover:bg-red-700"
+                  onClick={confirmRemoveItem}
+                >
+                  Remove
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {markPaidTarget && (
         <div className="fixed inset-0 z-100">
