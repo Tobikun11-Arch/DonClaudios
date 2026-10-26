@@ -81,6 +81,33 @@ export const updateProfileDto = z.object({
   operatingHours: z.string().min(1).optional(),
   businessType: z.string().min(1).optional(),
   address: z.string().min(1).optional(),
+  addresses: z
+    .array(
+      z.object({
+        label: z.string().min(1),
+        line: z.string().min(1),
+        landmark: z.string().optional(),
+        riderNotes: z.string().optional(),
+        isDefault: z.boolean().optional()
+      })
+    )
+    .optional(),
+  preferences: z
+    .object({
+      defaultFulfillment: z.enum(['pickup', 'delivery']).optional(),
+      preferredLeadTimeDays: z.number().int().min(0).optional(),
+      servingStyle: z.enum(['whole', 'chopped', 'plated']).optional(),
+      sauceCount: z.number().int().min(0).optional()
+    })
+    .optional(),
+  occasions: z
+    .array(
+      z.object({
+        label: z.string().min(1),
+        date: z.coerce.date()
+      })
+    )
+    .optional(),
   openingTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   closingTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   advanceCloseMinutes: z.number().int().min(5).max(60).optional(),
