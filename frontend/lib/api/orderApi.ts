@@ -12,9 +12,9 @@ export type CreateGuestOrderInput = {
   guestInfo: {
     firstName: string;
     lastName: string;
-    phoneNumber: string;
-    address?: string;
+    phoneNumber?: string;
     email?: string;
+    address?: string;
   };
   orderType: 'pickup' | 'delivery' | 'reservation';
   items: GuestOrderItemInput[];
@@ -107,9 +107,9 @@ export type OrderHistoryEntry = {
   guestInfo?: {
     firstName: string;
     lastName: string;
-    phoneNumber: string;
-    address?: string;
+    phoneNumber?: string;
     email?: string;
+    address?: string;
   };
   customerName?: string;
   items: OrderHistoryItem[];
@@ -163,9 +163,9 @@ export type FollowUpOrder = {
   guestInfo?: {
     firstName: string;
     lastName: string;
-    phoneNumber: string;
-    address?: string;
+    phoneNumber?: string;
     email?: string;
+    address?: string;
   };
   customerId?: string | null;
   createdAt: string;
