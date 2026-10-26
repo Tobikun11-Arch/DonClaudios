@@ -47,6 +47,8 @@ export type PaymentStatus = 'unpaid' | 'down_payment' | 'paid';
 
 export interface OrderDocument extends mongoose.Document {
   customerId?: mongoose.Types.ObjectId | null;
+  sizeKg?: number | null;
+  occasionId?: string | null;
   isGuest: boolean;
   guestInfo?: GuestInfo;
   orderType: OrderType;
@@ -137,6 +139,8 @@ const OrderStatusEntrySchema = new Schema<OrderStatusEntry>(
 const OrderSchema = new Schema<OrderDocument>(
   {
     customerId: {type: Schema.Types.ObjectId, ref: 'Customer', default: null},
+    sizeKg: {type: Number, min: 0, default: null},
+    occasionId: {type: String, default: null},
     isGuest: {type: Boolean, required: true},
     guestInfo: {type: GuestInfoSchema},
     orderType: {

@@ -102,4 +102,8 @@ router.get(
   requireAdmin,
   authController.sessions
 );
+router.delete('/account', sessionLimiter, requireAuth, authController.deleteAccount);
+
+router.get('/me/data', sessionLimiter, requireAuth, authController.downloadData);
+
 export default router;
