@@ -16,8 +16,8 @@ export interface GuestVerificationDocument extends mongoose.Document {
 
 const GuestVerificationSchema = new Schema<GuestVerificationDocument>(
   {
-    phoneNumber: {type: String, sparse: true, unique: true},
-    email: {type: String, sparse: true, unique: true, lowercase: true, trim: true},
+    phoneNumber: {type: String},
+    email: {type: String, lowercase: true, trim: true},
     verificationCode: {type: String, default: null},
     verificationExpiry: {type: Date, default: null},
     verified: {type: Boolean, default: false},
@@ -27,6 +27,15 @@ const GuestVerificationSchema = new Schema<GuestVerificationDocument>(
     lastSentAt: {type: Date, default: null}
   },
   {timestamps: true}
+);
+
+GuestVerificationSchema.index(
+  {phoneNumber: 1},
+  {unique: true, partialFilterExpression: {phoneNumber: {$type: 'string'}}}
+);
+GuestVerificationSchema.index(
+  {email: 1},
+  {unique: true, partialFilterExpression: {email: {$type: 'string'}}}
 );
 
 export const GuestVerificationModel =
