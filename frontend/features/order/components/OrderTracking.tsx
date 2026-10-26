@@ -1,6 +1,6 @@
 'use client';
 
-import {useState, useSyncExternalStore} from 'react';
+import {useState, useEffect, useSyncExternalStore} from 'react';
 import {useBrand} from '@/lib/hooks/useBrand';
 import Image from 'next/image';
 import {
@@ -177,6 +177,9 @@ export default function OrderTracking({
 }) {
   const [phone, setPhone] = useState('');
   const [phoneSubmitted, setPhoneSubmitted] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setMounted(true), []);
 
   const storedPhone = useSyncExternalStore(
     () => () => {},
@@ -194,7 +197,7 @@ export default function OrderTracking({
 
   const autoPhone = variant === 'guest' ? storedPhone : '';
   const needsPhoneGate =
-    variant === 'guest' && !autoPhone && !phoneSubmitted;
+    variant === 'guest' && mounted && !autoPhone && !phoneSubmitted;
   const resolvedPhone =
     variant === 'guest'
       ? phoneSubmitted
@@ -205,6 +208,24 @@ export default function OrderTracking({
   const resolvedEmail = variant === 'guest' ? storedEmail : undefined;
   const query = useTrackOrderQuery(orderId, resolvedPhone, resolvedEmail);
   const order = query.data?.order;
+
+  if (variant === 'guest' && !mounted) {
+    return (
+      <div className="py-10 grid place-items-center">
+        <FrameLoader
+          framesDir="/assets/order-loading"
+          frames={[
+            'frame_01.png',
+            'frame_02.png',
+            'frame_03.png',
+            'frame_04.png',
+            'frame_05.png'
+          ]}
+          size={160}
+        />
+      </div>
+    );
+  }
 
   if (needsPhoneGate) {
     return (
