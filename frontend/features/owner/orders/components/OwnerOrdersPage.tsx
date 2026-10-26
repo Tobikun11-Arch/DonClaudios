@@ -10,7 +10,7 @@ import {
   formatNumber,
   formatPeso
 } from '@/features/owner/dashboard/components/reports/reportPrimitives';
-import {OrderStatusPill, OrderTypePill, ORDER_STATUS_FILTERS, ALL_STATUSES, formatStatus} from './OrderPills';
+import {OrderStatusPill, OrderTypePill, ORDER_STATUS_FILTERS, ALL_STATUSES} from './OrderPills';
 import {OrderDetailDrawer} from './OrderDetailDrawer';
 import {DownloadOrdersReport} from './DownloadOrdersReport';
 import {ReportRangePicker} from '../../dashboard/components/reports/ReportRangePicker';
@@ -244,12 +244,23 @@ export default function OwnerOrdersPage() {
     [counterData?.orders]
   );
 
+  const walkInStatusCounts = useMemo(
+    () => ({
+      paid: counterOrders.filter(o => o.paymentStatus === 'paid').length,
+      unpaid: counterOrders.filter(o => o.paymentStatus !== 'paid').length,
+      all: counterOrders.length
+    }),
+    [counterOrders]
+  );
+
   // Walk-in (counter) orders are filtered client-side by status/search since
   // /orders/counter already applies the selected date range server-side.
   const walkInFiltered = useMemo(() => {
     let base = counterOrders;
-    if (filters.status !== ALL_STATUSES) {
-      base = base.filter(o => o.orderStatus === filters.status);
+    if (filters.status === 'paid') {
+      base = base.filter(o => o.paymentStatus === 'paid');
+    } else if (filters.status === 'unpaid') {
+      base = base.filter(o => o.paymentStatus !== 'paid');
     }
     // text search
     const needle = filters.search.trim().toLowerCase();
@@ -320,6 +331,7 @@ export default function OwnerOrdersPage() {
   const walkInCount = useMemo(() => counterOrders.length, [counterOrders]);
 
   const handleTabChange = (tab: 'online' | 'walk-in') => {
+    if (tab === 'walk-in') filters.setStatus(ALL_STATUSES);
     // Update URL without full page reload using Next.js router
     const params = new URLSearchParams(searchParams.toString());
     params.set('source', tab);
@@ -364,11 +376,14 @@ export default function OwnerOrdersPage() {
               aria-label="Filter by status"
               className="appearance-none rounded-full border border-gray-200 bg-white py-2 pl-4 pr-9 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
             >
-              {ORDER_STATUS_FILTERS.map(status => (
+              {(isWalkIn
+                ? (['paid', 'unpaid', ALL_STATUSES] as const)
+                : ORDER_STATUS_FILTERS
+              ).map(status => (
                 <option key={status} value={status}>
                   {status === ALL_STATUSES
-                    ? `All statuses (${formatNumber(orderSourceTab === 'online' ? allCount : walkInCount)})`
-                    : `${formatStatus(status)} (${formatNumber(statusCounts[status] ?? 0)})`}
+                    ? `All statuses (${formatNumber(isWalkIn ? walkInStatusCounts.all : orderSourceTab === 'online' ? allCount : walkInCount)})`
+                    : `${status === 'paid' ? 'Paid' : 'Unpaid'} (${formatNumber(isWalkIn ? walkInStatusCounts[status as 'paid' | 'unpaid'] : (statusCounts[status] ?? 0))})`}
                 </option>
               ))}
             </select>
@@ -546,7 +561,9 @@ export default function OwnerOrdersPage() {
                         {order.orderSource !== 'in-store' && <OrderTypePill type={order.orderType} />}
                       </td>
                       <td className="px-4 py-3">
-                        <OrderStatusPill status={order.orderStatus} />
+                        {order.orderSource !== 'in-store' && (
+                          <OrderStatusPill status={order.orderStatus} />
+                        )}
                         {order.paymentStatus && (
                           <span
                             className={
@@ -613,7 +630,7 @@ export default function OwnerOrdersPage() {
                       </span>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      <OrderStatusPill status={order.orderStatus} />
+                      {order.orderSource !== 'in-store' && <OrderStatusPill status={order.orderStatus} />}
                       {order.orderSource !== 'in-store' && <OrderTypePill type={order.orderType} />}
                       {order.paymentStatus && (
                         <span
