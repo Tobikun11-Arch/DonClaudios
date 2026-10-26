@@ -353,43 +353,79 @@ export default function CounterOrder() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {visibleProducts.map(product => (
-              <div
-                key={product._id}
-                className="flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xs"
-              >
-                <div className="relative h-32 w-full">
-                  <Image
-                    src={
-                      product.imageUrl && product.imageUrl.length > 0
-                        ? product.imageUrl
-                        : '/assets/sample_menu.png'
-                    }
-                    alt={product.name}
-                    fill
-                    sizes="(min-width: 1280px) 25vw, (min-width: 640px) 33vw, 50vw"
-                    className="object-cover"
-                  />
-                </div>
-                <div className="flex flex-1 flex-col p-3">
-                  <p className="line-clamp-2 min-h-10 text-sm font-medium text-gray-800">
-                    {product.name}
-                  </p>
-                  <p className="mt-1 text-sm font-bold text-gray-900">
+          <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">
+            {visibleProducts.map(product => {
+              const qty =
+                cart.find(c => c.productId === product._id)?.qty ?? 0;
+              const inOrder = qty > 0;
+              return (
+                <div
+                  key={product._id}
+                  className={
+                    'flex items-center gap-3 rounded-xl border border-gray-100 px-3 py-3 transition-colors hover:bg-gray-50 ' +
+                    (inOrder ? 'bg-[#3c5e45]/5' : 'bg-white')
+                  }
+                >
+                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                    <Image
+                      src={
+                        product.imageUrl && product.imageUrl.length > 0
+                          ? product.imageUrl
+                          : '/assets/sample_menu.png'
+                      }
+                      alt={product.name}
+                      fill
+                      sizes="48px"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-gray-800">
+                      {product.name}
+                    </p>
+                    <p className="text-xs text-gray-500">{product.category}</p>
+                  </div>
+                  <div className="shrink-0 text-sm text-gray-700">
                     ₱{product.price.toLocaleString()}
-                  </p>
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="mt-2 bg-[#3c5e45] text-white hover:bg-[#2d4a35]"
-                    onClick={() => addToCart(product)}
-                  >
-                    <Plus className="h-4 w-4" /> Add to order
-                  </Button>
+                  </div>
+                  {inOrder ? (
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        aria-label={`Decrease ${product.name}`}
+                        onClick={() => changeQty(product._id, -1)}
+                        className="grid h-9 w-9 place-items-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#3c5e45]/40"
+                      >
+                        <Minus className="h-3.5 w-3.5" />
+                      </button>
+                      <span
+                        className="w-6 text-center text-sm font-semibold"
+                        aria-live="polite"
+                      >
+                        {qty}
+                      </span>
+                      <button
+                        type="button"
+                        aria-label={`Increase ${product.name}`}
+                        onClick={() => changeQty(product._id, 1)}
+                        className="grid h-9 w-9 place-items-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#3c5e45]/40"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      aria-label={`Add ${product.name} to order`}
+                      onClick={() => addToCart(product)}
+                      className="grid h-9 w-9 place-items-center rounded-lg bg-[#3c5e45] text-white hover:bg-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#3c5e45]/40"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

@@ -13,17 +13,17 @@ import {
   MoreHorizontal,
   X,
   ChevronRight,
-  ShoppingCart
+  Store
 } from 'lucide-react';
 import {Toaster} from 'sonner';
 import {useBrand} from '@/lib/hooks/useBrand';
 
 const PRIMARY_TABS = [
   {
-    label: 'Counter Order',
-    mobileLabel: 'Counter',
+    label: 'Walk-in Order',
+    mobileLabel: 'Walk-in',
     tab: 'counter',
-    icon: ShoppingCart,
+    icon: Store,
     href: '/cashier/dashboard?tab=counter'
   },
   {
