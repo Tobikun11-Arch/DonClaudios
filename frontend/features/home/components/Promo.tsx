@@ -115,10 +115,6 @@ export default function PromoSection({
     scrollRef.current!.scrollLeft = scrollLeft.current - walk;
   };
 
-  const onOrderClick = () => {
-    router.push('/order');
-  };
-
   const items = promos;
   const hasNoPromos = !productsQuery.isLoading && items.length === 0;
 
@@ -196,7 +192,7 @@ export default function PromoSection({
                               </p>
                             ) : null}
                             <Button
-                              onClick={onOrderClick}
+                              onClick={() => router.push(`/order/${product._id}`)}
                               className="w-full py-3 mt-auto bg-[#3c5e45] text-white"
                             >
                               Claim This Offer
