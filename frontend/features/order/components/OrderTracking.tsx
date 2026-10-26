@@ -28,6 +28,7 @@ import {
   type OrderHistoryItem
 } from '@/lib/api/orderApi';
 import {getGuestOrderHistory} from '@/lib/orders/orderHistoryStorage';
+import CustomerOrderFollowUp from '@/features/order/components/CustomerOrderFollowUp';
 import {
   formatMinutes,
   OVERDUE_GRACE_MINUTES,
@@ -302,6 +303,9 @@ export default function OrderTracking({
               <StatusTrackerCard order={order} />
             )}
             <OrderSummaryCard order={order} />
+            {!embedded && variant === 'customer' ? (
+              <CustomerOrderFollowUp order={order} />
+            ) : null}
             <ManualPaymentCard
               order={order}
               phone={resolvedPhone}

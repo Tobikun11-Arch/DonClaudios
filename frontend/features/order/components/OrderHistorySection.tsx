@@ -248,11 +248,16 @@ function OrderCard({
         </span>
       </button>
 
-      {expanded && order.orderStatus !== 'completed' ? (
-        <div className="border-t border-gray-100 p-4 sm:p-5">
-          <OrderTracking orderId={order._id} variant={variant} embedded />
+  {expanded && order.orderStatus !== 'completed' ? (
+    <div className="border-t border-gray-100 p-4 sm:p-5">
+      <OrderTracking orderId={order._id} variant={variant} embedded />
+      {renderFollowUp ? (
+        <div className="mt-4">
+          {renderFollowUp(order, order._id === openChatOrderId)}
         </div>
-      ) : expanded ? (
+      ) : null}
+    </div>
+  ) : expanded ? (
         <div className="border-t border-gray-100 p-5">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
             <div>

@@ -718,7 +718,7 @@ function OrderCard({
           </div>
 
           <div className="flex w-full items-center justify-end gap-2 sm:w-auto sm:shrink-0">
-            {!isWalkIn && (
+            {!isWalkIn && !order.isGuest && (
               <button
                 type="button"
                 onClick={e => {
@@ -928,7 +928,7 @@ function OrderCard({
         )}
       </div>
 
-      {expanded && (
+      {expanded && !isWalkIn && !order.isGuest && (
         <div className="border-t border-gray-100 bg-gray-50 p-4">
           <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500">
             Conversation with {customerDisplay(order)}
