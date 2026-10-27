@@ -75,6 +75,13 @@ export const authController = {
           username: admin?.username ?? cashier?.username,
           profilePhoto:
             admin?.profilePhoto ?? customer?.profilePhoto ?? cashier?.profilePhoto,
+          createdAt:
+            (customer as any)?.createdAt ??
+            (admin as any)?.createdAt ??
+            (cashier as any)?.createdAt,
+          addresses: customer?.addresses ?? [],
+          preferences: customer?.preferences ?? {},
+          occasions: customer?.occasions ?? [],
           businessName: admin?.businessName,
           businessLogo: admin?.businessLogo,
           storeAddress: admin?.storeAddress,
@@ -105,7 +112,10 @@ export const authController = {
         'lastName',
         'phoneNumber',
         'address',
-        'profilePhoto'
+        'profilePhoto',
+        'addresses',
+        'preferences',
+        'occasions'
       ];
 
       if (req.auth.type === 'admin') {
@@ -176,7 +186,10 @@ export const authController = {
             email: user.email,
             phoneNumber: user.phoneNumber,
             address: user.address,
-            profilePhoto: user.profilePhoto
+            profilePhoto: user.profilePhoto,
+            addresses: user.addresses ?? [],
+            preferences: user.preferences ?? {},
+            occasions: user.occasions ?? []
           }
         });
       }
@@ -252,7 +265,12 @@ export const authController = {
 
   async changePassword(req: Request, res: Response, next: NextFunction) {
     try {
-      if (!req.auth || (req.auth.type !== 'admin' && req.auth.type !== 'cashier')) {
+      if (
+        !req.auth ||
+        (req.auth.type !== 'admin' &&
+          req.auth.type !== 'cashier' &&
+          req.auth.type !== 'customer')
+      ) {
         throw new ApiError(403, 'FORBIDDEN', 'Permission denied');
       }
 
@@ -433,6 +451,32 @@ export const authController = {
           }
         ]
       });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async deleteAccount(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth || req.auth.type !== 'customer') {
+        throw new ApiError(403, 'FORBIDDEN', 'Permission denied');
+      }
+      await customerRepository.deleteById(req.auth.userId);
+      res.status(200).json({message: 'Account deleted'});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async downloadData(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth || req.auth.type !== 'customer') {
+        throw new ApiError(403, 'FORBIDDEN', 'Permission denied');
+      }
+      const user = await customerRepository.findById(req.auth.userId);
+      const {OrderModel} = await import('../models/Order.model');
+      const orders = await OrderModel.find({customerId: req.auth.userId}).exec();
+      res.status(200).json({user, orders});
     } catch (error) {
       next(error);
     }

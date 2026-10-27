@@ -573,12 +573,16 @@ export const authService = {
 
   async changePassword(
     userId: string,
-    type: 'admin' | 'cashier',
+    type: 'admin' | 'cashier' | 'customer',
     currentPassword: string,
     newPassword: string
   ) {
     const repo =
-      type === 'cashier' ? cashierRepository : adminRepository;
+      type === 'cashier'
+        ? cashierRepository
+        : type === 'customer'
+          ? customerRepository
+          : adminRepository;
     const user = await repo.findById(userId);
     if (!user) {
       throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');

@@ -82,6 +82,8 @@ export type OrderHistoryEntry = {
   orderType: 'pickup' | 'delivery' | 'reservation';
   totalAmount: number;
   deliveryFee?: number;
+  sizeKg?: number | null;
+  occasionId?: string | null;
   deliveryMode?: 'DONCLAUDIO' | 'LALAMOVE';
   paymentMethod?: string | null;
   riderNotes?: string;
