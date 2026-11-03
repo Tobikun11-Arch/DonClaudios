@@ -58,10 +58,13 @@ export default function CartDrawer() {
   const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
+  // Reset the auth modal whenever the cart drawer closes.
   useEffect(() => {
-    if (!isOpen) setAuthModalOpen(false);
+    if (!isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAuthModalOpen(false);
+    }
   }, [isOpen]);
-
   const [draftOrderType, setDraftOrderType] = useState<
     'Delivery' | 'Pick-up' | 'Reservation'
   >('Delivery');
@@ -174,7 +177,10 @@ export default function CartDrawer() {
   return (
     <div
       className={`fixed inset-0 ${Z.drawerOverlay} bg-black/40`}
-      onClick={close}
+      onClick={() => {
+        setAuthModalOpen(false);
+        close();
+      }}
       role="dialog"
       aria-modal="true"
     >
