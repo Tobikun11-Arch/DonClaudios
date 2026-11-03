@@ -29,7 +29,6 @@ import {
   preOrderLimitMessage,
   preOrderRemainingAllowance
 } from '@/lib/preOrder/preOrder';
-import {useGuestOrders} from '@/lib/hooks/orders/useGuestOrders';
 import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
 import {
   buildFeaturedMenuItems,
@@ -43,7 +42,6 @@ function ProductsSection() {
   const {data, isLoading, isError} = useProductsQuery();
   const promosQuery = usePublicPromosQuery();
   const publicCategoriesQuery = usePublicCategoriesQuery();
-  const guestOrders = useGuestOrders();
   const {data: me} = useMeQuery();
   const isSignedIn = !!me;
 
@@ -155,15 +153,6 @@ function ProductsSection() {
   const resolvedActiveTab = tabs.some(t => t.id === activeTab)
     ? activeTab
     : defaultTabId;
-
-  const activeOrderCount = useMemo(
-    () =>
-      guestOrders.filter(
-        order =>
-          order.orderStatus !== 'completed' && order.orderStatus !== 'cancelled'
-      ).length,
-    [guestOrders]
-  );
 
   const activeCategory = useMemo(() => {
     if (resolvedActiveTab === 'promoBundles') return null;
@@ -397,20 +386,15 @@ function ProductsSection() {
 
       <div className="flex justify-between">
         <h1 className="text-2xl font-bold mb-2">{brand.name} Menu</h1>
-        <Link
-          href="/order-history"
-          aria-label="Order history"
-          className="relative inline-flex items-center rounded-full p-2 hover:bg-[#2d4a35]/10 transition-colors -mt-1"
-        >
-          <span className="relative inline-block">
-            <History className="h-6 w-6 text-[#2d4a35]" />
-            {activeOrderCount > 0 && (
-              <span className="absolute -right-1.5 -top-1.5 h-6 min-w-6 px-1.5 rounded-full bg-[#c30010] text-white text-xs font-bold grid place-items-center">
-                {activeOrderCount}
-              </span>
-            )}
-          </span>
-        </Link>
+          <Link
+            href={me ? '/customer/dashboard' : '/sign-in'}
+            aria-label="Order history"
+            className="relative inline-flex items-center rounded-full p-2 hover:bg-[#2d4a35]/10 transition-colors -mt-1"
+          >
+            <span className="relative inline-block">
+              <History className="h-6 w-6 text-[#2d4a35]" />
+            </span>
+          </Link>
       </div>
 
       <section className="mb-10">

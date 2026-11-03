@@ -1,6 +1,6 @@
 'use client';
 
-import {useState, useEffect, useSyncExternalStore} from 'react';
+import {useState, useEffect} from 'react';
 import {useBrand} from '@/lib/hooks/useBrand';
 import Image from 'next/image';
 import {
@@ -27,7 +27,7 @@ import {
   type OrderHistoryEntry,
   type OrderHistoryItem
 } from '@/lib/api/orderApi';
-import {getGuestOrderHistory} from '@/lib/orders/orderHistoryStorage';
+
 import CustomerOrderFollowUp from '@/features/order/components/CustomerOrderFollowUp';
 import {
   formatMinutes,
@@ -182,19 +182,8 @@ export default function OrderTracking({
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
-  const storedPhone = useSyncExternalStore(
-    () => () => {},
-    () =>
-      getGuestOrderHistory().find(o => o._id === orderId)?.guestInfo
-        ?.phoneNumber ?? '',
-    () => ''
-  );
-  const storedEmail = useSyncExternalStore(
-    () => () => {},
-    () =>
-      getGuestOrderHistory().find(o => o._id === orderId)?.guestInfo?.email ?? '',
-    () => ''
-  );
+  const storedPhone = '';
+  const storedEmail = '';
 
   const autoPhone = variant === 'guest' ? storedPhone : '';
   const needsPhoneGate =

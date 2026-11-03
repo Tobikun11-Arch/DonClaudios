@@ -1,6 +1,6 @@
 'use client';
 
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import Image from 'next/image';
 import {
   X,
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
+import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
 import {getCartSubtotal, useCartStore} from '@/app/store/cartStore';
 import {useCartUiStore} from '@/app/store/cartUiStore';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
@@ -26,6 +27,7 @@ import CartRemoveConfirmModal from './CartRemoveConfirmModal';
 
 export default function CartDrawer() {
   const router = useRouter();
+  const {data: me} = useMeQuery();
   const isOpen = useCartUiStore(s => s.isOpen);
   const close = useCartUiStore(s => s.close);
   const items = useCartStore(s => s.items);
@@ -54,7 +56,15 @@ export default function CartDrawer() {
   }, []);
 
   const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
+  // Reset the auth modal whenever the cart drawer closes.
+  useEffect(() => {
+    if (!isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAuthModalOpen(false);
+    }
+  }, [isOpen]);
   const [draftOrderType, setDraftOrderType] = useState<
     'Delivery' | 'Pick-up' | 'Reservation'
   >('Delivery');
@@ -136,12 +146,17 @@ export default function CartDrawer() {
   };
 
   const goToCheckout = () => {
+    if (!me?.user) {
+      setAuthModalOpen(true);
+      return;
+    }
+
     const id =
       typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? crypto.randomUUID()
         : String(Date.now());
     close();
-    router.push(`/checkout/${id}`);
+    router.push(`/customer/dashboard/checkout/${id}`);
   };
 
   const requestRemoveItem = (item: {productId: string; name: string}) => {
@@ -162,7 +177,10 @@ export default function CartDrawer() {
   return (
     <div
       className={`fixed inset-0 ${Z.drawerOverlay} bg-black/40`}
-      onClick={close}
+      onClick={() => {
+        setAuthModalOpen(false);
+        close();
+      }}
       role="dialog"
       aria-modal="true"
     >
@@ -666,6 +684,71 @@ export default function CartDrawer() {
         onCancel={() => setRemoveTarget(null)}
         onConfirm={confirmRemoveItem}
       />
+
+      {authModalOpen ? (
+        <div
+          className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 px-4"
+          onClick={e => {
+            e.stopPropagation();
+            setAuthModalOpen(false);
+          }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="relative w-full max-w-sm rounded-2xl bg-white shadow-xl p-6 text-center"
+            onClick={e => e.stopPropagation()}
+          >
+            <Image
+              src="/assets/order-loading/frame_01.png"
+              alt="DonClaudio's character"
+              width={140}
+              height={140}
+              className="mx-auto h-32 w-32 object-contain"
+            />
+            <h2 className="mt-4 text-xl font-bold text-gray-900">
+              Sign in to place your order
+            </h2>
+            <p className="mt-2 text-sm text-gray-500">
+              Create an account or sign in to checkout. Your cart will be saved
+              to your account.
+            </p>
+            <div className="mt-6 space-y-3">
+              <Button
+                className="w-full bg-[#3c5e45]"
+                onClick={() => {
+                  setAuthModalOpen(false);
+                  close();
+                  router.push('/sign-up');
+                }}
+              >
+                Create account
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setAuthModalOpen(false);
+                  close();
+                  router.push('/sign-in');
+                }}
+              >
+                Sign in
+              </Button>
+              <button
+                type="button"
+                className="w-full text-sm font-semibold text-gray-600 hover:underline"
+                onClick={() => {
+                  setAuthModalOpen(false);
+                  close();
+                }}
+              >
+                Keep browsing
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
