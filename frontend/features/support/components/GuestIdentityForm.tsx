@@ -5,7 +5,7 @@ import {Send} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
-
+import {sanitizeName} from '@/lib/validation/numeric';
 export default function GuestIdentityForm({
   submitting,
   onSubmit
@@ -41,7 +41,7 @@ export default function GuestIdentityForm({
           <Input
             id="guest-name"
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={e => setName(sanitizeName(e.target.value))}
             placeholder="Juan Dela Cruz"
             className="h-9"
           />

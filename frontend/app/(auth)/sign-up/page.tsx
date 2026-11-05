@@ -12,7 +12,7 @@ import LocationPicker from '@/features/order/components/LocationPicker';
 import {useRouter} from 'next/navigation';
 import {registerCustomer} from '@/lib/api/authApi';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
-
+import {sanitizePhone, sanitizeName} from '@/lib/validation/numeric';
 export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [firstName, setfirstname] = useState('');
@@ -117,7 +117,7 @@ export default function SignUpPage() {
             type="text"
             placeholder="Juan"
             value={firstName}
-            onChange={e => setfirstname(e.target.value)}
+            onChange={e => setfirstname(sanitizeName(e.target.value))}
             disabled={isSubmitting}
             required
           />
@@ -130,7 +130,7 @@ export default function SignUpPage() {
             type="text"
             placeholder="Dela Cruz"
             value={lastName}
-            onChange={e => setlastname(e.target.value)}
+            onChange={e => setlastname(sanitizeName(e.target.value))}
             disabled={isSubmitting}
             required
           />
@@ -181,7 +181,7 @@ export default function SignUpPage() {
             type="tel"
             placeholder="09xxxxxxxxx"
             value={phoneNumber}
-            onChange={e => setPhoneNumber(e.target.value)}
+            onChange={e => setPhoneNumber(sanitizePhone(e.target.value))}
             disabled={isSubmitting}
             required
           />

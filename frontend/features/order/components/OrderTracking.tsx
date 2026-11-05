@@ -21,8 +21,8 @@ import {
 } from '@/lib/hooks/orders/useTrackOrder';
 import {useSettingsQuery} from '@/lib/hooks/useSettings';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
-import {
-  ONLINE_PAYMENT_LABELS,
+import {sanitizePhone} from '@/lib/validation/numeric';
+import {  ONLINE_PAYMENT_LABELS,
   type OnlinePaymentMethod,
   type OrderHistoryEntry,
   type OrderHistoryItem
@@ -346,7 +346,7 @@ function PhoneGate({
             type="tel"
             inputMode="tel"
             value={initialValue}
-            onChange={e => onChangeValue(e.target.value)}
+            onChange={e => onChangeValue(sanitizePhone(e.target.value))}
             placeholder="Mobile number"
             className="mt-5 w-full h-12 rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none focus:border-[#3c5e45] focus:ring-2 focus:ring-[#3c5e45]/20"
           />

@@ -2,7 +2,7 @@
 
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
-
+import {sanitizePhone} from '@/lib/validation/numeric';
 type ContactEditorProps = {
   address: string;
   phone: string;
@@ -25,7 +25,7 @@ export default function ContactEditor({
           <Label>Phone</Label>
           <Input
             value={phone}
-            onChange={e => onChange('phone', e.target.value)}
+            onChange={e => onChange('phone', sanitizePhone(e.target.value))}
             placeholder="+63 915 5321 169"
           />
         </div>

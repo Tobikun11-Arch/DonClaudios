@@ -13,7 +13,7 @@ import {
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {Clock, AlertTriangle, CheckCircle2, Loader2} from 'lucide-react';
 import {cn} from '@/lib/utils';
-import type {StoreStatus} from '@/lib/api/storeStatusApi';
+import {sanitizeInteger} from '@/lib/validation/numeric';import type {StoreStatus} from '@/lib/api/storeStatusApi';
 
 function timeToMinutes(time: string): number {
   const [h, m] = time.split(':').map(Number);
@@ -236,7 +236,10 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
               value={advanceMinutes}
               onChange={e =>
                 setAdvanceMinutes(
-                  Math.min(60, Math.max(5, Number(e.target.value) || 30))
+                  Math.min(
+                    60,
+                    Math.max(5, Number(sanitizeInteger(e.target.value)) || 30)
+                  )
                 )
               }
               className="min-h-[44px]"

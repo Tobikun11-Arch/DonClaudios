@@ -167,8 +167,7 @@ export default function ForgotPasswordPage() {
                 id="code"
                 maxLength={6}
                 value={code}
-                onChange={value => setCode(value)}
-                disabled={isSubmitting}
+                onChange={value => setCode(value.replace(/\D/g, '').slice(0, 6))}                disabled={isSubmitting}
                 containerClassName="justify-center"
               >
                 <InputOTPGroup>
