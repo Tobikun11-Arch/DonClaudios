@@ -21,8 +21,8 @@ import {
 } from '@/lib/hooks/orders/useTrackOrder';
 import {useSettingsQuery} from '@/lib/hooks/useSettings';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
-import {
-  ONLINE_PAYMENT_LABELS,
+import {sanitizePhone} from '@/lib/validation/numeric';
+import {  ONLINE_PAYMENT_LABELS,
   type OnlinePaymentMethod,
   type OrderHistoryEntry,
   type OrderHistoryItem
@@ -346,7 +346,7 @@ function PhoneGate({
             type="tel"
             inputMode="tel"
             value={initialValue}
-            onChange={e => onChangeValue(e.target.value)}
+            onChange={e => onChangeValue(sanitizePhone(e.target.value))}
             placeholder="Mobile number"
             className="mt-5 w-full h-12 rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none focus:border-[#3c5e45] focus:ring-2 focus:ring-[#3c5e45]/20"
           />
@@ -747,10 +747,10 @@ function ManualPaymentCardBody({
           </p>
           {order.paymentProofUrl ? (
             <div className="space-y-2">
-              <img
+              <Image
                 src={order.paymentProofUrl}
                 alt="Submitted proof of payment"
-                className="max-h-72 w-full rounded-xl border border-gray-200 object-contain"
+                width={800} height={600} className="max-h-72 w-full rounded-xl border border-gray-200 object-contain"
               />
               <a
                 href={order.paymentProofUrl}
@@ -777,10 +777,10 @@ function ManualPaymentCardBody({
           </div>
           {order.paymentProofUrl ? (
             <div className="space-y-2">
-              <img
+              <Image
                 src={order.paymentProofUrl}
                 alt="Submitted proof of payment"
-                className="max-h-72 w-full rounded-xl border border-gray-200 object-contain"
+                width={800} height={600} className="max-h-72 w-full rounded-xl border border-gray-200 object-contain"
               />
               <a
                 href={order.paymentProofUrl}
@@ -956,10 +956,11 @@ function ManualPaymentCardBody({
                 <p className="mb-1 text-xs font-semibold text-gray-600">
                   Preview
                 </p>
-                <img
+                <Image
                   src={URL.createObjectURL(proof)}
                   alt="Selected proof preview"
-                  className="max-h-64 w-full rounded-xl border border-gray-200 object-contain"
+                  unoptimized
+                  width={800} height={600} className="max-h-64 w-full rounded-xl border border-gray-200 object-contain"
                 />
               </div>
             ) : null}

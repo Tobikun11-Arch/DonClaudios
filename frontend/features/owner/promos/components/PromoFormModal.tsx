@@ -4,8 +4,8 @@ import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {cn} from '@/lib/utils';
-import {Upload} from 'lucide-react';
-import Image from 'next/image';
+import {sanitizeDecimal} from '@/lib/validation/numeric';
+import {Upload} from 'lucide-react';import Image from 'next/image';
 import {type DragEvent, type FormEvent} from 'react';
 import {type PromoFormState} from '@/lib/types/promos';
 import {Modal} from './Modal';
@@ -166,7 +166,7 @@ export function PromoFormModal({
                 id="price"
                 inputMode="decimal"
                 value={form.price}
-                onChange={e => onFormChange('price', e.target.value)}
+                onChange={e => onFormChange('price', sanitizeDecimal(e.target.value))}
                 placeholder="e.g. 499"
                 disabled={isDisabled}
               />
@@ -180,7 +180,7 @@ export function PromoFormModal({
                 id="discountRate"
                 inputMode="decimal"
                 value={form.discountRate}
-                onChange={e => onFormChange('discountRate', e.target.value)}
+                onChange={e => onFormChange('discountRate', sanitizeDecimal(e.target.value))}
                 placeholder="e.g. 20"
                 disabled={isDisabled}
               />
@@ -194,7 +194,7 @@ export function PromoFormModal({
                 id="discountAmount"
                 inputMode="decimal"
                 value={form.discountAmount}
-                onChange={e => onFormChange('discountAmount', e.target.value)}
+                onChange={e => onFormChange('discountAmount', sanitizeDecimal(e.target.value))}
                 placeholder="e.g. 50"
                 disabled={isDisabled}
               />

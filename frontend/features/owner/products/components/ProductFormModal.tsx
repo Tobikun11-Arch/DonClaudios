@@ -15,8 +15,8 @@ import {
   type ProductIngredient
 } from '@/lib/types/product';
 import {cn} from '@/lib/utils';
-import {useDefaultPrepMinutes} from '@/lib/hooks/useDefaultPrepMinutes';
-import {Upload} from 'lucide-react';
+import {sanitizeDecimal, sanitizeInteger} from '@/lib/validation/numeric';
+import {useDefaultPrepMinutes} from '@/lib/hooks/useDefaultPrepMinutes';import {Upload} from 'lucide-react';
 import Image from 'next/image';
 import {type DragEvent, type FormEvent} from 'react';
 import {type ProductFormState} from '@/lib/types/products';
@@ -238,7 +238,7 @@ export function ProductFormModal({
               id="price"
               inputMode="decimal"
               value={form.price}
-              onChange={e => onFormChange('price', e.target.value)}
+              onChange={e => onFormChange('price', sanitizeDecimal(e.target.value))}
               placeholder="e.g. 4500"
             />
           </div>
@@ -249,7 +249,7 @@ export function ProductFormModal({
                 id="stock"
                 inputMode="numeric"
                 value={preOrderOn ? String(batchStockTotal) : form.stock}
-                onChange={e => onFormChange('stock', e.target.value)}
+                onChange={e => onFormChange('stock', sanitizeInteger(e.target.value))}
                 readOnly={preOrderOn}
                 placeholder="0"
                 className="pr-16"
@@ -281,7 +281,7 @@ export function ProductFormModal({
               id="prepTimeMinutes"
               inputMode="numeric"
               value={form.prepTimeMinutes}
-              onChange={e => onFormChange('prepTimeMinutes', e.target.value)}
+              onChange={e => onFormChange('prepTimeMinutes', sanitizeInteger(e.target.value))}
               placeholder={String(defaultPrepMinutes)}
               className="pr-14"
             />
@@ -358,7 +358,7 @@ export function ProductFormModal({
                         required
                         value={form.preOrderPurchaseLimit}
                         onChange={e =>
-                          onFormChange('preOrderPurchaseLimit', e.target.value)
+                          onFormChange('preOrderPurchaseLimit', sanitizeInteger(e.target.value))
                         }
                         placeholder="e.g. 2"
                         className="pr-16"
@@ -479,7 +479,7 @@ export function ProductFormModal({
                             required
                             value={row.stock}
                             onChange={e =>
-                              onBatchChange(index, 'stock', e.target.value)
+                              onBatchChange(index, 'stock', sanitizeInteger(e.target.value))
                             }
                             placeholder="e.g. 30"
                           />
@@ -544,7 +544,7 @@ export function ProductFormModal({
                       inputMode="decimal"
                       value={form.discountRate}
                       onChange={e =>
-                        onFormChange('discountRate', e.target.value)
+                        onFormChange('discountRate', sanitizeDecimal(e.target.value))
                       }
                       placeholder="e.g. 20"
                       disabled={isDisabled}
@@ -560,7 +560,7 @@ export function ProductFormModal({
                       inputMode="decimal"
                       value={form.discountAmount}
                       onChange={e =>
-                        onFormChange('discountAmount', e.target.value)
+                        onFormChange('discountAmount', sanitizeDecimal(e.target.value))
                       }
                       placeholder="e.g. 50"
                       disabled={isDisabled}

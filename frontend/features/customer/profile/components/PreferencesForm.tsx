@@ -4,7 +4,7 @@ import {z} from 'zod';
 import {useState} from 'react';
 import {toast} from 'sonner';
 import type {CustomerPreferences} from '@/lib/api/authApi';
-
+import {sanitizeInteger} from '@/lib/validation/numeric';
 const schema = z.object({
   defaultFulfillment: z.enum(['pickup', 'delivery']).optional(),
   preferredLeadTimeDays: z.coerce.number().min(0).optional(),
@@ -61,7 +61,7 @@ export function PreferencesForm({
             min={0}
             value={form.preferredLeadTimeDays ?? 0}
             onChange={e =>
-              update({preferredLeadTimeDays: Number(e.target.value)})
+              update({preferredLeadTimeDays: Number(sanitizeInteger(e.target.value))})
             }
             className="min-h-[44px] w-full rounded-lg border border-border px-3 text-sm"
           />
@@ -91,7 +91,7 @@ export function PreferencesForm({
             type="number"
             min={0}
             value={form.sauceCount ?? 0}
-            onChange={e => update({sauceCount: Number(e.target.value)})}
+            onChange={e => update({sauceCount: Number(sanitizeInteger(e.target.value))})}
             className="min-h-[44px] w-full rounded-lg border border-border px-3 text-sm"
           />
         </label>

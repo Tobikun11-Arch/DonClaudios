@@ -6,8 +6,8 @@ import {Package, Plus, Minus, Trash2, X} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {cn} from '@/lib/utils';
-import {stockUnitLabel} from '@/lib/categories/categoryUtils';
-import type {Product} from '@/lib/types/product';
+import {sanitizeInteger} from '@/lib/validation/numeric';
+import {stockUnitLabel} from '@/lib/categories/categoryUtils';import type {Product} from '@/lib/types/product';
 
 export type StockActionMode = 'restock' | 'remove';
 export type StockRemoveReason = 'adjustment' | 'spoilage';
@@ -143,7 +143,7 @@ export function StockChangeDialog({
                   inputMode="numeric"
                   placeholder="0"
                   value={quantity}
-                  onChange={e => setQuantity(e.target.value)}
+                  onChange={e => setQuantity(sanitizeInteger(e.target.value))}
                   disabled={isPending}
                   autoFocus
                   className="h-12 text-lg font-bold"

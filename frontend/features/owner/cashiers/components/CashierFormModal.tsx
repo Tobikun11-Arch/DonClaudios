@@ -6,7 +6,7 @@ import {Label} from '@/components/ui/label';
 import {type FormEvent} from 'react';
 import type {CashierFormState} from '@/lib/types/cashiers';
 import {Modal} from './Modal';
-
+import {sanitizePhone, sanitizeName} from '@/lib/validation/numeric';
 interface Props {
   open: boolean;
   mode: 'create' | 'edit';
@@ -48,7 +48,7 @@ export function CashierFormModal({
             <Input
               id="firstName"
               value={form.firstName}
-              onChange={e => onFormChange('firstName', e.target.value)}
+              onChange={e => onFormChange('firstName', sanitizeName(e.target.value))}
               placeholder="e.g. Juan"
             />
           </div>
@@ -57,7 +57,7 @@ export function CashierFormModal({
             <Input
               id="lastName"
               value={form.lastName}
-              onChange={e => onFormChange('lastName', e.target.value)}
+              onChange={e => onFormChange('lastName', sanitizeName(e.target.value))}
               placeholder="e.g. Dela Cruz"
             />
           </div>
@@ -106,7 +106,7 @@ export function CashierFormModal({
             <Input
               id="phoneNumber"
               value={form.phoneNumber}
-              onChange={e => onFormChange('phoneNumber', e.target.value)}
+              onChange={e => onFormChange('phoneNumber', sanitizePhone(e.target.value))}
               placeholder="e.g. 09171234567"
             />
           </div>
