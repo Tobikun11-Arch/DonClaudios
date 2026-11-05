@@ -747,10 +747,10 @@ function ManualPaymentCardBody({
           </p>
           {order.paymentProofUrl ? (
             <div className="space-y-2">
-              <img
+              <Image
                 src={order.paymentProofUrl}
                 alt="Submitted proof of payment"
-                className="max-h-72 w-full rounded-xl border border-gray-200 object-contain"
+                width={800} height={600} className="max-h-72 w-full rounded-xl border border-gray-200 object-contain"
               />
               <a
                 href={order.paymentProofUrl}
@@ -777,10 +777,10 @@ function ManualPaymentCardBody({
           </div>
           {order.paymentProofUrl ? (
             <div className="space-y-2">
-              <img
+              <Image
                 src={order.paymentProofUrl}
                 alt="Submitted proof of payment"
-                className="max-h-72 w-full rounded-xl border border-gray-200 object-contain"
+                width={800} height={600} className="max-h-72 w-full rounded-xl border border-gray-200 object-contain"
               />
               <a
                 href={order.paymentProofUrl}
@@ -956,10 +956,11 @@ function ManualPaymentCardBody({
                 <p className="mb-1 text-xs font-semibold text-gray-600">
                   Preview
                 </p>
-                <img
+                <Image
                   src={URL.createObjectURL(proof)}
                   alt="Selected proof preview"
-                  className="max-h-64 w-full rounded-xl border border-gray-200 object-contain"
+                  unoptimized
+                  width={800} height={600} className="max-h-64 w-full rounded-xl border border-gray-200 object-contain"
                 />
               </div>
             ) : null}

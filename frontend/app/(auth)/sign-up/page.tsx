@@ -13,14 +13,15 @@ import {useRouter} from 'next/navigation';
 import {registerCustomer} from '@/lib/api/authApi';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {sanitizePhone, sanitizeName} from '@/lib/validation/numeric';
-export default function SignUpPage() {
+import {normalizePH, detectCarrier, toAppCarrier} from '@/lib/phone';export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [firstName, setfirstname] = useState('');
   const [lastName, setlastname] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [isGlobeDito, setIsGlobeDito] = useState<boolean | null>(null);
-  const [houseAddress, setHouseAddress] = useState('');
+  const normalizedPhone = normalizePH(phoneNumber);
+  const detectedCarrier = normalizedPhone ? detectCarrier(normalizedPhone) : 'unknown';
+  const carrier = toAppCarrier(detectedCarrier);  const [houseAddress, setHouseAddress] = useState('');
   const [showAutoLocate, setShowAutoLocate] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -42,13 +43,12 @@ export default function SignUpPage() {
     e.preventDefault();
     if (isSubmitting) return;
 
-    if (isGlobeDito === null) {
-      setErrorMessage('Please answer whether you use a Globe or DITO SIM.');
+    if (!normalizedPhone) {
+      setErrorMessage('Please enter a valid Philippine mobile number.');
       return;
     }
 
-    if (!houseAddress.trim()) {
-      setErrorMessage('Please provide your delivery address.');
+    if (!houseAddress.trim()) {      setErrorMessage('Please provide your delivery address.');
       return;
     }
 
@@ -79,9 +79,9 @@ export default function SignUpPage() {
         password,
         phoneNumber,
         address: houseAddress,
-        carrier: isGlobeDito ? 'globe_dito' : 'smart_tnt'
+        carrier
       });
-      if (isGlobeDito) {
+      if (carrier === 'globe_dito') {
         router.push(`/verify-phone?phone=${encodeURIComponent(phoneNumber)}`);
       } else {
         router.push(`/verify-email?email=${encodeURIComponent(email)}`);
@@ -147,31 +147,6 @@ export default function SignUpPage() {
             disabled={isSubmitting}
             required
           />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Are you a Globe or DITO SIM user?</Label>
-          <div className="flex gap-3">
-            <Button
-              type="button"
-              variant={isGlobeDito === true ? 'default' : 'outline'}
-              onClick={() => setIsGlobeDito(true)}
-              disabled={isSubmitting}
-            >
-              Yes
-            </Button>
-            <Button
-              type="button"
-              variant={isGlobeDito === false ? 'default' : 'outline'}
-              onClick={() => setIsGlobeDito(false)}
-              disabled={isSubmitting}
-            >
-              No
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Globe/DITO: OTP by SMS. Smart/TNT: OTP by email.
-          </p>
         </div>
 
         <div className="space-y-2">
