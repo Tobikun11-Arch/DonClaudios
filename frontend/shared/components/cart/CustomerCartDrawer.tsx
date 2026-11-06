@@ -219,6 +219,11 @@ export default function CustomerCartDrawer() {
       return;
     }
 
+    if (total < 100) {
+      toast.error('Minimum order total is ₱100.00.');
+      return;
+    }
+
     const id =
       typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? crypto.randomUUID()

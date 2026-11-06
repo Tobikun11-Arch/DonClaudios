@@ -1,5 +1,6 @@
 'use client';
 
+import {useEffect} from 'react';
 import {
   cancelTrackedOrder,
   getTrackedOrder,
@@ -8,7 +9,7 @@ import {
   type SubmitPaymentInput
 } from '@/lib/api/orderApi';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
-
+import {updateGuestOrderHistoryEntry} from '@/lib/orders/orderHistoryStorage';
 
 const TERMINAL_STATUSES = ['completed', 'cancelled'] as const;
 type TrackStatus = (typeof TERMINAL_STATUSES)[number];
@@ -46,6 +47,18 @@ export function useTrackOrderQuery(
     staleTime: 1000
   });
 
+  const trackedId = query.data?.order?._id;
+  const trackedStatus = query.data?.order?.orderStatus;
+  const trackedCancelReason = query.data?.order?.cancelReason;
+  useEffect(() => {
+    if (!trackedId || !trackedStatus) return;
+    updateGuestOrderHistoryEntry({
+      _id: trackedId,
+      orderStatus: trackedStatus,
+      cancelReason: trackedCancelReason
+    });
+  }, [trackedId, trackedStatus, trackedCancelReason]);
+
   return query;
 }
 
@@ -57,7 +70,11 @@ export function useCancelTrackedOrderMutation(
   return useMutation({
     mutationFn: (reason: string) =>
       cancelTrackedOrder(orderId, reason, phoneNumber),
-    onSuccess: async () => {
+    onSuccess: async data => {
+      const updated = data?.order;
+      if (updated) {
+        updateGuestOrderHistoryEntry(updated);
+      }
       await queryClient.invalidateQueries({
         queryKey: trackOrderKey(orderId, phoneNumber)
       });
@@ -76,7 +93,11 @@ export function useSubmitPaymentMutation(
   return useMutation({
     mutationFn: (input: SubmitPaymentInput) =>
       submitOrderPayment(orderId, input),
-    onSuccess: async () => {
+    onSuccess: async data => {
+      const updated = data?.order;
+      if (updated) {
+        updateGuestOrderHistoryEntry(updated);
+      }
       await queryClient.invalidateQueries({
         queryKey: trackOrderKey(orderId, phoneNumber)
       });

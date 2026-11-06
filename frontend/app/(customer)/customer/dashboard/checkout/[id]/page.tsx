@@ -202,6 +202,11 @@ export default function CustomerCheckoutPage() {
       return;
     }
 
+    if (total < 100) {
+      setCheckoutError('Minimum order total is ₱100.00.');
+      return;
+    }
+
     if (!agreedToTerms) {
       setCheckoutError(
         'You must agree to the Terms, Return Policy, and Privacy Policy to place your order.'
