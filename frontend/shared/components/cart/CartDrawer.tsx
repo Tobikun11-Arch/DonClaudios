@@ -145,7 +145,7 @@ export default function CartDrawer() {
     }
 
     if (total > 1000) {
-      toast.error('Guest orders have a maximum total of ₱1,000.00.');
+      toast.error('Guest orders have a maximum total of ₱1,000.00. Sign up or log in to your customer account to place larger orders.');
       return;
     }
 

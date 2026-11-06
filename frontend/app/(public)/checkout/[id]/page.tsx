@@ -369,7 +369,7 @@ export default function CheckoutGuestPage() {
     }
 
     if (total > 1000) {
-      setCheckoutError('Guest orders have a maximum total of ₱1,000.00.');
+      setCheckoutError('Guest orders have a maximum total of ₱1,000.00. Sign up or log in to your customer account to place larger orders.');
       return;
     }
     const nextErrors: typeof errors = {};
