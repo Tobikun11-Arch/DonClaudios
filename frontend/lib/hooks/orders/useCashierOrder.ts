@@ -3,7 +3,8 @@
 import {
   listAllOrders,
   updateOrderStatus,
-  getOrderById
+  getOrderById,
+  markOnlineOrderPaid
 } from '@/lib/api/orderApi';
 import {sendAdminOrderMessage} from '@/lib/api/orderApi';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
@@ -66,6 +67,20 @@ export function useSendCashierOrderMessageMutation() {
       await queryClient.invalidateQueries({queryKey: followUpOrdersKey});
       await queryClient.invalidateQueries({queryKey: allOrdersQueryKey});
       await queryClient.invalidateQueries({queryKey: counterOrdersQueryKey});
+      await queryClient.invalidateQueries({queryKey: cashierNotificationsQueryKey});
+    }
+  });
+}
+
+export function useMarkOnlineOrderPaidMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (orderId: string) => markOnlineOrderPaid(orderId),
+    onSuccess: async ({order}) => {
+      await queryClient.invalidateQueries({queryKey: allOrdersQueryKey});
+      await queryClient.invalidateQueries({queryKey: counterOrdersQueryKey});
+      await queryClient.invalidateQueries({queryKey: followUpOrdersKey});
+      await queryClient.invalidateQueries({queryKey: orderDetailKey(order._id)});
       await queryClient.invalidateQueries({queryKey: cashierNotificationsQueryKey});
     }
   });

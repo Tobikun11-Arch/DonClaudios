@@ -11,7 +11,8 @@ import OrderChatThread from '@/features/order/components/OrderChatThread';
 import {
   useOrderDetailQuery,
   useUpdateOrderStatusMutation,
-  useSendCashierOrderMessageMutation
+  useSendCashierOrderMessageMutation,
+  useMarkOnlineOrderPaidMutation
 } from '@/lib/hooks/orders/useCashierOrder';
 import {useAdminOrderMessagesQuery} from '@/lib/hooks/orders/useOrderMessage';
 import type {OrderHistoryItem, OrderHistoryEntry} from '@/lib/api/orderApi';
@@ -47,6 +48,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
   const {data, isLoading, isError} = useOrderDetailQuery(orderId);
   const updateStatusMutation = useUpdateOrderStatusMutation();
   const sendMutation = useSendCashierOrderMessageMutation();
+  const markPaidMutation = useMarkOnlineOrderPaidMutation();
   const messagesQuery = useAdminOrderMessagesQuery(orderId, true);
   const [cancelling, setCancelling] = useState(false);
 
@@ -209,6 +211,27 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
           <div className="mt-4 rounded-xl bg-teal-50 border border-teal-100 p-3">
             <p className="text-xs font-bold text-teal-700 uppercase tracking-wide mb-1">Change for</p>
             <p className="text-sm font-semibold text-gray-900">{order.changeFor}</p>
+          </div>
+        ) : null}
+
+        {order.orderType === 'pickup' &&
+        order.paymentMethod === 'cash' &&
+        order.paymentStatus !== 'paid' ? (
+          <div className="mt-4">
+            <Button
+              className="w-full sm:w-auto bg-[#3c5e45]"
+              disabled={markPaidMutation.isPending}
+              onClick={async () => {
+                try {
+                  await markPaidMutation.mutateAsync(order._id);
+                  toast.success('Order marked as paid.');
+                } catch (error) {
+                  toast.error('Could not mark order as paid.');
+                }
+              }}
+            >
+              {markPaidMutation.isPending ? 'Marking...' : 'Mark as paid'}
+            </Button>
           </div>
         ) : null}
 

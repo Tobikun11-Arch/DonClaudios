@@ -783,6 +783,65 @@ export const orderController = {
     }
   },
 
+  async submitCashPayment(req: Request, res: Response, next: NextFunction) {
+    try {
+      const order = await orderRepository.findById(req.params.id);
+      if (!order) {
+        throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+      }
+
+      assertOrderCustomerAccess(order, req);
+
+      if (order.orderSource === 'in-store') {
+        throw new ApiError(
+          400,
+          'INVALID_OPERATION',
+          'Counter orders are paid directly at the register'
+        );
+      }
+      if (order.orderStatus !== 'confirmed') {
+        throw new ApiError(
+          409,
+          'PAYMENT_NOT_OPEN',
+          'Payment opens once the cashier confirms your order'
+        );
+      }
+      if (order.paymentVerified === true) {
+        throw new ApiError(
+          409,
+          'ALREADY_VERIFIED',
+          'This order has already been verified by the cashier'
+        );
+      }
+      if (order.orderType !== 'pickup') {
+        throw new ApiError(
+          400,
+          'INVALID_OPERATION',
+          'Cash payment is only available for pick-up orders'
+        );
+      }
+
+      await orderRepository.updateFields(String(order._id), {
+        paymentMethod: 'cash',
+        paymentStatus: 'unpaid',
+        paymentNote: 'Cash on pickup'
+      });
+      await transactionRepository.updateByOrderId(String(order._id), {
+        paymentMethod: 'cash' as any,
+        totalAmount: order.totalAmount
+      });
+
+      const updated = await orderRepository.findById(String(order._id));
+      const transaction = await transactionRepository.findByOrderId(
+        String(order._id)
+      );
+
+      res.status(200).json({order: updated, transaction});
+    } catch (error) {
+      next(error);
+    }
+  },
+
   /**
    * MANUAL PAYMENT — step 2 (cashier/admin).
    *
@@ -1743,6 +1802,76 @@ export const orderController = {
     }
   },
 
+  async markOnlineOrderPaid(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+      }
+      if (req.auth.type !== 'admin' && req.auth.type !== 'cashier') {
+        throw new ApiError(403, 'FORBIDDEN', 'Admin or cashier access required');
+      }
+
+      const order = await orderRepository.findById(req.params.id);
+      if (!order) {
+        throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+      }
+      if (order.orderSource === 'in-store') {
+        throw new ApiError(
+          400,
+          'INVALID_OPERATION',
+          'Counter orders use the counter payment flow'
+        );
+      }
+      if (order.orderType !== 'pickup') {
+        throw new ApiError(
+          400,
+          'INVALID_OPERATION',
+          'Only pick-up orders can be marked as paid this way'
+        );
+      }
+      if (order.paymentMethod !== 'cash') {
+        throw new ApiError(
+          400,
+          'INVALID_OPERATION',
+          'Only cash payments can be marked as paid here'
+        );
+      }
+      if (order.paymentStatus === 'paid') {
+        throw new ApiError(409, 'ALREADY_PAID', 'Order is already paid');
+      }
+
+      const paidAt = new Date();
+      const result = await orderRepository.markPaidIfUnpaid(
+        String(order._id),
+        paidAt,
+        req.auth.userId
+      );
+      if (result.modifiedCount === 0) {
+        throw new ApiError(409, 'ALREADY_PAID', 'Order is already paid');
+      }
+
+      await orderRepository.updateFields(String(order._id), {
+        paymentMethod: 'cash'
+      });
+      await orderRepository.updatePaymentState(String(order._id), {
+        paymentVerified: true
+      });
+      await transactionRepository.updateByOrderId(String(order._id), {
+        paymentMethod: 'cash' as any,
+        totalAmount: order.totalAmount
+      });
+
+      const updated = await orderRepository.findById(String(order._id));
+      const transaction = await transactionRepository.findByOrderId(
+        String(order._id)
+      );
+
+      res.status(200).json({order: updated, transaction});
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async markCounterOrderPaid(req: Request, res: Response, next: NextFunction) {
     try {
       if (!req.auth) {
@@ -2128,7 +2257,8 @@ export const orderController = {
           status === 'completed') &&
         order.orderSource !== 'in-store' &&
         order.orderStatus !== 'completed' &&
-        order.paymentStatus !== undefined
+        order.paymentStatus !== undefined &&
+        order.paymentMethod !== 'cash'
       ) {
         if (order.paymentVerified !== true) {
           throw new ApiError(

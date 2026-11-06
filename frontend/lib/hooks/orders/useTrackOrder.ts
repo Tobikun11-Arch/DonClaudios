@@ -5,6 +5,7 @@ import {
   cancelTrackedOrder,
   getTrackedOrder,
   submitOrderPayment,
+  submitCashPayment,
   verifyOrderPayment,
   type SubmitPaymentInput
 } from '@/lib/api/orderApi';
@@ -114,6 +115,24 @@ export function useVerifyPaymentMutation(orderId: string) {
     onSuccess: async () => {
       await queryClient.invalidateQueries({queryKey: allOrdersQueryKey});
       await queryClient.invalidateQueries({queryKey: myOrdersQueryKey});
+      await queryClient.invalidateQueries({queryKey: followUpOrdersKey});
+    }
+  });
+}
+
+export function useSubmitCashPaymentMutation(
+  orderId: string,
+  phoneNumber?: string
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => submitCashPayment(orderId, phoneNumber),
+    onSuccess: async data => {
+      await queryClient.invalidateQueries({
+        queryKey: trackOrderKey(orderId, phoneNumber)
+      });
+      await queryClient.invalidateQueries({queryKey: myOrdersQueryKey});
+      await queryClient.invalidateQueries({queryKey: allOrdersQueryKey});
       await queryClient.invalidateQueries({queryKey: followUpOrdersKey});
     }
   });

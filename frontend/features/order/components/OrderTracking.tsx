@@ -17,6 +17,7 @@ import FrameLoader from '@/shared/components/FrameLoader';
 import {
   useCancelTrackedOrderMutation,
   useSubmitPaymentMutation,
+  useSubmitCashPaymentMutation,
   useTrackOrderQuery
 } from '@/lib/hooks/orders/useTrackOrder';
 import {useSettingsQuery} from '@/lib/hooks/useSettings';
@@ -700,6 +701,8 @@ function ManualPaymentCardBody({
       : null);
 
   const submitMutation = useSubmitPaymentMutation(order._id, phone);
+  const cashMutation = useSubmitCashPaymentMutation(order._id, phone);
+  const [cashError, setCashError] = useState<string | null>(null);
 
   const [formOpen, setFormOpen] = useState(
     order.paymentStatus !== 'down_payment' && order.paymentStatus !== 'paid'
@@ -820,6 +823,53 @@ function ManualPaymentCardBody({
             </p>
           ) : null}
 
+          {order.orderType === 'pickup' ? (
+            <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+              {order.paymentMethod === 'cash' ? (
+                <p className="text-sm font-semibold text-emerald-700">
+                  Cash — pay at pickup
+                </p>
+              ) : (
+                <>
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                    Pay with cash at pickup
+                  </p>
+                  <Button
+                    type="button"
+                    className="mt-3 w-full h-11 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
+                    disabled={cashMutation.isPending}
+                    onClick={async () => {
+                      setCashError(null);
+                      try {
+                        await cashMutation.mutateAsync();
+                      } catch (e) {
+                        setCashError(
+                          getFriendlyErrorMessage(
+                            e,
+                            'Could not select cash payment. Please try again.'
+                          )
+                        );
+                      }
+                    }}
+                  >
+                    {cashMutation.isPending ? 'Saving...' : 'Choose cash'}
+                  </Button>
+                  {cashError ? (
+                    <p className="mt-2 text-xs font-medium text-red-600">
+                      {cashError}
+                    </p>
+                  ) : null}
+                </>
+              )}
+            </div>
+          ) : null}
+
+          {order.paymentMethod === 'cash' ? (
+            <p className="mt-4 text-sm text-gray-600">
+              Cash selected — no online proof or submission needed.
+            </p>
+          ) : (
+            <>
           {channels.length > 1 ? (
             <div className="mt-4">
               <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
@@ -942,7 +992,7 @@ function ManualPaymentCardBody({
               className="hidden"
             >
               {PAYMENT_METHOD_OPTIONS.map(([value, label]) => (
-                <option key={value} value={value}>
+                <option key={value} value={label}>
                   {label}
                 </option>
               ))}
@@ -1012,6 +1062,8 @@ function ManualPaymentCardBody({
               </>
             )}
           </Button>
+            </>
+          )}
         </>
       )}
     </div>
