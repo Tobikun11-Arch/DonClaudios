@@ -225,7 +225,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
                 try {
                   await markPaidMutation.mutateAsync(order._id);
                   toast.success('Order marked as paid.');
-                } catch (error) {
+                } catch {
                   toast.error('Could not mark order as paid.');
                 }
               }}

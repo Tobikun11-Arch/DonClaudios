@@ -127,7 +127,7 @@ export function useSubmitCashPaymentMutation(
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => submitCashPayment(orderId, phoneNumber),
-    onSuccess: async data => {
+    onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: trackOrderKey(orderId, phoneNumber)
       });

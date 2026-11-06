@@ -42,7 +42,6 @@ import {
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {sanitizePhone, sanitizeName} from '@/lib/validation/numeric';
 import {normalizePH, detectCarrier, toAppCarrier} from '@/lib/phone';
-import {saveGuestOrderHistoryEntry} from '@/lib/orders/orderHistoryStorage';
 import {cn} from '@/lib/utils';
 
 const STORE = {
@@ -379,13 +378,11 @@ export default function CheckoutGuestPage() {
       nextErrors.mobileNumber = 'Mobile number is required.';
     }
 
-    if (carrier === 'smart_tnt') {
-      if (!email.trim()) {
-        nextErrors.email = 'Email is required.';
-      } else if (!phoneVerified) {
-        nextErrors.email = 'Please verify your email before placing the order.';
-      }
-    } else if (!phoneVerified) {
+    if (!email.trim()) {
+      nextErrors.email = 'Email is required.';
+    } else if (carrier === 'smart_tnt' && !phoneVerified) {
+      nextErrors.email = 'Please verify your email before placing the order.';
+    } else if (carrier !== 'smart_tnt' && !phoneVerified) {
       nextErrors.mobileNumber =
         'Please verify your phone number before placing the order.';
     }
@@ -440,31 +437,6 @@ export default function CheckoutGuestPage() {
     }
 
     const orderId = created?.order?._id;
-    if (orderId && created) {
-      saveGuestOrderHistoryEntry({
-        _id: orderId,
-        orderType:
-          orderType === 'Delivery'
-            ? 'delivery'
-            : orderType === 'Pick-up'
-              ? 'pickup'
-              : 'reservation',
-        totalAmount: total,
-        riderNotes: notesToRider.trim().length
-          ? notesToRider.trim()
-          : undefined,
-        orderStatus: created.order.orderStatus,
-        isGuest: true,
-        guestInfo: {
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          phoneNumber: mobileNumber.trim(),
-          address: address.trim().length ? address.trim() : undefined
-        },
-        items: orderItems,
-        createdAt: new Date().toISOString()
-      });
-    }
     clearCart();
     if (orderId) {
       window.location.assign(`/order-confirmation/${orderId}`);
@@ -860,30 +832,33 @@ export default function CheckoutGuestPage() {
               </div>
 
 
-              {carrier === 'smart_tnt' ? (
-                <div className="mt-4">
-                  <p className="text-xs font-semibold text-gray-700">Email</p>
-                  <Input
-                    value={email}
-                    onChange={e => {
-                      setEmail(e.target.value);
-                      setErrors(current => ({...current, email: undefined}));
+              <div className="mt-4">
+                <p className="text-xs font-semibold text-gray-700">Email</p>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  Your tracking number will be sent to this email.
+                </p>
+                <Input
+                  value={email}
+                  onChange={e => {
+                    setEmail(e.target.value);
+                    setErrors(current => ({...current, email: undefined}));
+                    if (carrier === 'smart_tnt') {
                       setPhoneVerified(false);
                       setOtpCode('');
                       setCodeSentAt(null);
                       setOtpMessage(null);
                       setOtpError(null);
-                    }}
-                    placeholder="you@example.com"
-                    className="mt-2"
-                  />
-                  {errors.email ? (
-                    <p className="mt-1 text-xs font-medium text-red-600">
-                      {errors.email}
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
+                    }
+                  }}
+                  placeholder="you@example.com"
+                  className="mt-2"
+                />
+                {errors.email ? (
+                  <p className="mt-1 text-xs font-medium text-red-600">
+                    {errors.email}
+                  </p>
+                ) : null}
+              </div>
 
               <div className="mt-4">
                 <p className="text-xs font-semibold text-gray-700">
