@@ -3,6 +3,7 @@ import Header from '@/shared/components/layout/Header';
 import ConnectedFooter from '@/shared/components/layout/ConnectedFooter';
 import CartDrawer from '@/shared/components/cart/CartDrawer';
 import SupportChatBubble from '@/features/support/components/SupportChatBubble';
+import {Toaster} from '@/components/ui/sonner';
 
 export default function PublicLayout({children}: {children: React.ReactNode}) {
   return (
@@ -12,6 +13,7 @@ export default function PublicLayout({children}: {children: React.ReactNode}) {
       <CartDrawer />
       <ConnectedFooter />
       <SupportChatBubble />
+      <Toaster position="top-right" toastOptions={{duration: 3000}} />
     </>
   );
 }

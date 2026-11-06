@@ -467,3 +467,23 @@ export async function verifyOrderPayment(orderId: string, verified: boolean) {
   );
   return res.data;
 }
+
+export async function submitCashPayment(
+  orderId: string,
+  phoneNumber?: string
+) {
+  const res = await httpClient.post<OrderDetailResponse>(
+    `/orders/${orderId}/payment/cash`,
+    {},
+    {params: phoneNumber ? {phoneNumber} : undefined}
+  );
+  return res.data;
+}
+
+export async function markOnlineOrderPaid(orderId: string) {
+  const res = await httpClient.patch<OrderDetailResponse>(
+    `/orders/${orderId}/payment/mark-paid`,
+    {}
+  );
+  return res.data;
+}

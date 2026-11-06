@@ -14,6 +14,7 @@ import {cashierRepository} from '../repositories/cashier.repository';
 import {customerRepository} from '../repositories/customer.repository';
 import {adminRepository} from '../repositories/admin.repository';
 import {sendOrderReceiptEmail} from '../services/receipt.service';
+import {emailService} from '../services/email.service';
 import {storeStatusService} from '../services/storeStatus.service';
 import {guestOtpService} from '../services/guestOtp.service';
 import {uploadPaymentProofBuffer} from '../services/cloudinary.service';
@@ -150,13 +151,18 @@ function assertOrderCustomerAccess(
         : typeof req.body?.phoneNumber === 'string'
           ? req.body.phoneNumber.trim()
           : '';
-    if (
-      !phoneNumber ||
-      order.isGuest !== true ||
-      !order.guestInfo ||
-      order.guestInfo.phoneNumber !== phoneNumber
-    ) {
-      throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+    if (phoneNumber) {
+      if (
+        order.isGuest !== true ||
+        !order.guestInfo ||
+        order.guestInfo.phoneNumber !== phoneNumber
+      ) {
+        throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+      }
+    } else {
+      if (!order.isGuest || !order.guestInfo) {
+        throw new ApiError(403, 'FORBIDDEN', 'Order not found');
+      }
     }
   } else if (req.auth.type === 'customer') {
     if (
@@ -488,34 +494,10 @@ export const orderController = {
       }
 
       if (!req.auth) {
-        const phoneNumber =
-          typeof req.query.phoneNumber === 'string'
-            ? req.query.phoneNumber.trim()
-            : '';
-        const email =
-          typeof req.query.email === 'string'
-            ? req.query.email.trim().toLowerCase()
-            : '';
         if (!order.isGuest || !order.guestInfo) {
           throw new ApiError(403, 'FORBIDDEN', 'Order not found');
         }
-        const phoneMatch =
-          phoneNumber.length > 0 &&
-          !!order.guestInfo.phoneNumber &&
-          phoneVariants(phoneNumber).includes(order.guestInfo.phoneNumber);
-        const emailMatch =
-          email.length > 0 &&
-          !!order.guestInfo.email &&
-          order.guestInfo.email.toLowerCase() === email;
-        if (!phoneMatch && !emailMatch) {
-          console.error('TRACK MISMATCH', {
-            queryPhone: phoneNumber,
-            queryEmail: email,
-            dbPhone: order.guestInfo.phoneNumber,
-            dbEmail: order.guestInfo.email
-          });
-          throw new ApiError(403, 'FORBIDDEN', 'Order not found');
-        }
+        // Tracking is by tracking number (order id) only.
       } else if (req.auth.type === 'customer') {
         if (
           order.isGuest ||
@@ -567,16 +549,7 @@ export const orderController = {
       }
 
       if (!req.auth) {
-        const phoneNumber =
-          typeof req.query.phoneNumber === 'string'
-            ? req.query.phoneNumber.trim()
-            : '';
-        if (
-          !phoneNumber ||
-          order.isGuest !== true ||
-          !order.guestInfo ||
-          order.guestInfo.phoneNumber !== phoneNumber
-        ) {
+        if (!order.isGuest || !order.guestInfo) {
           throw new ApiError(403, 'FORBIDDEN', 'Order not found');
         }
       } else if (req.auth.type === 'customer') {
@@ -778,6 +751,65 @@ export const orderController = {
 
       const updated = await orderRepository.findById(String(order._id));
       res.status(200).json({order: updated});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async submitCashPayment(req: Request, res: Response, next: NextFunction) {
+    try {
+      const order = await orderRepository.findById(req.params.id);
+      if (!order) {
+        throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+      }
+
+      assertOrderCustomerAccess(order, req);
+
+      if (order.orderSource === 'in-store') {
+        throw new ApiError(
+          400,
+          'INVALID_OPERATION',
+          'Counter orders are paid directly at the register'
+        );
+      }
+      if (order.orderStatus !== 'confirmed') {
+        throw new ApiError(
+          409,
+          'PAYMENT_NOT_OPEN',
+          'Payment opens once the cashier confirms your order'
+        );
+      }
+      if (order.paymentVerified === true) {
+        throw new ApiError(
+          409,
+          'ALREADY_VERIFIED',
+          'This order has already been verified by the cashier'
+        );
+      }
+      if (order.orderType !== 'pickup') {
+        throw new ApiError(
+          400,
+          'INVALID_OPERATION',
+          'Cash payment is only available for pick-up orders'
+        );
+      }
+
+      await orderRepository.updateFields(String(order._id), {
+        paymentMethod: 'cash',
+        paymentStatus: 'unpaid',
+        paymentNote: 'Cash on pickup'
+      });
+      await transactionRepository.updateByOrderId(String(order._id), {
+        paymentMethod: 'cash' as any,
+        totalAmount: order.totalAmount
+      });
+
+      const updated = await orderRepository.findById(String(order._id));
+      const transaction = await transactionRepository.findByOrderId(
+        String(order._id)
+      );
+
+      res.status(200).json({order: updated, transaction});
     } catch (error) {
       next(error);
     }
@@ -1271,15 +1303,11 @@ export const orderController = {
       if (!isNonEmptyString(guestInfo.lastName)) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'lastName is required');
       }
-      if (
-        !isNonEmptyString(guestInfo.phoneNumber) &&
-        !isNonEmptyString(guestInfo.email)
-      ) {
-        throw new ApiError(
-          400,
-          'VALIDATION_ERROR',
-          'phoneNumber or email is required'
-        );
+      if (!isNonEmptyString(guestInfo.phoneNumber)) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'phoneNumber is required');
+      }
+      if (!isNonEmptyString(guestInfo.email)) {
+        throw new ApiError(400, 'VALIDATION_ERROR', 'email is required');
       }
 
       let guestVerified = false;
@@ -1502,6 +1530,19 @@ export const orderController = {
       });
 
       notifyCashiersOfNewOrder(String(order._id), safeTotalAmount);
+
+      if (isNonEmptyString(guestInfo.email)) {
+        try {
+          await emailService.sendEmail({
+            to: guestInfo.email.trim(),
+            subject: 'Your DonClaudio order tracking number',
+            text: `Your order has been placed. Your tracking number is: ${String(order._id)}`,
+            html: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px"><h2 style="color:#3c5e45;margin:0 0 12px">Order placed</h2><p style="margin:0 0 8px">Your tracking number is:</p><p style="font-size:22px;font-weight:700;letter-spacing:2px;color:#111;margin:0 0 16px">${String(order._id)}</p><p style="margin:0;color:#555">Use this number to track your order status.</p></div>`
+          });
+        } catch {
+          // Do not fail order placement if email sending fails.
+        }
+      }
 
       res.status(201).json({order, transaction});
     } catch (error) {
@@ -1738,6 +1779,76 @@ export const orderController = {
       notifyCashiersOfNewOrder(String(order._id), serverTotal);
 
       res.status(201).json({order, transaction});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async markOnlineOrderPaid(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+      }
+      if (req.auth.type !== 'admin' && req.auth.type !== 'cashier') {
+        throw new ApiError(403, 'FORBIDDEN', 'Admin or cashier access required');
+      }
+
+      const order = await orderRepository.findById(req.params.id);
+      if (!order) {
+        throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
+      }
+      if (order.orderSource === 'in-store') {
+        throw new ApiError(
+          400,
+          'INVALID_OPERATION',
+          'Counter orders use the counter payment flow'
+        );
+      }
+      if (order.orderType !== 'pickup') {
+        throw new ApiError(
+          400,
+          'INVALID_OPERATION',
+          'Only pick-up orders can be marked as paid this way'
+        );
+      }
+      if (order.paymentMethod !== 'cash') {
+        throw new ApiError(
+          400,
+          'INVALID_OPERATION',
+          'Only cash payments can be marked as paid here'
+        );
+      }
+      if (order.paymentStatus === 'paid') {
+        throw new ApiError(409, 'ALREADY_PAID', 'Order is already paid');
+      }
+
+      const paidAt = new Date();
+      const result = await orderRepository.markPaidIfUnpaid(
+        String(order._id),
+        paidAt,
+        req.auth.userId
+      );
+      if (result.modifiedCount === 0) {
+        throw new ApiError(409, 'ALREADY_PAID', 'Order is already paid');
+      }
+
+      await orderRepository.updateFields(String(order._id), {
+        paymentMethod: 'cash'
+      });
+      await orderRepository.updatePaymentState(String(order._id), {
+        paymentVerified: true
+      });
+      await transactionRepository.updateByOrderId(String(order._id), {
+        paymentMethod: 'cash' as any,
+        totalAmount: order.totalAmount
+      });
+
+      const updated = await orderRepository.findById(String(order._id));
+      const transaction = await transactionRepository.findByOrderId(
+        String(order._id)
+      );
+
+      res.status(200).json({order: updated, transaction});
     } catch (error) {
       next(error);
     }
@@ -2128,7 +2239,8 @@ export const orderController = {
           status === 'completed') &&
         order.orderSource !== 'in-store' &&
         order.orderStatus !== 'completed' &&
-        order.paymentStatus !== undefined
+        order.paymentStatus !== undefined &&
+        order.paymentMethod !== 'cash'
       ) {
         if (order.paymentVerified !== true) {
           throw new ApiError(

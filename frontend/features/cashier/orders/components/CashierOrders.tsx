@@ -174,6 +174,10 @@ export function paymentGateBlocks(
   if (order.paymentStatus === undefined || order.paymentStatus === null) {
     return false;
   }
+  // Cash pick-up orders are collected at the counter; don't block preparation.
+  if (order.paymentMethod === 'cash') {
+    return false;
+  }
   if (order.paymentVerified !== true) return true;
   if (
     order.paymentStatus !== 'paid' &&

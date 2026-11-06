@@ -110,6 +110,17 @@ router.post(
   paymentUpload.single('proof'),
   orderController.submitPayment
 );
+router.post(
+  '/:id/payment/cash',
+  optionalAuth,
+  orderController.submitCashPayment
+);
+router.patch(
+  '/:id/payment/mark-paid',
+  requireAuth,
+  requireStaff,
+  orderController.markOnlineOrderPaid
+);
 // Step 2 — staff: mark the submitted payment as verified (or rejected).
 router.patch(
   '/:id/payment/verify',

@@ -4,7 +4,7 @@ import {useMemo, useState} from 'react';
 import {useBrand} from '@/lib/hooks/useBrand';
 import Image from 'next/image';
 import {Input} from '@/components/ui/input';
-import {Search, History, SlidersHorizontal} from 'lucide-react';
+import {Search, PackageSearch, SlidersHorizontal} from 'lucide-react';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import MenuCategoryCard from '@/shared/components/MenuCategoryCard';
 import FeaturedMenuItemCard from '@/shared/components/FeaturedMenuItemCard';
@@ -387,12 +387,12 @@ function ProductsSection() {
       <div className="flex justify-between">
         <h1 className="text-2xl font-bold mb-2">{brand.name} Menu</h1>
           <Link
-            href={me ? '/customer/dashboard' : '/sign-in'}
-            aria-label="Order history"
+            href="/track"
+            aria-label="Track order"
             className="relative inline-flex items-center rounded-full p-2 hover:bg-[#2d4a35]/10 transition-colors -mt-1"
           >
             <span className="relative inline-block">
-              <History className="h-6 w-6 text-[#2d4a35]" />
+              <PackageSearch className="h-6 w-6 text-[#2d4a35]" />
             </span>
           </Link>
       </div>

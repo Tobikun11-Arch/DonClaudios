@@ -17,17 +17,17 @@ import FrameLoader from '@/shared/components/FrameLoader';
 import {
   useCancelTrackedOrderMutation,
   useSubmitPaymentMutation,
+  useSubmitCashPaymentMutation,
   useTrackOrderQuery
 } from '@/lib/hooks/orders/useTrackOrder';
 import {useSettingsQuery} from '@/lib/hooks/useSettings';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
-import {sanitizePhone} from '@/lib/validation/numeric';
+
 import {  ONLINE_PAYMENT_LABELS,
   type OnlinePaymentMethod,
   type OrderHistoryEntry,
   type OrderHistoryItem
 } from '@/lib/api/orderApi';
-
 import CustomerOrderFollowUp from '@/features/order/components/CustomerOrderFollowUp';
 import {
   formatMinutes,
@@ -176,24 +176,13 @@ export default function OrderTracking({
   variant: 'guest' | 'customer';
   embedded?: boolean;
 }) {
-  const [phone, setPhone] = useState('');
-  const [phoneSubmitted, setPhoneSubmitted] = useState(false);
   const [mounted, setMounted] = useState(false);
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
-  const storedPhone = '';
   const storedEmail = '';
 
-  const autoPhone = variant === 'guest' ? storedPhone : '';
-  const needsPhoneGate =
-    variant === 'guest' && mounted && !autoPhone && !phoneSubmitted;
-  const resolvedPhone =
-    variant === 'guest'
-      ? phoneSubmitted
-        ? phone
-        : autoPhone
-      : undefined;
+  const resolvedPhone = undefined;
 
   const resolvedEmail = variant === 'guest' ? storedEmail : undefined;
   const query = useTrackOrderQuery(orderId, resolvedPhone, resolvedEmail);
@@ -217,16 +206,6 @@ export default function OrderTracking({
     );
   }
 
-  if (needsPhoneGate) {
-    return (
-      <PhoneGate
-        initialValue={phone}
-        onChangeValue={setPhone}
-        onSubmit={() => setPhoneSubmitted(true)}
-        embedded={embedded}
-      />
-    );
-  }
 
   return (
     <div className={embedded ? '' : 'min-h-screen'}>
@@ -311,58 +290,6 @@ export default function OrderTracking({
   );
 }
 
-function PhoneGate({
-  initialValue,
-  onChangeValue,
-  onSubmit,
-  embedded = false
-}: {
-  initialValue: string;
-  onChangeValue: (value: string) => void;
-  onSubmit: () => void;
-  embedded?: boolean;
-}) {
-  const brand = useBrand();
-  return (
-    <div className={embedded ? 'bg-gray-50' : 'min-h-screen bg-gray-50'}>
-      <div className="w-full max-w-md mx-auto px-4 py-12">
-        <div className="rounded-2xl bg-white shadow p-8 text-center">
-          <div className="relative w-20 h-20 mx-auto rounded-full bg-[#3c5e45]/10 overflow-hidden">
-            <Image
-              src={brand.logo}
-              alt="DonClaudio's"
-              fill
-              className="object-contain p-3"
-            />
-          </div>
-          <h2 className="mt-5 text-lg font-bold text-gray-900">
-            Track your order
-          </h2>
-          <p className="mt-1 text-sm text-gray-500">
-            Enter the phone number you used when placing this order to see its
-            status.
-          </p>
-          <input
-            type="tel"
-            inputMode="tel"
-            value={initialValue}
-            onChange={e => onChangeValue(sanitizePhone(e.target.value))}
-            placeholder="Mobile number"
-            className="mt-5 w-full h-12 rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none focus:border-[#3c5e45] focus:ring-2 focus:ring-[#3c5e45]/20"
-          />
-          <Button
-            type="button"
-            className="mt-4 w-full h-12 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
-            disabled={!initialValue.trim()}
-            onClick={onSubmit}
-          >
-            Track Order
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function CustomerEtaPanel({order}: {order: OrderHistoryEntry}) {
   const {estimate, remaining, isRunning, isOverdue, hasEstimate} =
@@ -689,6 +616,8 @@ function ManualPaymentCardBody({
       : null);
 
   const submitMutation = useSubmitPaymentMutation(order._id, phone);
+  const cashMutation = useSubmitCashPaymentMutation(order._id, phone);
+  const [cashError, setCashError] = useState<string | null>(null);
 
   const [formOpen, setFormOpen] = useState(
     order.paymentStatus !== 'down_payment' && order.paymentStatus !== 'paid'
@@ -809,6 +738,53 @@ function ManualPaymentCardBody({
             </p>
           ) : null}
 
+          {order.orderType === 'pickup' ? (
+            <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+              {order.paymentMethod === 'cash' ? (
+                <p className="text-sm font-semibold text-emerald-700">
+                  Cash — pay at pickup
+                </p>
+              ) : (
+                <>
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                    Pay with cash at pickup
+                  </p>
+                  <Button
+                    type="button"
+                    className="mt-3 w-full h-11 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
+                    disabled={cashMutation.isPending}
+                    onClick={async () => {
+                      setCashError(null);
+                      try {
+                        await cashMutation.mutateAsync();
+                      } catch (e) {
+                        setCashError(
+                          getFriendlyErrorMessage(
+                            e,
+                            'Could not select cash payment. Please try again.'
+                          )
+                        );
+                      }
+                    }}
+                  >
+                    {cashMutation.isPending ? 'Saving...' : 'Choose cash'}
+                  </Button>
+                  {cashError ? (
+                    <p className="mt-2 text-xs font-medium text-red-600">
+                      {cashError}
+                    </p>
+                  ) : null}
+                </>
+              )}
+            </div>
+          ) : null}
+
+          {order.paymentMethod === 'cash' ? (
+            <p className="mt-4 text-sm text-gray-600">
+              Cash selected — no online proof or submission needed.
+            </p>
+          ) : (
+            <>
           {channels.length > 1 ? (
             <div className="mt-4">
               <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
@@ -931,7 +907,7 @@ function ManualPaymentCardBody({
               className="hidden"
             >
               {PAYMENT_METHOD_OPTIONS.map(([value, label]) => (
-                <option key={value} value={value}>
+                <option key={value} value={label}>
                   {label}
                 </option>
               ))}
@@ -1001,6 +977,8 @@ function ManualPaymentCardBody({
               </>
             )}
           </Button>
+            </>
+          )}
         </>
       )}
     </div>
