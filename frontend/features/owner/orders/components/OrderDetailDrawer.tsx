@@ -6,6 +6,7 @@ import {OrderStatusPill, OrderTypePill, formatStatus} from './OrderPills';
 import {itemName, orderCustomerName} from '../hooks/useOwnerOrders';
 import {formatPeso, titleCaseStatus} from '../../dashboard/components/reports/reportPrimitives';
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
+import {OrderPaymentPanel} from '@/features/cashier/orders/components/CashierOrders';
 
 function formatDateTime(iso?: string) {
   if (!iso) return '—';
@@ -107,7 +108,7 @@ export function OrderDetailDrawer({
                 {order.paymentMethod}
               </span>
             )}
-            {order.paymentStatus && (
+            {order.orderSource === 'in-store' && order.paymentStatus && (
               <span
                 className={
                   'rounded-md px-2 py-0.5 text-[0.7rem] font-semibold capitalize ' +
@@ -125,6 +126,10 @@ export function OrderDetailDrawer({
               </span>
             )}
           </div>
+
+          {order.orderSource !== 'in-store' ? (
+            <OrderPaymentPanel order={order} />
+          ) : null}
 
           {upcoming.length > 0 && (
             <section>

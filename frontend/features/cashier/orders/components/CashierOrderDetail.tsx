@@ -11,8 +11,7 @@ import OrderChatThread from '@/features/order/components/OrderChatThread';
 import {
   useOrderDetailQuery,
   useUpdateOrderStatusMutation,
-  useSendCashierOrderMessageMutation,
-  useMarkOnlineOrderPaidMutation
+  useSendCashierOrderMessageMutation
 } from '@/lib/hooks/orders/useCashierOrder';
 import {useAdminOrderMessagesQuery} from '@/lib/hooks/orders/useOrderMessage';
 import type {OrderHistoryItem, OrderHistoryEntry} from '@/lib/api/orderApi';
@@ -24,7 +23,7 @@ import {
   orderTypeLabel,
   customerDisplay,
   statusChipClass,
-  paymentGateBlocks,
+  paymentGateReason,
   OrderPaymentPanel
 } from './CashierOrders';
 
@@ -48,7 +47,6 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
   const {data, isLoading, isError} = useOrderDetailQuery(orderId);
   const updateStatusMutation = useUpdateOrderStatusMutation();
   const sendMutation = useSendCashierOrderMessageMutation();
-  const markPaidMutation = useMarkOnlineOrderPaidMutation();
   const messagesQuery = useAdminOrderMessagesQuery(orderId, true);
   const [cancelling, setCancelling] = useState(false);
 
@@ -71,7 +69,8 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
   const order: OrderHistoryEntry = data.order;
   const nextStatus = nextStatusFor(order.orderType, order.orderStatus);
   const canAdvance = nextStatus !== null;
-  const paymentBlocked = paymentGateBlocks(order, nextStatus);
+  const paymentReason = paymentGateReason(order, nextStatus);
+  const paymentBlocked = paymentReason !== null;
   const canCancel = CANCELLABLE.includes(order.orderStatus as (typeof CANCELLABLE)[number]);
 
   const advance = async () => {
@@ -148,11 +147,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
               <button
                 onClick={advance}
                 disabled={isUpdating || paymentBlocked}
-                title={
-                  paymentBlocked
-                    ? 'Verify the customer payment first'
-                    : undefined
-                }
+                title={paymentReason ?? undefined}
                 className="min-h-[40px] rounded-xl bg-[#2d4a35] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#3a5c44] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isUpdating ? 'Updating...' : `Mark ${formatStatus(nextStatus)}`}
@@ -160,7 +155,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
             )}
             {canAdvance && paymentBlocked ? (
               <span className="text-xs font-semibold text-amber-600">
-                Verify the payment before this step
+                {paymentReason}
               </span>
             ) : null}
             {canCancel && (
@@ -211,27 +206,6 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
           <div className="mt-4 rounded-xl bg-teal-50 border border-teal-100 p-3">
             <p className="text-xs font-bold text-teal-700 uppercase tracking-wide mb-1">Change for</p>
             <p className="text-sm font-semibold text-gray-900">{order.changeFor}</p>
-          </div>
-        ) : null}
-
-        {order.orderType === 'pickup' &&
-        order.paymentMethod === 'cash' &&
-        order.paymentStatus !== 'paid' ? (
-          <div className="mt-4">
-            <Button
-              className="w-full sm:w-auto bg-[#3c5e45]"
-              disabled={markPaidMutation.isPending}
-              onClick={async () => {
-                try {
-                  await markPaidMutation.mutateAsync(order._id);
-                  toast.success('Order marked as paid.');
-                } catch {
-                  toast.error('Could not mark order as paid.');
-                }
-              }}
-            >
-              {markPaidMutation.isPending ? 'Marking...' : 'Mark as paid'}
-            </Button>
           </div>
         ) : null}
 

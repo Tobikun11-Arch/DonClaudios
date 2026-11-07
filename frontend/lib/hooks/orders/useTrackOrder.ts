@@ -4,10 +4,11 @@ import {useEffect} from 'react';
 import {
   cancelTrackedOrder,
   getTrackedOrder,
-  submitOrderPayment,
   submitCashPayment,
-  verifyOrderPayment,
-  type SubmitPaymentInput
+  fetchPaymentSummary,
+  startPaymentCheckout,
+  payOrderBalance,
+  type PaymentChannel
 } from '@/lib/api/orderApi';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {updateGuestOrderHistoryEntry} from '@/lib/orders/orderHistoryStorage';
@@ -86,36 +87,67 @@ export function useCancelTrackedOrderMutation(
   });
 }
 
-export function useSubmitPaymentMutation(
+export const paymentSummaryKey = (orderId: string) =>
+  ['orders', 'payment', orderId] as const;
+
+/**
+ * Payment step data (what is due, fee quotes, open invoice). Polls while an
+ * invoice is open or while we wait for Xendit's webhook after the redirect.
+ */
+export function usePaymentSummaryQuery(
   orderId: string,
-  phoneNumber?: string
+  phoneNumber: string | undefined,
+  options: {enabled: boolean; awaitingConfirmation?: boolean}
 ) {
-  const queryClient = useQueryClient();
+  return useQuery({
+    queryKey: [...paymentSummaryKey(orderId), phoneNumber ?? ''],
+    queryFn: () => fetchPaymentSummary(orderId, phoneNumber),
+    enabled: !!orderId && options.enabled,
+    refetchOnWindowFocus: true,
+    refetchInterval: query => {
+      const data = query.state.data;
+      if (options.awaitingConfirmation) return 3000;
+      if (data?.pendingPayment) return 5000;
+      return false;
+    },
+    staleTime: 1000
+  });
+}
+
+async function invalidateOrderQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  orderId: string
+) {
+  await queryClient.invalidateQueries({queryKey: ['orders', 'track', orderId]});
+  await queryClient.invalidateQueries({queryKey: paymentSummaryKey(orderId)});
+  await queryClient.invalidateQueries({queryKey: myOrdersQueryKey});
+  await queryClient.invalidateQueries({queryKey: allOrdersQueryKey});
+  await queryClient.invalidateQueries({queryKey: followUpOrdersKey});
+}
+
+/** Creates the Xendit invoice and sends the browser to Xendit's checkout. */
+export function useStartCheckoutMutation(orderId: string, phoneNumber?: string) {
   return useMutation({
-    mutationFn: (input: SubmitPaymentInput) =>
-      submitOrderPayment(orderId, input),
-    onSuccess: async data => {
-      const updated = data?.order;
-      if (updated) {
-        updateGuestOrderHistoryEntry(updated);
-      }
-      await queryClient.invalidateQueries({
-        queryKey: trackOrderKey(orderId, phoneNumber)
-      });
-      await queryClient.invalidateQueries({queryKey: myOrdersQueryKey});
-      await queryClient.invalidateQueries({queryKey: allOrdersQueryKey});
+    mutationFn: (input: {kind: 'full' | 'down_payment'; channel: PaymentChannel}) =>
+      startPaymentCheckout(orderId, input, phoneNumber),
+    onSuccess: data => {
+      window.location.assign(data.invoiceUrl);
     }
   });
 }
 
-export function useVerifyPaymentMutation(orderId: string) {
+export function usePayBalanceMutation(orderId: string, phoneNumber?: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (verified: boolean) => verifyOrderPayment(orderId, verified),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({queryKey: allOrdersQueryKey});
-      await queryClient.invalidateQueries({queryKey: myOrdersQueryKey});
-      await queryClient.invalidateQueries({queryKey: followUpOrdersKey});
+    mutationFn: (
+      input: {method: 'online'; channel: PaymentChannel} | {method: 'cash'}
+    ) => payOrderBalance(orderId, input, phoneNumber),
+    onSuccess: async data => {
+      if ('invoiceUrl' in data && data.invoiceUrl) {
+        window.location.assign(data.invoiceUrl);
+        return;
+      }
+      await invalidateOrderQueries(queryClient, orderId);
     }
   });
 }
@@ -128,12 +160,7 @@ export function useSubmitCashPaymentMutation(
   return useMutation({
     mutationFn: () => submitCashPayment(orderId, phoneNumber),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: trackOrderKey(orderId, phoneNumber)
-      });
-      await queryClient.invalidateQueries({queryKey: myOrdersQueryKey});
-      await queryClient.invalidateQueries({queryKey: allOrdersQueryKey});
-      await queryClient.invalidateQueries({queryKey: followUpOrdersKey});
+      await invalidateOrderQueries(queryClient, orderId);
     }
   });
 }

@@ -1,7 +1,7 @@
 import {Router} from 'express';
-import multer from 'multer';
 import {orderController} from '../controllers/order.controller';
 import {orderMessageController} from '../controllers/orderMessage.controller';
+import {paymentController} from '../controllers/payment.controller';
 import {
   requireAuth,
   requireCustomer,
@@ -96,37 +96,27 @@ router.post(
   orderController.cancelOrder
 );
 
-// MANUAL PAYMENT flow (step 1 — customer): available only while the order is
-// confirmed and not yet verified. Guests identify themselves with the order's
-// phone number (query or body), customers with their JWT; the screenshot is
-// uploaded in the same multipart call and stored on Cloudinary.
-const paymentUpload = multer({
-  storage: multer.memoryStorage(),
-  limits: {fileSize: 5 * 1024 * 1024}
-});
+// XENDIT PAYMENT flow (customer side). Opens once the cashier confirms the
+// order. Guests identify themselves with the order's phone number (query or
+// body), customers with their JWT. Staff read the summary too.
+router.get('/:id/payment', optionalAuth, paymentController.getSummary);
 router.post(
-  '/:id/payment',
+  '/:id/payment/checkout',
   optionalAuth,
-  paymentUpload.single('proof'),
-  orderController.submitPayment
+  paymentController.checkout
 );
+router.post('/:id/payment/cash', optionalAuth, paymentController.chooseCash);
 router.post(
-  '/:id/payment/cash',
+  '/:id/payment/balance',
   optionalAuth,
-  orderController.submitCashPayment
+  paymentController.payBalance
 );
+// Staff: cash collected (cash on pickup, or the cash balance of a down payment).
 router.patch(
   '/:id/payment/mark-paid',
   requireAuth,
   requireStaff,
   orderController.markOnlineOrderPaid
-);
-// Step 2 — staff: mark the submitted payment as verified (or rejected).
-router.patch(
-  '/:id/payment/verify',
-  requireAuth,
-  requireStaff,
-  orderController.verifyPayment
 );
 router.get(
   '/all',
@@ -168,6 +158,13 @@ router.patch(
   orderController.updateCounterOrder
 );
 
+router.get(
+  '/follow-up',
+  requireAuth,
+  requireStaff,
+  orderMessageController.listFollowUpOrders
+);
+
 router.get('/:id', requireAuth, requireStaff, orderController.getOrderById);
 router.patch(
   '/:id/status',
@@ -176,12 +173,6 @@ router.patch(
   orderController.updateStatus
 );
 
-router.get(
-  '/follow-up',
-  requireAuth,
-  requireStaff,
-  orderMessageController.listFollowUpOrders
-);
 router.get(
   '/:id/messages',
   requireAuth,
