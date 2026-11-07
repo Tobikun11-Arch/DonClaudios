@@ -89,7 +89,7 @@ export function InstallPrompt() {
         </div>
         <button
           onClick={handleDismiss}
-          className="text-muted-foreground hover:text-foreground"
+          className="-mr-2 -mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-black/5 hover:text-foreground"
           aria-label="Dismiss"
         >
           ✕

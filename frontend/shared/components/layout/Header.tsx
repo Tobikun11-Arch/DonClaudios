@@ -123,7 +123,9 @@ export default function Header() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm">
       <div className="container mx-auto px-4 sm:px-6 lg:px-10 py-3 flex items-center justify-between">
-        <a
+        <Link
+          href="/"
+          aria-label="DonClaudio's Lechon House home"
           onClick={e => {
             e.preventDefault();
             handleNavClick('home');
@@ -141,12 +143,12 @@ export default function Header() {
               {brand.name.split(' ')[0]}
             </h1>
             {brand.name.split(' ').length > 1 && (
-              <p className="text-xs" style={{color: '#a4bbab'}}>
+              <p className="text-xs" style={{color: '#4f6f57'}}>
                 {brand.name.split(' ').slice(1).join(' ')}
               </p>
             )}
           </div>
-        </a>
+        </Link>
 
         <nav className="hidden lg:flex items-center gap-8">
           {navItems.map(item => (
@@ -161,7 +163,7 @@ export default function Header() {
                 activeSection === item.id ? 'font-bold' : ''
               }`}
               style={{
-                color: activeSection === item.id ? '#3c5e45' : '#a4bbab'
+                color: activeSection === item.id ? '#3c5e45' : '#5f7d66'
               }}
             >
               {item.label}
@@ -227,7 +229,7 @@ export default function Header() {
                 activeSection === item.id ? 'font-bold' : ''
               }`}
               style={{
-                color: activeSection === item.id ? '#3c5e45' : '#a4bbab'
+                color: activeSection === item.id ? '#3c5e45' : '#5f7d66'
               }}
             >
               {item.label}

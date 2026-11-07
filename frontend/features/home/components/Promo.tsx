@@ -47,7 +47,7 @@ function PromoCardImage({product}: {product: Product}) {
           UPCOMING
         </div>
       ) : (
-        <div className="absolute top-6 left-6 bg-red-500 text-white px-4 py-2 rounded-full font-bold text-sm">
+        <div className="absolute top-6 left-6 bg-red-600 text-white px-4 py-2 rounded-full font-bold text-sm">
           LIMITED OFFER
         </div>
       )}

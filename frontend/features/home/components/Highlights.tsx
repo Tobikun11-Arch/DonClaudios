@@ -37,7 +37,7 @@ export default function HighlightsSection({
           >
             {highlights.title}
           </h2>
-          <p className="text-xl" style={{color: 'var(--dc-text, #a4bbab)'}}>
+          <p className="text-xl" style={{color: 'var(--dc-text, #4f6f57)'}}>
             {highlights.subtitle}
           </p>
         </div>
@@ -49,6 +49,7 @@ export default function HighlightsSection({
                 src={images[0]?.url ?? '/assets/highlights1.JPG'}
                 alt={images[0]?.alt ?? 'Restaurant Interior'}
                 fill
+                sizes="(min-width: 1024px) 40vw, (min-width: 640px) 50vw, 100vw"
                 className="object-cover"
                 priority
               />
@@ -70,6 +71,7 @@ export default function HighlightsSection({
                   src={images[1]?.url ?? '/assets/Highlight2.png'}
                   alt={images[1]?.alt ?? 'Dining Area'}
                   fill
+                  sizes="(min-width: 1024px) 40vw, (min-width: 640px) 50vw, 100vw"
                   className="object-cover"
                 />
               </div>
@@ -86,6 +88,7 @@ export default function HighlightsSection({
                   src={images[2]?.url ?? '/assets/Highlights3.png'}
                   alt={images[2]?.alt ?? 'Our Specialty'}
                   fill
+                  sizes="(min-width: 1024px) 40vw, (min-width: 640px) 50vw, 100vw"
                   className="object-cover"
                 />
               </div>
