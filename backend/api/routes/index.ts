@@ -18,6 +18,7 @@ import storeStatusRoutes from './storeStatus.routes';
 import ingredientRoutes from './ingredient.routes';
 import categoryRoutes from './category.routes';
 import pushRoutes from './push.routes';
+import webhookRoutes from './webhook.routes';
 
 const router = Router();
 
@@ -40,5 +41,6 @@ router.use('/store-status', storeStatusRoutes);
 router.use('/ingredients', ingredientRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/push', pushRoutes);
+router.use('/webhooks', webhookRoutes);
 
 export default router;

@@ -79,17 +79,7 @@ function mergeWithDefaults(raw: Partial<SiteSetting>): SiteSetting {
         return acc;
       },
       {} as Record<SectionId, SectionStyle>
-    ),
-    // Pass-through: the manual-payment instructions are edited in settings and
-    // must survive tab saves that send the whole merged document back.
-    payment: {
-      image: raw.payment?.image ?? '',
-      accountName: raw.payment?.accountName ?? '',
-      accountNumber: raw.payment?.accountNumber ?? '',
-      instructions: raw.payment?.instructions ?? '',
-      channels: Array.isArray(raw.payment?.channels) ? raw.payment.channels : [],
-      activeChannelId: raw.payment?.activeChannelId ?? ''
-    }
+    )
   };
 }
 

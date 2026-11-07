@@ -13,9 +13,8 @@ import {Button} from '@/components/ui/button';
 import {OrderDateFilter} from './OrderDateFilter';
 import type {DateRange} from './OrderDateFilter';
 import {OrderPrepBadge, OrderEstimateLabel} from './OrderPrepBadge';
-import {useAllOrdersQuery, useUpdateOrderStatusMutation, useSendCashierOrderMessageMutation} from '@/lib/hooks/orders/useCashierOrder';
+import {useAllOrdersQuery, useUpdateOrderStatusMutation, useSendCashierOrderMessageMutation, useMarkOnlineOrderPaidMutation} from '@/lib/hooks/orders/useCashierOrder';
 import {useCounterOrdersQuery} from '@/lib/hooks/orders/useCashierCounterOrder';
-import {useVerifyPaymentMutation} from '@/lib/hooks/orders/useTrackOrder';
 import {useAdminOrderMessagesQuery} from '@/lib/hooks/orders/useOrderMessage';
 import type {OrderHistoryEntry, OrderHistoryItem} from '@/lib/api/orderApi';
 import type {NormalizedApiError} from '@/lib/api/types';
@@ -101,91 +100,127 @@ export function customerDisplay(order: OrderHistoryEntry) {
 }
 
 /* ------------------------------------------------------------------ */
-/* MANUAL PAYMENT helpers                                              */
+/* PAYMENT helpers (Xendit flow)                                       */
 /* ------------------------------------------------------------------ */
 
-function itemIsPreOrder(item: OrderHistoryItem) {
-  return item.productId && typeof item.productId === 'object'
-    ? item.productId.isPreOrder === true
-    : false;
+const CHANNEL_LABELS: Record<string, string> = {
+  gcash: 'GCash',
+  maya: 'Maya',
+  grabpay: 'GrabPay',
+  shopeepay: 'ShopeePay',
+  card: 'Card',
+  cash: 'Cash'
+};
+
+function channelLabel(order: OrderHistoryEntry) {
+  const key = order.paymentChannel ?? order.paymentMethod ?? '';
+  return CHANNEL_LABELS[key] ?? 'online';
 }
 
-/** Down payments only apply to carts made up entirely of pre-order products. */
-function orderIsPreOrderOnly(order: OrderHistoryEntry) {
-  return (
-    order.items.length > 0 && order.items.every(item => itemIsPreOrder(item))
-  );
+function balanceOf(order: OrderHistoryEntry) {
+  return Math.max(0, order.totalAmount - (order.amountPaid ?? 0));
 }
 
-/**
- * The small chip shown on each card header. Online orders track the manual
- * payment lifecycle; legacy rows and counter orders have no payment fields
- * and are hidden on purpose.
- */
-export function paymentStatusChip(order: OrderHistoryEntry): {
-  label: string;
-  className: string;
-} | null {
-  if (order.paymentVerified === true) {
-    return {
-      label: 'Payment verified',
-      className: 'bg-emerald-50 text-emerald-700 border-emerald-200'
-    };
+/** Cash the cashier must collect before completing the order, or null. */
+export function cashToCollect(order: OrderHistoryEntry): number | null {
+  if (order.orderSource === 'in-store' || order.orderStatus === 'cancelled') {
+    return null;
   }
-  if (order.paymentStatus === 'down_payment') {
-    return {
-      label: 'Down payment — to verify',
-      className: 'bg-amber-50 text-amber-700 border-amber-200'
-    };
-  }
-  if (order.paymentStatus === 'paid') {
-    return {
-      label: 'Paid — to verify',
-      className: 'bg-amber-50 text-amber-700 border-amber-200'
-    };
-  }
-  if (order.paymentStatus === 'unpaid') {
-    return {
-      label: 'Awaiting payment',
-      className: 'bg-gray-50 text-gray-500 border-gray-200'
-    };
+  if (order.paymentStatus === 'paid') return null;
+  if (order.paymentChoice === 'cash_on_pickup') return order.totalAmount;
+  if (order.paymentStatus === 'down_payment' && order.balanceChoice === 'cash') {
+    return balanceOf(order);
   }
   return null;
 }
 
 /**
- * Can this order legally move to `next` given the manual-payment gates? This
- * mirrors the backend `updateStatus` check so the button can be disabled with
- * a helpful hint rather than a 409 toast after the fact.
+ * The small chip shown on each card header. Online orders show where the
+ * Xendit payment stands; counter orders are hidden on purpose.
  */
-export function paymentGateBlocks(
+export function paymentStatusChip(order: OrderHistoryEntry): {
+  label: string;
+  className: string;
+} | null {
+  const green = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+  const amber = 'bg-amber-50 text-amber-700 border-amber-200';
+  const gray = 'bg-gray-50 text-gray-500 border-gray-200';
+  const sky = 'bg-sky-50 text-sky-700 border-sky-200';
+  const red = 'bg-red-50 text-red-700 border-red-200';
+
+  if (order.refundStatus === 'failed') return {label: 'Refund failed', className: red};
+  if (order.refundStatus === 'pending') return {label: 'Refund pending', className: sky};
+  if (order.refundStatus === 'refunded') return {label: 'Refunded', className: sky};
+  if (order.paymentStatus === 'paid') {
+    return {
+      label:
+        order.paymentChoice === 'cash_on_pickup'
+          ? 'Paid in cash'
+          : `Paid · ${channelLabel(order)}`,
+      className: green
+    };
+  }
+  if (order.paymentStatus === 'down_payment') {
+    return {
+      label:
+        order.balanceChoice === 'cash'
+          ? 'Down payment · balance in cash'
+          : order.balanceChoice === 'online'
+            ? 'Down payment · balance online'
+            : 'Down payment paid',
+      className: amber
+    };
+  }
+  if (order.paymentChoice === 'cash_on_pickup') {
+    return {label: 'Cash on pickup', className: gray};
+  }
+  if (order.paymentStatus === 'unpaid' && order.orderStatus !== 'pending') {
+    return {label: 'Awaiting payment', className: gray};
+  }
+  return null;
+}
+
+/**
+ * Why the order cannot move to `next` yet, or null when it can. Mirrors the
+ * backend payment gate (payment.service assertPaymentAllowsStatus) so the
+ * button is disabled with a hint instead of a 409 toast.
+ */
+export function paymentGateReason(
   order: OrderHistoryEntry,
   next: string | null
-): boolean {
+): string | null {
   if (
     !next ||
     !['preparing', 'ready', 'on_the_way', 'completed'].includes(next) ||
     order.orderSource === 'in-store' ||
     order.orderStatus === 'completed'
   ) {
-    return false;
+    return null;
   }
-  // Pre-feature legacy rows carry no payment fields and keep the old flow.
-  if (order.paymentStatus === undefined || order.paymentStatus === null) {
-    return false;
+  const status = order.paymentStatus ?? 'unpaid';
+  const cashPickup = order.paymentChoice === 'cash_on_pickup';
+
+  if (next === 'preparing' || next === 'ready') {
+    if (status === 'paid' || status === 'down_payment' || cashPickup) return null;
+    return 'Waiting for the customer to pay online';
   }
-  // Cash pick-up orders are collected at the counter; don't block preparation.
-  if (order.paymentMethod === 'cash') {
-    return false;
+  if (next === 'on_the_way') {
+    if (status === 'paid') return null;
+    return status === 'down_payment'
+      ? 'Waiting for the customer to pay the balance online'
+      : 'This order is not paid yet';
   }
-  if (order.paymentVerified !== true) return true;
-  if (
-    order.paymentStatus !== 'paid' &&
-    !orderIsPreOrderOnly(order)
-  ) {
-    return true;
-  }
-  return false;
+  if (status === 'paid') return null;
+  return cashToCollect(order) !== null
+    ? 'Mark the cash as received first'
+    : 'Waiting for the customer to pay the balance';
+}
+
+export function paymentGateBlocks(
+  order: OrderHistoryEntry,
+  next: string | null
+): boolean {
+  return paymentGateReason(order, next) !== null;
 }
 
 export function statusChipClass(status: string) {
@@ -606,7 +641,8 @@ function OrderCard({
   const isWalkIn = order.orderSource === 'in-store';
   const nextStatus = nextStatusFor(order.orderType, order.orderStatus);
   const canAdvance = nextStatus !== null;
-  const paymentBlocked = paymentGateBlocks(order, nextStatus);
+  const paymentReason = paymentGateReason(order, nextStatus);
+  const paymentBlocked = paymentReason !== null;
 
   const handleSend = async (text: string) => {
     try {
@@ -897,11 +933,7 @@ function OrderCard({
               disabled={
                 statusUpdating || cancelUpdating || paymentBlocked
               }
-              title={
-                paymentBlocked
-                  ? 'Verify the customer payment first'
-                  : undefined
-              }
+              title={paymentReason ?? undefined}
               className="min-h-[40px] rounded-xl bg-[#2d4a35] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#3a5c44] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {statusUpdating
@@ -910,7 +942,7 @@ function OrderCard({
             </button>
             {paymentBlocked ? (
               <span className="text-xs font-semibold text-amber-600">
-                Verify the payment before this step
+                {paymentReason}
               </span>
             ) : null}
             {CANCELLABLE.includes(order.orderStatus as (typeof CANCELLABLE)[number]) && (
@@ -967,42 +999,32 @@ function getItemName(item: OrderHistoryItem) {
 }
 
 /**
- * MANUAL PAYMENT verification panel (cashier side of the flow). Shows the
- * customer's claim, the chosen channel, their note and the uploaded proof;
- * the cashier can mark it paid or reject it (reject resets the claim so the
- * customer can resubmit).
+ * PAYMENT panel (cashier side). Xendit confirms online payments by itself, so
+ * there is nothing to verify: this shows where the payment stands and offers
+ * "Cash received" when cash is due (cash on pickup, or a cash balance).
  */
 export function OrderPaymentPanel({order}: {order: OrderHistoryEntry}) {
-  const verifyMutation = useVerifyPaymentMutation(order._id);
+  const markPaid = useMarkOnlineOrderPaidMutation();
 
   if (order.orderSource === 'in-store') return null;
-  if (order.paymentStatus === undefined || order.paymentStatus === null) {
-    return null;
-  }
+  if (order.orderStatus === 'pending') return null;
 
-  const claimedLabel =
-    order.paymentStatus === 'down_payment'
-      ? 'Down payment'
-      : order.paymentStatus === 'paid'
-        ? 'Full payment'
-        : 'Not submitted yet';
-  const methodLabel =
-    order.paymentMethod && order.paymentMethod !== 'other'
-      ? order.paymentMethod.replace(/^\w/, c => c.toUpperCase())
+  const chip = paymentStatusChip(order);
+  const cashDue = cashToCollect(order);
+  const amountPaid = order.amountPaid ?? 0;
+  const fee = order.transactionFee ?? 0;
+  const expiresAt =
+    order.paymentStatus === 'unpaid' && order.paymentExpiresAt
+      ? new Date(order.paymentExpiresAt)
       : null;
 
-  const handleVerify = async (verified: boolean) => {
+  const handleCashReceived = async () => {
     try {
-      await verifyMutation.mutateAsync(verified);
-      toast.success(
-        verified
-          ? 'Payment marked as verified.'
-          : 'Payment submission rejected.'
-      );
+      await markPaid.mutateAsync(order._id);
+      toast.success('Cash payment recorded.');
     } catch (error) {
       toast.error(
-        (error as NormalizedApiError)?.message ??
-          'Failed to update the payment.'
+        (error as NormalizedApiError)?.message ?? 'Failed to record the cash payment.'
       );
     }
   };
@@ -1011,71 +1033,58 @@ export function OrderPaymentPanel({order}: {order: OrderHistoryEntry}) {
     <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50/60 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
-          Manual payment
+          Payment
         </p>
-        {order.paymentVerified === true ? (
-          <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
-            VERIFIED — {claimedLabel}
+        {chip ? (
+          <span
+            className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${chip.className}`}
+          >
+            {chip.label}
           </span>
-        ) : (
-          <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-700">
-            {claimedLabel === 'Not submitted yet'
-              ? 'AWAITING PAYMENT'
-              : 'TO VERIFY'}
-          </span>
-        )}
+        ) : null}
       </div>
 
-      <p className="mt-2 text-sm text-gray-700">
-        {claimedLabel}
-        {methodLabel ? ` claimed via ${methodLabel}` : ''}
-      </p>
-      {order.paymentNote ? (
-        <p className="mt-1 text-xs text-gray-500">
-          Note: {order.paymentNote}
+      <div className="mt-2 space-y-1 text-sm text-gray-700">
+        <p>
+          Order total <span className="font-semibold">{money(order.totalAmount)}</span>
+          {amountPaid > 0 ? (
+            <>
+              {' '}&middot; paid <span className="font-semibold">{money(amountPaid)}</span>
+            </>
+          ) : null}
         </p>
-      ) : null}
+        {fee > 0 ? (
+          <p className="text-xs text-gray-500">
+            Customer also paid {money(fee)} transaction fee (not part of sales).
+          </p>
+        ) : null}
+        {expiresAt && order.paymentChoice !== 'cash_on_pickup' ? (
+          <p className="text-xs text-amber-700">
+            Payment link expires{' '}
+            {expiresAt.toLocaleTimeString(undefined, {hour: 'numeric', minute: '2-digit'})}.
+            Unpaid orders are cancelled automatically.
+          </p>
+        ) : null}
+        {order.refundStatus === 'failed' ? (
+          <p className="text-xs font-semibold text-red-600">
+            Automatic refund failed. The owner must refund this customer from the Xendit dashboard.
+          </p>
+        ) : null}
+      </div>
 
-      {order.paymentProofUrl ? (
-        <a
-          href={order.paymentProofUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-2 inline-block"
-        >
-          <Image
-            src={order.paymentProofUrl}
-            alt="Proof of payment"
-            width={320}
-            height={320}
-            className="h-40 w-auto max-w-full rounded-lg border border-gray-200 bg-white object-contain"
-            unoptimized
-          />
-          <span className="mt-1 inline-block text-xs font-semibold text-[#3c5e45] hover:underline">
-            Open full screenshot
+      {cashDue !== null ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            disabled={markPaid.isPending}
+            onClick={handleCashReceived}
+          >
+            {markPaid.isPending ? 'Saving...' : `Cash received (${money(cashDue)})`}
+          </Button>
+          <span className="text-xs text-gray-500">
+            Click once the customer has paid at the store.
           </span>
-        </a>
-      ) : null}
-
-      {claimedLabel !== 'Not submitted yet' && order.paymentVerified !== true ? (
-        <div className="mt-3 flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={verifyMutation.isPending}
-            onClick={() => handleVerify(false)}
-          >
-            Reject
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            disabled={verifyMutation.isPending}
-            onClick={() => handleVerify(true)}
-          >
-            {verifyMutation.isPending ? 'Saving...' : 'Mark as paid'}
-          </Button>
         </div>
       ) : null}
     </div>

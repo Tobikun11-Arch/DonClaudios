@@ -5,6 +5,8 @@ export type PaymentMethod =
   | 'card'
   | 'gcash'
   | 'maya'
+  | 'grabpay'
+  | 'shopeepay'
   | 'bdo'
   | 'bpi'
   | 'psbank'
@@ -26,7 +28,7 @@ const TransactionSchema = new Schema<TransactionDocument>(
     timestamp: {type: Date, default: Date.now},
     paymentMethod: {
       type: String,
-      enum: ['cash', 'card', 'gcash', 'maya', 'bdo', 'bpi', 'psbank', 'other'],
+      enum: ['cash', 'card', 'gcash', 'maya', 'grabpay', 'shopeepay', 'bdo', 'bpi', 'psbank', 'other'],
       default: 'cash'
     },
     totalAmount: {type: Number, required: true},

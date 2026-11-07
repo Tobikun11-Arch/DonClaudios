@@ -160,38 +160,24 @@ export const orderRepository = {
     ).exec(),
 
   /**
-   * Records the customer's manual-payment claim (status + proof). The guard
-   * `$ne: true` on paymentVerified means a late re-submission can never
-   * overwrite a claim once the cashier has verified it (an absent field —
-   * pre-feature legacy rows — is still eligible, unlike an equality check
-   * against `false`).
+   * Atomic payment-summary update guarded by the current paymentStatus, so a
+   * retried webhook (or a race with "Cash received") applies exactly once.
    */
-  submitManualPayment: (
+  updatePaymentIfStatus: (
     orderId: string,
-    patch: {
-      paymentStatus: PaymentStatus;
-      paymentProofUrl: string;
-      paymentNote?: string | null;
-    }
+    fromStatuses: PaymentStatus[],
+    patch: Record<string, unknown>,
+    inc?: Record<string, number>
   ) =>
     OrderModel.updateOne(
-      {_id: orderId, paymentVerified: {$ne: true}},
-      {$set: patch}
+      {_id: orderId, paymentStatus: {$in: fromStatuses}},
+      inc ? {$set: patch, $inc: inc} : {$set: patch}
     ).exec(),
 
-  updatePaymentState: (
-    orderId: string,
-    patch: {
-      paymentStatus?: PaymentStatus;
-      paymentVerified?: boolean;
-      paymentProofUrl?: string | null;
-      paymentNote?: string | null;
-    }
-  ) => OrderModel.updateOne({_id: orderId}, {$set: patch}).exec(),
-
   /**
-   * Atomic idempotency latch for marking a walk-in order as paid. Only flips
-   * when the order is currently unpaid, so a duplicate request (or a click
+   * Atomic idempotency latch for marking an order as paid (walk-in, or cash
+   * collected for an online pickup order). Only flips when the order is
+   * currently not paid, so a duplicate request (or a click
    * that races with another cashier) cannot overwrite paidAt/paidBy.
    */
   markPaidIfUnpaid: (

@@ -12,13 +12,11 @@ import {SecurityTab} from './SecurityTab';
 import {CashierTab} from './CashierTab';
 import {StoreStatusTab} from './StoreStatusTab';
 import {MenuCategoriesTab} from './MenuCategoriesTab';
-import {PaymentTab} from './PaymentTab';
 import AppearancePreview from '@/features/owner/appearance/components/AppearancePreview';
 import {
   UserRound,
   Clock,
   Tags,
-  Wallet,
   ShieldCheck,
   UsersRound,
   Palette,
@@ -44,7 +42,6 @@ type TabId =
   | 'notificationsAccount'
   | 'store'
   | 'categories'
-  | 'payment'
   | 'security'
   | 'cashier';
 
@@ -63,7 +60,6 @@ const TOP_ITEMS: TopItem[] = [
   {id: 'cashier', label: 'Cashier', icon: UsersRound, group: 1},
   {id: 'store', label: 'Store Status', icon: Clock, group: 1},
   {id: 'categories', label: 'Menu Categories', icon: Tags, group: 1},
-  {id: 'payment', label: 'Payment', icon: Wallet, group: 1},
   {id: 'security', label: 'Security', icon: ShieldCheck, group: 1}
 ];
 
@@ -92,7 +88,6 @@ const TAB_INFO: Record<TabId, {label: string; subtitle: string}> = {
   notificationsAccount: {label: 'Account', subtitle: 'Account security notifications.'},
   store: {label: 'Store Status', subtitle: 'Opening hours and manual close controls.'},
   categories: {label: 'Menu Categories', subtitle: 'Organize how products are grouped.'},
-  payment: {label: 'Payment', subtitle: 'Manual payment channels shown to customers.'},
   security: {label: 'Security', subtitle: 'Password and active sessions.'},
   cashier: {label: 'Cashier', subtitle: 'Manage cashier accounts.'}
 };
@@ -153,8 +148,6 @@ export function SettingsPage() {
         return <StoreStatusTab />;
       case 'categories':
         return <MenuCategoriesTab />;
-      case 'payment':
-        return <PaymentTab />;
       case 'security':
         return <SecurityTab />;
       case 'cashier':

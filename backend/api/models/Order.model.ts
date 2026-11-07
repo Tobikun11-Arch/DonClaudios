@@ -35,15 +35,33 @@ export interface OrderStatusEntry {
 }
 
 /**
- * Manual payment flow: the customer claims what they paid (down payment or
- * full) AFTER the cashier confirms the order, and the cashier verifies it
- * before the kitchen starts. Nothing here touches the actual money — it
- * records the agreed arrangement.
- *   unpaid       -> no claim submitted yet
- *   down_payment -> customer claims the agreed partial payment (pre-order only)
- *   paid         -> customer claims the full amount
+ * Payment summary of an online order (the Xendit `payments` collection holds
+ * the per-invoice detail).
+ *   unpaid       -> nothing paid yet
+ *   down_payment -> the 50% down payment of a pre-order cart is paid
+ *   paid         -> the whole order total is paid (online or cash received)
  */
 export type PaymentStatus = 'unpaid' | 'down_payment' | 'paid';
+
+/** How the customer chose to pay once the cashier confirmed the order. */
+export type PaymentChoice =
+  | 'online_full'
+  | 'online_down_payment'
+  | 'cash_on_pickup';
+
+/** How the customer settles the rest after a down payment. */
+export type BalanceChoice = 'cash' | 'online';
+
+export type RefundStatus = 'none' | 'pending' | 'refunded' | 'failed';
+
+export type OrderPaymentMethod =
+  | 'cash'
+  | 'card'
+  | 'gcash'
+  | 'maya'
+  | 'grabpay'
+  | 'shopeepay'
+  | 'other';
 
 export interface OrderDocument extends mongoose.Document {
   customerId?: mongoose.Types.ObjectId | null;
@@ -78,19 +96,23 @@ export interface OrderDocument extends mongoose.Document {
    * repeated cancel cannot deduct the same points twice.
    */
   pointsReversed?: boolean;
-  /** Customer's manual-payment claim ('unpaid' | 'down_payment' | 'paid'). */
   paymentStatus?: PaymentStatus;
-  /** Cashier confirmed the customer's claim. Distinguishes claim from trust. */
-  paymentVerified?: boolean;
+  paymentChoice?: PaymentChoice | null;
+  balanceChoice?: BalanceChoice | null;
+  /** Order amount settled so far (excludes transaction fees). */
+  amountPaid?: number;
+  /** Xendit fees paid by the customer on top of the order (not revenue). */
+  transactionFee?: number;
+  /** Channel of the last online payment, e.g. 'gcash'. */
+  paymentChannel?: string | null;
+  /** When the open Xendit invoice expires (drives the UI countdown). */
+  paymentExpiresAt?: Date | null;
+  refundStatus?: RefundStatus;
   /**
-   * Payment method used for walk-in (in-store) orders, recorded at the moment
-   * the order is marked as paid. Optional while unpaid.
+   * How the order was paid: cash at the counter / on pickup, or the online
+   * channel reported by Xendit.
    */
-  paymentMethod?: 'cash' | 'card' | 'gcash' | 'other';
-  /** Screenshot the customer uploaded as proof of payment. */
-  paymentProofUrl?: string | null;
-  /** Free-text the customer attached to the submission (negotiated details). */
-  paymentNote?: string | null;
+  paymentMethod?: OrderPaymentMethod;
   /**
    * Walk-in (in-store) order number, e.g. "DC-001". Generated on the backend
    * when a counter order is created. Separate from the Mongo _id so the UI can
@@ -188,12 +210,28 @@ const OrderSchema = new Schema<OrderDocument>(
       enum: ['unpaid', 'down_payment', 'paid'],
       default: 'unpaid'
     },
-    paymentVerified: {type: Boolean, default: false},
-    paymentProofUrl: {type: String, default: null},
-    paymentNote: {type: String, default: null},
+    paymentChoice: {
+      type: String,
+      enum: ['online_full', 'online_down_payment', 'cash_on_pickup', null],
+      default: null
+    },
+    balanceChoice: {
+      type: String,
+      enum: ['cash', 'online', null],
+      default: null
+    },
+    amountPaid: {type: Number, default: 0},
+    transactionFee: {type: Number, default: 0},
+    paymentChannel: {type: String, default: null},
+    paymentExpiresAt: {type: Date, default: null},
+    refundStatus: {
+      type: String,
+      enum: ['none', 'pending', 'refunded', 'failed'],
+      default: 'none'
+    },
     paymentMethod: {
       type: String,
-      enum: ['cash', 'card', 'gcash', 'other'],
+      enum: ['cash', 'card', 'gcash', 'maya', 'grabpay', 'shopeepay', 'other', null],
       default: null
     },
     orderNumber: {type: String},

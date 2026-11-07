@@ -32,7 +32,17 @@ const envSchema = z.object({
   // Web Push (VAPID)
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
-  VAPID_SUBJECT: z.string().optional()
+  VAPID_SUBJECT: z.string().optional(),
+  // Xendit payment gateway. All optional so the server boots before the keys
+  // exist; payment endpoints answer 503 PAYMENTS_NOT_CONFIGURED until the
+  // secret key and webhook token are set.
+  XENDIT_SECRET_KEY: z.string().optional(),
+  XENDIT_WEBHOOK_TOKEN: z.string().optional(),
+  XENDIT_API_BASE_URL: z.string().url().default('https://api.xendit.co'),
+  // Public URL of the Next.js app, used for Xendit's redirect URLs.
+  FRONTEND_URL: z.string().optional(),
+  PAYMENT_EXPIRY_MINUTES: z.coerce.number().int().min(1).default(30),
+  PREORDER_PAYMENT_EXPIRY_HOURS: z.coerce.number().int().min(1).default(24)
 });
 
 const parsed = envSchema.safeParse(process.env);

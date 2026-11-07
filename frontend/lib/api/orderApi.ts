@@ -95,12 +95,20 @@ export type OrderHistoryEntry = {
   estimatedReadyAt?: string | null;
   statusHistory?: Array<{status: string; at: string}>;
   prepTiming?: OrderPrepTiming;
-  /** Manual-payment claim ('unpaid' | 'down_payment' | 'paid'). */
+  /** Payment summary ('unpaid' | 'down_payment' | 'paid'). */
   paymentStatus?: 'unpaid' | 'down_payment' | 'paid' | null;
-  /** Cashier has confirmed the customer's claim. */
-  paymentVerified?: boolean;
-  paymentProofUrl?: string | null;
-  paymentNote?: string | null;
+  /** How the customer chose to pay after the cashier confirmed. */
+  paymentChoice?: PaymentChoice | null;
+  /** How the balance is settled after a down payment. */
+  balanceChoice?: 'cash' | 'online' | null;
+  /** Order amount settled so far (excludes transaction fees). */
+  amountPaid?: number;
+  /** Xendit fees the customer paid on top of the order. */
+  transactionFee?: number;
+  paymentChannel?: PaymentChannel | null;
+  /** When the open Xendit invoice expires. */
+  paymentExpiresAt?: string | null;
+  refundStatus?: 'none' | 'pending' | 'refunded' | 'failed';
   /** Set on server docs; missing in some cached local entries. */
   orderSource?: 'online' | 'in-store' | null;
   /** Walk-in order number, e.g. "DC-001". */
@@ -407,63 +415,115 @@ export async function getGuestOtpStatus(phoneNumber: string) {
 }
 
 /* ------------------------------------------------------------------ */
-/* MANUAL PAYMENT flow                                                 */
+/* XENDIT PAYMENT flow                                                 */
 /* ------------------------------------------------------------------ */
 
-/**
- * Channels a customer can pick when submitting proof of payment. Cash is
- * never one of them — cash lives at the counter (POS) only.
- */
-export type OnlinePaymentMethod = 'gcash' | 'maya' | 'bdo' | 'bpi' | 'psbank';
+export type PaymentChannel = 'gcash' | 'maya' | 'grabpay' | 'shopeepay' | 'card';
+export type PaymentChoice = 'online_full' | 'online_down_payment' | 'cash_on_pickup';
+export type PaymentKind = 'full' | 'down_payment' | 'balance';
 
-export const ONLINE_PAYMENT_LABELS: Record<OnlinePaymentMethod, string> = {
+export const PAYMENT_CHANNEL_LABELS: Record<PaymentChannel, string> = {
   gcash: 'GCash',
   maya: 'Maya',
-  bdo: 'BDO Transfer',
-  bpi: 'BPI Transfer',
-  psbank: 'PSBank Transfer'
+  grabpay: 'GrabPay',
+  shopeepay: 'ShopeePay',
+  card: 'Credit/Debit card'
 };
 
-export type SubmitPaymentInput = {
-  /** What the customer paid: the agreed partial, or the full amount. */
-  status: 'down_payment' | 'paid';
-  paymentMethod: OnlinePaymentMethod;
-  note?: string;
-  /** Screenshot of the payment receipt. */
-  proof: File;
-  /** Guests authenticate with the order's phone number. */
-  phoneNumber?: string;
+export type PaymentQuote = {amount: number; transactionFee: number; charge: number};
+export type QuoteMap = Record<PaymentChannel, PaymentQuote>;
+
+export type PaymentRecord = {
+  id: string;
+  kind: PaymentKind;
+  channel: PaymentChannel;
+  amount: number;
+  transactionFee: number;
+  charge: number;
+  status:
+    | 'PENDING'
+    | 'PAID'
+    | 'EXPIRED'
+    | 'CANCELLED'
+    | 'REFUND_PENDING'
+    | 'REFUNDED'
+    | 'REFUND_FAILED';
+  paidAt: string | null;
+  createdAt: string;
 };
 
-export type SubmitPaymentResponse = OrderDetailResponse;
+export type PaymentSummary = {
+  configured: boolean;
+  totalAmount: number;
+  amountPaid: number;
+  balanceDue: number;
+  transactionFee: number;
+  paymentStatus: 'unpaid' | 'down_payment' | 'paid';
+  paymentChoice: PaymentChoice | null;
+  balanceChoice: 'cash' | 'online' | null;
+  paymentChannel: PaymentChannel | null;
+  refundStatus: 'none' | 'pending' | 'refunded' | 'failed';
+  cashAllowed: boolean;
+  downPaymentAllowed: boolean;
+  downPaymentAmount: number;
+  channels: Array<{id: PaymentChannel; label: string}>;
+  quotes: {
+    full: QuoteMap;
+    down_payment: QuoteMap | null;
+    balance: QuoteMap | null;
+  };
+  pendingPayment: {
+    kind: PaymentKind;
+    channel: PaymentChannel;
+    amount: number;
+    transactionFee: number;
+    charge: number;
+    invoiceUrl: string;
+    expiresAt: string;
+  } | null;
+  payments: PaymentRecord[];
+};
 
-export async function submitOrderPayment(
-  orderId: string,
-  input: SubmitPaymentInput
-) {
-  const data = new FormData();
-  data.append('status', input.status);
-  data.append('paymentMethod', input.paymentMethod);
-  if (input.note && input.note.trim().length > 0) {
-    data.append('note', input.note.trim());
-  }
-  data.append('proof', input.proof);
+const guestParams = (phoneNumber?: string) =>
+  phoneNumber ? {phoneNumber} : undefined;
 
-  const res = await httpClient.post<SubmitPaymentResponse>(
+export async function fetchPaymentSummary(orderId: string, phoneNumber?: string) {
+  const res = await httpClient.get<{payment: PaymentSummary}>(
     `/orders/${orderId}/payment`,
-    data,
-    {
-      params: input.phoneNumber ? {phoneNumber: input.phoneNumber} : undefined,
-      headers: {'Content-Type': 'multipart/form-data'}
-    }
+    {params: guestParams(phoneNumber)}
+  );
+  return res.data.payment;
+}
+
+export type CheckoutResponse = PaymentQuote & {
+  invoiceUrl: string;
+  expiresAt: string;
+};
+
+/** Creates a Xendit invoice; redirect the browser to `invoiceUrl`. */
+export async function startPaymentCheckout(
+  orderId: string,
+  input: {kind: 'full' | 'down_payment'; channel: PaymentChannel},
+  phoneNumber?: string
+) {
+  const res = await httpClient.post<CheckoutResponse>(
+    `/orders/${orderId}/payment/checkout`,
+    input,
+    {params: guestParams(phoneNumber)}
   );
   return res.data;
 }
 
-export async function verifyOrderPayment(orderId: string, verified: boolean) {
-  const res = await httpClient.patch<OrderDetailResponse>(
-    `/orders/${orderId}/payment/verify`,
-    {verified}
+/** After a down payment: pay the balance online (returns invoiceUrl) or in cash. */
+export async function payOrderBalance(
+  orderId: string,
+  input: {method: 'online'; channel: PaymentChannel} | {method: 'cash'},
+  phoneNumber?: string
+) {
+  const res = await httpClient.post<CheckoutResponse | OrderDetailResponse>(
+    `/orders/${orderId}/payment/balance`,
+    input,
+    {params: guestParams(phoneNumber)}
   );
   return res.data;
 }
