@@ -1,78 +1,134 @@
 import PDFDocument from 'pdfkit';
-import type {PdfColumn, PdfDocumentModel, PdfSection} from './reportDocument.service';
 
-/**
- * A4 portrait, in points.
+/*
+ * Formal report renderer (print layout, not a dashboard).
+ *
+ * Paper: US Letter / "short bond" portrait, the usual business paper in the
+ * Philippines. Layout follows paginated-report conventions: letterhead and
+ * report information block on page 1, numbered sections, statement-style
+ * summary, plain tables with right-aligned numbers and TOTAL rows, table
+ * headers repeated on page breaks, a footer with "Page X of Y" on every page,
+ * and a sign-off block at the end.
+ *
+ * The built-in PDF fonts cannot draw the peso sign, so amounts are written as
+ * plain numbers and the currency goes in the column heading ("Amount (PHP)").
  */
-const PAGE = {width: 595.28, height: 841.89};
-const MARGIN = 40;
-const CONTENT_WIDTH = PAGE.width - MARGIN * 2;
 
-/**
- * pdfkit auto-inserts a page whenever text is written below `height -
- * bottomMargin`. The footer therefore has to be drawn INSIDE the content box,
- * which is what FOOTER_RESERVE is for — writing it in the true bottom margin
- * silently inflates the page count and breaks the "Page X of Y" numbering.
- */
-const FOOTER_RESERVE = 34;
-const CONTENT_BOTTOM = PAGE.height - MARGIN - FOOTER_RESERVE;
-const BOTTOM_LIMIT = CONTENT_BOTTOM - 28;
-const FOOTER_RULE_Y = CONTENT_BOTTOM - 14;
-const FOOTER_TEXT_Y = CONTENT_BOTTOM - 8;
+export type Align = 'left' | 'right' | 'center';
 
-const BRAND = '#2d4a35';
-const BRAND_LIGHT = '#e9f5ee';
-const RULE = '#d9e2dc';
-const MUTED = '#6b7280';
-const NEGATIVE = '#c0392b';
-const POSITIVE = '#2f7d4f';
+export type TableColumn = {
+  label: string;
+  /** Fraction of the content width; the fractions of a table sum to 1. */
+  width: number;
+  align?: Align;
+};
 
-const ROW_PADDING = 6;
-const HEADER_HEIGHT = 22;
-const ROW_HEIGHT_MIN = 18;
+export type StatementLine = {
+  label: string;
+  value?: string;
+  /**
+   * normal  : plain line
+   * less    : indented deduction, value already in (parentheses)
+   * subtotal: rule above the value
+   * total   : bold, rule above, double rule below
+   * info    : smaller supporting figure under the statement
+   */
+  style?: 'normal' | 'less' | 'subtotal' | 'total' | 'info';
+};
 
-function isNegativeDelta(value: string | null | undefined): boolean {
-  return typeof value === 'string' && value.trim().startsWith('-');
+export type ReportBlock =
+  | {kind: 'section'; title: string}
+  | {kind: 'subheading'; title: string}
+  | {kind: 'statement'; lines: StatementLine[]}
+  | {
+      kind: 'table';
+      columns: TableColumn[];
+      rows: string[][];
+      /** Row indexes drawn as a group heading (e.g. a menu category). */
+      groupRows?: number[];
+      /** Row indexes drawn bold with a rule above (e.g. category subtotal). */
+      subtotalRows?: number[];
+      total?: string[];
+      emptyText?: string;
+      note?: string;
+    }
+  | {kind: 'facts'; rows: Array<[string, string]>}
+  | {kind: 'note'; text: string};
+
+export interface ReportDocument {
+  title: string;
+  number: string;
+  periodLabel: string;
+  generatedAt: string;
+  preparedBy: {name: string; role: string};
+  /** How the figures were counted, printed under the title. */
+  basis: string;
+  business: {
+    name: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+    logo?: Buffer | null;
+  };
+  blocks: ReportBlock[];
 }
 
-/**
- * pdfkit emits asynchronously, so the buffer is only complete once `end` fires.
- * Returning it synchronously would hand back a zero-length Buffer.
- */
-export function renderReportPdf(model: PdfDocumentModel): Promise<Buffer> {
+// Letter, in points (8.5 x 11 in).
+const PAGE_W = 612;
+const PAGE_H = 792;
+const MARGIN_X = 54;
+const MARGIN_TOP = 50;
+const FOOTER_H = 42;
+const CONTENT_W = PAGE_W - MARGIN_X * 2;
+const CONTENT_BOTTOM = PAGE_H - MARGIN_TOP - FOOTER_H;
+
+const INK = '#111827';
+const MUTED = '#4b5563';
+const FAINT = '#9ca3af';
+const RULE = '#d1d5db';
+const BRAND = '#2d4a35';
+const GROUP_FILL = '#f3f4f6';
+const INFO_FILL = '#f9fafb';
+
+const BODY = 9;
+const SMALL = 7.5;
+const TABLE = 8.5;
+const CELL_PAD_X = 5;
+const CELL_PAD_Y = 4;
+
+const DISCLAIMER =
+  'System-generated management report. This is not an official BIR sales record (X/Z reading).';
+
+type Doc = PDFKit.PDFDocument;
+
+export function renderReportPdf(model: ReportDocument): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
-      size: [PAGE.width, PAGE.height],
-      margins: {top: MARGIN, bottom: MARGIN + FOOTER_RESERVE, left: MARGIN, right: MARGIN},
+      size: 'LETTER',
+      // Bottom margin 0: page breaks are handled by `ensure()` below, so
+      // pdfkit never inserts surprise pages (which used to break numbering).
+      margins: {top: MARGIN_TOP, bottom: 0, left: MARGIN_X, right: MARGIN_X},
       bufferPages: true,
       info: {
-        Title: `${model.title} — ${model.period}`,
-        Author: model.businessName,
-        Subject: 'Business performance report'
+        Title: `${model.title} ${model.number}`,
+        Author: model.business.name,
+        Subject: `${model.title} for ${model.periodLabel}`,
+        Creator: `${model.business.name} ordering system`
       }
     });
 
     const chunks: Buffer[] = [];
-    doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+    doc.on('data', (c: Buffer) => chunks.push(c));
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
     try {
-      drawLetterhead(doc, model);
-
-      for (const section of model.sections) {
-        ensureSpace(doc, 80);
-        if (section.kind === 'kpis') {
-          drawKpis(doc, section);
-        } else if (section.kind === 'table') {
-          drawTable(doc, section);
-        } else {
-          drawPairs(doc, section);
-        }
-        doc.moveDown(0.6);
-      }
-
-      paginate(doc, model);
+      const r = new Renderer(doc, model);
+      r.letterhead();
+      r.infoBlock();
+      model.blocks.forEach((block, i) => r.block(block, model.blocks[i + 1]));
+      r.signOff();
+      r.footers();
       doc.end();
     } catch (error) {
       reject(error);
@@ -80,284 +136,335 @@ export function renderReportPdf(model: PdfDocumentModel): Promise<Buffer> {
   });
 }
 
-function drawLetterhead(doc: PDFKit.PDFDocument, model: PdfDocumentModel): void {
-  const barHeight = 76;
-  doc.rect(0, 0, PAGE.width, barHeight).fill(BRAND);
+class Renderer {
+  private y = MARGIN_TOP;
+  private sectionNo = 0;
 
-  doc
-    .fillColor('#ffffff')
-    .font('Helvetica-Bold')
-    .fontSize(17)
-    .text(model.title, MARGIN, 22, {width: CONTENT_WIDTH, lineBreak: false});
+  constructor(private doc: Doc, private model: ReportDocument) {}
 
-  doc
-    .font('Helvetica')
-    .fontSize(9.5)
-    .fillColor('#d6e6dc')
-    .text(model.period, MARGIN, 46, {width: CONTENT_WIDTH, lineBreak: false});
+  // -- layout helpers -------------------------------------------------------
 
-  doc
-    .fontSize(8.5)
-    .fillColor('#a8c7b4')
-    .text(
-      `${model.businessName}  ·  Generated ${model.generatedAt} (Philippine time)`,
-      MARGIN,
-      60,
-      {width: CONTENT_WIDTH, lineBreak: false}
-    );
-
-  doc.y = barHeight + 18;
-}
-
-function ensureSpace(doc: PDFKit.PDFDocument, needed: number): void {
-  if (doc.y + needed > BOTTOM_LIMIT) {
-    doc.addPage();
-    doc.y = MARGIN;
+  private ensure(height: number) {
+    if (this.y + height > CONTENT_BOTTOM) {
+      this.doc.addPage();
+      this.y = MARGIN_TOP;
+      return true;
+    }
+    return false;
   }
-}
 
-function sectionHeading(doc: PDFKit.PDFDocument, text: string | undefined): void {
-  if (!text) return;
-  ensureSpace(doc, 40);
-  doc
-    .font('Helvetica-Bold')
-    .fontSize(11)
-    .fillColor(BRAND)
-    .text(text, MARGIN, doc.y, {width: CONTENT_WIDTH, lineBreak: false});
-  doc.moveDown(0.25);
-  const y = doc.y;
-  doc.moveTo(MARGIN, y).lineTo(MARGIN + CONTENT_WIDTH, y).lineWidth(0.8).strokeColor(RULE).stroke();
-  doc.moveDown(0.5);
-}
+  private text(
+    value: string,
+    x: number,
+    y: number,
+    opts: {width: number; align?: Align; size?: number; bold?: boolean; italic?: boolean; color?: string}
+  ) {
+    const font = opts.bold
+      ? 'Helvetica-Bold'
+      : opts.italic
+        ? 'Helvetica-Oblique'
+        : 'Helvetica';
+    this.doc
+      .font(font)
+      .fontSize(opts.size ?? BODY)
+      .fillColor(opts.color ?? INK)
+      .text(value, x, y, {width: opts.width, align: opts.align ?? 'left', lineGap: 1});
+  }
 
-function drawKpis(
-  doc: PDFKit.PDFDocument,
-  section: Extract<PdfSection, {kind: 'kpis'}>
-): void {
-  sectionHeading(doc, section.title);
+  private heightOf(value: string, width: number, size: number, bold = false) {
+    this.doc.font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(size);
+    return this.doc.heightOfString(value || ' ', {width, lineGap: 1});
+  }
 
-  const columns = Math.max(1, Math.min(section.columns ?? 4, section.items.length || 1));
-  const gap = 10;
-  const cellWidth = (CONTENT_WIDTH - gap * (columns - 1)) / columns;
-  const cellHeight = 58;
+  private hRule(y: number, x1 = MARGIN_X, x2 = MARGIN_X + CONTENT_W, color = RULE, width = 0.6) {
+    this.doc.moveTo(x1, y).lineTo(x2, y).lineWidth(width).strokeColor(color).stroke();
+  }
 
-  // Anchored once. `doc.text()` advances `doc.y`, so reading it inside the loop
-  // would stagger every cell after the first.
-  const gridTop = doc.y;
+  // -- page 1 header --------------------------------------------------------
 
-  section.items.forEach((item, index) => {
-    const row = Math.floor(index / columns);
-    const column = index % columns;
-    const x = MARGIN + column * (cellWidth + gap);
-    const y = gridTop + row * (cellHeight + gap);
-
-    doc.roundedRect(x, y, cellWidth, cellHeight, 5).fill(BRAND_LIGHT);
-
-    doc
-      .font('Helvetica')
-      .fontSize(7.5)
-      .fillColor(MUTED)
-      .text(item.label.toUpperCase(), x + 9, y + 8, {width: cellWidth - 18, lineBreak: false});
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(12.5)
-      .fillColor(BRAND)
-      .text(item.value, x + 9, y + 20, {width: cellWidth - 18, lineBreak: false});
-
-    const detailParts: Array<{text: string; color: string}> = [];
-    if (item.delta) {
-      detailParts.push({text: item.delta, color: isNegativeDelta(item.delta) ? NEGATIVE : POSITIVE});
+  letterhead() {
+    const b = this.model.business;
+    let textX = MARGIN_X;
+    if (b.logo) {
+      try {
+        this.doc.image(b.logo, MARGIN_X, this.y, {fit: [46, 46]});
+        textX = MARGIN_X + 56;
+      } catch {
+        textX = MARGIN_X;
+      }
     }
-    if (item.hint) detailParts.push({text: item.hint, color: MUTED});
+    const textW = CONTENT_W - (textX - MARGIN_X);
+    this.text(b.name.toUpperCase(), textX, this.y + 4, {width: textW, size: 14, bold: true, color: BRAND});
+    const contact = [b.address, b.phone, b.email].filter(Boolean).join('  |  ');
+    if (contact) {
+      this.text(contact, textX, this.y + 23, {width: textW, size: SMALL + 0.5, color: MUTED});
+    }
+    this.y += b.logo ? 54 : 42;
+    this.hRule(this.y, MARGIN_X, MARGIN_X + CONTENT_W, BRAND, 1.4);
+    this.y += 14;
 
-    if (detailParts.length) {
-      doc
-        .font('Helvetica')
-        .fontSize(7.5)
-        .fillColor(detailParts[0].color)
-        .text(detailParts.map(p => p.text).join('  ·  '), x + 9, y + 38, {
-          width: cellWidth - 18,
-          lineBreak: false,
-          ellipsis: true
+    this.text(this.model.title.toUpperCase(), MARGIN_X, this.y, {width: CONTENT_W, size: 15, bold: true});
+    this.y += 24;
+  }
+
+  infoBlock() {
+    const m = this.model;
+    const rows: Array<[string, string, string, string]> = [
+      ['Report No.', m.number, 'Period covered', m.periodLabel],
+      ['Date generated', m.generatedAt, 'Prepared by', `${m.preparedBy.name} (${m.preparedBy.role})`]
+    ];
+    const labelW = 82;
+    const half = CONTENT_W / 2;
+    const rowH = 16;
+    const basisH = this.heightOf(m.basis, CONTENT_W - labelW - 12, SMALL + 0.5) + 8;
+    const boxH = rows.length * rowH + basisH + 6;
+
+    this.doc.rect(MARGIN_X, this.y, CONTENT_W, boxH).lineWidth(0.6).fillAndStroke(INFO_FILL, RULE);
+    let y = this.y + 6;
+    for (const [l1, v1, l2, v2] of rows) {
+      this.text(l1, MARGIN_X + 8, y, {width: labelW, size: SMALL + 0.5, bold: true, color: MUTED});
+      this.text(v1, MARGIN_X + 8 + labelW, y, {width: half - labelW - 12, size: BODY});
+      this.text(l2, MARGIN_X + half + 4, y, {width: labelW, size: SMALL + 0.5, bold: true, color: MUTED});
+      this.text(v2, MARGIN_X + half + 4 + labelW, y, {width: half - labelW - 12, size: BODY});
+      y += rowH;
+    }
+    this.text('Basis', MARGIN_X + 8, y + 1, {width: labelW, size: SMALL + 0.5, bold: true, color: MUTED});
+    this.text(m.basis, MARGIN_X + 8 + labelW, y + 1, {width: CONTENT_W - labelW - 16, size: SMALL + 0.5, color: INK});
+    this.y += boxH + 16;
+  }
+
+  // -- blocks ---------------------------------------------------------------
+
+  /** Smallest height a block needs so its heading is never left alone. */
+  private minHeight(b?: ReportBlock): number {
+    if (!b) return 0;
+    switch (b.kind) {
+      case 'table':
+        return 22 + Math.max(1, Math.min(2, b.rows.length)) * 20 + (b.total && b.rows.length <= 2 ? 22 : 0);
+      case 'statement':
+        return b.lines.length * 15 + 10;
+      case 'facts':
+        return Math.min(3, b.rows.length) * 18;
+      case 'note':
+        return 20;
+      default:
+        return 30;
+    }
+  }
+
+  block(b: ReportBlock, next?: ReportBlock) {
+    switch (b.kind) {
+      case 'section':
+        return this.section(b.title, next);
+      case 'subheading':
+        return this.subheading(b.title);
+      case 'statement':
+        return this.statement(b.lines);
+      case 'table':
+        return this.table(b);
+      case 'facts':
+        return this.facts(b.rows);
+      case 'note':
+        return this.note(b.text);
+    }
+  }
+
+  private section(title: string, next?: ReportBlock) {
+    // Keep the heading on the same page as the start of its content.
+    this.ensure(34 + this.minHeight(next));
+    this.sectionNo += 1;
+    this.y += 4;
+    this.text(`${this.sectionNo}.  ${title.toUpperCase()}`, MARGIN_X, this.y, {width: CONTENT_W, size: 10.5, bold: true, color: BRAND});
+    this.y += 15;
+    this.hRule(this.y, MARGIN_X, MARGIN_X + CONTENT_W, BRAND, 0.8);
+    this.y += 8;
+  }
+
+  private subheading(title: string) {
+    this.ensure(50);
+    this.text(title, MARGIN_X, this.y, {width: CONTENT_W, size: BODY + 0.5, bold: true});
+    this.y += 14;
+  }
+
+  private statement(lines: StatementLine[]) {
+    const width = 380;
+    const valueW = 110;
+    const x = MARGIN_X;
+    const valueX = x + width - valueW;
+    this.ensure(lines.length * 15 + 10);
+
+    for (const line of lines) {
+      const style = line.style ?? 'normal';
+      const bold = style === 'total' || style === 'subtotal';
+      const size = style === 'info' ? SMALL + 0.5 : BODY;
+      const indent = style === 'less' ? 14 : 0;
+      const color = style === 'info' ? MUTED : INK;
+
+      if (style === 'subtotal' || style === 'total') {
+        this.hRule(this.y - 2, valueX, x + width, INK, 0.6);
+        this.y += 2;
+      }
+      // Supporting info lines span the full width instead of the label column.
+      const labelW = style === 'info' ? CONTENT_W : valueX - x - indent - 6;
+      this.text(line.label, x + indent, this.y, {width: labelW, size, bold, color});
+      if (line.value !== undefined) {
+        this.text(line.value, valueX, this.y, {width: valueW, align: 'right', size, bold, color});
+      }
+      this.y += style === 'info' ? 12 : 14;
+      if (style === 'total') {
+        this.hRule(this.y - 1, valueX, x + width, INK, 0.6);
+        this.hRule(this.y + 1, valueX, x + width, INK, 0.6);
+        this.y += 6;
+      }
+    }
+    this.y += 8;
+  }
+
+  private facts(rows: Array<[string, string]>) {
+    const labelW = CONTENT_W * 0.55;
+    for (const [label, value] of rows) {
+      const h = Math.max(this.heightOf(label, labelW - 10, BODY), this.heightOf(value, CONTENT_W - labelW - 10, BODY, true)) + 6;
+      this.ensure(h);
+      this.text(label, MARGIN_X + 4, this.y + 3, {width: labelW - 10, size: BODY, color: MUTED});
+      this.text(value, MARGIN_X + labelW, this.y + 3, {width: CONTENT_W - labelW - 4, size: BODY, bold: true, align: 'right'});
+      this.y += h;
+      this.hRule(this.y);
+    }
+    this.y += 12;
+  }
+
+  private note(text: string) {
+    const h = this.heightOf(text, CONTENT_W, SMALL) + 4;
+    this.ensure(h);
+    this.text(text, MARGIN_X, this.y, {width: CONTENT_W, size: SMALL, italic: true, color: MUTED});
+    this.y += h + 8;
+  }
+
+  private table(t: Extract<ReportBlock, {kind: 'table'}>) {
+    const widths = t.columns.map(c => c.width * CONTENT_W);
+    const xs = widths.reduce<number[]>((acc, w, i) => [...acc, i === 0 ? MARGIN_X : acc[i - 1] + widths[i - 1]], []);
+    const groupRows = new Set(t.groupRows ?? []);
+    const subtotalRows = new Set(t.subtotalRows ?? []);
+
+    const rowHeight = (cells: string[], bold: boolean) =>
+      Math.max(
+        ...cells.map((c, i) => this.heightOf(c ?? '', widths[i] - CELL_PAD_X * 2, TABLE, bold))
+      ) + CELL_PAD_Y * 2;
+
+    const header = (continued: boolean) => {
+      if (continued) {
+        this.text('(continued)', MARGIN_X, this.y, {width: CONTENT_W, size: SMALL, italic: true, color: MUTED});
+        this.y += 11;
+      }
+      const h = rowHeight(t.columns.map(c => c.label), true);
+      this.doc.rect(MARGIN_X, this.y, CONTENT_W, h).fill(BRAND);
+      t.columns.forEach((c, i) => {
+        this.text(c.label, xs[i] + CELL_PAD_X, this.y + CELL_PAD_Y, {
+          width: widths[i] - CELL_PAD_X * 2,
+          align: c.align ?? 'left',
+          size: TABLE,
+          bold: true,
+          color: '#ffffff'
         });
-    }
-  });
-
-  const rowCount = Math.ceil(section.items.length / columns);
-  doc.y = gridTop + rowCount * (cellHeight + gap);
-}
-
-function drawPairs(
-  doc: PDFKit.PDFDocument,
-  section: Extract<PdfSection, {kind: 'pairs'}>
-): void {
-  sectionHeading(doc, section.title);
-
-  const rowHeight = 17;
-  for (const item of section.items) {
-    ensureSpace(doc, rowHeight);
-    const y = doc.y;
-    doc.rect(MARGIN, y, CONTENT_WIDTH, rowHeight).fill('#f7f9f8');
-
-    doc
-      .font('Helvetica')
-      .fontSize(9)
-      .fillColor('#333333')
-      .text(item.label, MARGIN + 10, y + 5, {width: CONTENT_WIDTH * 0.6, lineBreak: false});
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(9)
-      .fillColor(BRAND)
-      .text(item.value, MARGIN + CONTENT_WIDTH * 0.6, y + 5, {
-        width: CONTENT_WIDTH * 0.4 - 10,
-        align: 'right',
-        lineBreak: false
       });
+      this.y += h;
+    };
 
-    doc.y = y + rowHeight;
-  }
-}
+    const firstRowH = t.rows.length ? rowHeight(t.rows[0], false) : 18;
+    // Never strand a header at the bottom of a page.
+    this.ensure(rowHeight(t.columns.map(c => c.label), true) + firstRowH * 2 + 4);
+    header(false);
 
-function columnWidths(columns: PdfColumn[]): number[] {
-  if (columns.length === 0) return [];
-  const firstShare = 0.4;
-  const remaining = (CONTENT_WIDTH - CONTENT_WIDTH * firstShare) / (columns.length - 1);
-  return columns.map((_, index) => (index === 0 ? CONTENT_WIDTH * firstShare : remaining));
-}
+    if (t.rows.length === 0) {
+      const msg = t.emptyText ?? 'No records for this period.';
+      this.text(msg, MARGIN_X + CELL_PAD_X, this.y + CELL_PAD_Y, {width: CONTENT_W - CELL_PAD_X * 2, size: TABLE, italic: true, color: MUTED});
+      this.y += 18;
+      this.hRule(this.y);
+    }
 
-function drawTable(
-  doc: PDFKit.PDFDocument,
-  section: Extract<PdfSection, {kind: 'table'}>
-): void {
-  sectionHeading(doc, section.title);
+    t.rows.forEach((cells, index) => {
+      const isGroup = groupRows.has(index);
+      const isSub = subtotalRows.has(index);
+      const h = rowHeight(cells, isGroup || isSub);
+      if (this.ensure(h)) header(true);
 
-  const widths = columnWidths(section.columns);
-  const drawHeader = () => {
-    const y = doc.y;
-    doc.rect(MARGIN, y, CONTENT_WIDTH, HEADER_HEIGHT).fill(BRAND);
-    section.columns.forEach((column, index) => {
-      const x = MARGIN + widths.slice(0, index).reduce((a, b) => a + b, 0);
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(8)
-        .fillColor('#ffffff')
-        .text(column.label, x + 8, y + 7, {
-          width: widths[index] - 16,
-          align: column.align,
-          lineBreak: false
+      if (isGroup) {
+        this.doc.rect(MARGIN_X, this.y, CONTENT_W, h).fill(GROUP_FILL);
+      }
+      if (isSub) this.hRule(this.y, MARGIN_X, MARGIN_X + CONTENT_W, INK, 0.5);
+
+      cells.forEach((cell, i) => {
+        this.text(cell ?? '', xs[i] + CELL_PAD_X, this.y + CELL_PAD_Y, {
+          width: widths[i] - CELL_PAD_X * 2,
+          align: t.columns[i].align ?? 'left',
+          size: TABLE,
+          bold: isGroup || isSub
         });
+      });
+      this.y += h;
+      if (!isGroup) this.hRule(this.y);
     });
-    doc.y = y + HEADER_HEIGHT;
-  };
 
-  drawHeader();
-
-  /**
-   * A long table spills onto later pages, and a column header that appears only
-   * once makes the continuation rows unreadable. Every break re-draws the header
-   * band, plus a small "continued" note.
-   */
-  const ensureRowRoom = () => {
-    if (doc.y + ROW_HEIGHT_MIN + 6 <= BOTTOM_LIMIT) return;
-    doc.addPage();
-    doc.y = MARGIN;
-    doc
-      .font('Helvetica-Oblique')
-      .fontSize(7.5)
-      .fillColor(MUTED)
-      .text(`${section.title} (continued)`, MARGIN, doc.y, {width: CONTENT_WIDTH, lineBreak: false});
-    doc.moveDown(0.3);
-    drawHeader();
-  };
-
-  if (section.rows.length === 0) {
-    ensureSpace(doc, ROW_HEIGHT_MIN);
-    doc
-      .font('Helvetica-Oblique')
-      .fontSize(9)
-      .fillColor(MUTED)
-      .text('No data for this period', MARGIN + 8, doc.y + 5, {width: CONTENT_WIDTH - 16});
-    doc.y += ROW_HEIGHT_MIN;
-  }
-
-  section.rows.forEach((row, rowIndex) => {
-    ensureRowRoom();
-    const y = doc.y;
-
-    if (rowIndex % 2 === 1) {
-      doc.rect(MARGIN, y, CONTENT_WIDTH, ROW_HEIGHT_MIN).fill('#f7f9f8');
+    if (t.total) {
+      const h = rowHeight(t.total, true) + 2;
+      if (this.ensure(h + 4)) header(true);
+      this.hRule(this.y, MARGIN_X, MARGIN_X + CONTENT_W, INK, 0.9);
+      t.total.forEach((cell, i) => {
+        this.text(cell ?? '', xs[i] + CELL_PAD_X, this.y + CELL_PAD_Y + 1, {
+          width: widths[i] - CELL_PAD_X * 2,
+          align: t.columns[i].align ?? 'left',
+          size: TABLE,
+          bold: true
+        });
+      });
+      this.y += h;
+      this.hRule(this.y, MARGIN_X, MARGIN_X + CONTENT_W, INK, 0.6);
+      this.hRule(this.y + 2, MARGIN_X, MARGIN_X + CONTENT_W, INK, 0.6);
+      this.y += 2;
     }
 
-    row.forEach((cell, index) => {
-      if (index >= section.columns.length) return;
-      const x = MARGIN + widths.slice(0, index).reduce((a, b) => a + b, 0);
-      doc
-        .font('Helvetica')
-        .fontSize(8.5)
-        .fillColor(index === 0 ? '#1a1a1a' : '#333333')
-        .text(String(cell), x + 8, y + 5, {
-          width: widths[index] - 16,
-          align: section.columns[index].align,
-          lineBreak: false,
-          ellipsis: true
-        });
-    });
-
-    doc.moveTo(MARGIN, y + ROW_HEIGHT_MIN).lineTo(MARGIN + CONTENT_WIDTH, y + ROW_HEIGHT_MIN)
-      .lineWidth(0.4).strokeColor(RULE).stroke();
-
-    doc.y = y + ROW_HEIGHT_MIN;
-  });
-
-  if (section.note) {
-    ensureSpace(doc, 16);
-    doc
-      .font('Helvetica-Oblique')
-      .fontSize(7.5)
-      .fillColor(MUTED)
-      .text(section.note, MARGIN, doc.y + 4, {width: CONTENT_WIDTH});
-    doc.y += 12;
+    this.y += 6;
+    if (t.note) this.note(t.note);
+    else this.y += 8;
   }
-}
 
-function paginate(doc: PDFKit.PDFDocument, model: PdfDocumentModel): void {
-  const range = doc.bufferedPageRange();
+  // -- closing --------------------------------------------------------------
 
-  for (let index = 0; index < range.count; index += 1) {
-    doc.switchToPage(range.start + index);
+  signOff() {
+    this.ensure(100);
+    this.y += 12;
+    const colW = 220;
+    const lineY = this.y + 34;
+    this.text('Prepared by:', MARGIN_X, this.y, {width: colW, size: BODY, color: MUTED});
+    this.hRule(lineY, MARGIN_X, MARGIN_X + colW, INK, 0.6);
+    this.text(this.model.preparedBy.name, MARGIN_X, lineY + 4, {width: colW, size: BODY, bold: true, align: 'center'});
+    this.text(`${this.model.preparedBy.role}, ${this.model.business.name}`, MARGIN_X, lineY + 16, {width: colW, size: SMALL + 0.5, color: MUTED, align: 'center'});
 
-    /**
-     * pdfkit only auto-breaks when the *next* text write starts below
-     * `height - margins.bottom`. The two footer lines are written at a fixed
-     * y, so the second one always starts past that threshold and would spawn a
-     * phantom page (and the phantom page would then get a phantom footer).
-     * Clearing the bottom margin for the duration of the footer pass is the
-     * documented way to suppress that.
-     */
-    doc.page.margins.bottom = 0;
+    const rightX = MARGIN_X + CONTENT_W - colW;
+    this.text('Date generated:', rightX, this.y, {width: colW, size: BODY, color: MUTED});
+    this.text(this.model.generatedAt, rightX, lineY - 12, {width: colW, size: BODY, bold: true, align: 'center'});
+    this.hRule(lineY, rightX, rightX + colW, INK, 0.6);
+    this.text(`Report No. ${this.model.number}`, rightX, lineY + 4, {width: colW, size: SMALL + 0.5, color: MUTED, align: 'center'});
 
-    doc.moveTo(MARGIN, FOOTER_RULE_Y)
-      .lineTo(MARGIN + CONTENT_WIDTH, FOOTER_RULE_Y)
-      .lineWidth(0.5).strokeColor(RULE).stroke();
+    this.y = lineY + 40;
+    this.text('*** End of report ***', MARGIN_X, this.y, {width: CONTENT_W, size: SMALL, color: FAINT, align: 'center'});
+  }
 
-    doc
-      .font('Helvetica')
-      .fontSize(7.5)
-      .fillColor(MUTED)
-      .text(`${model.businessName}  ·  ${model.period}`, MARGIN, FOOTER_TEXT_Y, {
-        width: CONTENT_WIDTH * 0.7,
-        lineBreak: false
-      });
-
-    doc
-      .font('Helvetica-Bold')
-      .fillColor(BRAND)
-      .text(`Page ${index + 1} of ${range.count}`, MARGIN + CONTENT_WIDTH * 0.7, FOOTER_TEXT_Y, {
-        width: CONTENT_WIDTH * 0.3,
-        align: 'right',
-        lineBreak: false
-      });
+  footers() {
+    const range = this.doc.bufferedPageRange();
+    const total = range.count;
+    for (let i = 0; i < total; i += 1) {
+      this.doc.switchToPage(range.start + i);
+      const top = PAGE_H - MARGIN_TOP - FOOTER_H + 14;
+      this.hRule(top, MARGIN_X, MARGIN_X + CONTENT_W, RULE, 0.6);
+      this.text(
+        `${this.model.business.name}  |  ${this.model.title}  |  ${this.model.number}  |  ${this.model.periodLabel}`,
+        MARGIN_X,
+        top + 6,
+        {width: CONTENT_W - 80, size: SMALL, color: MUTED}
+      );
+      this.text(`Page ${i + 1} of ${total}`, MARGIN_X + CONTENT_W - 80, top + 6, {width: 80, size: SMALL, bold: true, align: 'right'});
+      this.text(DISCLAIMER, MARGIN_X, top + 18, {width: CONTENT_W, size: SMALL - 0.5, color: FAINT});
+    }
   }
 }

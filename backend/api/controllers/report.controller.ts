@@ -9,8 +9,9 @@ import {
 } from '../services/report.service';
 import type {ReportDimension} from '../services/report.service';
 import {renderReportPdf} from '../services/reportPdf.service';
-import {buildReportDocument} from '../services/reportDocument.service';
+import {buildReportDocument, issueReportNumber} from '../services/reportDocument.service';
 import type {ReportView} from '../services/reportDocument.service';
+import {settingsRepository} from '../repositories/settings.repository';
 import {
   MAX_RANGE_DAYS,
   countManilaDays,
@@ -27,6 +28,24 @@ type RangeQuery = {preset?: RangePreset; from?: string; to?: string};
 type TimeseriesQuery = RangeQuery & {granularity?: ReportGranularity};
 type BreakdownQuery = RangeQuery & {dimension?: ReportDimension; limit?: number};
 type PdfQuery = BreakdownQuery & {view?: string; groupBy?: string};
+
+/** Fetches the business logo for the letterhead. Never blocks the report. */
+async function fetchLogo(url?: string | null): Promise<Buffer | null> {
+  if (!url || !/^https?:\/\//.test(url)) return null;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(url, {signal: controller.signal});
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const type = res.headers.get('content-type') ?? '';
+    // pdfkit only embeds PNG and JPEG.
+    if (!/image\/(png|jpe?g)/i.test(type)) return null;
+    return Buffer.from(await res.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
 
 function readQuery<T>(req: Request): T {
   return (req as Request & {validatedQuery?: T}).validatedQuery as T;
@@ -136,21 +155,44 @@ export const reportController = {
       const range = toRange(query);
       const view = (query.view ?? 'sales') as ReportView;
 
-      // The document is assembled from the exact same service calls that back
-      // the on-screen views, so the PDF can never disagree with the screen.
-      const document = await buildReportDocument({view, range, groupBy: query.groupBy});
-      const pdf = await renderReportPdf(document);
+      // "Prepared by" is the owner account that is generating the report.
+      const admin = req.auth?.userId ? await adminRepository.findById(req.auth.userId) : null;
+      if (!admin) {
+        throw new ApiError(403, 'FORBIDDEN', 'Only the owner can export reports');
+      }
+      const ownerName =
+        `${admin.firstName ?? ''} ${admin.lastName ?? ''}`.trim() || admin.username || 'Owner';
 
-      const admins = await adminRepository.listAll();
-      const businessName = admins[0]?.businessName || 'Don Claudio\'s Lechon House';
-      const safeName = businessName.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
-      const stamp = range.from.toISOString().slice(0, 10);
+      const settings = await settingsRepository.findOne().catch(() => null);
+      const contact = (settings as any)?.contact ?? {};
+      const businessName = admin.businessName || "DonClaudio's Lechon House";
+
+      const [number, logo] = await Promise.all([
+        issueReportNumber({view, range, admin: {id: String(admin._id), name: ownerName}}),
+        fetchLogo(admin.businessLogo)
+      ]);
+
+      const document = await buildReportDocument({
+        view,
+        range,
+        number,
+        preparedBy: {name: ownerName, role: 'Owner'},
+        business: {
+          name: businessName,
+          address: admin.storeAddress || contact.address || undefined,
+          phone: admin.businessContactNumber || contact.phones?.[0] || undefined,
+          email: contact.email || admin.email || undefined,
+          logo
+        }
+      });
+      const pdf = await renderReportPdf(document);
 
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="${safeName}-${view}-report-${stamp}.pdf"`
+        `attachment; filename="${number}-${view}-report.pdf"`
       );
+      res.setHeader('X-Report-Number', number);
       res.setHeader('Content-Length', String(pdf.length));
       res.status(200).end(pdf);
     } catch (error) {

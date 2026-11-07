@@ -70,5 +70,14 @@ export async function getReportPdf(view: ReportView, range: ReportRange) {
     responseType: 'blob',
     timeout: 60_000
   });
-  return res.data;
+  // The server names the file after the report number, e.g.
+  // "SR-2026-000142-sales-report.pdf"; fall back to a generic name.
+  const disposition = String(res.headers?.['content-disposition'] ?? '');
+  const match = disposition.match(/filename="?([^";]+)"?/i);
+  const reportNumber = String(res.headers?.['x-report-number'] ?? '') || null;
+  return {
+    blob: res.data,
+    filename: match?.[1] ?? `don-claudios-${view}-report.pdf`,
+    reportNumber
+  };
 }

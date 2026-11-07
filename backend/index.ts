@@ -34,7 +34,9 @@ const corsOptions: cors.CorsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-guest-session-id']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-guest-session-id'],
+  // Lets the browser read the report number / file name of exported PDFs.
+  exposedHeaders: ['Content-Disposition', 'X-Report-Number']
 };
 
 app.use(cors(corsOptions));
