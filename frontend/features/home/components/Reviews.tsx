@@ -53,7 +53,7 @@ function Avatar({
   }
   return (
     <div
-      className={`rounded-full bg-[#a4bbab] flex items-center justify-center text-white text-sm font-bold shrink-0 ${className ?? 'w-10 h-10'}`}
+      className={`rounded-full bg-[#4f6f57] flex items-center justify-center text-white text-sm font-bold shrink-0 ${className ?? 'w-10 h-10'}`}
     >
       {getInitials(name)}
     </div>
@@ -232,7 +232,7 @@ export default function ReviewsSection({reviews, colors, sectionStyle}: Props) {
       <div className="container mx-auto max-w-6xl">
         {/* Header */}
         <div className="text-center mb-12">
-          <p className="text-sm font-semibold tracking-widest uppercase text-[#6b8a6e] mb-2">
+          <p className="text-sm font-semibold tracking-widest uppercase text-[#4f6f57] mb-2">
             Testimonials
           </p>
           <h2

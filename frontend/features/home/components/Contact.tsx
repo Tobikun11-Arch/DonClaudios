@@ -1,6 +1,7 @@
 'use client';
 
-import {Phone, MapPin, Mail, Clock} from 'lucide-react';
+import {useState} from 'react';
+import {Phone, MapPin, Mail, Clock, ExternalLink} from 'lucide-react';
 import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
 import type {ContactSection, Colors, SectionStyle} from '@/lib/types/settings';
 
@@ -8,6 +9,71 @@ interface Props {
   contact?: ContactSection;
   colors?: Colors;
   sectionStyle?: SectionStyle;
+}
+
+const MAP_EMBED_URL =
+  'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2422.9406044231473!2d120.8530823121149!3d14.39092185435405!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x33962d2a919119a5%3A0xe5f912eb02ffd2f9!2sDon%20Claudio%E2%80%99s%20Lechon%20House!5e0!3m2!1sen!2sus!4v1775444344003!5m2!1sen!2sus';
+const MAP_LINK_URL =
+  'https://www.google.com/maps/search/?api=1&query=Don+Claudio%27s+Lechon+House+Tanza+Cavite';
+
+/**
+ * Click-to-load map. The Google Maps iframe sets third-party Google cookies
+ * and loads a lot of script, so it only loads when the visitor asks for it.
+ * Until then a lightweight card with the address and a Google Maps link is
+ * shown (better privacy, faster page, better Lighthouse scores).
+ */
+function MapFacade({address, primary, accent}: {address: string; primary: string; accent: string}) {
+  const [show, setShow] = useState(false);
+  if (show) {
+    return (
+      <iframe
+        src={MAP_EMBED_URL}
+        width="100%"
+        height="100%"
+        style={{border: 0}}
+        allowFullScreen
+        referrerPolicy="no-referrer-when-downgrade"
+        title="DonClaudio's Location"
+      />
+    );
+  }
+  return (
+    <div
+      className="flex h-full w-full flex-col items-center justify-center gap-5 px-6 text-center"
+      style={{
+        backgroundColor: primary,
+        backgroundImage:
+          'radial-gradient(circle at 20% 20%, rgba(255,255,255,0.08) 0, transparent 40%), radial-gradient(circle at 80% 70%, rgba(255,255,255,0.06) 0, transparent 45%)'
+      }}
+    >
+      <div className="rounded-full p-4" style={{backgroundColor: accent}}>
+        <MapPin className="h-8 w-8" style={{color: primary}} aria-hidden="true" />
+      </div>
+      <div>
+        <p className="text-xl font-bold text-white">Find us in Tanza, Cavite</p>
+        <p className="mt-2 max-w-sm text-sm text-white">{address}</p>
+      </div>
+      <div className="flex flex-wrap justify-center gap-3">
+        <button
+          type="button"
+          onClick={() => setShow(true)}
+          className="min-h-11 rounded-full px-5 py-2.5 text-sm font-semibold"
+          style={{backgroundColor: accent, color: primary}}
+        >
+          Show map
+        </button>
+        <a
+          href={MAP_LINK_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white px-5 py-2.5 text-sm font-semibold text-white"
+        >
+          Open in Google Maps
+          <ExternalLink className="h-4 w-4" aria-hidden="true" />
+        </a>
+      </div>
+    </div>
+  );
 }
 
 export default function ContactSection({
@@ -166,16 +232,7 @@ export default function ContactSection({
           </div>
 
           <div className="rounded-3xl overflow-hidden shadow-2xl h-100 sm:h-125 md:h-150 lg:h-162.5">
-            <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2422.9406044231473!2d120.8530823121149!3d14.39092185435405!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x33962d2a919119a5%3A0xe5f912eb02ffd2f9!2sDon%20Claudio%E2%80%99s%20Lechon%20House!5e0!3m2!1sen!2sus!4v1775444344003!5m2!1sen!2sus"
-              width="100%"
-              height="100%"
-              style={{border: 0}}
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              title="DonClaudio's Location"
-            />
+            <MapFacade address={contact.address} primary={c.primary} accent={c.accent} />
           </div>
         </div>
       </div>

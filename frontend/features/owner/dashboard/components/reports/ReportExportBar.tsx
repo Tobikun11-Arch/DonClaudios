@@ -11,10 +11,7 @@ import {
 import {cn} from '@/lib/utils';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {getReportPdf} from '@/lib/api/reportApi';
-import {
-  exportFilename,
-  triggerBlobDownload
-} from '@/lib/utils/csvExport';
+import {triggerBlobDownload} from '@/lib/utils/csvExport';
 import type {CsvColumn} from '@/lib/utils/csvExport';
 import {rangeLabel} from './ReportRangePicker';
 import type {ReportRange, ReportView} from '@/lib/types/report';
@@ -56,12 +53,11 @@ export function ReportExportBar({
   const handlePdf = async () => {
     setBusy('pdf');
     try {
-      const blob = await getReportPdf(view, range);
-      triggerBlobDownload(
-        blob,
-        exportFilename(`don-claudios-${view}-report`, 'pdf')
+      const {blob, filename, reportNumber} = await getReportPdf(view, range);
+      triggerBlobDownload(blob, filename);
+      toast.success(
+        reportNumber ? `Report ${reportNumber} downloaded` : 'Report downloaded'
       );
-      toast.success('Report downloaded');
     } catch (error) {
       toast.error(
         getFriendlyErrorMessage(error, 'Failed to generate the PDF report')

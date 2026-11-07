@@ -92,7 +92,7 @@ export default function HeroSection({
                   </p>
                   <p
                     className="text-xs sm:text-sm"
-                    style={{color: 'var(--dc-text, rgba(255,255,255,0.7))'}}
+                    style={{color: 'var(--dc-text, rgba(255,255,255,0.9))'}}
                   >
                     {stat.label}
                   </p>
@@ -107,13 +107,16 @@ export default function HeroSection({
                 src={hero.backgroundImage || '/assets/hero_image.JPG'}
                 alt="Delicious Lechon"
                 fill
+                // Largest element on the page: fetch it first, at the size it is shown.
+                priority
+                sizes="(min-width: 1024px) 50vw, 100vw"
                 className="object-cover"
               />
             </div>
             <div className="absolute bottom-4 sm:bottom-8 left-4 sm:left-8 right-4 sm:right-8 bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm mb-1 text-[#a4bbab]">
+                  <p className="text-xs sm:text-sm mb-1 text-[#4f6f57]">
                     Opening Hours
                   </p>
                   <p
@@ -124,7 +127,7 @@ export default function HeroSection({
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs sm:text-sm mb-1 text-[#a4bbab]">Days</p>
+                  <p className="text-xs sm:text-sm mb-1 text-[#4f6f57]">Days</p>
                   <p
                     className="text-sm sm:text-base font-bold"
                     style={{color: c.primary}}

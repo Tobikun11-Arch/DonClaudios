@@ -419,7 +419,7 @@ function ProductsSection() {
           </div>
         </div>
 
-        <div className="mt-5 flex gap-4 overflow-x-auto scrollbar-hide -mx-4 px-4 md:flex-wrap md:overflow-visible md:mx-0 md:px-0">
+        <div className="mt-4 flex gap-4 overflow-x-auto scrollbar-hide -mx-4 px-4 py-1 md:mt-5 md:flex-wrap md:overflow-visible md:mx-0 md:px-0 md:py-0">
           {tabs.map(tab => (
             <MenuCategoryCard
               key={tab.id}

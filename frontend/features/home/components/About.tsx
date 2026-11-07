@@ -53,7 +53,7 @@ export default function AboutSection({
                   key={i}
                   className="p-6 rounded-2xl"
                   style={{
-                    backgroundColor: i === 0 ? c.accent : '#a4bbab'
+                    backgroundColor: i === 0 ? c.accent : '#4f6f57'
                   }}
                 >
                   <p

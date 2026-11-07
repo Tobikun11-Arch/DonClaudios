@@ -9,7 +9,7 @@ import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {getReportPdf} from '@/lib/api/reportApi';
 import {listAllOrders} from '@/lib/api/orderApi';
 import type {ListAllOrdersParams} from '@/lib/api/orderApi';
-import {exportFilename, triggerBlobDownload} from '@/lib/utils/csvExport';
+import {triggerBlobDownload} from '@/lib/utils/csvExport';
 import type {ReportPreset, ReportRange} from '@/lib/types/report';
 import {manilaToday} from '../../dashboard/components/reports/ReportRangePicker';
 import {formatNumber, formatPeso} from '../../dashboard/components/reports/reportPrimitives';
@@ -88,10 +88,12 @@ export function DownloadOrdersReport() {
     if (!ready || busy) return;
     setBusy(true);
     try {
-      const blob = await getReportPdf('sales', downloadRange);
-      triggerBlobDownload(blob, exportFilename('don-claudios-sales-report', 'pdf'));
+      const {blob, filename, reportNumber} = await getReportPdf('sales', downloadRange);
+      triggerBlobDownload(blob, filename);
       setOpen(false);
-      toast.success('Report downloaded');
+      toast.success(
+        reportNumber ? `Report ${reportNumber} downloaded` : 'Report downloaded'
+      );
     } catch (error) {
       toast.error(getFriendlyErrorMessage(error, 'Failed to generate the PDF report'));
     } finally {
