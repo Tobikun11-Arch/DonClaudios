@@ -26,7 +26,7 @@ export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
   const poState = getPreOrderState(p);
 
   return (
-    <Card className="overflow-hidden border-gray-100 p-0">
+    <Card className="flex h-full flex-col overflow-hidden border-gray-100 p-0">
       <div className="relative aspect-[4/3] bg-gray-50">
         {p.imageUrl ? (
           <Image
@@ -68,7 +68,7 @@ export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
         </div>
       </div>
 
-      <CardContent className="p-4">
+      <CardContent className="flex flex-1 flex-col p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="font-bold text-gray-900 truncate">{p.name}</p>
@@ -119,7 +119,7 @@ export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
           <div className="mt-2 min-h-8" />
         )}
 
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-auto flex items-center gap-2 pt-3">
           <Button
             variant="outline"
             size="sm"
