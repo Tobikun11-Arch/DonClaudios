@@ -287,7 +287,7 @@ export function FeaturedActivityPanel({
         role="tablist"
         aria-label="Fastest movers and recent activity"
         onKeyDown={handleTabKeyDown}
-        className="flex h-10 w-full items-center gap-1 rounded-xl bg-gray-100 p-1"
+        className="flex h-24 w-full items-center gap-1.5 rounded-xl bg-gray-100 p-1.5"
       >
         {VIEWS.map(v => {
           const active = v.id === view;
@@ -323,7 +323,7 @@ export function FeaturedActivityPanel({
         })}
       </div>
 
-      <p className="mt-2 text-xs text-gray-400">{activeMeta.subtitle}</p>
+      <p className="mt-3 text-xs text-gray-400">{activeMeta.subtitle}</p>
 
       <div
         className="relative mt-3 min-h-0 flex-1 overflow-hidden"

@@ -88,8 +88,16 @@ export function StockChangeDialog({
         tabIndex={-1}
         aria-label="Close dialog"
       />
-      <div className="absolute inset-0 flex items-end sm:items-center justify-center p-0 sm:p-6">
-        <div className="w-full sm:max-w-[440px] max-h-[100dvh] sm:max-h-[90dvh] bg-white shadow-xl border border-gray-100 rounded-t-2xl sm:rounded-2xl flex flex-col">
+      {/* This centering layer covers the backdrop, so it is what receives
+          outside clicks: close from here, unless a save is in progress. */}
+      <div
+        className="absolute inset-0 flex items-end sm:items-center justify-center p-0 sm:p-6"
+        onClick={() => !isPending && onClose()}
+      >
+        <div
+          onClick={e => e.stopPropagation()}
+          className="w-full sm:max-w-[440px] max-h-[100dvh] sm:max-h-[90dvh] bg-white shadow-xl border border-gray-100 rounded-t-2xl sm:rounded-2xl flex flex-col"
+        >
           <div className="flex items-start gap-3 px-5 py-4 border-b border-gray-100">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-100">
               {product.imageUrl ? (
