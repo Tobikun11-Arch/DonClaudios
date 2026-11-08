@@ -35,7 +35,7 @@ export function useOwnerOrders(range: ReportRange) {
   // render-time adjustment (React's sanctioned replacement for an effect), so
   // React discards the in-progress render and commits with page 1 + the new
   // params — no cascading fetch, no ref, no effect.
-  const filterKey = `${filters.status}|${filters.search}|${range.preset}|${range.from ?? ''}|${range.to ?? ''}`;
+  const filterKey = `${filters.status}|${filters.type}|${filters.search}|${range.preset}|${range.from ?? ''}|${range.to ?? ''}`;
   const [appliedFilterKey, setAppliedFilterKey] = useState(filterKey);
   if (appliedFilterKey !== filterKey) {
     setAppliedFilterKey(filterKey);
@@ -52,6 +52,9 @@ export function useOwnerOrders(range: ReportRange) {
     if (filters.status !== ALL_STATUSES) {
       next.status = filters.status;
     }
+    if (filters.type !== ALL_TYPES) {
+      next.type = filters.type as NonNullable<ListAllOrdersParams['type']>;
+    }
     if (range.preset === 'custom') {
       next.from = range.from;
       next.to = range.to;
@@ -61,7 +64,7 @@ export function useOwnerOrders(range: ReportRange) {
       next.limit = OWNER_ORDERS_PAGE_SIZE;
     }
     return next;
-  }, [filters.status, searching, page, range]);
+  }, [filters.status, filters.type, searching, page, range]);
 
   const query = useQuery({
     queryKey: ['owner', 'orders', params],
@@ -114,6 +117,7 @@ export function useOwnerOrders(range: ReportRange) {
     total: query.data?.total ?? 0,
     revenue: query.data?.revenue ?? 0,
     statusCounts: query.data?.counts?.status ?? {},
+    typeCounts: query.data?.counts?.type ?? {},
     isSearching: searching,
     setPage,
     isLoading: query.isLoading,
@@ -135,11 +139,12 @@ export function useOwnerOrders(range: ReportRange) {
  */
 export function filterOrders(
   orders: OrderHistoryEntry[],
-  filters: {status: string; search: string}
+  filters: {status: string; type?: string; search: string}
 ) {
   const needle = filters.search.trim().toLowerCase();
   return orders.filter(order => {
     if (filters.status !== ALL_STATUSES && order.orderStatus !== filters.status) return false;
+    if (filters.type && filters.type !== ALL_TYPES && order.orderType !== filters.type) return false;
     if (!needle) return true;
 
     const customer = order.customerName ?? [
@@ -174,8 +179,13 @@ export function orderCustomerName(order: OrderHistoryEntry) {
   return 'Guest';
 }
 
+/** UI sentinel for "every order type" (never sent to the API). */
+export const ALL_TYPES = 'all';
+export const ORDER_TYPE_FILTERS = ['delivery', 'pickup', 'reservation'] as const;
+
 export function useOrderFilters() {
   const [status, setStatus] = useState(ALL_STATUSES);
+  const [type, setType] = useState<string>(ALL_TYPES);
   const [search, setSearch] = useState('');
-  return {status, setStatus, search, setSearch};
+  return {status, setStatus, type, setType, search, setSearch};
 }
