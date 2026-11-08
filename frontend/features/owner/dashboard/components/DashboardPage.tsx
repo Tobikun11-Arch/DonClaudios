@@ -53,11 +53,11 @@ function DashboardPageContent() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-[1.5rem] font-bold text-[#1A1A1A]">Dashboard</h1>
-          <p className="text-[0.875rem] text-[#6B7280]">Welcome back, {user?.firstName}</p>
+          <h1 className="text-[1.5rem] font-bold text-[#1A1A1A] dark:text-gray-100">Dashboard</h1>
+          <p className="text-[0.875rem] text-[#6B7280] dark:text-gray-400">Welcome back, {user?.firstName}</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex gap-1 rounded-full border border-gray-200 bg-white p-0.5">
+          <div className="flex gap-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-0.5">
             {(
               [
                 {key: 'overview', label: 'Home', icon: LayoutGrid},
@@ -76,7 +76,7 @@ function DashboardPageContent() {
                     'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[0.8rem] font-semibold transition-colors',
                     active
                       ? 'bg-[#2d4a35] text-white'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
                   )}
                 >
                   <Icon className="h-3.5 w-3.5" />

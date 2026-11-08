@@ -54,15 +54,15 @@ function pageWindow(current: number, total: number): Array<number | '⋯'> {
 /** Lazy-loading skeleton of the desktop table so the layout doesn't jump. */
 function OrdersTableSkeleton({rows = 6}: {rows?: number}) {
   return (
-    <div className="hidden overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] lg:block">
+    <div className="hidden overflow-hidden rounded-xl border border-[#E5E7EB] dark:border-gray-700 bg-white dark:bg-gray-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)] lg:block">
       <table className="w-full">
         <thead>
-          <tr className="border-b border-[#E5E7EB] bg-[#F7FAF6]">
+          <tr className="border-b border-[#E5E7EB] dark:border-gray-700 bg-[#F7FAF6] dark:bg-gray-800/60">
             {['Order', 'Customer', 'Type', 'Status', 'Items', 'Total', ''].map(header => (
               <th
                 key={header}
                 className={cn(
-                  'px-4 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[#6B7280]',
+                  'px-4 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400',
                   header === 'Total' || header === '' ? 'text-right' : 'text-left'
                 )}
               >
@@ -73,27 +73,27 @@ function OrdersTableSkeleton({rows = 6}: {rows?: number}) {
         </thead>
         <tbody>
           {Array.from({length: rows}).map((_, i) => (
-            <tr key={i} className="border-b border-[#E5E7EB] last:border-0">
+            <tr key={i} className="border-b border-[#E5E7EB] dark:border-gray-700 last:border-0">
               <td className="px-4 py-3.5">
-                <div className="h-3.5 w-24 animate-pulse rounded bg-gray-100" />
+                <div className="h-3.5 w-24 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
               </td>
               <td className="px-4 py-3.5">
-                <div className="h-3.5 w-32 animate-pulse rounded bg-gray-100" />
+                <div className="h-3.5 w-32 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
               </td>
               <td className="px-4 py-3.5">
-                <div className="h-5 w-16 animate-pulse rounded-md bg-gray-100" />
+                <div className="h-5 w-16 animate-pulse rounded-md bg-gray-100 dark:bg-gray-800" />
               </td>
               <td className="px-4 py-3.5">
-                <div className="h-5 w-20 animate-pulse rounded-full bg-gray-100" />
+                <div className="h-5 w-20 animate-pulse rounded-full bg-gray-100 dark:bg-gray-800" />
               </td>
               <td className="px-4 py-3.5">
-                <div className="h-3.5 w-12 animate-pulse rounded bg-gray-100" />
+                <div className="h-3.5 w-12 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
               </td>
               <td className="px-4 py-3.5 text-right">
-                <div className="ml-auto h-3.5 w-16 animate-pulse rounded bg-gray-100" />
+                <div className="ml-auto h-3.5 w-16 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
               </td>
               <td className="px-4 py-3.5 text-right">
-                <div className="ml-auto h-3.5 w-8 animate-pulse rounded bg-gray-100" />
+                <div className="ml-auto h-3.5 w-8 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
               </td>
             </tr>
           ))}
@@ -109,19 +109,19 @@ function OrdersCardsSkeleton({rows = 4}: {rows?: number}) {
       {Array.from({length: rows}).map((_, i) => (
         <div
           key={i}
-          className="rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+          className="rounded-xl border border-[#E5E7EB] dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1 space-y-2">
-              <div className="h-3.5 w-24 animate-pulse rounded bg-gray-100" />
-              <div className="h-3 w-32 animate-pulse rounded bg-gray-100" />
-              <div className="h-3 w-44 animate-pulse rounded bg-gray-100" />
+              <div className="h-3.5 w-24 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
+              <div className="h-3 w-32 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
+              <div className="h-3 w-44 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
             </div>
-            <div className="h-4 w-16 animate-pulse rounded bg-gray-100" />
+            <div className="h-4 w-16 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
           </div>
           <div className="mt-3 flex gap-1.5">
-            <div className="h-5 w-20 animate-pulse rounded-full bg-gray-100" />
-            <div className="h-5 w-16 animate-pulse rounded-md bg-gray-100" />
+            <div className="h-5 w-20 animate-pulse rounded-full bg-gray-100 dark:bg-gray-800" />
+            <div className="h-5 w-16 animate-pulse rounded-md bg-gray-100 dark:bg-gray-800" />
           </div>
         </div>
       ))}
@@ -148,25 +148,25 @@ function OrdersPagination({
     cn(
       'flex h-8 min-w-8 items-center justify-center rounded-lg border px-2 text-xs font-semibold transition-colors',
       active
-        ? 'border-[#2d4a35] bg-[#2d4a35] text-white'
-        : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+        ? 'border-[#2d4a35] dark:border-[#7ed4a0]/60 bg-[#2d4a35] text-white'
+        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
     );
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <p className="text-[0.75rem] text-[#6B7280]">
+      <p className="text-[0.75rem] text-[#6B7280] dark:text-gray-400">
         {isFetching ? (
           <span className="inline-flex items-center gap-1.5">
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-[#2d4a35]" />
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-[#2d4a35] dark:text-[#7ed4a0]" />
             Loading page {page}…
           </span>
         ) : (
           <>
             Showing{' '}
-            <span className="font-semibold text-[#1A1A1A]">
+            <span className="font-semibold text-[#1A1A1A] dark:text-gray-100">
               {formatNumber(from)}–{formatNumber(to)}
             </span>{' '}
-            of <span className="font-semibold text-[#1A1A1A]">{formatNumber(total)}</span>
+            of <span className="font-semibold text-[#1A1A1A] dark:text-gray-100">{formatNumber(total)}</span>
           </>
         )}
       </p>
@@ -353,8 +353,8 @@ export default function OwnerOrdersPage() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-[1.5rem] font-bold text-[#1A1A1A]">Orders</h1>
-          <p className="text-[0.875rem] text-[#6B7280]">
+          <h1 className="text-[1.5rem] font-bold text-[#1A1A1A] dark:text-gray-100">Orders</h1>
+          <p className="text-[0.875rem] text-[#6B7280] dark:text-gray-400">
             {showSkeleton
               ? 'Loading orders…'
               : `${formatNumber(count)} order${count === 1 ? '' : 's'} · ${formatPeso(shownRevenue, shownRevenue % 1 !== 0)} revenue`}
@@ -375,7 +375,7 @@ export default function OwnerOrdersPage() {
               onChange={e => filters.setSearch(e.target.value)}
               placeholder="Search order, customer, item…"
               aria-label="Search orders"
-              className="w-full rounded-full border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
+              className="w-full rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-2 pl-9 pr-3 text-sm text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:border-[#2d4a35] dark:focus:border-[#7ed4a0]/60 focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
             />
           </div>
 
@@ -386,7 +386,7 @@ export default function OwnerOrdersPage() {
                 value={filters.status}
                 onChange={e => filters.setStatus(e.target.value)}
                 aria-label="Filter by payment"
-                className="appearance-none rounded-full border border-gray-200 bg-white py-2 pl-4 pr-9 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
+                className="appearance-none rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-2 pl-4 pr-9 text-sm font-semibold text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60 focus:border-[#2d4a35] dark:focus:border-[#7ed4a0]/60 focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
               >
                 <option value={ALL_STATUSES}>
                   All payments ({formatNumber(walkInStatusCounts.all)})
@@ -401,7 +401,7 @@ export default function OwnerOrdersPage() {
                 value={filters.type}
                 onChange={e => filters.setType(e.target.value)}
                 aria-label="Filter by order type"
-                className="appearance-none rounded-full border border-gray-200 bg-white py-2 pl-4 pr-9 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
+                className="appearance-none rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-2 pl-4 pr-9 text-sm font-semibold text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60 focus:border-[#2d4a35] dark:focus:border-[#7ed4a0]/60 focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
               >
                 <option value={ALL_TYPES}>All types ({formatNumber(allCount)})</option>
                 {ORDER_TYPE_FILTERS.map(type => (
@@ -420,7 +420,7 @@ export default function OwnerOrdersPage() {
         <div
           role="tablist"
           aria-label="Order source"
-          className="flex shrink-0 rounded-full border border-gray-200 bg-white p-1"
+          className="flex shrink-0 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-1"
         >
           <button
             type="button"
@@ -432,7 +432,7 @@ export default function OwnerOrdersPage() {
               'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
               orderSourceTab === 'online'
                 ? 'bg-[#2d4a35] text-white'
-                : 'text-gray-600 hover:bg-gray-50'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
             )}
           >
             <Globe size={14} />
@@ -449,7 +449,7 @@ export default function OwnerOrdersPage() {
               'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
               orderSourceTab === 'walk-in'
                 ? 'bg-[#2d4a35] text-white'
-                : 'text-gray-600 hover:bg-gray-50'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
             )}
           >
             <Store size={14} />
@@ -460,7 +460,7 @@ export default function OwnerOrdersPage() {
       </div>
 
       {displayIsError ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-8 text-center text-sm text-red-600">
+        <div className="rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 px-5 py-8 text-center text-sm text-red-600 dark:text-red-400">
             {getFriendlyErrorMessage(displayError, 'Failed to load orders')}
         </div>
       ) : showSkeleton ? (
@@ -471,15 +471,15 @@ export default function OwnerOrdersPage() {
       ) : visible.length === 0 ? (
         <>
           {/* Desktop: keep the table header, show the character where the rows go */}
-          <div className="hidden overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] lg:block">
+          <div className="hidden overflow-hidden rounded-xl border border-[#E5E7EB] dark:border-gray-700 bg-white dark:bg-gray-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)] lg:block">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-[#E5E7EB] bg-[#F7FAF6]">
+                <tr className="border-b border-[#E5E7EB] dark:border-gray-700 bg-[#F7FAF6] dark:bg-gray-800/60">
                   {['Order', 'Customer', 'Type', 'Status', 'Items', 'Total', ''].map(header => (
                     <th
                       key={header}
                       className={cn(
-                        'px-4 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[#6B7280]',
+                        'px-4 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400',
                         header === 'Total' || header === '' ? 'text-right' : 'text-left'
                       )}
                     >
@@ -499,7 +499,7 @@ export default function OwnerOrdersPage() {
                         height={208}
                         className="h-44 w-44 object-contain sm:h-52 sm:w-52"
                       />
-                      <p className="mt-4 text-sm text-gray-500">
+                      <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
                         {orderSourceTab === 'walk-in'
                           ? 'No walk-in orders yet.'
                           : 'No online orders match these filters.'}
@@ -511,7 +511,7 @@ export default function OwnerOrdersPage() {
             </table>
           </div>
           {/* Mobile: centered character */}
-          <div className="flex flex-col items-center justify-center rounded-xl border border-[#E5E7EB] bg-white px-5 py-12 lg:hidden">
+          <div className="flex flex-col items-center justify-center rounded-xl border border-[#E5E7EB] dark:border-gray-700 bg-white dark:bg-gray-900 px-5 py-12 lg:hidden">
             <Image
               src="/assets/table/table_1.png"
               alt=""
@@ -519,7 +519,7 @@ export default function OwnerOrdersPage() {
               height={176}
               className="h-44 w-44 object-contain"
             />
-            <p className="mt-4 text-sm text-gray-500">
+            <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
               {orderSourceTab === 'walk-in'
                 ? 'No walk-in orders yet.'
                 : 'No online orders match these filters.'}
@@ -532,18 +532,18 @@ export default function OwnerOrdersPage() {
           <div
             id="orders-list"
             className={cn(
-              'hidden overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-opacity lg:block',
+              'hidden overflow-hidden rounded-xl border border-[#E5E7EB] dark:border-gray-700 bg-white dark:bg-gray-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-opacity lg:block',
               isFetching && 'opacity-60'
             )}
           >
             <table className="w-full">
               <thead>
-                <tr className="border-b border-[#E5E7EB] bg-[#F7FAF6]">
+                <tr className="border-b border-[#E5E7EB] dark:border-gray-700 bg-[#F7FAF6] dark:bg-gray-800/60">
                   {['Order', 'Customer', 'Type', 'Status', 'Items', 'Total', ''].map(header => (
                     <th
                       key={header}
                       className={cn(
-                        'px-4 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[#6B7280]',
+                        'px-4 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400',
                         header === 'Total' || header === '' ? 'text-right' : 'text-left'
                       )}
                     >
@@ -560,23 +560,23 @@ export default function OwnerOrdersPage() {
                     <tr
                       key={order._id}
                       onClick={() => setSelected(order)}
-                      className="cursor-pointer border-b border-[#E5E7EB] transition-colors last:border-0 hover:bg-[#E8F0E3]"
+                      className="cursor-pointer border-b border-[#E5E7EB] dark:border-gray-700 transition-colors last:border-0 hover:bg-[#E8F0E3] dark:hover:bg-[#7ed4a0]/10"
                     >
                       <td className="px-4 py-3">
-                        <p className="font-mono text-[0.8rem] font-bold text-[#1A1A1A]">
+                        <p className="font-mono text-[0.8rem] font-bold text-[#1A1A1A] dark:text-gray-100">
                           {order.orderSource === 'in-store' && order.orderNumber
                             ? order.orderNumber
                             : `#${order._id.slice(-8).toUpperCase()}`}
                         </p>
-                        <p className="text-[0.72rem] text-[#6B7280]">{formatDateTime(order.createdAt)}</p>
+                        <p className="text-[0.72rem] text-[#6B7280] dark:text-gray-400">{formatDateTime(order.createdAt)}</p>
                       </td>
                       <td className="px-4 py-3">
-                        <p className="text-[0.85rem] font-medium text-[#1A1A1A]">
+                        <p className="text-[0.85rem] font-medium text-[#1A1A1A] dark:text-gray-100">
                           {orderCustomerName(order)}
                         </p>
                         {order.guestInfo?.phoneNumber &&
                           order.guestInfo.phoneNumber !== 'n/a' && (
-                            <p className="text-[0.72rem] text-[#6B7280]">
+                            <p className="text-[0.72rem] text-[#6B7280] dark:text-gray-400">
                               {order.guestInfo.phoneNumber}
                             </p>
                           )}
@@ -593,21 +593,21 @@ export default function OwnerOrdersPage() {
                             className={
                               'ml-1 rounded-md px-1.5 py-0.5 text-[0.68rem] font-semibold ' +
                               (order.paymentStatus === 'paid'
-                                ? 'bg-green-50 text-green-700'
-                                : 'bg-amber-50 text-amber-700')
+                                ? 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-300'
+                                : 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300')
                             }
                           >
                             {order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-[0.82rem] text-[#1A1A1A]">
+                      <td className="px-4 py-3 text-[0.82rem] text-[#1A1A1A] dark:text-gray-100">
                         {formatNumber(units)} item{units === 1 ? '' : 's'}
                       </td>
-                      <td className="px-4 py-3 text-right text-[0.875rem] font-semibold tabular-nums text-[#1A1A1A]">
+                      <td className="px-4 py-3 text-right text-[0.875rem] font-semibold tabular-nums text-[#1A1A1A] dark:text-gray-100">
                         {formatPeso(order.totalAmount, order.totalAmount % 1 !== 0)}
                       </td>
-                      <td className="px-4 py-3 text-right text-[0.8rem] font-semibold text-[#2d4a35]">
+                      <td className="px-4 py-3 text-right text-[0.8rem] font-semibold text-[#2d4a35] dark:text-[#7ed4a0]">
                         View
                       </td>
                     </tr>
@@ -632,24 +632,24 @@ export default function OwnerOrdersPage() {
                   <button
                     type="button"
                     onClick={() => setSelected(order)}
-                    className="w-full rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 text-left shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-colors active:bg-[#E8F0E3]"
+                    className="w-full rounded-xl border border-[#E5E7EB] dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3 text-left shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-colors active:bg-[#E8F0E3] dark:active:bg-[#7ed4a0]/10"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="font-mono text-[0.78rem] font-bold text-[#1A1A1A]">
+                        <p className="font-mono text-[0.78rem] font-bold text-[#1A1A1A] dark:text-gray-100">
                           {order.orderSource === 'in-store' && order.orderNumber
                             ? order.orderNumber
                             : `#${order._id.slice(-8).toUpperCase()}`}
                         </p>
-                        <p className="truncate text-[0.85rem] text-[#1A1A1A]">
+                        <p className="truncate text-[0.85rem] text-[#1A1A1A] dark:text-gray-100">
                           {orderCustomerName(order)}
                         </p>
-                        <p className="text-[0.72rem] text-[#6B7280]">
+                        <p className="text-[0.72rem] text-[#6B7280] dark:text-gray-400">
                           {formatDateTime(order.createdAt)} · {formatNumber(units)} item
                           {units === 1 ? '' : 's'}
                         </p>
                       </div>
-                      <span className="shrink-0 text-[0.9rem] font-bold tabular-nums text-[#1A1A1A]">
+                      <span className="shrink-0 text-[0.9rem] font-bold tabular-nums text-[#1A1A1A] dark:text-gray-100">
                         {formatPeso(order.totalAmount, order.totalAmount % 1 !== 0)}
                       </span>
                     </div>
@@ -661,8 +661,8 @@ export default function OwnerOrdersPage() {
                           className={
                             'rounded-md px-1.5 py-0.5 text-[0.68rem] font-semibold ' +
                             (order.paymentStatus === 'paid'
-                              ? 'bg-green-50 text-green-700'
-                              : 'bg-amber-50 text-amber-700')
+                              ? 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-300'
+                              : 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300')
                           }
                         >
                           {order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
@@ -685,7 +685,7 @@ export default function OwnerOrdersPage() {
             />
           )}
           {isWalkIn && walkInFiltered.length > OWNER_ORDERS_PAGE_SIZE && (
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Showing {walkInFiltered.length} walk-in orders
             </p>
           )}

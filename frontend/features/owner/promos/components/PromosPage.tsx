@@ -222,16 +222,16 @@ export default function PromosPage() {
           ))}
         </div>
       ) : promosQuery.isError ? (
-        <div className="bg-red-50 border border-red-100 rounded-2xl p-5 text-sm text-red-700">
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/30 rounded-2xl p-5 text-sm text-red-700 dark:text-red-300">
           {getFriendlyErrorMessage(promosQuery.error, 'Failed to load promos')}
         </div>
       ) : visiblePromos.length === 0 ? (
-        <div className="border border-gray-100 bg-white rounded-2xl p-10 text-center">
-          <div className="mx-auto w-12 h-12 rounded-2xl bg-[#e9f5ee] text-[#2d4a35] flex items-center justify-center">
+        <div className="border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-2xl p-10 text-center">
+          <div className="mx-auto w-12 h-12 rounded-2xl bg-[#e9f5ee] dark:bg-[#7ed4a0]/10 text-[#2d4a35] dark:text-[#7ed4a0] flex items-center justify-center">
             <Tag className="h-6 w-6" />
           </div>
-          <p className="mt-3 font-extrabold text-gray-900">No promos found</p>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="mt-3 font-extrabold text-gray-900 dark:text-gray-100">No promos found</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Create your first promo campaign.
           </p>
         </div>

@@ -43,12 +43,12 @@ function FastestMoversList({
       <div className="space-y-3">
         {Array.from({length: 5}).map((_, i) => (
           <div key={i} className="flex items-center gap-3">
-            <div className="h-9 w-9 animate-pulse rounded-lg bg-gray-100" />
+            <div className="h-9 w-9 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800" />
             <div className="flex-1 space-y-1.5">
-              <div className="h-3 w-3/4 animate-pulse rounded bg-gray-100" />
-              <div className="h-3 w-1/3 animate-pulse rounded bg-gray-100" />
+              <div className="h-3 w-3/4 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
+              <div className="h-3 w-1/3 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
             </div>
-            <div className="h-6 w-16 animate-pulse rounded-full bg-gray-100" />
+            <div className="h-6 w-16 animate-pulse rounded-full bg-gray-100 dark:bg-gray-800" />
           </div>
         ))}
       </div>
@@ -57,12 +57,12 @@ function FastestMoversList({
 
   if (isError) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50/60 p-4 text-center">
-        <p className="text-sm font-semibold text-red-800">Could not load sales</p>
+      <div className="rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50/60 dark:bg-red-500/10 p-4 text-center">
+        <p className="text-sm font-semibold text-red-800 dark:text-red-200">Could not load sales</p>
         <Button
           variant="outline"
           size="sm"
-          className="mt-2 border-red-200 bg-white text-red-700 hover:bg-red-50"
+          className="mt-2 border-red-200 dark:border-red-500/30 bg-white dark:bg-gray-900 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10"
           onClick={onRetry}
         >
           <Loader2 className="h-3.5 w-3.5" />
@@ -75,10 +75,10 @@ function FastestMoversList({
   if (items.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center text-center">
-        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-50">
+        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-50 dark:bg-gray-800/60">
           <ShoppingBag className="h-5 w-5 text-gray-300" />
         </div>
-        <p className="mt-3 text-sm font-semibold text-gray-600">No sales yet</p>
+        <p className="mt-3 text-sm font-semibold text-gray-600 dark:text-gray-300">No sales yet</p>
         <p className="mt-1 text-xs text-gray-400">
           Top products this month will appear here.
         </p>
@@ -87,7 +87,7 @@ function FastestMoversList({
   }
 
   return (
-    <div className="divide-y divide-gray-50">
+    <div className="divide-y divide-gray-50 dark:divide-gray-700">
       {items.map(item => {
         const stock = item.stock ?? 0;
         const status = getStockStatus(stock);
@@ -96,7 +96,7 @@ function FastestMoversList({
 
         return (
           <div key={item.productId} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
               {item.imageUrl ? (
                 <Image
                   src={item.imageUrl}
@@ -111,12 +111,12 @@ function FastestMoversList({
             </div>
 
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-gray-900">{item.name}</p>
+              <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-100">{item.name}</p>
               <p className="truncate text-xs text-gray-400">
                 {item.unitsSold} sold · {formatPeso(item.revenue)}
               </p>
               {flagged && (
-                <p className="text-[11px] font-semibold text-amber-600">
+                <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
                   Selling fast, running low
                 </p>
               )}
@@ -161,12 +161,12 @@ function RecentActivityList({
       <div className="space-y-3">
         {Array.from({length: 6}).map((_, i) => (
           <div key={i} className="flex items-center gap-3">
-            <div className="h-8 w-8 animate-pulse rounded-full bg-gray-100" />
+            <div className="h-8 w-8 animate-pulse rounded-full bg-gray-100 dark:bg-gray-800" />
             <div className="flex-1 space-y-1.5">
-              <div className="h-3 w-3/4 animate-pulse rounded bg-gray-100" />
-              <div className="h-3 w-1/2 animate-pulse rounded bg-gray-100" />
+              <div className="h-3 w-3/4 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
+              <div className="h-3 w-1/2 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
             </div>
-            <div className="h-3.5 w-14 animate-pulse rounded bg-gray-100" />
+            <div className="h-3.5 w-14 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
           </div>
         ))}
       </div>
@@ -175,14 +175,14 @@ function RecentActivityList({
 
   if (isError) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50/60 p-4 text-center">
-        <p className="text-sm font-semibold text-red-800">
+      <div className="rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50/60 dark:bg-red-500/10 p-4 text-center">
+        <p className="text-sm font-semibold text-red-800 dark:text-red-200">
           Could not load activity
         </p>
         <Button
           variant="outline"
           size="sm"
-          className="mt-2 border-red-200 bg-white text-red-700 hover:bg-red-50"
+          className="mt-2 border-red-200 dark:border-red-500/30 bg-white dark:bg-gray-900 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10"
           onClick={onRetry}
         >
           <Loader2 className="h-3.5 w-3.5" />
@@ -195,10 +195,10 @@ function RecentActivityList({
   if (items.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center text-center">
-        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-50">
+        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-50 dark:bg-gray-800/60">
           <History className="h-5 w-5 text-gray-300" />
         </div>
-        <p className="mt-3 text-sm font-semibold text-gray-600">No activity yet</p>
+        <p className="mt-3 text-sm font-semibold text-gray-600 dark:text-gray-300">No activity yet</p>
         <p className="mt-1 text-xs text-gray-400">
           Restocks, sales and stock changes will show up here.
         </p>
@@ -207,7 +207,7 @@ function RecentActivityList({
   }
 
   return (
-    <div className="divide-y divide-gray-50">
+    <div className="divide-y divide-gray-50 dark:divide-gray-700">
       {items.map(m => (
         <ActivityRow
           key={m._id}
@@ -282,12 +282,12 @@ export function FeaturedActivityPanel({
   };
 
   return (
-    <div className="flex flex-col rounded-2xl border border-gray-100 bg-white p-5 min-h-[420px] max-h-[70vh]">
+    <div className="flex flex-col rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 min-h-[420px] max-h-[70vh]">
       <div
         role="tablist"
         aria-label="Fastest movers and recent activity"
         onKeyDown={handleTabKeyDown}
-        className="flex h-24 w-full items-center gap-1.5 rounded-xl bg-gray-100 p-1.5"
+        className="flex h-24 w-full items-center gap-1.5 rounded-xl bg-gray-100 dark:bg-gray-800 p-1.5"
       >
         {VIEWS.map(v => {
           const active = v.id === view;
@@ -305,15 +305,15 @@ export function FeaturedActivityPanel({
               className={cn(
                 'flex h-full flex-1 items-center justify-center gap-1.5 rounded-lg text-sm transition-colors duration-200',
                 active
-                  ? 'bg-white font-bold text-[#2d4a35] shadow-sm'
-                  : 'font-medium text-gray-500 hover:text-gray-700'
+                  ? 'bg-white dark:bg-gray-900 font-bold text-[#2d4a35] dark:text-[#7ed4a0] shadow-sm'
+                  : 'font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               )}
             >
               {v.label}
               <span
                 className={cn(
                   'flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold tabular-nums',
-                  active ? 'bg-[#2d4a35] text-white' : 'bg-gray-200 text-gray-600'
+                  active ? 'bg-[#2d4a35] text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
                 )}
               >
                 {count}
@@ -379,7 +379,7 @@ export function FeaturedActivityPanel({
                 <button
                   type="button"
                   onClick={onOpenAllActivity}
-                  className="mt-2 block w-full rounded-lg py-2 text-center text-sm font-semibold text-[#2d4a35] transition-colors hover:bg-[#e9f5ee]"
+                  className="mt-2 block w-full rounded-lg py-2 text-center text-sm font-semibold text-[#2d4a35] dark:text-[#7ed4a0] transition-colors hover:bg-[#e9f5ee] dark:hover:bg-[#7ed4a0]/10"
                 >
                   View all activity
                 </button>
@@ -399,7 +399,7 @@ export function FeaturedActivityPanel({
             className={cn(
               'h-1.5 rounded-full transition-all duration-200',
               view === v.id
-                ? 'w-5 bg-[#2d4a35]'
+                ? 'w-5 bg-[#2d4a35] dark:text-white'
                 : 'w-1.5 bg-gray-300 hover:bg-gray-400'
             )}
           />

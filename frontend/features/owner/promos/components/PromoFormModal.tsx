@@ -93,11 +93,11 @@ export function PromoFormModal({
             onDrop={onDrop}
             disabled={isDisabled}
             className={cn(
-              'relative mt-1 w-full rounded-2xl border-2 border-dashed transition-colors overflow-hidden bg-white',
+              'relative mt-1 w-full rounded-2xl border-2 border-dashed transition-colors overflow-hidden bg-white dark:bg-gray-900',
               'aspect-[16/9]',
               isDragging
-                ? 'border-[#2d4a35] bg-[#e9f5ee]'
-                : 'border-[#c9e7d4] hover:border-[#2d4a35]'
+                ? 'border-[#2d4a35] dark:border-[#7ed4a0]/60 bg-[#e9f5ee] dark:bg-[#7ed4a0]/10'
+                : 'border-[#c9e7d4] dark:border-[#7ed4a0]/30 hover:border-[#2d4a35] dark:hover:border-[#7ed4a0]/60'
             )}
           >
             {previewUrl ? (
@@ -115,13 +115,13 @@ export function PromoFormModal({
                 </div>
               </>
             ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[#2d4a35]">
-                <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-2xl bg-[#e9f5ee] flex items-center justify-center">
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[#2d4a35] dark:text-[#7ed4a0]">
+                <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-2xl bg-[#e9f5ee] dark:bg-[#7ed4a0]/10 flex items-center justify-center">
                   <Upload className="h-5 w-5 sm:h-7 sm:w-7" />
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-extrabold">Upload promo image</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     Click to choose or drag and drop here
                   </p>
                 </div>
@@ -219,13 +219,13 @@ export function PromoFormModal({
                     ? `${form.productIds.length} selected`
                     : 'Select products'}
                 </summary>
-                <div className="absolute z-50 mt-2 w-full max-h-64 overflow-auto rounded-md border border-gray-100 bg-white shadow-lg p-2">
+                <div className="absolute z-50 mt-2 w-full max-h-64 overflow-auto rounded-md border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg p-2">
                   {products.map(p => {
                     const checked = form.productIds.includes(p._id);
                     return (
                       <label
                         key={p._id}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer"
+                        className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer"
                       >
                         <input
                           type="checkbox"
@@ -234,7 +234,7 @@ export function PromoFormModal({
                           disabled={isDisabled}
                           className="h-4 w-4"
                         />
-                        <span className="text-sm text-gray-800">
+                        <span className="text-sm text-gray-800 dark:text-gray-100">
                           {p.name}
                           {p.category ? ` (${p.category})` : ''}
                         </span>
@@ -288,7 +288,7 @@ export function PromoFormModal({
         </div>
 
         {formError && (
-          <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+          <div className="text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/30 rounded-xl px-4 py-3">
             {formError}
           </div>
         )}
@@ -304,7 +304,7 @@ export function PromoFormModal({
           </Button>
           <Button
             type="submit"
-            className="bg-[#2d4a35] hover:bg-[#24402c]"
+            className="bg-[#2d4a35] hover:bg-[#24402c] dark:text-white"
             disabled={isDisabled}
           >
             {submitStatus === 'uploading'

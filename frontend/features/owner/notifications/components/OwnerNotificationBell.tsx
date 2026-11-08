@@ -89,11 +89,11 @@ export default function OwnerNotificationBell({alert = false}: {alert?: boolean}
     <div className="relative" ref={menuRef}>
       <button
         onClick={handleOpen}
-        className="relative flex items-center justify-center rounded-xl border border-gray-200 bg-white p-2.5 text-gray-600 shadow-sm transition-colors hover:bg-gray-50"
+        className="relative flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2.5 text-gray-600 dark:text-gray-300 shadow-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
         aria-label="Notifications"
       >
         {unreadCount > 0 ? (
-          <BellRing className="h-5 w-5 text-[#2d4a35]" />
+          <BellRing className="h-5 w-5 text-[#2d4a35] dark:text-[#7ed4a0]" />
         ) : (
           <Bell className="h-5 w-5" />
         )}
@@ -123,12 +123,12 @@ export default function OwnerNotificationBell({alert = false}: {alert?: boolean}
           <div
             role="dialog"
             aria-label="Notifications"
-            className="fixed inset-x-3 bottom-24 z-[60] max-h-[70vh] overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 bg-white shadow-xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-12 sm:w-96 sm:max-h-none sm:overflow-y-visible sm:overscroll-auto"
+            className="fixed inset-x-3 bottom-24 z-[60] max-h-[70vh] overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-12 sm:w-96 sm:max-h-none sm:overflow-y-visible sm:overscroll-auto"
           >
-          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+          <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-4 py-3">
             <div>
-              <p className="text-sm font-bold text-gray-900">Notifications</p>
-              <p className="text-xs text-gray-500">
+              <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Notifications</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 {unreadCount > 0
                   ? `${unreadCount} unread`
                   : 'You are all caught up'}
@@ -150,11 +150,11 @@ export default function OwnerNotificationBell({alert = false}: {alert?: boolean}
 
           <div className="max-h-[60vh] overflow-y-auto sm:max-h-80">
             {isLoading ? (
-              <div className="p-5 text-sm text-gray-500">
+              <div className="p-5 text-sm text-gray-500 dark:text-gray-400">
                 Loading notifications...
               </div>
             ) : notifications.length === 0 ? (
-              <div className="p-5 text-sm text-gray-500">
+              <div className="p-5 text-sm text-gray-500 dark:text-gray-400">
                 No notifications yet.
               </div>
             ) : (
@@ -162,7 +162,7 @@ export default function OwnerNotificationBell({alert = false}: {alert?: boolean}
                 <div
                   key={notification._id}
                   onClick={() => handleClick(notification)}
-                  className={`flex cursor-pointer gap-3 border-b border-gray-50 px-4 py-3 transition-colors hover:bg-gray-50 ${
+                  className={`flex cursor-pointer gap-3 border-b border-gray-50 dark:border-gray-700 px-4 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60 ${
                     notification.read ? 'opacity-70' : 'bg-amber-50/40'
                   }`}
                 >
@@ -174,10 +174,10 @@ export default function OwnerNotificationBell({alert = false}: {alert?: boolean}
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="truncate text-sm font-semibold text-gray-900">
+                    <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {notification.title}
                     </p>
-                    <p className="line-clamp-2 text-xs text-gray-600">
+                    <p className="line-clamp-2 text-xs text-gray-600 dark:text-gray-300">
                       {notification.message}
                     </p>
                     <p className="mt-1 text-[11px] text-gray-400">
@@ -189,7 +189,7 @@ export default function OwnerNotificationBell({alert = false}: {alert?: boolean}
                   <button
                     onClick={e => handleDelete(e, notification)}
                     disabled={deleteMutation.isPending}
-                    className="shrink-0 self-center rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                    className="shrink-0 self-center rounded-lg p-1.5 text-gray-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
                     aria-label="Delete notification"
                   >
                     <Trash2 size={15} />

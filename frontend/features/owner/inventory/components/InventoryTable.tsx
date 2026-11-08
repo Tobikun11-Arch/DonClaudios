@@ -52,7 +52,7 @@ interface Props {
 
 function StockValue({stock, hasSpace = false}: {stock: number; hasSpace?: boolean}) {
   const tone =
-    stock === 0 ? 'text-red-600' : stock <= 10 ? 'text-amber-600' : 'text-gray-900';
+    stock === 0 ? 'text-red-600 dark:text-red-400' : stock <= 10 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-gray-100';
   return (
     <span className={cn('font-extrabold tabular-nums', tone, hasSpace && 'ml-auto')}>
       {stock}
@@ -92,7 +92,7 @@ function AllergenMinis({allergens}: {allergens?: ProductAllergen[]}) {
           <span
             key={allergen}
             title={ALLERGEN_LABELS[allergen]}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-50 text-amber-700"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300"
           >
             <Icon className="h-3.5 w-3.5" />
           </span>
@@ -101,7 +101,7 @@ function AllergenMinis({allergens}: {allergens?: ProductAllergen[]}) {
       {extra > 0 && (
         <span
           title={`${extra} more allergen${extra > 1 ? 's' : ''}`}
-          className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-[11px] font-bold text-gray-500"
+          className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-[11px] font-bold text-gray-500 dark:text-gray-400"
         >
           +{extra}
         </span>
@@ -127,7 +127,7 @@ function ActionButtons({
       <Button
         variant="ghost"
         size="sm"
-        className={cn(base, 'text-green-600 hover:bg-green-50 hover:text-green-700')}
+        className={cn(base, 'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-500/10 hover:text-green-700 dark:hover:text-green-300')}
         title="Restock"
         onClick={onRestock}
       >
@@ -136,7 +136,7 @@ function ActionButtons({
       <Button
         variant="ghost"
         size="sm"
-        className={cn(base, 'text-amber-600 hover:bg-amber-50 hover:text-amber-700')}
+        className={cn(base, 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 hover:text-amber-700 dark:hover:text-amber-300')}
         title="Remove stock"
         onClick={onRemove}
       >
@@ -145,7 +145,7 @@ function ActionButtons({
       <Button
         variant="ghost"
         size="sm"
-        className={cn(base, 'text-blue-600 hover:bg-blue-50 hover:text-blue-700')}
+        className={cn(base, 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 hover:text-blue-700 dark:hover:text-blue-300')}
         title="View history"
         onClick={onHistory}
       >
@@ -158,7 +158,7 @@ function ActionButtons({
 function ProductThumb({product, size = 44}: {product: Product; size?: number}) {
   return (
     <div
-      className="shrink-0 overflow-hidden rounded-xl bg-gray-100 flex items-center justify-center"
+      className="shrink-0 overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
       style={{width: size, height: size}}
     >
       {product.imageUrl ? (
@@ -201,17 +201,17 @@ export function InventoryTable({
       <InventoryToolbar {...toolbar} />
 
       {isLoading && (
-        <div className="rounded-2xl border border-gray-100 bg-white overflow-hidden">
-          <div className="divide-y divide-gray-50">
+        <div className="rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
+          <div className="divide-y divide-gray-50 dark:divide-gray-700">
             {Array.from({length: 5}).map((_, i) => (
               <div key={i} className="flex items-center gap-3 px-4 py-4">
-                <div className="h-11 w-11 animate-pulse rounded-xl bg-gray-100" />
+                <div className="h-11 w-11 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-3.5 w-2/5 animate-pulse rounded bg-gray-100" />
-                  <div className="h-3 w-1/5 animate-pulse rounded bg-gray-100" />
+                  <div className="h-3.5 w-2/5 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
+                  <div className="h-3 w-1/5 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
                 </div>
-                <div className="h-3.5 w-12 animate-pulse rounded bg-gray-100" />
-                <div className="h-6 w-20 animate-pulse rounded-full bg-gray-100" />
+                <div className="h-3.5 w-12 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
+                <div className="h-6 w-20 animate-pulse rounded-full bg-gray-100 dark:bg-gray-800" />
               </div>
             ))}
           </div>
@@ -219,16 +219,16 @@ export function InventoryTable({
       )}
 
       {isError && (
-        <div className="rounded-2xl border border-red-200 bg-red-50/60 p-6">
-          <p className="text-sm font-semibold text-red-800">Could not load inventory</p>
-          <p className="mt-1 text-xs text-red-700/80">
+        <div className="rounded-2xl border border-red-200 dark:border-red-500/30 bg-red-50/60 dark:bg-red-500/10 p-6">
+          <p className="text-sm font-semibold text-red-800 dark:text-red-200">Could not load inventory</p>
+          <p className="mt-1 text-xs text-red-700/80 dark:text-red-300">
             {errorMessage ?? 'Please try again.'}
           </p>
           <Button
             variant="outline"
             size="sm"
             onClick={onRetry}
-            className="mt-3 border-red-200 bg-white text-red-700 hover:bg-red-50"
+            className="mt-3 border-red-200 dark:border-red-500/30 bg-white dark:bg-gray-900 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10"
           >
             <Loader2 className="h-3.5 w-3.5" />
             Try again
@@ -237,11 +237,11 @@ export function InventoryTable({
       )}
 
       {noProductsAtAll && !isLoading && !isError && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-100 bg-white py-16 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-50">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 py-16 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-50 dark:bg-gray-800/60">
             <Package className="h-6 w-6 text-gray-300" />
           </div>
-          <h3 className="mt-4 text-sm font-semibold text-gray-900">
+          <h3 className="mt-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
             No products in inventory yet
           </h3>
           <p className="mt-1 max-w-xs text-sm text-gray-400">
@@ -257,11 +257,11 @@ export function InventoryTable({
       )}
 
       {noResults && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-100 bg-white py-16 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-50">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 py-16 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-50 dark:bg-gray-800/60">
             <SearchX className="h-6 w-6 text-gray-300" />
           </div>
-          <h3 className="mt-4 text-sm font-semibold text-gray-900">
+          <h3 className="mt-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
             No products match your search
           </h3>
           <Button
@@ -282,30 +282,30 @@ export function InventoryTable({
       {!isLoading && !isError && products.length > 0 && (
         <>
           {/* Desktop / tablet table */}
-          <div className="hidden md:block rounded-2xl border border-gray-100 bg-white overflow-hidden">
+          <div className="hidden md:block rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50/60">
-                    <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+                  <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40">
+                    <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                       Product
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">
+                    <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                       Stock
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-gray-500 hidden sm:table-cell">
+                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 hidden sm:table-cell">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-gray-500">
+                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                       On menu
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-gray-500 hidden lg:table-cell">
+                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 hidden lg:table-cell">
                       Allergens
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500 hidden lg:table-cell">
+                    <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 hidden lg:table-cell">
                       Last updated
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500">
+                    <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                       Actions
                     </th>
                   </tr>
@@ -315,13 +315,13 @@ export function InventoryTable({
                     <tr
                       key={p._id}
                       onClick={() => onOpenRow(p)}
-                      className="cursor-pointer border-b border-gray-50 transition-colors hover:bg-gray-50/60 last:border-0"
+                      className="cursor-pointer border-b border-gray-50 dark:border-gray-700 transition-colors hover:bg-gray-50/60 dark:hover:bg-gray-800/40 last:border-0"
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <ProductThumb product={p} size={44} />
                           <div className="min-w-0">
-                            <p className="truncate font-semibold text-gray-900">
+                            <p className="truncate font-semibold text-gray-900 dark:text-gray-100">
                               {p.name}
                             </p>
                             <p className="truncate text-xs text-gray-400">
@@ -401,12 +401,12 @@ export function InventoryTable({
                 <div
                   key={p._id}
                   onClick={() => onOpenRow(p)}
-                  className="cursor-pointer rounded-2xl border border-gray-100 bg-white p-4 transition-colors hover:bg-gray-50/60"
+                  className="cursor-pointer rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 transition-colors hover:bg-gray-50/60 dark:hover:bg-gray-800/40"
                 >
                   <div className="flex items-start gap-3">
                     <ProductThumb product={p} size={48} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-gray-900">
+                      <p className="truncate font-semibold text-gray-900 dark:text-gray-100">
                         {p.name}
                       </p>
                       <p className="truncate text-xs text-gray-400">
@@ -439,7 +439,7 @@ export function InventoryTable({
                       </div>
                     </div>
                   </div>
-                  <div className="mt-3 flex items-center justify-between border-t border-gray-50 pt-3">
+                  <div className="mt-3 flex items-center justify-between border-t border-gray-50 dark:border-gray-700 pt-3">
                     <MenuToggle
                       checked={p.isAvailable}
                       busy={togglingId === p._id}

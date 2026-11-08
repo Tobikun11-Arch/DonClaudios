@@ -336,15 +336,15 @@ export default function ProductsPage() {
       />
 
       {!categoriesQuery.isLoading && legacyCategoryProducts.length > 0 && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-          <p className="text-sm font-semibold text-amber-900">
+        <div className="rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-3">
+          <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
             {legacyCategoryProducts.length}{' '}
             {legacyCategoryProducts.length === 1
               ? 'product uses a legacy category'
               : 'products use legacy categories'}{' '}
             not in your category list.
           </p>
-          <p className="text-xs text-amber-800 mt-1">
+          <p className="text-xs text-amber-800 dark:text-amber-200 mt-1">
             Open each product below and pick a category from the list (e.g.{' '}
             {legacyCategoryProducts
               .map(p => `"${p.category}"`)
@@ -394,7 +394,7 @@ export default function ProductsPage() {
       )}
 
       {productsQuery.isError && (
-        <div className="bg-white border border-red-200 rounded-2xl p-6 text-sm text-red-700">
+        <div className="bg-white dark:bg-gray-900 border border-red-200 dark:border-red-500/30 rounded-2xl p-6 text-sm text-red-700 dark:text-red-300">
           {getFriendlyErrorMessage(
             productsQuery.error,
             'Failed to load products'
@@ -406,10 +406,10 @@ export default function ProductsPage() {
         !productsQuery.isError &&
         (visibleProducts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-[#e9f5ee] flex items-center justify-center mb-4">
-              <Package className="h-6 w-6 text-[#2d4a35]" />
+            <div className="w-14 h-14 rounded-2xl bg-[#e9f5ee] dark:bg-[#7ed4a0]/10 flex items-center justify-center mb-4">
+              <Package className="h-6 w-6 text-[#2d4a35] dark:text-[#7ed4a0]" />
             </div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-1">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
               No products yet
             </h3>
             <p className="text-sm text-gray-400 max-w-xs mb-6">

@@ -105,12 +105,12 @@ function Toggle({on, onChange}: {on: boolean; onChange: (v: boolean) => void}) {
       onClick={() => onChange(!on)}
       className={cn(
         'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors',
-        on ? 'bg-[#2d4a35]' : 'bg-gray-300'
+        on ? 'bg-[#2d4a35] dark:text-white' : 'bg-gray-300'
       )}
     >
       <span
         className={cn(
-          'inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform',
+          'inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-900 shadow transition-transform',
           on ? 'translate-x-5' : 'translate-x-0.5'
         )}
       />
@@ -173,25 +173,25 @@ export function NotificationsTab({section}: {section: string}) {
   };
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
-      <h2 className="mb-1 text-lg font-bold text-[#2d4a35]">
+    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">
+      <h2 className="mb-1 text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">
         {cfg.title}
       </h2>
       {cfg.subtitle && (
-        <p className="mb-5 text-sm text-gray-500">{cfg.subtitle}</p>
+        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">{cfg.subtitle}</p>
       )}
       {!cfg.subtitle && <div className="mb-5" />}
-      <div className="divide-y divide-gray-100">
+      <div className="divide-y divide-gray-100 dark:divide-gray-700">
         {cfg.items.map(item => (
           <div
             key={item.label}
             className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
           >
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold text-gray-900">
+              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {item.label}
               </div>
-              <div className="mt-0.5 text-xs text-gray-500">
+              <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                 {item.description}
               </div>
             </div>

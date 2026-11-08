@@ -134,21 +134,21 @@ export default function OwnerChatThread({
       </div>
 
       {conversationStatus === 'closed' && (
-        <div className="border-t border-amber-100 bg-amber-50 px-3 py-2 text-[11px] leading-snug text-amber-700">
+        <div className="border-t border-amber-100 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-[11px] leading-snug text-amber-700 dark:text-amber-300">
           {closedBy === 'customer'
             ? 'Closed by the customer. Replying will reopen this conversation.'
             : 'This conversation is resolved. Replying will reopen it.'}
         </div>
       )}
 
-      <div className="flex items-end gap-2 border-t border-gray-100 p-3">
+      <div className="flex items-end gap-2 border-t border-gray-100 dark:border-gray-700 p-3">
         <textarea
           value={draft}
           onChange={e => setDraft(e.target.value)}
           onKeyDown={handleKeyDown}
           rows={1}
           placeholder="Type your reply... (Enter to send)"
-          className="flex-1 resize-none rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e]"
+          className="flex-1 resize-none rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e]"
         />
         <button
           onClick={handleSend}

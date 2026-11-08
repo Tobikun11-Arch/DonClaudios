@@ -27,8 +27,8 @@ function chipClass(active: boolean) {
   return cn(
     'rounded-xl border px-3 py-2 text-xs font-semibold transition-colors',
     active
-      ? 'border-[#2d4a35] bg-[#2d4a35] text-white'
-      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+      ? 'border-[#2d4a35] dark:border-[#7ed4a0]/60 bg-[#2d4a35] text-white'
+      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
   );
 }
 
@@ -126,23 +126,23 @@ export function DownloadOrdersReport() {
             aria-modal="true"
             aria-label="Download orders report"
             onClick={e => e.stopPropagation()}
-            className="w-full max-w-md rounded-t-2xl bg-white p-5 shadow-2xl sm:rounded-2xl"
+            className="w-full max-w-md rounded-t-2xl bg-white dark:bg-gray-900 p-5 shadow-2xl sm:rounded-2xl"
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-[#1A1A1A]">
+              <h2 className="text-lg font-bold text-[#1A1A1A] dark:text-gray-100">
                 Download orders report
               </h2>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Close"
-                className="rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                className="rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <p className="mb-2 mt-4 text-[0.7rem] font-semibold uppercase tracking-[0.08em] text-[#6B7280]">
+            <p className="mb-2 mt-4 text-[0.7rem] font-semibold uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
               Date range
             </p>
             <div className="grid grid-cols-3 gap-2">
@@ -186,7 +186,7 @@ export function DownloadOrdersReport() {
             {pick === 'custom' && (
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <label>
-                  <span className="mb-1 block text-[0.7rem] font-medium text-gray-500">
+                  <span className="mb-1 block text-[0.7rem] font-medium text-gray-500 dark:text-gray-400">
                     From
                   </span>
                   <input
@@ -194,11 +194,11 @@ export function DownloadOrdersReport() {
                     value={from}
                     max={to || today}
                     onChange={e => updateFrom(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 focus:border-[#2d4a35] dark:focus:border-[#7ed4a0]/60 focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
                   />
                 </label>
                 <label>
-                  <span className="mb-1 block text-[0.7rem] font-medium text-gray-500">
+                  <span className="mb-1 block text-[0.7rem] font-medium text-gray-500 dark:text-gray-400">
                     To
                   </span>
                   <input
@@ -207,7 +207,7 @@ export function DownloadOrdersReport() {
                     min={from || undefined}
                     max={today}
                     onChange={e => updateTo(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
+                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 focus:border-[#2d4a35] dark:focus:border-[#7ed4a0]/60 focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
                   />
                 </label>
                 {from !== '' && to !== '' && from > to && (
@@ -218,7 +218,7 @@ export function DownloadOrdersReport() {
               </div>
             )}
 
-            <p className="mt-4 min-h-5 text-[0.8rem] text-[#6B7280]">
+            <p className="mt-4 min-h-5 text-[0.8rem] text-[#6B7280] dark:text-gray-400">
               {busy
                 ? 'Generating PDF…'
                 : previewLoading
@@ -235,7 +235,7 @@ export function DownloadOrdersReport() {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-50"
+                className="rounded-full border border-gray-200 dark:border-gray-700 px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
               >
                 Cancel
               </button>

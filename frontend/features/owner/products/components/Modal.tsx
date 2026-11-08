@@ -23,14 +23,14 @@ export function Modal({open, title, children, onClose}: Props) {
           className="w-full sm:max-w-2xl bg-white shadow-xl border border-gray-100 rounded-t-2xl sm:rounded-2xl
           h-full sm:h-auto sm:max-h-[90vh] flex flex-col"
         >
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#e9f5ee] text-[#2d4a35] flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-[#e9f5ee] dark:bg-[#7ed4a0]/10 text-[#2d4a35] dark:text-[#7ed4a0] flex items-center justify-center">
                 <Package className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-900">{title}</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{title}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   Fill out the details then save.
                 </p>
               </div>

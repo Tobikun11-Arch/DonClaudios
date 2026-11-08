@@ -3,7 +3,7 @@ import {Geist, Geist_Mono, Inter} from 'next/font/google';
 import './globals.css';
 import {cn} from '@/lib/utils';
 import {ReactQueryProvider} from '@/lib/provider/ReactQueryProvider';
-import {ThemeProvider} from 'next-themes';
+import {AppThemeProvider} from '@/components/theme/AppThemeProvider';
 import {ServiceWorkerRegistrar} from '@/components/pwa/ServiceWorkerRegistrar';
 import {InstallPrompt} from '@/components/pwa/InstallPrompt';
 
@@ -90,9 +90,9 @@ export default function RootLayout({
           rel="stylesheet"
         />
         <ServiceWorkerRegistrar />
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+        <AppThemeProvider>
           <ReactQueryProvider>{children}</ReactQueryProvider>
-        </ThemeProvider>
+        </AppThemeProvider>
         <InstallPrompt />
       </body>
     </html>

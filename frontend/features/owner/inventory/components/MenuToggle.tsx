@@ -35,7 +35,7 @@ export function MenuToggle({checked, busy = false, warn = false, onChange}: Prop
         } ${busy ? 'opacity-60 pointer-events-none' : ''}`}
       >
         <span
-          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+          className={`inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-900 shadow transition-transform ${
             checked ? 'translate-x-[22px]' : 'translate-x-0.5'
           }`}
         />

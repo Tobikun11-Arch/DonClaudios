@@ -35,9 +35,9 @@ function Stars({rating}: {rating: number}) {
 
 function statusBadge(status: ReviewStatus) {
   const map: Record<ReviewStatus, {label: string; className: string}> = {
-    pending: {label: 'Pending', className: 'bg-amber-100 text-amber-700'},
-    approved: {label: 'Approved', className: 'bg-green-100 text-green-700'},
-    rejected: {label: 'Rejected', className: 'bg-red-100 text-red-600'}
+    pending: {label: 'Pending', className: 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300'},
+    approved: {label: 'Approved', className: 'bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300'},
+    rejected: {label: 'Rejected', className: 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400'}
   };
   const cfg = map[status];
   return (
@@ -67,7 +67,7 @@ function AutoBlockedNotice({review}: {review: Review}) {
   const matched = review.moderation?.matchedWords ?? [];
   const handled = review.moderation?.action === 'manual';
   return (
-    <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+    <div className="mt-3 rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-3 text-xs text-red-700 dark:text-red-300">
       <p className="flex items-center gap-1.5 font-semibold">
         <ShieldAlert size={14} />
         Auto-blocked by the word filter
@@ -253,8 +253,8 @@ export default function OwnerReviews() {
     <div className="w-full">
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Reviews</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Reviews</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Approve, reject, and reply to customer reviews. Approved reviews
             appear on the homepage.
           </p>
@@ -279,15 +279,15 @@ export default function OwnerReviews() {
       />
 
       {isLoading ? (
-        <div className="rounded-2xl bg-white shadow p-5 text-sm text-gray-500">
+        <div className="rounded-2xl bg-white dark:bg-gray-900 shadow p-5 text-sm text-gray-500 dark:text-gray-400">
           Loading reviews...
         </div>
       ) : isError ? (
-        <div className="rounded-2xl bg-white shadow p-5 text-sm text-red-600">
+        <div className="rounded-2xl bg-white dark:bg-gray-900 shadow p-5 text-sm text-red-600 dark:text-red-400">
           Failed to load reviews.
         </div>
       ) : reviews.length === 0 ? (
-        <div className="rounded-2xl bg-white shadow p-5 text-sm text-gray-500">
+        <div className="rounded-2xl bg-white dark:bg-gray-900 shadow p-5 text-sm text-gray-500 dark:text-gray-400">
           No reviews in this category.
         </div>
       ) : (
@@ -300,7 +300,7 @@ export default function OwnerReviews() {
             const isReplying = replyingId === review._id;
             const draft = drafts[review._id] ?? '';
             return (
-              <div key={review._id} id={`review-${review._id}`} className="rounded-2xl bg-white shadow p-4 sm:p-6">
+              <div key={review._id} id={`review-${review._id}`} className="rounded-2xl bg-white dark:bg-gray-900 shadow p-4 sm:p-6">
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
                   {/*
                     `min-w-0` lets this column shrink below its longest
@@ -313,19 +313,19 @@ export default function OwnerReviews() {
                       <Stars rating={review.rating} />
                       {statusBadge(review.status)}
                       {isFlagged(review) && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-500/20 px-3 py-1 text-xs font-semibold text-red-700 dark:text-red-300">
                           <ShieldAlert size={12} />
                           Auto-blocked
                         </span>
                       )}
                     </div>
-                    <p className="text-sm font-bold text-gray-900 mt-3 break-words">
+                    <p className="text-sm font-bold text-gray-900 dark:text-gray-100 mt-3 break-words">
                       {review.customerName}
                     </p>
                     <p className="text-xs text-gray-400">
                       {formatDate(review.createdAt)}
                     </p>
-                    <p className="text-sm text-gray-700 mt-3 break-words">
+                    <p className="text-sm text-gray-700 dark:text-gray-200 mt-3 break-words">
                       &ldquo;{review.comment}&rdquo;
                     </p>
                     {review.images && review.images.length > 0 && (
@@ -337,7 +337,7 @@ export default function OwnerReviews() {
                             alt={image.alt || 'Review photo'}
                             width={96}
                             height={96}
-                            className="h-24 w-24 rounded-lg object-cover border border-gray-200"
+                            className="h-24 w-24 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
                           />
                         ))}
                       </div>
@@ -371,7 +371,7 @@ export default function OwnerReviews() {
 
                 {messages.length > 0 && (
                   <div className="mt-5 space-y-2.5">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                    <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                       Conversation
                     </p>
                     {messages.map(message => (
@@ -384,13 +384,13 @@ export default function OwnerReviews() {
                   </div>
                 )}
 
-                <div className="mt-5 pt-4 border-t border-gray-100">
+                <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-700">
                   {!isReplying ? (
                     <Button
                       onClick={() => setReplyingId(review._id)}
                       variant="outline"
                       size="sm"
-                      className="gap-2 text-[#2d4a35]"
+                      className="gap-2 text-[#2d4a35] dark:text-[#7ed4a0]"
                     >
                       {draft.trim() || review.reply ? (
                         <MailOpen size={16} />
@@ -419,7 +419,7 @@ export default function OwnerReviews() {
                         rows={3}
                         maxLength={2000}
                         placeholder="Write your reply..."
-                        className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e]"
+                        className="w-full rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e]"
                       />
                       <div className="flex justify-end gap-2 mt-2">
                         <Button

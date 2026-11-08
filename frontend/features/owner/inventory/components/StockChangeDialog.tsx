@@ -96,10 +96,10 @@ export function StockChangeDialog({
       >
         <div
           onClick={e => e.stopPropagation()}
-          className="w-full sm:max-w-[440px] max-h-[100dvh] sm:max-h-[90dvh] bg-white shadow-xl border border-gray-100 rounded-t-2xl sm:rounded-2xl flex flex-col"
+          className="w-full sm:max-w-[440px] max-h-[100dvh] sm:max-h-[90dvh] bg-white dark:bg-gray-900 shadow-xl border border-gray-100 dark:border-gray-700 rounded-t-2xl sm:rounded-2xl flex flex-col"
         >
-          <div className="flex items-start gap-3 px-5 py-4 border-b border-gray-100">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-100">
+          <div className="flex items-start gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800">
               {product.imageUrl ? (
                 <Image
                   src={product.imageUrl}
@@ -113,10 +113,10 @@ export function StockChangeDialog({
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-gray-900">
+              <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-100">
                 {product.name}
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Current stock:{' '}
                 <span className="font-semibold">{product.stock}</span>
                 {unitSuffix}
@@ -127,7 +127,7 @@ export function StockChangeDialog({
               onClick={onClose}
               disabled={isPending}
               aria-label="Close"
-              className="shrink-0 rounded-lg p-2.5 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600"
+              className="shrink-0 rounded-lg p-2.5 text-gray-400 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60 hover:text-gray-600 dark:hover:text-gray-300"
             >
               <X className="h-5 w-5" />
             </button>
@@ -140,7 +140,7 @@ export function StockChangeDialog({
           */}
           <div className="min-h-0 flex-1 overflow-y-auto p-5 space-y-4">
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-gray-700">
+              <label className="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-200">
                 {isRemove ? 'Quantity to remove *' : 'Quantity to add *'}
               </label>
               <div className="flex items-center gap-2">
@@ -157,7 +157,7 @@ export function StockChangeDialog({
                   className="h-12 text-lg font-bold"
                 />
                 {unit && (
-                  <span className="text-sm font-semibold text-gray-500">
+                  <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
                     {unit}
                   </span>
                 )}
@@ -170,7 +170,7 @@ export function StockChangeDialog({
                       key={n}
                       type="button"
                       onClick={() => setQuantity(String(n))}
-                      className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-500 transition-colors hover:border-[#2d4a35] hover:text-[#2d4a35]"
+                      className="rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs font-bold text-gray-500 dark:text-gray-400 transition-colors hover:border-[#2d4a35] dark:hover:border-[#7ed4a0]/60 hover:text-[#2d4a35] dark:hover:text-[#7ed4a0]"
                     >
                       +{n}
                     </button>
@@ -181,7 +181,7 @@ export function StockChangeDialog({
 
             {isRemove && (
               <div>
-                <label className="mb-1.5 block text-xs font-semibold text-gray-700">
+                <label className="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-200">
                   Reason *
                 </label>
                 <div className="flex gap-2">
@@ -191,8 +191,8 @@ export function StockChangeDialog({
                     className={cn(
                       'flex-1 rounded-xl border py-2.5 px-3 text-xs font-bold transition-colors',
                       reason === 'adjustment'
-                        ? 'border-amber-200 bg-amber-50 text-amber-700'
-                        : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
+                        ? 'border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
                     )}
                   >
                     Correction
@@ -203,8 +203,8 @@ export function StockChangeDialog({
                     className={cn(
                       'flex-1 rounded-xl border py-2.5 px-3 text-xs font-bold transition-colors',
                       reason === 'spoilage'
-                        ? 'border-red-200 bg-red-50 text-red-700'
-                        : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
+                        ? 'border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300'
+                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
                     )}
                   >
                     Spoilage
@@ -214,7 +214,7 @@ export function StockChangeDialog({
             )}
 
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-gray-700">
+              <label className="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-200">
                 Note
               </label>
               <Input
@@ -229,8 +229,8 @@ export function StockChangeDialog({
               className={cn(
                 'flex items-center justify-between rounded-xl border px-4 py-3 text-sm',
                 belowZero
-                  ? 'border-red-200 bg-red-50/60 text-red-700'
-                  : 'border-gray-100 bg-gray-50/60 text-gray-700'
+                  ? 'border-red-200 dark:border-red-500/30 bg-red-50/60 dark:bg-red-500/10 text-red-700 dark:text-red-300'
+                  : 'border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 text-gray-700 dark:text-gray-200'
               )}
             >
               <span className="font-medium">New stock</span>
@@ -242,7 +242,7 @@ export function StockChangeDialog({
             </div>
 
             {belowZero && (
-              <p className="text-xs font-semibold text-red-600">
+              <p className="text-xs font-semibold text-red-600 dark:text-red-400">
                 Cannot remove more than what is in stock.
               </p>
             )}

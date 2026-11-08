@@ -139,11 +139,11 @@ export function ProductFormModal({
             onDrop={onDrop}
             disabled={isDisabled}
             className={cn(
-              'relative mt-1 w-full rounded-2xl border-2 border-dashed transition-colors overflow-hidden bg-white',
+              'relative mt-1 w-full rounded-2xl border-2 border-dashed transition-colors overflow-hidden bg-white dark:bg-gray-900',
               'aspect-[16/9]',
               isDragging
-                ? 'border-[#2d4a35] bg-[#e9f5ee]'
-                : 'border-[#c9e7d4] hover:border-[#2d4a35]'
+                ? 'border-[#2d4a35] dark:border-[#7ed4a0]/60 bg-[#e9f5ee] dark:bg-[#7ed4a0]/10'
+                : 'border-[#c9e7d4] dark:border-[#7ed4a0]/30 hover:border-[#2d4a35] dark:hover:border-[#7ed4a0]/60'
             )}
           >
             {previewUrl ? (
@@ -161,13 +161,13 @@ export function ProductFormModal({
                 </div>
               </>
             ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[#2d4a35]">
-                <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-2xl bg-[#e9f5ee] flex items-center justify-center">
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[#2d4a35] dark:text-[#7ed4a0]">
+                <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-2xl bg-[#e9f5ee] dark:bg-[#7ed4a0]/10 flex items-center justify-center">
                   <Upload className="h-5 w-5 sm:h-7 sm:w-7" />
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-extrabold">Upload product image</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     Click to choose or drag and drop here
                   </p>
                   <p className="text-xs text-gray-400 mt-0.5">
@@ -223,10 +223,10 @@ export function ProductFormModal({
               )}
             </select>
             {!categoriesLoading && selectedCategory && (
-              <p className="text-xs text-gray-500 hidden" />
+              <p className="text-xs text-gray-500 dark:text-gray-400 hidden" />
             )}
             {legacyCategory && (
-              <p className="text-xs text-amber-700">
+              <p className="text-xs text-amber-700 dark:text-amber-300">
                 &quot;{legacyCategory}&quot; is not in your category list. Pick
                 a category above to keep this product working.
               </p>
@@ -266,7 +266,7 @@ export function ProductFormModal({
             </div>
             <p
               className={
-                preOrderOn ? 'text-xs text-gray-500' : 'text-xs text-gray-500 hidden'
+                preOrderOn ? 'text-xs text-gray-500 dark:text-gray-400' : 'text-xs text-gray-500 dark:text-gray-400 hidden'
               }
             >
               {preOrderOn ? 'Totals the batch windows below automatically.' : ''}
@@ -289,7 +289,7 @@ export function ProductFormModal({
               min
             </span>
           </div>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             How long the kitchen takes to make this. An order is estimated by
             its slowest item, and cashiers get alerted if it runs past that.
             {form.prepTimeMinutes.trim() === '' && (
@@ -316,7 +316,7 @@ export function ProductFormModal({
 
         {/* Pre-order — only offered in the eligible categories. */}
         {canPreOrder && (
-          <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+          <div className="space-y-3 rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/60 dark:bg-amber-500/10 p-4">
             <div className="space-y-1.5">
               <Label htmlFor="isPreOrder">Pre-order</Label>
               <select
@@ -327,7 +327,7 @@ export function ProductFormModal({
                 }
                 disabled={isDisabled}
                 className={cn(
-                  'h-9 w-full min-w-0 rounded-md border border-input bg-white px-2.5 text-base shadow-xs outline-none transition-[color,box-shadow]',
+                  'h-9 w-full min-w-0 rounded-md border border-input bg-white dark:bg-gray-900 px-2.5 text-base shadow-xs outline-none transition-[color,box-shadow]',
                   'focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
                   'disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
                 )}
@@ -335,7 +335,7 @@ export function ProductFormModal({
                 <option value="no">No</option>
                 <option value="yes">Yes</option>
               </select>
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-gray-600 dark:text-gray-300">
                 Pre-order items are only visible to signed-in customers, and
                 customers can only order them while a batch window is open.
               </p>
@@ -367,7 +367,7 @@ export function ProductFormModal({
                         max
                       </span>
                     </div>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-gray-600 dark:text-gray-300">
                       The most one customer can order of this item per batch
                       window.
                     </p>
@@ -385,7 +385,7 @@ export function ProductFormModal({
                         onFormChange('preOrderDeadline', e.target.value)
                       }
                     />
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-gray-600 dark:text-gray-300">
                       The day customers can pre-order. Every batch window below
                       runs on this date.
                     </p>
@@ -402,7 +402,7 @@ export function ProductFormModal({
                     }
                     disabled={isDisabled}
                     className={cn(
-                      'h-9 w-full min-w-0 rounded-md border border-input bg-white px-2.5 text-base shadow-xs outline-none transition-[color,box-shadow]',
+                      'h-9 w-full min-w-0 rounded-md border border-input bg-white dark:bg-gray-900 px-2.5 text-base shadow-xs outline-none transition-[color,box-shadow]',
                       'focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
                       'disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
                     )}
@@ -413,7 +413,7 @@ export function ProductFormModal({
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-gray-600 dark:text-gray-300">
                     Stock is split across the windows, and customers can only
                     add to cart while one of them is running.
                   </p>
@@ -423,16 +423,16 @@ export function ProductFormModal({
                   {batchRows.map((row, index) => (
                     <div
                       key={index}
-                      className="rounded-lg border border-purple-200 bg-white p-3"
+                      className="rounded-lg border border-purple-200 dark:border-purple-500/30 bg-white dark:bg-gray-900 p-3"
                     >
-                      <p className="text-xs font-bold text-purple-800 mb-2">
+                      <p className="text-xs font-bold text-purple-800 dark:text-purple-200 mb-2">
                         Batch {index + 1}
                       </p>
                       <div className="grid gap-3 sm:grid-cols-3">
                         <div className="space-y-1.5">
                           <Label
                             htmlFor={`batchStart-${index}`}
-                            className="text-xs text-gray-600"
+                            className="text-xs text-gray-600 dark:text-gray-300"
                           >
                             Starts
                           </Label>
@@ -449,7 +449,7 @@ export function ProductFormModal({
                         <div className="space-y-1.5">
                           <Label
                             htmlFor={`batchEnd-${index}`}
-                            className="text-xs text-gray-600"
+                            className="text-xs text-gray-600 dark:text-gray-300"
                           >
                             Ends
                           </Label>
@@ -466,7 +466,7 @@ export function ProductFormModal({
                         <div className="space-y-1.5">
                           <Label
                             htmlFor={`batchStock-${index}`}
-                            className="text-xs text-gray-600"
+                            className="text-xs text-gray-600 dark:text-gray-300"
                           >
                             Stock
                           </Label>
@@ -499,7 +499,7 @@ export function ProductFormModal({
           form.category.trim() &&
           !canPreOrder &&
           form.category.toLowerCase() !== 'promo' && (
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Pre-order is available for:{' '}
               {PRE_ORDER_CATEGORIES.join(', ')}.
             </p>
@@ -508,8 +508,8 @@ export function ProductFormModal({
         {/* Promo-specific fields - shown when category is 'promo' */}
         {form.category.toLowerCase() === 'promo' && (
           <>
-            <div className="rounded-xl border border-[#2d4a35]/20 bg-[#e9f5ee]/50 p-4">
-              <p className="text-sm font-semibold text-[#2d4a35] mb-3">
+            <div className="rounded-xl border border-[#2d4a35]/20 dark:border-[#7ed4a0]/30 bg-[#e9f5ee]/50 dark:bg-[#7ed4a0]/10 p-4">
+              <p className="text-sm font-semibold text-[#2d4a35] dark:text-[#7ed4a0] mb-3">
                 Promo Settings
               </p>
               <div className="space-y-3">
@@ -625,7 +625,7 @@ export function ProductFormModal({
                 onAddToLibrary={onAddIngredientToLibrary}
                 disabled={isDisabled}
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Search the ingredient library and select to add. At least 1 is
                 required. Not in the library? Type it and choose &quot;Add as
                 new ingredient&quot;.
@@ -639,7 +639,7 @@ export function ProductFormModal({
                 onChange={value => onFormChange('allergens', value)}
                 disabled={isDisabled}
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Optional. Leave empty for &quot;No known allergens&quot;.
               </p>
             </div>
@@ -647,7 +647,7 @@ export function ProductFormModal({
         )}
 
         {formError && (
-          <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+          <div className="text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/30 rounded-xl px-4 py-3">
             {formError}
           </div>
         )}
@@ -663,7 +663,7 @@ export function ProductFormModal({
           </Button>
           <Button
             type="submit"
-            className="bg-[#2d4a35] hover:bg-[#24402c]"
+            className="bg-[#2d4a35] hover:bg-[#24402c] dark:text-white"
             disabled={isDisabled}
           >
             {submitStatus === 'uploading'

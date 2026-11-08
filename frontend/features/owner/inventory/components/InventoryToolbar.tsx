@@ -69,8 +69,8 @@ export function InventoryDropdown({
         type="button"
         onClick={() => setOpen(o => !o)}
         className={cn(
-          'flex h-9 items-center gap-2 rounded-md border border-gray-200 bg-white px-3 text-sm font-medium text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-50',
-          open && 'border-gray-300 bg-gray-50'
+          'flex h-9 items-center gap-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 text-sm font-medium text-gray-600 dark:text-gray-300 transition-colors hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/60',
+          open && 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/60'
         )}
       >
         <span className="max-w-36 truncate">{current}</span>
@@ -95,7 +95,7 @@ export function InventoryDropdown({
           <div
             role="dialog"
             aria-label={current}
-            className="fixed inset-x-3 bottom-24 z-[60] max-h-[70vh] overflow-y-auto overscroll-contain rounded-xl border border-gray-200 bg-white p-1 shadow-xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-10 sm:z-30 sm:mt-1 sm:max-h-none sm:w-56 sm:overflow-y-visible sm:overscroll-auto"
+            className="fixed inset-x-3 bottom-24 z-[60] max-h-[70vh] overflow-y-auto overscroll-contain rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-1 shadow-xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-10 sm:z-30 sm:mt-1 sm:max-h-none sm:w-56 sm:overflow-y-visible sm:overscroll-auto"
           >
           <button
             type="button"
@@ -106,8 +106,8 @@ export function InventoryDropdown({
             className={cn(
               'block w-full rounded-lg px-3 py-2 text-left text-sm transition-colors',
               value === allValue
-                ? 'bg-[#e9f5ee] font-semibold text-[#2d4a35]'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'bg-[#e9f5ee] dark:bg-[#7ed4a0]/10 font-semibold text-[#2d4a35] dark:text-[#7ed4a0]'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
             )}
           >
             {allLabel}
@@ -123,8 +123,8 @@ export function InventoryDropdown({
               className={cn(
                 'block w-full rounded-lg px-3 py-2 text-left text-sm transition-colors',
                 value === option.value
-                  ? 'bg-[#e9f5ee] font-semibold text-[#2d4a35]'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  ? 'bg-[#e9f5ee] dark:bg-[#7ed4a0]/10 font-semibold text-[#2d4a35] dark:text-[#7ed4a0]'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
               )}
             >
               {option.label}

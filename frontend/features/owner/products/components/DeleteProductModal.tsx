@@ -23,9 +23,9 @@ export function DeleteProductModal({
       onClose={onClose}
     >
       <div className="space-y-4">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 dark:text-gray-300">
           Are you sure you want to delete{' '}
-          <span className="font-bold text-gray-900">{productName}</span>?
+          <span className="font-bold text-gray-900 dark:text-gray-100">{productName}</span>?
           This cannot be undone.
         </p>
         <div className="flex items-center justify-end gap-2 pt-1">

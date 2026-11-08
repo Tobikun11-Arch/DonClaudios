@@ -20,8 +20,8 @@ function buttonClass(disabled: boolean) {
   return cn(
     'flex h-10 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition-colors',
     disabled
-      ? 'cursor-not-allowed border-gray-200 bg-white text-gray-300'
-      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+      ? 'cursor-not-allowed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-300'
+      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/60'
   );
 }
 

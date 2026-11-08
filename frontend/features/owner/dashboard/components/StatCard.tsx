@@ -9,10 +9,10 @@ const iconMap: Record<StatCardData['key'], typeof TrendingUp> = {
 };
 
 const iconBgMap: Record<StatCardData['key'], string> = {
-  todaySales: 'bg-[#E8F0E3]',
-  totalRevenue: 'bg-[#E8F0E3]',
-  productsInStock: 'bg-[#E8F0E3]',
-  customers: 'bg-[#E8F0E3]'
+  todaySales: 'bg-[#E8F0E3] dark:bg-[#7ed4a0]/10',
+  totalRevenue: 'bg-[#E8F0E3] dark:bg-[#7ed4a0]/10',
+  productsInStock: 'bg-[#E8F0E3] dark:bg-[#7ed4a0]/10',
+  customers: 'bg-[#E8F0E3] dark:bg-[#7ed4a0]/10'
 };
 
 interface Props {
@@ -23,13 +23,13 @@ export function StatCard({data}: Props) {
   const Icon = iconMap[data.key];
 
   return (
-    <div className="bg-white border border-[#E5E7EB] rounded-xl p-5 px-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex items-center min-h-[120px]">
+    <div className="bg-white dark:bg-gray-900 border border-[#E5E7EB] dark:border-gray-700 rounded-xl p-5 px-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex items-center min-h-[120px]">
       <div className="flex items-start justify-between w-full">
         <div className="space-y-1.5">
-          <p className="text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+          <p className="text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
             {data.label}
           </p>
-          <p className="text-[1.5rem] font-bold text-[#1A1A1A] leading-none">
+          <p className="text-[1.5rem] font-bold text-[#1A1A1A] dark:text-gray-100 leading-none">
             {data.key === 'todaySales' || data.key === 'totalRevenue'
               ? `₱${data.value.toLocaleString()}`
               : data.value.toLocaleString()}
@@ -41,11 +41,11 @@ export function StatCard({data}: Props) {
               {data.delta > 0 ? '+' : ''}{data.delta}% {data.deltaLabel}
             </p>
           ) : data.context ? (
-            <p className="text-[0.75rem] text-[#6B7280]">{data.context}</p>
+            <p className="text-[0.75rem] text-[#6B7280] dark:text-gray-400">{data.context}</p>
           ) : null}
         </div>
         <div className={`w-8 h-8 rounded-full ${iconBgMap[data.key]} flex items-center justify-center shrink-0`}>
-          <Icon className="h-4 w-4 text-[#4A7C35]" />
+          <Icon className="h-4 w-4 text-[#4A7C35] dark:text-[#7ed4a0]" />
         </div>
       </div>
     </div>

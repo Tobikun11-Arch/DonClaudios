@@ -60,19 +60,19 @@ export function ReportRowPicker({
       />
 
       {current.secondary && (
-        <p className="mt-1.5 text-[0.75rem] text-[#6B7280]">{current.secondary}</p>
+        <p className="mt-1.5 text-[0.75rem] text-[#6B7280] dark:text-gray-400">{current.secondary}</p>
       )}
 
       <dl className="mt-3 grid grid-cols-2 gap-2">
         {metrics(current).map(metric => (
-          <div key={metric.label} className="rounded-lg bg-[#F7FAF6] px-3 py-2.5">
-            <dt className="text-[0.68rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+          <div key={metric.label} className="rounded-lg bg-[#F7FAF6] dark:bg-gray-800/60 px-3 py-2.5">
+            <dt className="text-[0.68rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
               {metric.label}
             </dt>
             <dd
               className={cn(
                 'mt-0.5 text-[1.05rem] font-bold tabular-nums',
-                metric.tone === 'danger' ? 'text-red-500' : 'text-[#1A1A1A]'
+                metric.tone === 'danger' ? 'text-red-500' : 'text-[#1A1A1A] dark:text-gray-100'
               )}
             >
               {metric.value}

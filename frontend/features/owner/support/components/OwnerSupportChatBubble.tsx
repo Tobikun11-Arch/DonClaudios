@@ -30,7 +30,7 @@ function ConversationRow({
   return (
     <button
       onClick={onSelect}
-      className={`w-full text-left px-4 py-3 border-b border-gray-50 transition-colors ${
+      className={`w-full text-left px-4 py-3 border-b border-gray-50 dark:border-gray-700 transition-colors ${
         active ? 'bg-[#eef4ef]' : 'hover:bg-gray-50'
       }`}
     >
@@ -60,7 +60,7 @@ function ConversationRow({
           {conversation.contact}
         </p>
       )}
-      <p className="mt-0.5 truncate text-xs text-gray-500">
+      <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
         {conversation.lastMessage || 'No messages'}
       </p>
     </button>
@@ -146,11 +146,11 @@ export default function OwnerSupportChatBubble() {
     <div className={supportBubbleClass}>
       {open && (
         <div
-          className={`${supportPanelHeightOwnerClass} mb-3 flex w-[calc(100vw-2.5rem)] max-w-[380px] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl`}
+          className={`${supportPanelHeightOwnerClass} mb-3 flex w-[calc(100vw-2.5rem)] max-w-[380px] flex-col overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-2xl`}
         >
           {view === 'list' ? (
             <>
-              <div className="flex shrink-0 items-center justify-between border-b border-gray-100 bg-[#2d4a35] px-4 py-3 text-white">
+              <div className="flex shrink-0 items-center justify-between border-b border-gray-100 dark:border-gray-700 bg-[#2d4a35] px-4 py-3 text-white">
                 <div>
                   <p className="text-sm font-bold leading-tight">
                     Support Chats
@@ -168,7 +168,7 @@ export default function OwnerSupportChatBubble() {
                 </button>
               </div>
 
-              <div className="flex shrink-0 gap-1 border-b border-gray-100 px-4 py-2.5">
+              <div className="flex shrink-0 gap-1 border-b border-gray-100 dark:border-gray-700 px-4 py-2.5">
                 {(['open', 'closed'] as Filter[]).map(f => (
                   <button
                     key={f}
@@ -205,7 +205,7 @@ export default function OwnerSupportChatBubble() {
             </>
           ) : (
             <>
-              <div className="flex shrink-0 items-center gap-2 border-b border-gray-100 bg-[#2d4a35] px-3 py-3 text-white">
+              <div className="flex shrink-0 items-center gap-2 border-b border-gray-100 dark:border-gray-700 bg-[#2d4a35] px-3 py-3 text-white">
                 <button
                   onClick={handleBack}
                   className="rounded-full p-1.5 text-[#b8d4c0] hover:bg-[#3a5c44] hover:text-white transition-colors"

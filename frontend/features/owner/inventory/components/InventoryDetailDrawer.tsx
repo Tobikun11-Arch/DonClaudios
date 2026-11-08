@@ -58,7 +58,7 @@ function AllergenChips({allergens}: {allergens?: ProductAllergen[]}) {
         return (
           <span
             key={allergen}
-            className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800"
+            className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 dark:bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-800 dark:text-amber-200"
           >
             <Icon className="h-3.5 w-3.5" />
             {ALLERGEN_LABELS[allergen]}
@@ -120,7 +120,7 @@ export function InventoryDetailDrawer({
 
   const loader = (
     <div className="flex items-center justify-center py-10">
-      <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-200 border-t-[#2d4a35]" />
+      <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-200 dark:border-gray-700 border-t-[#2d4a35]" />
     </div>
   );
 
@@ -131,28 +131,28 @@ export function InventoryDetailDrawer({
         <div
           onClick={e => e.stopPropagation()}
           className={cn(
-            'flex h-full w-full flex-col bg-white shadow-2xl border-l border-gray-100',
+            'flex h-full w-full flex-col bg-white dark:bg-gray-900 shadow-2xl border-l border-gray-100 dark:border-gray-700',
             'sm:w-[460px]',
             'drawer-in-right'
           )}
         >
           {mode === 'activity' ? (
             <>
-              <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-4 shrink-0">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-700 px-5 py-4 shrink-0">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
                   <History className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-base font-bold text-gray-900">
+                  <p className="text-base font-bold text-gray-900 dark:text-gray-100">
                     All activity
                   </p>
-                  <p className="text-xs text-gray-500">Latest stock movements</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Latest stock movements</p>
                 </div>
                 <button
                   type="button"
                   onClick={onClose}
                   aria-label="Close"
-                  className="ml-auto rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600"
+                  className="ml-auto rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60 hover:text-gray-600 dark:hover:text-gray-300"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -161,14 +161,14 @@ export function InventoryDetailDrawer({
               <div className="flex-1 overflow-y-auto p-5">
                 {activityLoading && loader}
                 {activityError && (
-                  <div className="rounded-xl border border-red-200 bg-red-50/60 p-4 text-sm text-red-700">
+                  <div className="rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50/60 dark:bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-300">
                     Could not load activity.
                   </div>
                 )}
                 {!activityLoading && !activityError && activityMovements.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <History className="h-6 w-6 text-gray-300" />
-                    <p className="mt-3 text-sm font-semibold text-gray-600">
+                    <p className="mt-3 text-sm font-semibold text-gray-600 dark:text-gray-300">
                       No activity yet
                     </p>
                     <p className="mt-1 text-xs text-gray-400">
@@ -199,8 +199,8 @@ export function InventoryDetailDrawer({
           ) : product ? (
             <>
               {/* Header */}
-              <div className="flex items-start gap-4 border-b border-gray-100 px-5 py-4 shrink-0">
-                <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gray-100">
+              <div className="flex items-start gap-4 border-b border-gray-100 dark:border-gray-700 px-5 py-4 shrink-0">
+                <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-800">
                   {product.imageUrl ? (
                     <Image
                       src={product.imageUrl}
@@ -214,11 +214,11 @@ export function InventoryDetailDrawer({
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-lg font-extrabold text-gray-900">
+                  <p className="truncate text-lg font-extrabold text-gray-900 dark:text-gray-100">
                     {product.name}
                   </p>
-                  <p className="text-xs text-gray-500">{product.category}</p>
-                  <p className="mt-0.5 text-sm font-bold text-[#2d4a35]">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{product.category}</p>
+                  <p className="mt-0.5 text-sm font-bold text-[#2d4a35] dark:text-[#7ed4a0]">
                     {formatPeso(product.price)}
                   </p>
                 </div>
@@ -226,7 +226,7 @@ export function InventoryDetailDrawer({
                   type="button"
                   onClick={onClose}
                   aria-label="Close"
-                  className="shrink-0 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600"
+                  className="shrink-0 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60 hover:text-gray-600 dark:hover:text-gray-300"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -236,7 +236,7 @@ export function InventoryDetailDrawer({
                 {/* Stock block */}
                 <div>
                   <div className="flex items-center gap-3">
-                    <p className="text-4xl font-extrabold tabular-nums text-gray-900">
+                    <p className="text-4xl font-extrabold tabular-nums text-gray-900 dark:text-gray-100">
                       {product.stock}
                       <span className="ml-1 text-base font-semibold text-gray-400">
                         {stockUnitLabel(product.stockUnit) ||
@@ -271,7 +271,7 @@ export function InventoryDetailDrawer({
                     <Button
                       variant="outline"
                       onClick={() => onRemove(product)}
-                      className="border-amber-200 text-amber-700 hover:bg-amber-50"
+                      className="border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-500/10"
                     >
                       <Minus className="h-4 w-4" />
                       Remove stock
@@ -279,7 +279,7 @@ export function InventoryDetailDrawer({
                     <Button
                       variant="outline"
                       onClick={() => onRemove(product, 'spoilage')}
-                      className="border-red-200 text-red-700 hover:bg-red-50"
+                      className="border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10"
                     >
                       <Trash2 className="h-4 w-4" />
                       Record spoilage
@@ -289,11 +289,11 @@ export function InventoryDetailDrawer({
 
                 {/* About */}
                 <div>
-                  <h4 className="text-sm font-bold text-gray-900">
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">
                     About this product
                   </h4>
                   {product.description ? (
-                    <p className="mt-2 text-sm text-gray-600">
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
                       {product.description}
                     </p>
                   ) : (
@@ -309,9 +309,9 @@ export function InventoryDetailDrawer({
                         return (
                           <span
                             key={`${ing.name}-${idx}`}
-                            className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-700"
+                            className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 dark:border-gray-700 px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-200"
                           >
-                            <Icon className="h-3.5 w-3.5 text-[#2d4a35]" />
+                            <Icon className="h-3.5 w-3.5 text-[#2d4a35] dark:text-[#7ed4a0]" />
                             {ing.name}
                           </span>
                         );
@@ -325,17 +325,17 @@ export function InventoryDetailDrawer({
                 </div>
 
                 {/* Movement history */}
-                <div ref={historyRef} className="rounded-xl border border-gray-100">
-                  <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3">
+                <div ref={historyRef} className="rounded-xl border border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 px-4 py-3">
                     <History className="h-4 w-4 text-gray-400" />
-                    <h4 className="text-sm font-bold text-gray-900">
+                    <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">
                       Movement history
                     </h4>
                   </div>
                   <div className="max-h-72 overflow-y-auto px-4">
                     {productMovementsQuery.isLoading && <div className="py-4">{loader}</div>}
                     {productMovementsQuery.isError && (
-                      <p className="py-4 text-xs text-red-600">
+                      <p className="py-4 text-xs text-red-600 dark:text-red-400">
                         Could not load movement history.
                       </p>
                     )}
@@ -343,7 +343,7 @@ export function InventoryDetailDrawer({
                       !productMovementsQuery.isError &&
                       (productMovementsQuery.data?.movements ?? []).length === 0 && (
                         <div className="py-8 text-center">
-                          <p className="text-sm font-semibold text-gray-600">
+                          <p className="text-sm font-semibold text-gray-600 dark:text-gray-300">
                             No stock movements yet
                           </p>
                           <p className="mt-1 text-xs text-gray-400">
@@ -352,7 +352,7 @@ export function InventoryDetailDrawer({
                         </div>
                       )}
                     {(productMovementsQuery.data?.movements ?? []).length > 0 && (
-                      <div className="divide-y divide-gray-50">
+                      <div className="divide-y divide-gray-50 dark:divide-gray-700">
                         {(productMovementsQuery.data?.movements ?? []).map(m => (
                           <ActivityRow
                             key={m._id}

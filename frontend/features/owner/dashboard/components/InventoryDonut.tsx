@@ -27,16 +27,16 @@ function getColor(category: string, index: number): string {
 
 export function InventoryDonut({categories, dominant, isLoading, isError}: Props) {
   return (
-    <div className="bg-white border border-[#E5E7EB] rounded-xl p-4 px-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] w-full lg:w-[40%] lg:shrink-0">
+    <div className="bg-white dark:bg-gray-900 border border-[#E5E7EB] dark:border-gray-700 rounded-xl p-4 px-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] w-full lg:w-[40%] lg:shrink-0">
       <div className="mb-4">
-        <h3 className="text-[1rem] font-semibold text-[#1A1A1A]">
+        <h3 className="text-[1rem] font-semibold text-[#1A1A1A] dark:text-gray-100">
           Inventory by Category
         </h3>
-        <p className="text-[0.8rem] text-[#6B7280]">Stock distribution</p>
+        <p className="text-[0.8rem] text-[#6B7280] dark:text-gray-400">Stock distribution</p>
       </div>
 
       {isLoading ? (
-        <div className="h-[200px] flex items-center justify-center text-sm text-[#6B7280]">
+        <div className="h-[200px] flex items-center justify-center text-sm text-[#6B7280] dark:text-gray-400">
           Loading...
         </div>
       ) : isError ? (
@@ -44,7 +44,7 @@ export function InventoryDonut({categories, dominant, isLoading, isError}: Props
           Failed to load inventory data
         </div>
       ) : categories.length === 0 ? (
-        <div className="h-[200px] flex items-center justify-center text-sm text-[#6B7280]">
+        <div className="h-[200px] flex items-center justify-center text-sm text-[#6B7280] dark:text-gray-400">
           No inventory data
         </div>
       ) : (
@@ -72,10 +72,10 @@ export function InventoryDonut({categories, dominant, isLoading, isError}: Props
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <p className="text-[0.65rem] font-bold text-[#1A1A1A] leading-tight text-center max-w-[80px] truncate">
+              <p className="text-[0.65rem] font-bold text-[#1A1A1A] dark:text-gray-100 leading-tight text-center max-w-[80px] truncate">
                 {dominant.category}
               </p>
-              <p className="text-[0.6rem] text-[#6B7280]">{dominant.count}</p>
+              <p className="text-[0.6rem] text-[#6B7280] dark:text-gray-400">{dominant.count}</p>
             </div>
           </div>
 
@@ -86,7 +86,7 @@ export function InventoryDonut({categories, dominant, isLoading, isError}: Props
                   className="w-2.5 h-2.5 rounded-full shrink-0"
                   style={{backgroundColor: getColor(entry.category, idx)}}
                 />
-                <span className="text-[0.75rem] text-[#1A1A1A] truncate">
+                <span className="text-[0.75rem] text-[#1A1A1A] dark:text-gray-100 truncate">
                   {entry.category}
                 </span>
               </div>

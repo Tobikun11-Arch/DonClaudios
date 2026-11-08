@@ -181,8 +181,8 @@ export function SettingsPage() {
     <div>
       <div className="mx-auto mb-6 flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-[#2d4a35]">Settings</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-2xl font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">Settings</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Manage your profile, business, security, and cashier.
           </p>
         </div>
@@ -199,7 +199,7 @@ export function SettingsPage() {
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder="Search settings"
-                className="min-h-[40px] rounded-xl bg-gray-50 pl-9 text-sm"
+                className="min-h-[40px] rounded-xl bg-gray-50 dark:bg-gray-800/60 pl-9 text-sm"
                 aria-label="Search settings"
               />
             </div>
@@ -210,7 +210,7 @@ export function SettingsPage() {
                 if (items.length === 0) return null;
                 return (
                   <div key={g}>
-                    {gi > 0 && <div className="my-2 border-t border-gray-200" />}
+                    {gi > 0 && <div className="my-2 border-t border-gray-200 dark:border-gray-700" />}
                     <ul className="space-y-0.5">
                       {items.map(item => {
                         const Icon = item.icon;
@@ -225,7 +225,7 @@ export function SettingsPage() {
                                 }
                                 className={cn(
                                   'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
-                                  'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                  'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60 hover:text-gray-900 dark:hover:text-gray-100'
                                 )}
                               >
                                 <Icon className="h-4 w-4 shrink-0" />
@@ -250,8 +250,8 @@ export function SettingsPage() {
                                           className={cn(
                                             'flex w-full items-center gap-3 rounded-lg py-2 pl-10 pr-3 text-sm transition-colors',
                                             childActive
-                                              ? 'bg-gray-100 font-semibold text-gray-900'
-                                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                              ? 'bg-gray-100 dark:bg-gray-800 font-semibold text-gray-900 dark:text-gray-100'
+                                              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60 hover:text-gray-900 dark:hover:text-gray-100'
                                           )}
                                         >
                                           <ChildIcon className="h-4 w-4 shrink-0" />
@@ -274,8 +274,8 @@ export function SettingsPage() {
                               className={cn(
                                 'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
                                 isActive
-                                  ? 'bg-gray-100 font-semibold text-gray-900'
-                                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                  ? 'bg-gray-100 dark:bg-gray-800 font-semibold text-gray-900 dark:text-gray-100'
+                                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60 hover:text-gray-900 dark:hover:text-gray-100'
                               )}
                             >
                               <Icon className="h-4 w-4 shrink-0" />
@@ -300,7 +300,7 @@ export function SettingsPage() {
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search settings"
-              className="min-h-[40px] rounded-xl bg-gray-50 pl-9 text-sm"
+              className="min-h-[40px] rounded-xl bg-gray-50 dark:bg-gray-800/60 pl-9 text-sm"
               aria-label="Search settings"
             />
           </div>
@@ -315,8 +315,8 @@ export function SettingsPage() {
         {/* Content panel */}
         <main className="min-w-0 flex-1">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">{activeInfo.label}</h2>
-            <p className="mt-1 text-sm text-gray-500">{activeInfo.subtitle}</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{activeInfo.label}</h2>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{activeInfo.subtitle}</p>
           </div>
           {renderContent()}
         </main>

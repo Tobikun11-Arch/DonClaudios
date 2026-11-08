@@ -166,7 +166,7 @@ function InlineField({field, editing}: {field: FieldDef; editing: boolean}) {
       <div className="flex items-center gap-2 text-[15px] text-gray-800 dark:text-gray-200 break-words sm:w-[240px] sm:justify-end">
         {field.value || <span className="text-gray-400 dark:text-gray-500">Not set</span>}
         {showSaved && (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600">
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
             <Check className="h-3.5 w-3.5" />
             Saved
           </span>
@@ -195,10 +195,10 @@ function Section({
           type="button"
           onClick={onToggleEdit}
           aria-label={editing ? 'Finish editing' : 'Edit ' + title}
-          className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:bg-gray-800 hover:text-[#2d4a35] dark:text-[#7ed4a0]"
+          className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 dark:bg-gray-800 hover:text-[#2d4a35] dark:hover:text-[#7ed4a0] dark:text-[#7ed4a0]"
         >
           {editing ? (
-            <Check className="h-5 w-5 text-green-600" />
+            <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
           ) : (
             <Pencil className="h-5 w-5" />
           )}
@@ -345,7 +345,7 @@ export function ProfileTab() {
             onSave={url => persist({profilePhoto: url}, 'Profile photo updated.')}
           />
         </div>
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-gray-100 dark:divide-gray-700">
           {profileFields.map(f => (
             <InlineField
               key={`${f.label}-${profileEditing}`}
@@ -370,7 +370,7 @@ export function ProfileTab() {
             onSave={url => persist({businessLogo: url}, 'Business logo updated.')}
           />
         </div>
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-gray-100 dark:divide-gray-700">
           {businessFields.map(f => (
             <InlineField
               key={`${f.label}-${businessEditing}`}
@@ -407,7 +407,7 @@ export function ProfileTab() {
           estimated by its slowest item, and cashiers are alerted if an order
           stays in Preparing longer than that.
         </p>
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-gray-100 dark:divide-gray-700">
           {prepFields.map(f => (
             <InlineField
               key={`${f.label}-${businessEditing}`}

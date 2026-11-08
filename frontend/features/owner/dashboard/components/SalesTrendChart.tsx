@@ -10,6 +10,7 @@ import {
   AreaChart
 } from 'recharts';
 import type {SalesDay} from '@/lib/types/dashboard';
+import {useChartColors} from './chartTheme';
 
 interface Props {
   data: SalesDay[];
@@ -39,21 +40,22 @@ function CustomTooltip({active, payload, label}: CustomTooltipProps) {
 }
 
 export function SalesTrendChart({data, isLoading, isError}: Props) {
+  const chart = useChartColors();
   return (
-    <div className="bg-white border border-[#E5E7EB] rounded-xl p-4 px-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex-1">
+    <div className="bg-white dark:bg-gray-900 border border-[#E5E7EB] dark:border-gray-700 rounded-xl p-4 px-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex-1">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-[1rem] font-semibold text-[#1A1A1A]">
+          <h3 className="text-[1rem] font-semibold text-[#1A1A1A] dark:text-gray-100">
             Sales Trend (Last 7 Days)
           </h3>
-          <p className="text-[0.8rem] text-[#6B7280]">
+          <p className="text-[0.8rem] text-[#6B7280] dark:text-gray-400">
             Collected revenue, with still-open orders dashed
           </p>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="h-[200px] flex items-center justify-center text-sm text-[#6B7280]">
+        <div className="h-[200px] flex items-center justify-center text-sm text-[#6B7280] dark:text-gray-400">
           Loading...
         </div>
       ) : isError ? (
@@ -63,7 +65,7 @@ export function SalesTrendChart({data, isLoading, isError}: Props) {
       ) : data.length === 0 ? (
         // Without this the card rendered an empty 200px chart frame instead of
         // saying why, which is what `InventoryDonut` already did.
-        <div className="h-[200px] flex items-center justify-center text-sm text-[#6B7280]">
+        <div className="h-[200px] flex items-center justify-center text-sm text-[#6B7280] dark:text-gray-400">
           No sales in this period
         </div>
       ) : (
@@ -71,14 +73,14 @@ export function SalesTrendChart({data, isLoading, isError}: Props) {
           <AreaChart data={data} margin={{top: 5, right: 5, left: -20, bottom: 0}}>
             <defs>
               <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#E8F0E3" />
-                <stop offset="100%" stopColor="#E8F0E3" stopOpacity={0} />
+                <stop offset="0%" stopColor={chart.areaFill} />
+                <stop offset="100%" stopColor={chart.areaFill} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" horizontal={true} vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} horizontal={true} vertical={false} />
             <XAxis
               dataKey="date"
-              tick={{fontSize: 11, fill: '#6B7280'}}
+              tick={{fontSize: 11, fill: chart.tick}}
               tickLine={false}
               axisLine={false}
               tickFormatter={(val: string) => {
@@ -87,7 +89,7 @@ export function SalesTrendChart({data, isLoading, isError}: Props) {
               }}
             />
             <YAxis
-              tick={{fontSize: 11, fill: '#6B7280'}}
+              tick={{fontSize: 11, fill: chart.tick}}
               tickLine={false}
               axisLine={false}
               tickFormatter={(val: number) => `₱${(val / 1000).toFixed(0)}k`}
@@ -96,7 +98,7 @@ export function SalesTrendChart({data, isLoading, isError}: Props) {
             <Area
               type="monotone"
               dataKey="revenue"
-              stroke="#4A7C35"
+              stroke={chart.line}
               strokeWidth={2}
               fill="url(#salesGradient)"
             />
