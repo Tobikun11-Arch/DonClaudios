@@ -15,7 +15,7 @@ import {
   supportBubbleClass,
   supportPanelHeightCustomerClass
 } from '@/lib/support/supportBubblePosition';
-import type {NormalizedApiError} from '@/lib/api/types';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 export default function SupportChatBubble() {
   const [open, setOpen] = useState(false);
@@ -85,8 +85,7 @@ export default function SupportChatBubble() {
 
   const handleIdentityError = (error: unknown) => {
     toast.error(
-      (error as NormalizedApiError)?.message ??
-        'Could not start support chat. Please try again.'
+      getFriendlyErrorMessage(error, 'Could not start support chat. Please try again.')
     );
   };
 

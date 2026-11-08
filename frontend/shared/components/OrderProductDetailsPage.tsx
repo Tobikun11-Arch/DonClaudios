@@ -39,6 +39,7 @@ import {
   useNow
 } from '@/lib/preOrder/preOrder';
 import {toast} from 'sonner';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {AllergenBadges} from './AllergenBadges';
 import {IngredientGrid} from './IngredientGrid';
 import ProductDetailSkeleton from './ProductDetailSkeleton';
@@ -326,16 +327,25 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
       return;
     }
     if (isCustomerRoute) {
-      addCustomerCartItemMutation.mutate({
-        productId: product._id,
-        name: product.name,
-        price: product.price,
-        quantity: selectableQty,
-        imageUrl: product.imageUrl,
-        instructions: instructions.trim().length
-          ? instructions.trim()
-          : undefined
-      });
+      addCustomerCartItemMutation.mutate(
+        {
+          productId: product._id,
+          name: product.name,
+          price: product.price,
+          quantity: selectableQty,
+          imageUrl: product.imageUrl,
+          instructions: instructions.trim().length
+            ? instructions.trim()
+            : undefined
+        },
+        {
+          // Open the cart only once the item is really in it.
+          onSuccess: () => openCart(),
+          onError: err =>
+            toast.error(getFriendlyErrorMessage(err, 'Could not add to cart. Please try again.'))
+        }
+      );
+      return;
     } else {
       addItem({
         productId: product._id,
@@ -632,37 +642,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                         preOrderClosed ||
                         (isPreOrder && !preOrderOrderable)
                       }
-                      onClick={() => {
-                        if (!product) return;
-                        if (addBlockedReason) {
-                          toast.error(addBlockedReason);
-                          return;
-                        }
-                        if (isCustomerRoute) {
-                          addCustomerCartItemMutation.mutate({
-                            productId: product._id,
-                            name: product.name,
-                            price: product.price,
-                            quantity: selectableQty,
-                            imageUrl: product.imageUrl,
-                            instructions: instructions.trim().length
-                              ? instructions.trim()
-                              : undefined
-                          });
-                        } else {
-                          addItem({
-                            productId: product._id,
-                            name: product.name,
-                            price: product.price,
-                            imageUrl: product.imageUrl,
-                            qty: selectableQty,
-                            instructions: instructions.trim().length
-                              ? instructions.trim()
-                              : undefined
-                          });
-                        }
-                        openCart();
-                      }}
+                      onClick={handleAddToCart}
                       className="w-full sm:flex-1 h-12 rounded-full bg-[#3c5e45] text-white"
                     >
                       {preOrderClosed

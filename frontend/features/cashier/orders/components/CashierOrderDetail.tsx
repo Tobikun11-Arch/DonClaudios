@@ -15,7 +15,6 @@ import {
 } from '@/lib/hooks/orders/useCashierOrder';
 import {useAdminOrderMessagesQuery} from '@/lib/hooks/orders/useOrderMessage';
 import type {OrderHistoryItem, OrderHistoryEntry} from '@/lib/api/orderApi';
-import type {NormalizedApiError} from '@/lib/api/types';
 import {
   nextStatusFor,
   CANCELLABLE,
@@ -26,6 +25,7 @@ import {
   paymentGateReason,
   OrderPaymentPanel
 } from './CashierOrders';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 function getItemName(item: OrderHistoryItem) {
   if (item.name) return item.name;
@@ -80,7 +80,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
       await updateStatusMutation.mutateAsync({orderId, status: next});
       toast.success(`Order marked as ${formatStatus(next)}.`);
     } catch (error) {
-      toast.error((error as NormalizedApiError)?.message ?? 'Failed to update status.');
+      toast.error(getFriendlyErrorMessage(error, 'Failed to update status.'));
     }
   };
 
@@ -90,7 +90,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
       toast.success('Order cancelled.');
       setCancelling(false);
     } catch (error) {
-      toast.error((error as NormalizedApiError)?.message ?? 'Failed to cancel order.');
+      toast.error(getFriendlyErrorMessage(error, 'Failed to cancel order.'));
     }
   };
 
@@ -98,7 +98,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
     try {
       await sendMutation.mutateAsync({orderId, body: text});
     } catch (error) {
-      toast.error((error as NormalizedApiError)?.message ?? 'Failed to send reply.');
+      toast.error(getFriendlyErrorMessage(error, 'Failed to send reply.'));
     }
   };
 

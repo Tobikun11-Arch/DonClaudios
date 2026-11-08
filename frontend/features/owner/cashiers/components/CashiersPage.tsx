@@ -18,6 +18,7 @@ import {DeleteCashierModal} from './DeleteCashierModal';
 import type {Cashier} from '@/lib/types/cashier';
 import {Button} from '@/components/ui/button';
 import {Plus} from 'lucide-react';
+import {toast} from 'sonner';
 
 export default function CashiersPage() {
   const cashiersQuery = useCashiersQuery();
@@ -144,9 +145,14 @@ export default function CashiersPage() {
 
   const onDelete = async () => {
     if (!deletingCashier) return;
-    await deleteMutation.mutateAsync(deletingCashier._id);
-    setDeleteModalOpen(false);
-    setDeletingCashier(null);
+    try {
+      await deleteMutation.mutateAsync(deletingCashier._id);
+      toast.success('Cashier account deleted.');
+      setDeleteModalOpen(false);
+      setDeletingCashier(null);
+    } catch (err) {
+      toast.error(getFriendlyErrorMessage(err, 'Could not delete the cashier account.'));
+    }
   };
 
   return (

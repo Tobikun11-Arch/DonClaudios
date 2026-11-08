@@ -18,7 +18,7 @@ import {
   X,
   ChevronRight
 } from 'lucide-react';
-import {Toaster} from 'sonner';
+import {Toaster} from '@/components/ui/sonner';
 import OwnerSupportChatBubble from '@/features/owner/support/components/OwnerSupportChatBubble';
 import {useBrand} from '@/lib/hooks/useBrand';
 
@@ -467,12 +467,7 @@ export default function DashboardLayout({
         </div>
       </div>
 
-      <Toaster
-        position="top-right"
-        richColors
-        duration={2500}
-        visibleToasts={4}
-      />
+      <Toaster duration={2500} />
       <OwnerSupportChatBubble />
     </div>
   );

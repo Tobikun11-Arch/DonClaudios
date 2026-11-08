@@ -45,7 +45,7 @@ export function CashierSettings() {
     .filter(Boolean)
     .join(' ');
 
-  const persist = (body: Record<string, string>, opts?: {silent?: boolean}) => {
+  const persist = (body: Record<string, string>, opts?: {successMessage?: string}) => {
     const cleaned: Record<string, string> = {};
     for (const [key, value] of Object.entries(body)) {
       if (typeof value === 'string' && value.trim().length === 0) continue;
@@ -55,7 +55,7 @@ export function CashierSettings() {
       onError: err =>
         toast.error(getFriendlyErrorMessage(err, 'Failed to save')),
       onSuccess: () => {
-        if (!opts?.silent) toast.success('Saved.');
+        toast.success(opts?.successMessage ?? 'Saved.');
       }
     });
   };
@@ -123,7 +123,7 @@ export function CashierSettings() {
           <AvatarUpload
             imageUrl={cashierPhoto}
             fallback={displayFullName || 'D'}
-            onSave={url => persist({profilePhoto: url}, {silent: true})}
+            onSave={url => persist({profilePhoto: url}, {successMessage: 'Profile photo updated.'})}
           />
         </div>
 
@@ -260,9 +260,9 @@ function AvatarUpload({
 
     try {
       const uploaded = await uploadProfileImage(file);
+      // The success toast comes from the save itself (only once it is saved).
       onSave(uploaded.imageUrl);
       setOptimisticUrl(uploaded.imageUrl);
-      toast.success('Profile photo updated.');
     } catch (err) {
       setOptimisticUrl(undefined);
       toast.error(getFriendlyErrorMessage(err, 'Failed to upload image'));

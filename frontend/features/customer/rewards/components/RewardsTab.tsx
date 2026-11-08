@@ -16,6 +16,7 @@ import {
   buildEarnBannerText,
   REWARDS_VALUE_FOOTNOTE
 } from '@/config/rewards';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pending',
@@ -90,9 +91,7 @@ export default function RewardsTab() {
       );
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : 'Failed to redeem reward'
+        getFriendlyErrorMessage(error, 'Failed to redeem reward')
       );
     }
   };

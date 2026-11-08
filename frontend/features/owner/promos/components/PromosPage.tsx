@@ -17,6 +17,7 @@ import {PromoFormModal} from './PromoFormModal';
 import {DeletePromoModal} from './DeletePromoModal';
 import type {Promo} from '@/lib/types/promo';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
+import {toast} from 'sonner';
 
 export default function PromosPage() {
   const promosQuery = usePromosQuery();
@@ -200,9 +201,11 @@ export default function PromosPage() {
     if (!deletingPromo) return;
     try {
       await deleteMutation.mutateAsync(deletingPromo._id);
+      toast.success('Promo deleted.');
       closeDeleteModal();
-    } catch {
-      closeDeleteModal();
+    } catch (err) {
+      // Keep the dialog open and say why, instead of closing as if it worked.
+      toast.error(getFriendlyErrorMessage(err, 'Could not delete the promo.'));
     }
   };
 

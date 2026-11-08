@@ -23,7 +23,7 @@ const refreshClient = axios.create({
   }
 });
 
-async function normalizeAxiosError(error: unknown): Promise<NormalizedApiError> {
+export async function normalizeAxiosError(error: unknown): Promise<NormalizedApiError> {
   const fallback: NormalizedApiError = {
     status: null,
     code: 'NETWORK_ERROR',

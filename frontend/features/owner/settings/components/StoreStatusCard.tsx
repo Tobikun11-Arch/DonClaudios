@@ -112,7 +112,9 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
           setIsManuallyClosed(next);
           if (next) setIsManuallyOpen(false);
           toast.success(
-            next ? 'Store marked as closed.' : 'Store is now open.'
+            next
+              ? 'Store marked as closed.'
+              : 'Manual close lifted. The store follows its regular hours.'
           );
         }
       }
@@ -269,14 +271,18 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
                       const next = isClosed
                         ? closedDays.filter(d => d !== day)
                         : [...closedDays, day];
+                      const previous = closedDays;
                       setClosedDays(next);
                       updateMutation.mutate(
                         {closedDays: next},
                         {
-                          onError: err =>
+                          onError: err => {
+                            // Put the pills back so they match what is saved.
+                            setClosedDays(previous);
                             toast.error(
                               getFriendlyErrorMessage(err, 'Failed to save closed days')
-                            ),
+                            );
+                          },
                           onSuccess: () => toast.success('Closed days updated.')
                         }
                       );

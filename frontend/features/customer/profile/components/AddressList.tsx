@@ -16,7 +16,8 @@ export function AddressList({
   onSave
 }: {
   addresses: CustomerAddress[];
-  onSave: (next: CustomerAddress[]) => void;
+  /** `successMessage` is toasted by the page once the save succeeds. */
+  onSave: (next: CustomerAddress[], successMessage?: string) => void;
 }) {
   const [items, setItems] = useState<CustomerAddress[]>(
     addresses.length ? addresses : []
@@ -24,13 +25,13 @@ export function AddressList({
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState<CustomerAddress>(emptyAddress());
 
-  const commit = (next: CustomerAddress[]) => {
+  const commit = (next: CustomerAddress[], successMessage?: string) => {
     setItems(next);
-    onSave(next);
+    onSave(next, successMessage);
   };
 
   const setDefault = (idx: number) => {
-    commit(items.map((a, i) => ({...a, isDefault: i === idx})));
+    commit(items.map((a, i) => ({...a, isDefault: i === idx})), 'Default address updated.');
   };
 
   const remove = (idx: number) => {
@@ -38,8 +39,7 @@ export function AddressList({
     if (next.length && !next.some(a => a.isDefault)) {
       next[0].isDefault = true;
     }
-    commit(next);
-    toast.success('Address removed.');
+    commit(next, 'Address removed.');
   };
 
   const add = () => {
@@ -51,10 +51,9 @@ export function AddressList({
       ...items,
       {...draft, isDefault: items.length === 0}
     ];
-    commit(next);
+    commit(next, 'Address saved.');
     setDraft(emptyAddress());
     setAdding(false);
-    toast.success('Address saved.');
   };
 
   const updateField = (idx: number, key: keyof CustomerAddress, value: string) => {

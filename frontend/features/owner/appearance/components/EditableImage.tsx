@@ -5,6 +5,7 @@ import Image from 'next/image';
 import {Camera, Loader2, X} from 'lucide-react';
 import {toast} from 'sonner';
 import {uploadSectionImage} from '@/lib/api/uploadApi';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 interface Props {
   src: string;
@@ -41,10 +42,11 @@ export default function EditableImage({
     setUploading(true);
     try {
       const {imageUrl} = await uploadSectionImage(file);
+      // The page's save() shows "Saving..." -> "Saved" (or the error), so no
+      // second success toast here.
       await onSaved(imageUrl);
-      toast.success('Image updated');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Upload failed';
+      const msg = getFriendlyErrorMessage(err, 'Upload failed');
       toast.error(msg);
       console.error('Image upload failed:', err);
     } finally {

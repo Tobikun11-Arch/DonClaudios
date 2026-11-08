@@ -11,10 +11,10 @@ import {
   useUpdateReviewStatusMutation
 } from '@/lib/hooks/reviews/useReviews';
 import type {Review, ReviewMessage, ReviewStatus} from '@/lib/types/review';
-import type {NormalizedApiError} from '@/lib/api/types';
 import OwnerNotificationBell from '@/features/owner/notifications/components/OwnerNotificationBell';
 import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
 import {FilterPills} from '@/shared/components/FilterPills';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 type Filter = 'all' | 'flagged' | ReviewStatus;
 
@@ -200,7 +200,7 @@ export default function OwnerReviews() {
           : 'Review rejected.'
       );
     } catch (error) {
-      toast.error((error as NormalizedApiError)?.message ?? 'Failed to update review.');
+      toast.error(getFriendlyErrorMessage(error, 'Failed to update review.'));
     }
   };
 
@@ -237,7 +237,7 @@ export default function OwnerReviews() {
       removeTemp();
     } catch (error) {
       removeTemp();
-      toast.error((error as NormalizedApiError)?.message ?? 'Failed to send reply.');
+      toast.error(getFriendlyErrorMessage(error, 'Failed to send reply.'));
     }
   };
 

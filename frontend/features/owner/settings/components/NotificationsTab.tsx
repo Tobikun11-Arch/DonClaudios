@@ -4,6 +4,8 @@ import {useEffect, useState} from 'react';
 import {cn} from '@/lib/utils';
 import {getNotificationPreferences, updateNotificationPreferences} from '@/lib/api/settingsApi';
 import type {NotificationPreferences} from '@/lib/types/settings';
+import {toast} from 'sonner';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 const STORAGE_KEY = 'owner:notification-settings';
 
@@ -145,6 +147,7 @@ export function NotificationsTab({section}: {section: string}) {
   }, [section]);
 
   const handleToggle = async (label: string, value: boolean) => {
+    const previous = state;
     const next = {...state, [label]: value};
     setState(next);
 
@@ -160,6 +163,12 @@ export function NotificationsTab({section}: {section: string}) {
       setBackendPrefs(updatedPrefs);
     } catch (error) {
       console.error('Failed to update notification preferences on backend', error);
+      // Undo the switch so it shows what is really saved.
+      setState(previous);
+      saveSection(section, previous);
+      toast.error(
+        getFriendlyErrorMessage(error, 'Could not save this notification setting.')
+      );
     }
   };
 

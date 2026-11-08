@@ -51,9 +51,10 @@ function AvatarUpload({
 
     try {
       const uploaded = await uploadProfileImage(file);
+      // The success toast comes from the save itself (one toast, and only
+      // once the change is really saved).
       onSave(uploaded.imageUrl);
       setOptimisticUrl(uploaded.imageUrl);
-      toast.success('Profile photo updated.');
     } catch (err) {
       setOptimisticUrl(undefined);
       toast.error(getFriendlyErrorMessage(err, 'Failed to upload image'));
@@ -210,7 +211,7 @@ export function ProfileTab() {
     );
   }
 
-  const persist = (body: Partial<MeUser>) => {
+  const persist = (body: Partial<MeUser>, successMessage = 'Saved.') => {
     const cleaned: Partial<MeUser> = {};
     for (const [key, value] of Object.entries(body)) {
       if (typeof value === 'string' && value.trim().length === 0) continue;
@@ -220,7 +221,7 @@ export function ProfileTab() {
     updateProfileMutation.mutate(cleaned, {
       onError: err =>
         toast.error(getFriendlyErrorMessage(err, 'Failed to save')),
-      onSuccess: () => toast.success('Saved.')
+      onSuccess: () => toast.success(successMessage)
     });
   };
 
@@ -268,7 +269,7 @@ export function ProfileTab() {
           <AvatarUpload
             imageUrl={user.profilePhoto}
             fallback={displayFullName || 'D'}
-            onSave={url => persist({profilePhoto: url})}
+            onSave={url => persist({profilePhoto: url}, 'Profile photo updated.')}
           />
           <div>
             <p className="text-base font-semibold text-gray-900">

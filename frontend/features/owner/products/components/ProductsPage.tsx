@@ -27,6 +27,7 @@ import {ProductFormModal} from './ProductFormModal';
 import {DeleteProductModal} from './DeleteProductModal';
 import {ImageCropModal} from './ImageCropModal';
 import {IngredientLibraryBanner} from './IngredientLibraryBanner';
+import {toast} from 'sonner';
 
 export default function ProductsPage() {
   const productsQuery = useProductsQuery();
@@ -149,14 +150,24 @@ export default function ProductsPage() {
   };
 
   const onApproveIngredient = async (item: IngredientItem, iconKey: string) => {
-    await updateIngredientMutation.mutateAsync({
-      id: item._id,
-      body: {iconKey, status: 'active'}
-    });
+    try {
+      await updateIngredientMutation.mutateAsync({
+        id: item._id,
+        body: {iconKey, status: 'active'}
+      });
+      toast.success('Ingredient approved.');
+    } catch (err) {
+      toast.error(getFriendlyErrorMessage(err, 'Could not approve the ingredient.'));
+    }
   };
 
   const onDeleteSuggestion = async (item: IngredientItem) => {
-    await deleteIngredientMutation.mutateAsync(item._id);
+    try {
+      await deleteIngredientMutation.mutateAsync(item._id);
+      toast.success('Suggestion removed.');
+    } catch (err) {
+      toast.error(getFriendlyErrorMessage(err, 'Could not remove the suggestion.'));
+    }
   };
 
   const openCreate = () => {
@@ -306,10 +317,15 @@ export default function ProductsPage() {
 
   const onDelete = async () => {
     if (!deletingId) return;
-    await deleteMutation.mutateAsync(deletingId);
-    setDeleteModalOpen(false);
-    setDeletingId(null);
-    setDeletingName('');
+    try {
+      await deleteMutation.mutateAsync(deletingId);
+      toast.success(deletingName ? `${deletingName} deleted.` : 'Product deleted.');
+      setDeleteModalOpen(false);
+      setDeletingId(null);
+      setDeletingName('');
+    } catch (err) {
+      toast.error(getFriendlyErrorMessage(err, 'Could not delete the product.'));
+    }
   };
 
   return (

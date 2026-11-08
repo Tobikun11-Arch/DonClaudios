@@ -44,6 +44,7 @@ import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
 import StoreClosedModal from '@/shared/components/StoreClosedModal';
 
 import {toast} from 'sonner';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 import {
   isPreOrderProduct,
@@ -394,14 +395,18 @@ export default function OrderSlot() {
       }
     }
 
-    await addCustomerCartItem.mutateAsync({
-      productId: item.id,
-      name: item.name,
-      price: item.price,
-      imageUrl: item.imageUrl,
-      quantity: 1
-    });
-    openCart();
+    try {
+      await addCustomerCartItem.mutateAsync({
+        productId: item.id,
+        name: item.name,
+        price: item.price,
+        imageUrl: item.imageUrl,
+        quantity: 1
+      });
+      openCart();
+    } catch (err) {
+      toast.error(getFriendlyErrorMessage(err, 'Could not add to cart. Please try again.'));
+    }
   };
 
   return (

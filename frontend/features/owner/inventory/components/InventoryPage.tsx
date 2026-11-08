@@ -277,20 +277,25 @@ export default function InventoryPage() {
   };
 
   const handleTurnOffSellableOut = async (targets: Product[]) => {
+    // Count what actually succeeded so the summary never over-reports.
+    let done = 0;
     for (const product of targets) {
       try {
         await updateProductMutation.mutateAsync({
           id: product._id,
           body: {isAvailable: false}
         });
+        done += 1;
       } catch (error) {
         toastError(error, `Failed to update ${product.name}.`);
       }
     }
-    toast.success(
-      `${targets.length} product${targets.length > 1 ? 's' : ''} removed from menu.`,
-      {position: 'bottom-center'}
-    );
+    if (done > 0) {
+      toast.success(
+        `${done} product${done > 1 ? 's' : ''} removed from menu.`,
+        {position: 'bottom-center'}
+      );
+    }
   };
 
   const applyAttentionFilter = (status: 'low_stock' | 'out_of_stock') => {

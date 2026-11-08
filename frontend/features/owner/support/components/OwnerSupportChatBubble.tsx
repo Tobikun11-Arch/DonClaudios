@@ -14,7 +14,7 @@ import {
   supportBubbleClass,
   supportPanelHeightOwnerClass
 } from '@/lib/support/supportBubblePosition';
-import type {NormalizedApiError} from '@/lib/api/types';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 type Filter = 'open' | 'closed';
 
@@ -137,8 +137,7 @@ export default function OwnerSupportChatBubble() {
       handleBack();
     } catch (error) {
       toast.error(
-        (error as NormalizedApiError)?.message ??
-          'Failed to close conversation.'
+        getFriendlyErrorMessage(error, 'Failed to close conversation.')
       );
     }
   };

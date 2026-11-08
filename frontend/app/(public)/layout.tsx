@@ -13,7 +13,7 @@ export default function PublicLayout({children}: {children: React.ReactNode}) {
       <CartDrawer />
       <ConnectedFooter />
       <SupportChatBubble />
-      <Toaster position="top-right" toastOptions={{duration: 3000}} />
+      <Toaster />
     </>
   );
 }

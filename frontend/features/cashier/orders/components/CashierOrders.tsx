@@ -17,8 +17,8 @@ import {useAllOrdersQuery, useUpdateOrderStatusMutation, useSendCashierOrderMess
 import {useCounterOrdersQuery} from '@/lib/hooks/orders/useCashierCounterOrder';
 import {useAdminOrderMessagesQuery} from '@/lib/hooks/orders/useOrderMessage';
 import type {OrderHistoryEntry, OrderHistoryItem} from '@/lib/api/orderApi';
-import type {NormalizedApiError} from '@/lib/api/types';
 import {cn} from '@/lib/utils';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 export const ORDER_STATUSES = [
   'pending',
@@ -349,7 +349,7 @@ export function CashierOrders() {
       toast.success(`Order marked as ${formatStatus(next)}.`);
     } catch (error) {
       toast.error(
-        (error as NormalizedApiError)?.message ?? 'Failed to update status.'
+        getFriendlyErrorMessage(error, 'Failed to update status.')
       );
     }
   };
@@ -361,7 +361,7 @@ export function CashierOrders() {
       setCancellingOrder(null);
     } catch (error) {
       toast.error(
-        (error as NormalizedApiError)?.message ?? 'Failed to cancel order.'
+        getFriendlyErrorMessage(error, 'Failed to cancel order.')
       );
     }
   };
@@ -649,7 +649,7 @@ function OrderCard({
       await sendMutation.mutateAsync({orderId: order._id, body: text});
     } catch (error) {
       toast.error(
-        (error as NormalizedApiError)?.message ?? 'Failed to send reply.'
+        getFriendlyErrorMessage(error, 'Failed to send reply.')
       );
     }
   };
@@ -1024,7 +1024,7 @@ export function OrderPaymentPanel({order}: {order: OrderHistoryEntry}) {
       toast.success('Cash payment recorded.');
     } catch (error) {
       toast.error(
-        (error as NormalizedApiError)?.message ?? 'Failed to record the cash payment.'
+        getFriendlyErrorMessage(error, 'Failed to record the cash payment.')
       );
     }
   };

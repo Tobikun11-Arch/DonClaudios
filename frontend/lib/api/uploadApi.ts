@@ -1,4 +1,5 @@
 import axios from 'axios';
+import {normalizeAxiosError} from './httpClient';
 
 // Same-origin proxy path (see httpClient.ts / next.config.ts) so upload requests
 // stay first-party and carry auth cookies on iOS/Safari.
@@ -10,6 +11,13 @@ const uploadClient = axios.create({
   timeout: 60_000,
   withCredentials: true
 });
+
+// Same error shape as httpClient, so upload failures show the server's own
+// message (e.g. "File too large") instead of "Request failed with status code 413".
+uploadClient.interceptors.response.use(
+  response => response,
+  async error => Promise.reject(await normalizeAxiosError(error))
+);
 
 export type UploadProductImageResponse = {
   imageUrl: string;

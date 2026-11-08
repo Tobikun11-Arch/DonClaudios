@@ -27,6 +27,7 @@ import {
 } from '@/lib/hooks/orders/useCashierCounterOrder';
 import type {CounterOrderEntry} from '@/lib/api/orderApi';
 import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 type CartLine = {
   productId: string;
@@ -108,14 +109,18 @@ export default function CounterOrder() {
     [cart]
   );
 
+  // Stock checks (and their toasts) happen outside the setCart updater:
+  // React may run updaters twice, which used to show the warning twice.
   const addToCart = (product: (typeof availableProducts)[number]) => {
+    const existing = cart.find(c => c.productId === product._id);
+    if (existing && existing.qty + 1 > existing.maxQty) {
+      toast.warning(`Only ${existing.maxQty} left in stock`);
+      return;
+    }
     setCart(prev => {
-      const existing = prev.find(c => c.productId === product._id);
-      if (existing) {
-        if (existing.qty + 1 > existing.maxQty) {
-          toast.warning(`Only ${existing.maxQty} left in stock`);
-          return prev;
-        }
+      const current = prev.find(c => c.productId === product._id);
+      if (current) {
+        if (current.qty + 1 > current.maxQty) return prev;
         return prev.map(c =>
           c.productId === product._id ? {...c, qty: c.qty + 1} : c
         );
@@ -137,22 +142,20 @@ export default function CounterOrder() {
   const [removeTarget, setRemoveTarget] = useState<string | null>(null);
 
   const changeQty = (productId: string, delta: number) => {
-    setCart(prev => {
-      const target = prev.find(c => c.productId === productId);
-      if (!target) return prev;
-      const next = target.qty + delta;
-      if (next < 1) {
-        setRemoveTarget(productId);
-        return prev;
-      }
-      if (next > target.maxQty) {
-        toast.warning(`Only ${target.maxQty} left in stock`);
-        return prev;
-      }
-      return prev.map(c =>
-        c.productId === productId ? {...c, qty: next} : c
-      );
-    });
+    const target = cart.find(c => c.productId === productId);
+    if (!target) return;
+    const next = target.qty + delta;
+    if (next < 1) {
+      setRemoveTarget(productId);
+      return;
+    }
+    if (next > target.maxQty) {
+      toast.warning(`Only ${target.maxQty} left in stock`);
+      return;
+    }
+    setCart(prev =>
+      prev.map(c => (c.productId === productId ? {...c, qty: next} : c))
+    );
   };
 
   const removeLine = (productId: string) => {
@@ -250,9 +253,7 @@ export default function CounterOrder() {
       }
       resetForm();
     } catch (err: unknown) {
-      const message =
-        (err as {message?: string})?.message ?? 'Failed to save order';
-      toast.error(message);
+      toast.error(getFriendlyErrorMessage(err, 'Failed to save order'));
     }
   };
 
@@ -274,9 +275,7 @@ export default function CounterOrder() {
       setMarkPaidTarget(null);
       setPaidMethod(null);
     } catch (err: unknown) {
-      const message =
-        (err as {message?: string})?.message ?? 'Failed to mark as paid';
-      setMarkPaidError(message);
+      setMarkPaidError(getFriendlyErrorMessage(err, 'Failed to mark as paid'));
     }
   };
 

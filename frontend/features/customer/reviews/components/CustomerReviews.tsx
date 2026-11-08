@@ -16,6 +16,7 @@ import {scanComment} from '@/lib/utils/profanityFilter';
 import type {Review, ReviewMessage} from '@/lib/types/review';
 import type {NormalizedApiError} from '@/lib/api/types';
 import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 const MAX_REVIEW_IMAGES = 3;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -225,10 +226,10 @@ export default function CustomerReviews() {
         toast.error('You can only leave one review per completed order.');
       } else if (code === 'PROFANITY_DETECTED') {
         toast.error(
-          err?.message ?? 'Please remove inappropriate language before submitting.'
+          getFriendlyErrorMessage(err, 'Please remove inappropriate language before submitting.')
         );
       } else {
-        toast.error(err?.message ?? 'Failed to submit review.');
+        toast.error(getFriendlyErrorMessage(err, 'Failed to submit review.'));
       }
     } finally {
       setUploadingImages(false);
@@ -293,8 +294,8 @@ export default function CustomerReviews() {
       setDrafts(prev => ({...prev, [review._id]: text}));
       toast.error(
         err?.code === 'PROFANITY_DETECTED'
-          ? (err?.message ?? 'Please remove inappropriate language.')
-          : (err?.message ?? 'Failed to send reply.')
+          ? getFriendlyErrorMessage(err, 'Please remove inappropriate language.')
+          : getFriendlyErrorMessage(err, 'Failed to send reply.')
       );
     }
   };

@@ -9,6 +9,7 @@ import EditableImage from './EditableImage';
 import SectionToolbar from './SectionToolbar';
 import {useSettingsQuery, useUpdateSettingsMutation} from '@/lib/hooks/useSettings';
 import type {SiteSetting, SectionId, SectionStyle} from '@/lib/types/settings';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 export default function AppearancePreview() {
   const {data: settings} = useSettingsQuery();
@@ -55,7 +56,7 @@ export default function AppearancePreview() {
           toast.dismiss(toastId);
           return;
         }
-        const msg = err instanceof Error ? err.message : 'Save failed — backend may be offline';
+        const msg = getFriendlyErrorMessage(err, 'Save failed — backend may be offline');
         toast.error(msg, {id: toastId});
       }
     },

@@ -1,5 +1,7 @@
 'use client';
 
+import {toast} from 'sonner';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {ProfileHeader, UsualOrderCard, AddressList, OccasionsCard, PreferencesForm, PromosCard, AccountSection, useCustomerProfileData} from '@/features/customer/profile';
 
 export default function ProfileSlot() {
@@ -24,15 +26,25 @@ export default function ProfileSlot() {
   const occasions = user?.occasions ?? [];
   const preferences = user?.preferences ?? {};
 
-  const saveAddresses = (next: typeof addresses) => {
-    updateProfileMutation.mutate({addresses: next});
+  // One toast per action, shown only after the server confirms the save.
+  // Silent saves (typing in an address) pass no message. Errors share one
+  // toast id so fast typing cannot stack error toasts.
+  const save = (patch: Parameters<typeof updateProfileMutation.mutate>[0], successMessage?: string) => {
+    updateProfileMutation.mutate(patch, {
+      onSuccess: () => {
+        // Fixed id: rapid saves (e.g. typing a number) update one toast
+        // instead of stacking many.
+        if (successMessage) toast.success(successMessage, {id: 'profile-save-success'});
+      },
+      onError: err =>
+        toast.error(getFriendlyErrorMessage(err, 'Failed to save your changes.'), {
+          id: 'profile-save-error'
+        })
+    });
   };
-  const saveOccasions = (next: typeof occasions) => {
-    updateProfileMutation.mutate({occasions: next});
-  };
-  const savePreferences = (next: typeof preferences) => {
-    updateProfileMutation.mutate({preferences: next});
-  };
+  const saveAddresses = (next: typeof addresses, msg?: string) => save({addresses: next}, msg);
+  const saveOccasions = (next: typeof occasions, msg?: string) => save({occasions: next}, msg);
+  const savePreferences = (next: typeof preferences, msg?: string) => save({preferences: next}, msg);
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
