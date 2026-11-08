@@ -169,9 +169,17 @@ export function SettingsPage() {
     return opts;
   }, [filteredTop, filteredChildren]);
 
+  // Homepage preview (a mini storefront) needs room: on wide screens its row
+  // keeps the same left edge as every other tab but stretches to the right
+  // into the empty space. The title row and all other tabs stay as they are.
+  const isHomepage = active === 'appearanceHomepage';
+  const rowWidth = isHomepage
+    ? 'mx-auto max-w-6xl xl:mr-0 xl:ml-[max(0px,calc((100%-72rem)/2))] xl:max-w-none'
+    : 'mx-auto max-w-6xl';
+
   return (
-    <div className="mx-auto max-w-6xl">
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <div className="mx-auto mb-6 flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-[#2d4a35]">Settings</h1>
           <p className="text-sm text-gray-500">
@@ -181,7 +189,7 @@ export function SettingsPage() {
         <OwnerNotificationBell />
       </div>
 
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch min-h-screen">
+      <div className={`${rowWidth} flex flex-col gap-6 lg:flex-row lg:items-stretch min-h-screen`}>
         {/* Sidebar */}
         <aside className="hidden w-full shrink-0 lg:block lg:w-[280px]">
           <div className="sticky top-0 h-screen overflow-y-auto py-2 space-y-2">
