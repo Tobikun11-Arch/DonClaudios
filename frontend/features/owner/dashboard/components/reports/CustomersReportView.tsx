@@ -21,12 +21,14 @@ import {
 import {ReportBreakdownTable, breakdownToCsvRows} from './ReportBreakdownTable';
 import {ReportExportBar} from './ReportExportBar';
 import type {ReportRange} from '@/lib/types/report';
+import {useChartColors} from '../chartTheme';
 
 const GUEST_COLOR = '#E5DDD0';
 const MEMBER_COLOR = '#4A7C35';
 const NEW_COLOR = '#A8CC8C';
 
 export function CustomersReportView({range}: {range: ReportRange}) {
+  const chart = useChartColors();
   const [dimension, setDimension] = useState<'customer' | 'paymentMethod'>('customer');
   const summaryQuery = useReportSummaryQuery(range);
   const breakdownQuery = useReportBreakdownQuery(range, dimension, 15);
@@ -120,7 +122,7 @@ export function CustomersReportView({range}: {range: ReportRange}) {
                       </Pie>
                       <Tooltip
                         formatter={(value: number) => [formatNumber(value), 'Orders']}
-                        contentStyle={{borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 12}}
+                        contentStyle={chart.tooltip}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -132,8 +134,8 @@ export function CustomersReportView({range}: {range: ReportRange}) {
                         className="h-2.5 w-2.5 shrink-0 rounded-full"
                         style={{backgroundColor: entry.color}}
                       />
-                      <span className="min-w-0 flex-1 truncate text-[#1A1A1A]">{entry.label}</span>
-                      <span className="font-medium tabular-nums text-[#1A1A1A]">
+                      <span className="min-w-0 flex-1 truncate text-[#1A1A1A] dark:text-gray-100">{entry.label}</span>
+                      <span className="font-medium tabular-nums text-[#1A1A1A] dark:text-gray-100">
                         {formatNumber(entry.value)}
                       </span>
                     </li>
@@ -149,7 +151,7 @@ export function CustomersReportView({range}: {range: ReportRange}) {
           subtitle="Share of customers who came back"
           action={
             mix && !summaryQuery.isLoading ? (
-              <span className="rounded-full bg-[#E8F0E3] px-3 py-1 text-sm font-bold tabular-nums text-[#2D4A1E]">
+              <span className="rounded-full bg-[#E8F0E3] dark:bg-[#7ed4a0]/10 px-3 py-1 text-sm font-bold tabular-nums text-[#2D4A1E] dark:text-[#7ed4a0]">
                 {formatNumber(Math.round(mix.repeatRate))}% repeat
               </span>
             ) : null
@@ -182,7 +184,7 @@ export function CustomersReportView({range}: {range: ReportRange}) {
                       </Pie>
                       <Tooltip
                         formatter={(value: number) => [formatNumber(value), 'Customers']}
-                        contentStyle={{borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 12}}
+                        contentStyle={chart.tooltip}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -194,8 +196,8 @@ export function CustomersReportView({range}: {range: ReportRange}) {
                         className="h-2.5 w-2.5 shrink-0 rounded-full"
                         style={{backgroundColor: entry.color}}
                       />
-                      <span className="min-w-0 flex-1 truncate text-[#1A1A1A]">{entry.label}</span>
-                      <span className="font-medium tabular-nums text-[#1A1A1A]">
+                      <span className="min-w-0 flex-1 truncate text-[#1A1A1A] dark:text-gray-100">{entry.label}</span>
+                      <span className="font-medium tabular-nums text-[#1A1A1A] dark:text-gray-100">
                         {formatNumber(entry.value)}
                       </span>
                     </li>
@@ -222,7 +224,7 @@ export function CustomersReportView({range}: {range: ReportRange}) {
           }
         action={
           <div className="flex items-center gap-2">
-            <div className="flex gap-1 rounded-full border border-gray-200 bg-white p-0.5">
+            <div className="flex gap-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-0.5">
               {(['customer', 'paymentMethod'] as const).map(value => (
                 <button
                   key={value}
@@ -231,7 +233,7 @@ export function CustomersReportView({range}: {range: ReportRange}) {
                   className={
                     dimension === value
                       ? 'rounded-full bg-[#2d4a35] px-3 py-1 text-[0.7rem] font-bold text-white'
-                      : 'rounded-full px-3 py-1 text-[0.7rem] font-bold text-gray-500 hover:bg-gray-50'
+                      : 'rounded-full px-3 py-1 text-[0.7rem] font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/60'
                   }
                 >
                   {value === 'customer' ? 'Customers' : 'Payment'}

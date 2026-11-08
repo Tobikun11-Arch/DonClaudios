@@ -37,7 +37,8 @@ export function OccasionsCard({
 }: {
   occasions: CustomerOccasion[];
   orders: OrderHistoryEntry[];
-  onSave: (next: CustomerOccasion[]) => void;
+  /** `successMessage` is toasted by the page once the save succeeds. */
+  onSave: (next: CustomerOccasion[], successMessage?: string) => void;
 }) {
   const router = useRouter();
   const addItem = useAddCustomerCartItemMutation();
@@ -85,15 +86,14 @@ export function OccasionsCard({
       toast.error('Label and date are required.');
       return;
     }
-    onSave([...occasions, {label: label.trim(), date}]);
+    onSave([...occasions, {label: label.trim(), date}], 'Occasion saved.');
     setLabel('');
     setDate('');
     setAdding(false);
-    toast.success('Occasion saved.');
   };
 
   const remove = (idx: number) => {
-    onSave(occasions.filter((_, i) => i !== idx));
+    onSave(occasions.filter((_, i) => i !== idx), 'Occasion removed.');
   };
 
   // seasonal nudge

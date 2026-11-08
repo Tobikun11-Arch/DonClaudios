@@ -18,6 +18,7 @@ import {DeleteCashierModal} from './DeleteCashierModal';
 import type {Cashier} from '@/lib/types/cashier';
 import {Button} from '@/components/ui/button';
 import {Plus} from 'lucide-react';
+import {toast} from 'sonner';
 
 export default function CashiersPage() {
   const cashiersQuery = useCashiersQuery();
@@ -144,9 +145,14 @@ export default function CashiersPage() {
 
   const onDelete = async () => {
     if (!deletingCashier) return;
-    await deleteMutation.mutateAsync(deletingCashier._id);
-    setDeleteModalOpen(false);
-    setDeletingCashier(null);
+    try {
+      await deleteMutation.mutateAsync(deletingCashier._id);
+      toast.success('Cashier account deleted.');
+      setDeleteModalOpen(false);
+      setDeletingCashier(null);
+    } catch (err) {
+      toast.error(getFriendlyErrorMessage(err, 'Could not delete the cashier account.'));
+    }
   };
 
   return (
@@ -167,7 +173,7 @@ export default function CashiersPage() {
       )}
 
       {cashiersQuery.isError && (
-        <div className="bg-white border border-red-200 rounded-2xl p-6 text-sm text-red-700">
+        <div className="bg-white dark:bg-gray-900 border border-red-200 dark:border-red-500/30 rounded-2xl p-6 text-sm text-red-700 dark:text-red-300">
           {getFriendlyErrorMessage(
             cashiersQuery.error,
             'Failed to load cashiers'
@@ -179,10 +185,10 @@ export default function CashiersPage() {
         !cashiersQuery.isError &&
         (visibleCashiers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-[#e9f5ee] flex items-center justify-center mb-4">
-              <Users className="h-6 w-6 text-[#2d4a35]" />
+            <div className="w-14 h-14 rounded-2xl bg-[#e9f5ee] dark:bg-[#7ed4a0]/10 flex items-center justify-center mb-4">
+              <Users className="h-6 w-6 text-[#2d4a35] dark:text-[#7ed4a0]" />
             </div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-1">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
               No cashiers yet
             </h3>
             <p className="text-sm text-gray-400 max-w-xs mb-6">

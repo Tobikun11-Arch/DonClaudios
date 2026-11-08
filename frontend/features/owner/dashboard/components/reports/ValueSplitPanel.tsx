@@ -32,7 +32,7 @@ export function ValueSplitPanel({summary}: {summary?: ReportSummary}) {
   if (!summary) {
     return (
       <div className="px-5 pb-5" aria-hidden="true">
-        <div className="mb-3 overflow-hidden rounded-lg border border-[#E4E9E1]">
+        <div className="mb-3 overflow-hidden rounded-lg border border-[#E4E9E1] dark:border-[#7ed4a0]/30">
           <ReportSkeletonRows rows={3} className="!px-3.5 !pb-3.5" />
         </div>
         <div className={cn(SHIMMER, 'h-2.5 w-full')} />
@@ -77,7 +77,7 @@ export function ValueSplitPanel({summary}: {summary?: ReportSummary}) {
 
   return (
     <div className="px-5 pb-5">
-      <div className="overflow-hidden rounded-lg border border-[#E4E9E1]">
+      <div className="overflow-hidden rounded-lg border border-[#E4E9E1] dark:border-[#7ed4a0]/30">
         {rows.map((row, index) => (
           <div
             key={row.key}
@@ -86,24 +86,24 @@ export function ValueSplitPanel({summary}: {summary?: ReportSummary}) {
             } ${row.indent ? 'bg-[#FCFDFB]' : ''}`}
           >
             {row.tone === 'good' ? (
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-[#4A7C35]" />
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-[#4A7C35] dark:text-[#7ed4a0]" />
             ) : row.tone === 'warn' ? (
-              <AlertTriangle className="h-4 w-4 shrink-0 text-[#B45309]" />
+              <AlertTriangle className="h-4 w-4 shrink-0 text-[#B45309] dark:text-amber-300" />
             ) : (
               <span className="h-4 w-4 shrink-0" />
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-[0.85rem] font-semibold text-[#1A1A1A]">
+              <p className="text-[0.85rem] font-semibold text-[#1A1A1A] dark:text-gray-100">
                 {row.label}
-                {row.indent && <span className="ml-1.5 font-normal text-[#6B7280]">(of open)</span>}
+                {row.indent && <span className="ml-1.5 font-normal text-[#6B7280] dark:text-gray-400">(of open)</span>}
               </p>
-              <p className="truncate text-[0.72rem] text-[#6B7280]">{row.detail}</p>
+              <p className="truncate text-[0.72rem] text-[#6B7280] dark:text-gray-400">{row.detail}</p>
             </div>
             <div className="shrink-0 text-right">
-              <p className="tabular-nums text-[0.9rem] font-bold text-[#1A1A1A]">
+              <p className="tabular-nums text-[0.9rem] font-bold text-[#1A1A1A] dark:text-gray-100">
                 {formatPeso(row.value)}
               </p>
-              <p className="tabular-nums text-[0.7rem] text-[#6B7280]">
+              <p className="tabular-nums text-[0.7rem] text-[#6B7280] dark:text-gray-400">
                 {formatNumber(row.orders)} orders
               </p>
             </div>
@@ -113,12 +113,12 @@ export function ValueSplitPanel({summary}: {summary?: ReportSummary}) {
 
       <div className="mt-3">
         <div className="mb-1 flex items-center justify-between text-[0.75rem]">
-          <span className="text-[#6B7280]">Collected share of ordered value</span>
-          <span className="font-semibold tabular-nums text-[#1A1A1A]">
+          <span className="text-[#6B7280] dark:text-gray-400">Collected share of ordered value</span>
+          <span className="font-semibold tabular-nums text-[#1A1A1A] dark:text-gray-100">
             {formatNumber(Math.round(realizedShare))}%
           </span>
         </div>
-        <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-[#F3F6F1]">
+        <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-[#F3F6F1] dark:bg-[#7ed4a0]/10">
           <div
             className="h-full bg-[#4A7C35]"
             style={{width: `${realizedShare}%`}}
@@ -132,7 +132,7 @@ export function ValueSplitPanel({summary}: {summary?: ReportSummary}) {
         </div>
       </div>
 
-      <p className="mt-3 text-[0.72rem] leading-relaxed text-[#6B7280]">
+      <p className="mt-3 text-[0.72rem] leading-relaxed text-[#6B7280] dark:text-gray-400">
         Cancelled orders are excluded. Revenue is reported as collected revenue only, because
         nothing in the order flow closes an abandoned order automatically — a stuck order stays
         in the queue and would otherwise be reported as sales.

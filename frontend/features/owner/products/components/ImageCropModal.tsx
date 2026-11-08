@@ -87,7 +87,7 @@ export function ImageCropModal({
   return (
     <Modal open={open} title="Crop Image" onClose={onCancel}>
       <div className="space-y-4">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Adjust the crop area. All product images are saved at 16:9 ratio for
           consistency.
         </p>
@@ -117,7 +117,7 @@ export function ImageCropModal({
           </Button>
           <Button
             type="button"
-            className="bg-[#2d4a35] hover:bg-[#24402c]"
+            className="bg-[#2d4a35] hover:bg-[#24402c] dark:text-white"
             onClick={handleConfirm}
           >
             Use this crop

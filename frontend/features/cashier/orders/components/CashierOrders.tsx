@@ -17,8 +17,8 @@ import {useAllOrdersQuery, useUpdateOrderStatusMutation, useSendCashierOrderMess
 import {useCounterOrdersQuery} from '@/lib/hooks/orders/useCashierCounterOrder';
 import {useAdminOrderMessagesQuery} from '@/lib/hooks/orders/useOrderMessage';
 import type {OrderHistoryEntry, OrderHistoryItem} from '@/lib/api/orderApi';
-import type {NormalizedApiError} from '@/lib/api/types';
 import {cn} from '@/lib/utils';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 export const ORDER_STATUSES = [
   'pending',
@@ -142,11 +142,11 @@ export function paymentStatusChip(order: OrderHistoryEntry): {
   label: string;
   className: string;
 } | null {
-  const green = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-  const amber = 'bg-amber-50 text-amber-700 border-amber-200';
-  const gray = 'bg-gray-50 text-gray-500 border-gray-200';
-  const sky = 'bg-sky-50 text-sky-700 border-sky-200';
-  const red = 'bg-red-50 text-red-700 border-red-200';
+  const green = 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30';
+  const amber = 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30';
+  const gray = 'bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700';
+  const sky = 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-500/30';
+  const red = 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 border-red-200 dark:border-red-500/30';
 
   if (order.refundStatus === 'failed') return {label: 'Refund failed', className: red};
   if (order.refundStatus === 'pending') return {label: 'Refund pending', className: sky};
@@ -226,21 +226,21 @@ export function paymentGateBlocks(
 export function statusChipClass(status: string) {
   switch (status) {
     case 'pending':
-      return 'bg-amber-50 text-amber-700 border-amber-200';
+      return 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30';
     case 'confirmed':
-      return 'bg-blue-50 text-blue-700 border-blue-200';
+      return 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-500/30';
     case 'preparing':
-      return 'bg-purple-50 text-purple-700 border-purple-200';
+      return 'bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-500/30';
     case 'ready':
-      return 'bg-green-50 text-green-700 border-green-200';
+      return 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-300 border-green-200 dark:border-green-500/30';
     case 'on_the_way':
-      return 'bg-teal-50 text-teal-700 border-teal-200';
+      return 'bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-500/30';
     case 'completed':
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      return 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30';
     case 'cancelled':
-      return 'bg-red-50 text-red-700 border-red-200';
+      return 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 border-red-200 dark:border-red-500/30';
     default:
-      return 'bg-gray-50 text-gray-700 border-gray-200';
+      return 'bg-gray-50 dark:bg-gray-800/60 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700';
   }
 }
 
@@ -349,7 +349,7 @@ export function CashierOrders() {
       toast.success(`Order marked as ${formatStatus(next)}.`);
     } catch (error) {
       toast.error(
-        (error as NormalizedApiError)?.message ?? 'Failed to update status.'
+        getFriendlyErrorMessage(error, 'Failed to update status.')
       );
     }
   };
@@ -361,7 +361,7 @@ export function CashierOrders() {
       setCancellingOrder(null);
     } catch (error) {
       toast.error(
-        (error as NormalizedApiError)?.message ?? 'Failed to cancel order.'
+        getFriendlyErrorMessage(error, 'Failed to cancel order.')
       );
     }
   };
@@ -428,8 +428,8 @@ export function CashierOrders() {
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-[#2d4a35]">Orders</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-2xl font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">Orders</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Live queue of all orders. Update status as orders progress, and reply
             to customer follow-ups.
           </p>
@@ -445,7 +445,7 @@ export function CashierOrders() {
               aria-label="Filter by status"
               value={statusFilter}
               onChange={e => handleStatusFilterChange(e.target.value)}
-              className="min-h-[40px] w-full appearance-none rounded-full border border-gray-200 bg-white py-2 pl-4 pr-10 text-sm font-semibold text-[#2d4a35] transition-colors hover:bg-gray-50 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20 sm:w-auto"
+              className="min-h-[40px] w-full appearance-none rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-2 pl-4 pr-10 text-sm font-semibold text-[#2d4a35] dark:text-[#7ed4a0] transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60 focus:border-[#2d4a35] dark:focus:border-[#7ed4a0]/60 focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20 sm:w-auto"
             >
               {statusFilterOptions.map(f => (
                 <option key={f} value={f}>
@@ -464,7 +464,7 @@ export function CashierOrders() {
                 aria-label="Filter by order type"
                 value={orderTypeFilter}
                 onChange={e => setOrderTypeFilter(e.target.value)}
-                className="min-h-[40px] w-full appearance-none rounded-full border border-gray-200 bg-white py-2 pl-4 pr-10 text-sm font-semibold text-[#2d4a35] transition-colors hover:bg-gray-50 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20 sm:w-auto"
+                className="min-h-[40px] w-full appearance-none rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-2 pl-4 pr-10 text-sm font-semibold text-[#2d4a35] dark:text-[#7ed4a0] transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60 focus:border-[#2d4a35] dark:focus:border-[#7ed4a0]/60 focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20 sm:w-auto"
               >
                 <option value="all">All types ({typeCountFor('all')})</option>
                 {ORDER_TYPES.map(t => (
@@ -484,7 +484,7 @@ export function CashierOrders() {
         <div
           role="tablist"
           aria-label="Order source"
-          className="flex shrink-0 rounded-full border border-gray-200 bg-white p-1"
+          className="flex shrink-0 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-1"
         >
           <button
             type="button"
@@ -496,7 +496,7 @@ export function CashierOrders() {
               'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
               orderSourceTab === 'online'
                 ? 'bg-[#2d4a35] text-white'
-                : 'text-gray-600 hover:bg-gray-50'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
             )}
           >
             <Globe size={14} />
@@ -513,7 +513,7 @@ export function CashierOrders() {
               'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
               orderSourceTab === 'walk-in'
                 ? 'bg-[#2d4a35] text-white'
-                : 'text-gray-600 hover:bg-gray-50'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
             )}
           >
             <Store size={14} />
@@ -524,17 +524,17 @@ export function CashierOrders() {
       </div>
 
       {isLoading ? (
-        <div className="rounded-2xl bg-white shadow p-5 text-sm text-gray-500">
+        <div className="rounded-2xl bg-white dark:bg-gray-900 shadow p-5 text-sm text-gray-500 dark:text-gray-400">
           Loading orders...
         </div>
       ) : isError ? (
-        <div className="rounded-2xl bg-white shadow p-5 text-sm text-red-600">
+        <div className="rounded-2xl bg-white dark:bg-gray-900 shadow p-5 text-sm text-red-600 dark:text-red-400">
           Failed to load orders.
         </div>
       ) : visibleOrders.length === 0 ? (
-        <div className="rounded-2xl bg-white shadow p-10 text-center">
+        <div className="rounded-2xl bg-white dark:bg-gray-900 shadow p-10 text-center">
           <Package className="mx-auto h-10 w-10 text-gray-300 mb-3" />
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {orderSourceTab === 'walk-in'
               ? 'No walk-in orders yet.'
               : dateRange.from !== null || dateRange.to !== null
@@ -575,16 +575,16 @@ export function CashierOrders() {
         onClose={() => setCancellingOrder(null)}
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
             Are you sure you want to cancel order{' '}
-            <span className="font-bold text-gray-900">
+            <span className="font-bold text-gray-900 dark:text-gray-100">
               #
               {cancellingOrder
                 ? String(cancellingOrder._id).slice(-6).toUpperCase()
                 : ''}
             </span>{' '}
             from{' '}
-            <span className="font-bold text-gray-900">
+            <span className="font-bold text-gray-900 dark:text-gray-100">
               {cancellingOrder ? customerDisplay(cancellingOrder) : ''}
             </span>
             ? This cannot be undone.
@@ -649,7 +649,7 @@ function OrderCard({
       await sendMutation.mutateAsync({orderId: order._id, body: text});
     } catch (error) {
       toast.error(
-        (error as NormalizedApiError)?.message ?? 'Failed to send reply.'
+        getFriendlyErrorMessage(error, 'Failed to send reply.')
       );
     }
   };
@@ -665,13 +665,13 @@ function OrderCard({
   const discount = Math.max(0, subtotal - order.totalAmount);
 
   return (
-    <div className="rounded-2xl bg-white shadow">
+    <div className="rounded-2xl bg-white dark:bg-gray-900 shadow">
       <div
         onClick={() => setDetailsOpen(prev => !prev)}
-        className="w-full cursor-pointer select-none p-5 transition-colors hover:bg-gray-50"
+        className="w-full cursor-pointer select-none p-5 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
       >
         <div className="flex flex-wrap items-center gap-3">
-          <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-50">
+          <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-gray-800/60">
             {firstItem ? (
               <Image
                 src={
@@ -685,13 +685,13 @@ function OrderCard({
                 className="object-cover"
               />
             ) : (
-              <span className="flex h-full w-full items-center justify-center bg-gray-50" />
+              <span className="flex h-full w-full items-center justify-center bg-gray-50 dark:bg-gray-800/60" />
             )}
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="truncate text-sm font-bold text-gray-900">
+              <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-100">
                 {customerDisplay(order)}
               </p>
               {order.orderSource === 'in-store' ? (
@@ -736,7 +736,7 @@ function OrderCard({
               {!isWalkIn && ` • ${orderTypeLabel(order.orderType)}`}
               {' • '}₱{order.totalAmount}.00
               {order.isGuest && (
-                <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">
+                <span className="ml-2 rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
                   GUEST
                 </span>
               )}
@@ -747,7 +747,7 @@ function OrderCard({
               </p>
             )}
             {order.prepTiming?.isOverdue && (
-              <p className="mt-1 text-xs font-semibold text-red-600">
+              <p className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">
                 Started preparing{' '}
                 {order.prepTiming.preparingAt
                   ? new Date(order.prepTiming.preparingAt).toLocaleTimeString()
@@ -765,7 +765,7 @@ function OrderCard({
                   e.stopPropagation();
                   onToggle();
                 }}
-                className="flex min-h-[40px] items-center gap-1.5 rounded-xl border border-gray-200 px-3.5 py-2 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50"
+                className="flex min-h-[40px] items-center gap-1.5 rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
               >
                 <MessageCircle size={14} />
                 Follow-up
@@ -787,11 +787,11 @@ function OrderCard({
       </div>
 
       {detailsOpen && (
-        <div className="border-t border-gray-100 p-5">
+        <div className="border-t border-gray-100 dark:border-gray-700 p-5">
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex items-center gap-2 rounded-xl border border-gray-100 p-3">
-              <User size={16} className="shrink-0 text-[#2d4a35]" />
-              <span className="text-sm text-gray-600">
+            <div className="flex items-center gap-2 rounded-xl border border-gray-100 dark:border-gray-700 p-3">
+              <User size={16} className="shrink-0 text-[#2d4a35] dark:text-[#7ed4a0]" />
+              <span className="text-sm text-gray-600 dark:text-gray-300">
                 {order.guestInfo
                   ? `${order.guestInfo.firstName} ${order.guestInfo.lastName}`
                   : customerDisplay(order)}
@@ -799,17 +799,17 @@ function OrderCard({
             </div>
             {order.guestInfo?.phoneNumber &&
               order.guestInfo.phoneNumber !== 'n/a' && (
-                <div className="flex items-center gap-2 rounded-xl border border-gray-100 p-3">
-                  <Phone size={16} className="shrink-0 text-[#2d4a35]" />
-                  <span className="text-sm text-gray-600">
+                <div className="flex items-center gap-2 rounded-xl border border-gray-100 dark:border-gray-700 p-3">
+                  <Phone size={16} className="shrink-0 text-[#2d4a35] dark:text-[#7ed4a0]" />
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
                     {order.guestInfo.phoneNumber}
                   </span>
                 </div>
               )}
             {order.guestInfo?.address && (
-              <div className="flex items-center gap-2 rounded-xl border border-gray-100 p-3 sm:col-span-2">
-                <MapPin size={16} className="shrink-0 text-[#2d4a35]" />
-                <span className="text-sm text-gray-600">
+              <div className="flex items-center gap-2 rounded-xl border border-gray-100 dark:border-gray-700 p-3 sm:col-span-2">
+                <MapPin size={16} className="shrink-0 text-[#2d4a35] dark:text-[#7ed4a0]" />
+                <span className="text-sm text-gray-600 dark:text-gray-300">
                   {order.guestInfo.address}
                 </span>
               </div>
@@ -817,20 +817,20 @@ function OrderCard({
           </div>
 
           {order.riderNotes && (
-            <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50 p-3">
-              <p className="mb-1 text-xs font-bold uppercase tracking-wide text-amber-700">
+            <div className="mt-3 rounded-xl border border-amber-100 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 p-3">
+              <p className="mb-1 text-xs font-bold uppercase tracking-wide text-amber-700 dark:text-amber-300">
                 Rider / Notes
               </p>
-              <p className="text-sm text-gray-700">{order.riderNotes}</p>
+              <p className="text-sm text-gray-700 dark:text-gray-200">{order.riderNotes}</p>
             </div>
           )}
 
           {order.paymentMethod === 'cash' && order.changeFor ? (
-            <div className="mt-3 rounded-xl border border-teal-100 bg-teal-50 p-3">
-              <p className="mb-1 text-xs font-bold uppercase tracking-wide text-teal-700">
+            <div className="mt-3 rounded-xl border border-teal-100 dark:border-teal-500/30 bg-teal-50 dark:bg-teal-500/10 p-3">
+              <p className="mb-1 text-xs font-bold uppercase tracking-wide text-teal-700 dark:text-teal-300">
                 Change for
               </p>
-              <p className="text-sm font-semibold text-gray-900">
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {order.changeFor}
               </p>
             </div>
@@ -839,7 +839,7 @@ function OrderCard({
           <OrderPaymentPanel order={order} />
 
           <div className="mt-4">
-            <h3 className="mb-3 text-sm font-bold text-gray-900">
+            <h3 className="mb-3 text-sm font-bold text-gray-900 dark:text-gray-100">
               Order Items
             </h3>
             <div className="mb-3">
@@ -854,9 +854,9 @@ function OrderCard({
                 return (
                   <div
                     key={item._id ?? `${order._id}-${index}`}
-                    className="flex items-start gap-3 rounded-xl border border-gray-100 p-3"
+                    className="flex items-start gap-3 rounded-xl border border-gray-100 dark:border-gray-700 p-3"
                   >
-                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-gray-50">
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-gray-800/60">
                       <Image
                         src={
                           imageUrl && imageUrl.length > 0
@@ -870,13 +870,13 @@ function OrderCard({
                       />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-sm font-bold text-gray-900">
+                      <p className="line-clamp-2 text-sm font-bold text-gray-900 dark:text-gray-100">
                         {getItemName(item)}
                       </p>
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                         Qty {item.quantity} • {money(item.price)} each
                         {item.prepTimeMinutes != null && (
-                          <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+                          <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300">
                             <Clock size={9} />~{item.prepTimeMinutes} min
                           </span>
                         )}
@@ -885,17 +885,17 @@ function OrderCard({
                         order.prepTiming?.estimatedPrepMinutes != null &&
                         item.prepTimeMinutes ===
                           order.prepTiming.estimatedPrepMinutes && (
-                          <p className="mt-1 text-[10px] font-semibold text-amber-600">
+                          <p className="mt-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
                             Slowest item — sets the order estimate
                           </p>
                         )}
                       {item.specialRequest && (
-                        <p className="mt-1 rounded-lg bg-orange-50 px-2 py-1 text-xs text-orange-700">
+                        <p className="mt-1 rounded-lg bg-orange-50 dark:bg-orange-500/10 px-2 py-1 text-xs text-orange-700 dark:text-orange-300">
                           Request: {item.specialRequest}
                         </p>
                       )}
                     </div>
-                    <p className="shrink-0 text-sm font-bold text-gray-900">
+                    <p className="shrink-0 text-sm font-bold text-gray-900 dark:text-gray-100">
                       {money(item.price * item.quantity)}
                     </p>
                   </div>
@@ -903,7 +903,7 @@ function OrderCard({
               })}
             </div>
 
-            <div className="mt-4 space-y-1 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
+            <div className="mt-4 space-y-1 rounded-xl bg-gray-50 dark:bg-gray-800/60 p-4 text-sm text-gray-600 dark:text-gray-300">
               <div className="flex items-center justify-between">
                 <span>Subtotal</span>
                 <span className="font-semibold">{money(subtotal)}</span>
@@ -914,9 +914,9 @@ function OrderCard({
                   <span className="font-semibold">-{money(discount)}</span>
                 </div>
               )}
-              <div className="mt-2 flex items-center justify-between border-t border-gray-200 pt-2">
-                <span className="font-semibold text-gray-900">Total</span>
-                <span className="text-base font-extrabold text-gray-900">
+              <div className="mt-2 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-2">
+                <span className="font-semibold text-gray-900 dark:text-gray-100">Total</span>
+                <span className="text-base font-extrabold text-gray-900 dark:text-gray-100">
                   {money(order.totalAmount)}
                 </span>
               </div>
@@ -925,7 +925,7 @@ function OrderCard({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 px-5 py-4">
+      <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 dark:border-gray-700 px-5 py-4">
         {canAdvance ? (
           <>
             <button
@@ -941,7 +941,7 @@ function OrderCard({
                 : `Mark ${formatStatus(nextStatus)}`}
             </button>
             {paymentBlocked ? (
-              <span className="text-xs font-semibold text-amber-600">
+              <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
                 {paymentReason}
               </span>
             ) : null}
@@ -949,7 +949,7 @@ function OrderCard({
               <button
                 onClick={onCancel}
                 disabled={statusUpdating || cancelUpdating}
-                className="min-h-[40px] rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-bold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
+                className="min-h-[40px] rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 px-4 py-2 text-xs font-bold text-red-600 dark:text-red-400 transition-colors hover:bg-red-100 dark:hover:bg-red-500/20 disabled:opacity-50"
               >
                 Cancel Order
               </button>
@@ -965,14 +965,14 @@ function OrderCard({
       </div>
 
       {expanded && !isWalkIn && !order.isGuest && (
-        <div className="border-t border-gray-100 bg-gray-50 p-4">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500">
+        <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4">
+          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
             Conversation with {customerDisplay(order)}
           </p>
           {messagesQuery.isLoading ? (
-            <div className="text-sm text-gray-500">Loading conversation...</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Loading conversation...</div>
           ) : messagesQuery.isError ? (
-            <div className="text-sm text-red-600">
+            <div className="text-sm text-red-600 dark:text-red-400">
               Failed to load conversation.
             </div>
           ) : (
@@ -1024,15 +1024,15 @@ export function OrderPaymentPanel({order}: {order: OrderHistoryEntry}) {
       toast.success('Cash payment recorded.');
     } catch (error) {
       toast.error(
-        (error as NormalizedApiError)?.message ?? 'Failed to record the cash payment.'
+        getFriendlyErrorMessage(error, 'Failed to record the cash payment.')
       );
     }
   };
 
   return (
-    <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50/60 p-3">
+    <div className="mt-3 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+        <p className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           Payment
         </p>
         {chip ? (
@@ -1044,7 +1044,7 @@ export function OrderPaymentPanel({order}: {order: OrderHistoryEntry}) {
         ) : null}
       </div>
 
-      <div className="mt-2 space-y-1 text-sm text-gray-700">
+      <div className="mt-2 space-y-1 text-sm text-gray-700 dark:text-gray-200">
         <p>
           Order total <span className="font-semibold">{money(order.totalAmount)}</span>
           {amountPaid > 0 ? (
@@ -1054,19 +1054,19 @@ export function OrderPaymentPanel({order}: {order: OrderHistoryEntry}) {
           ) : null}
         </p>
         {fee > 0 ? (
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             Customer also paid {money(fee)} transaction fee (not part of sales).
           </p>
         ) : null}
         {expiresAt && order.paymentChoice !== 'cash_on_pickup' ? (
-          <p className="text-xs text-amber-700">
+          <p className="text-xs text-amber-700 dark:text-amber-300">
             Payment link expires{' '}
             {expiresAt.toLocaleTimeString(undefined, {hour: 'numeric', minute: '2-digit'})}.
             Unpaid orders are cancelled automatically.
           </p>
         ) : null}
         {order.refundStatus === 'failed' ? (
-          <p className="text-xs font-semibold text-red-600">
+          <p className="text-xs font-semibold text-red-600 dark:text-red-400">
             Automatic refund failed. The owner must refund this customer from the Xendit dashboard.
           </p>
         ) : null}
@@ -1082,7 +1082,7 @@ export function OrderPaymentPanel({order}: {order: OrderHistoryEntry}) {
           >
             {markPaid.isPending ? 'Saving...' : `Cash received (${money(cashDue)})`}
           </Button>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-gray-500 dark:text-gray-400">
             Click once the customer has paid at the store.
           </span>
         </div>

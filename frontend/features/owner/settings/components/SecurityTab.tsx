@@ -99,7 +99,7 @@ export function SecurityTab() {
         </div>
 
         <form onSubmit={onSubmit}>
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-100 dark:divide-gray-700">
             <PasswordField
               id="currentPassword"
               label="Current password"
@@ -123,7 +123,7 @@ export function SecurityTab() {
           </div>
 
           {formError && (
-            <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+            <div className="text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/30 rounded-xl px-4 py-3">
               {formError}
             </div>
           )}
@@ -132,7 +132,7 @@ export function SecurityTab() {
             <Button
               type="submit"
               disabled={isBusy}
-              className="bg-[#2d4a35] hover:bg-[#24402c]"
+              className="bg-[#2d4a35] hover:bg-[#24402c] dark:text-white"
             >
               {isBusy ? 'Updating...' : 'Update Password'}
             </Button>
@@ -157,7 +157,7 @@ export function SecurityTab() {
             ))}
           </div>
         ) : sessionsQuery.isError ? (
-          <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+          <div className="text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/30 rounded-xl px-4 py-3">
             Failed to load active sessions.
           </div>
         ) : (

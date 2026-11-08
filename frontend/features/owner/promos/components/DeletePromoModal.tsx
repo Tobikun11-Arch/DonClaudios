@@ -21,7 +21,7 @@ export function DeletePromoModal({
   return (
     <Modal open={open} title="Delete Promo" onClose={onClose}>
       <div className="space-y-4">
-        <p className="text-sm text-gray-700">
+        <p className="text-sm text-gray-700 dark:text-gray-200">
           Are you sure you want to delete <b>{promoTitle}</b>?
         </p>
         <div className="flex items-center justify-end gap-2">

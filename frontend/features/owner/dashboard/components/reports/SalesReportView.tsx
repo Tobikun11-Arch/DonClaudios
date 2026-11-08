@@ -39,6 +39,7 @@ import {ReportBreakdownTable, breakdownToCsvRows} from './ReportBreakdownTable';
 import {ReportExportBar} from './ReportExportBar';
 import {ValueSplitPanel} from './ValueSplitPanel';
 import type {ReportDimension, ReportGranularity, ReportRange} from '@/lib/types/report';
+import {useChartColors} from '../chartTheme';
 
 const SLICE_COLORS = ['#2D4A1E', '#4A7C35', '#7BAF5A', '#A8CC8C', '#D4A843', '#E8C87A', '#C9B99A', '#E5DDD0'];
 
@@ -82,6 +83,7 @@ function TrendTooltip({
 }
 
 export function SalesReportView({range}: {range: ReportRange}) {
+  const chart = useChartColors();
   const [granularity, setGranularity] = useState<ReportGranularity | undefined>(undefined);
   const [dimension, setDimension] = useState<ReportDimension>('product');
 
@@ -122,7 +124,7 @@ export function SalesReportView({range}: {range: ReportRange}) {
         }
         action={
           <div className="flex items-center gap-2">
-            <div className="flex gap-1 rounded-full border border-gray-200 bg-white p-0.5">
+            <div className="flex gap-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-0.5">
               {([undefined, 'day', 'week', 'month'] as const).map(g => {
                 const active = granularity === g;
                 return (
@@ -133,7 +135,7 @@ export function SalesReportView({range}: {range: ReportRange}) {
                     aria-pressed={active}
                     className={cn(
                       'rounded-full px-2.5 py-1 text-[0.7rem] font-bold capitalize transition-colors',
-                      active ? 'bg-[#2d4a35] text-white' : 'text-gray-500 hover:bg-gray-50'
+                      active ? 'bg-[#2d4a35] text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/60'
                     )}
                   >
                     {g ?? 'auto'}
@@ -168,21 +170,21 @@ export function SalesReportView({range}: {range: ReportRange}) {
               <AreaChart data={points} margin={{top: 5, right: 10, left: -20, bottom: 0}}>
                 <defs>
                   <linearGradient id="reportSalesGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#E8F0E3" />
-                    <stop offset="100%" stopColor="#E8F0E3" stopOpacity={0} />
+                    <stop offset="0%" stopColor={chart.areaFill} />
+                    <stop offset="100%" stopColor={chart.areaFill} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                 <XAxis
                   dataKey="bucket"
-                  tick={{fontSize: 11, fill: '#6B7280'}}
+                  tick={{fontSize: 11, fill: chart.tick}}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v: string) => formatBucketLabel(v, effectiveGranularity)}
                   minTickGap={24}
                 />
                 <YAxis
-                  tick={{fontSize: 11, fill: '#6B7280'}}
+                  tick={{fontSize: 11, fill: chart.tick}}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v: number) => formatCompactPeso(v)}
@@ -192,7 +194,7 @@ export function SalesReportView({range}: {range: ReportRange}) {
                   type="monotone"
                   dataKey="revenue"
                   name="Collected"
-                  stroke="#4A7C35"
+                  stroke={chart.line}
                   strokeWidth={2}
                   fill="url(#reportSalesGradient)"
                 />
@@ -222,10 +224,10 @@ export function SalesReportView({range}: {range: ReportRange}) {
             >
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={points} margin={{top: 5, right: 10, left: -25, bottom: 0}}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                   <XAxis
                     dataKey="bucket"
-                    tick={{fontSize: 11, fill: '#6B7280'}}
+                    tick={{fontSize: 11, fill: chart.tick}}
                     tickLine={false}
                     axisLine={false}
                     tickFormatter={(v: string) => formatBucketLabel(v, effectiveGranularity)}
@@ -233,7 +235,7 @@ export function SalesReportView({range}: {range: ReportRange}) {
                   />
                   <YAxis
                     allowDecimals={false}
-                    tick={{fontSize: 11, fill: '#6B7280'}}
+                    tick={{fontSize: 11, fill: chart.tick}}
                     tickLine={false}
                     axisLine={false}
                   />
@@ -242,7 +244,7 @@ export function SalesReportView({range}: {range: ReportRange}) {
                     type="stepAfter"
                     dataKey="orders"
                     name="Orders"
-                    stroke="#2D4A1E"
+                    stroke={chart.lineStrong}
                     strokeWidth={2}
                     dot={false}
                   />
@@ -296,9 +298,9 @@ export function SalesReportView({range}: {range: ReportRange}) {
                         className="h-2.5 w-2.5 shrink-0 rounded-full"
                         style={{backgroundColor: SLICE_COLORS[idx % SLICE_COLORS.length]}}
                       />
-                      <span className="min-w-0 flex-1 truncate text-[#1A1A1A]">{entry.label}</span>
-                      <span className="tabular-nums text-[#6B7280]">{entry.orders}</span>
-                      <span className="w-20 text-right font-medium tabular-nums text-[#1A1A1A]">
+                      <span className="min-w-0 flex-1 truncate text-[#1A1A1A] dark:text-gray-100">{entry.label}</span>
+                      <span className="tabular-nums text-[#6B7280] dark:text-gray-400">{entry.orders}</span>
+                      <span className="w-20 text-right font-medium tabular-nums text-[#1A1A1A] dark:text-gray-100">
                         {formatCompactPeso(entry.revenue)}
                       </span>
                     </li>
@@ -342,24 +344,24 @@ export function SalesReportView({range}: {range: ReportRange}) {
           <div className="px-4 pb-5">
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={orderSourceMix} margin={{top: 5, right: 10, left: -20, bottom: 0}}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                 <XAxis
                   dataKey="label"
-                  tick={{fontSize: 11, fill: '#6B7280'}}
+                  tick={{fontSize: 11, fill: chart.tick}}
                   tickLine={false}
                   axisLine={false}
                 />
                 <YAxis
-                  tick={{fontSize: 11, fill: '#6B7280'}}
+                  tick={{fontSize: 11, fill: chart.tick}}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v: number) => formatCompactPeso(v)}
                 />
                 <Tooltip
                   formatter={(value: number) => formatPeso(value)}
-                  contentStyle={{borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 12}}
+                  contentStyle={chart.tooltip}
                 />
-                <Bar dataKey="revenue" name="Revenue" fill="#4A7C35" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="revenue" name="Revenue" fill={chart.bar} radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

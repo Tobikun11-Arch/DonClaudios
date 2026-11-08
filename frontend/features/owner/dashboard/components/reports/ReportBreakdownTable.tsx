@@ -120,8 +120,8 @@ export function ReportBreakdownTable({
         rank={rank}
         summary={
           showTotals ? (
-            <p className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 rounded-lg bg-[#F7FAF6] px-3 py-2 text-[0.75rem] text-[#6B7280]">
-              <span className="font-bold uppercase tracking-[0.08em] text-[#1A1A1A]">Total</span>
+            <p className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 rounded-lg bg-[#F7FAF6] dark:bg-gray-800/60 px-3 py-2 text-[0.75rem] text-[#6B7280] dark:text-gray-400">
+              <span className="font-bold uppercase tracking-[0.08em] text-[#1A1A1A] dark:text-gray-100">Total</span>
               {columns.includes('orders') && (
                 <span className="tabular-nums">{formatNumber(totals.orders)} orders</span>
               )}
@@ -141,9 +141,9 @@ export function ReportBreakdownTable({
           style={{minWidth: (MIN_TABLE_WIDTH[columns.length] ?? 520) + (rank ? 40 : 0)}}
         >
           <thead>
-            <tr className="border-t border-[#E5E7EB]">
+            <tr className="border-t border-[#E5E7EB] dark:border-gray-700">
               {rank && (
-                <th className="w-10 px-3 py-2.5 text-left text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+                <th className="w-10 px-3 py-2.5 text-left text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
                   #
                 </th>
               )}
@@ -151,7 +151,7 @@ export function ReportBreakdownTable({
                 <th
                   key={col}
                   className={cn(
-                    'px-4 py-2.5 text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]',
+                    'px-4 py-2.5 text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400',
                     ALIGN[col]
                   )}
                 >
@@ -164,7 +164,7 @@ export function ReportBreakdownTable({
             {rows.map((row, index) => (
               <tr
                 key={`${row.key}-${index}`}
-                className="border-t border-[#E5E7EB] transition-colors hover:bg-[#E8F0E3]"
+                className="border-t border-[#E5E7EB] dark:border-gray-700 transition-colors hover:bg-[#E8F0E3] dark:hover:bg-[#7ed4a0]/10"
               >
                 {rank && (
                   <td className="px-3 py-3">
@@ -174,33 +174,33 @@ export function ReportBreakdownTable({
                   </td>
                 )}
                 {columns.includes('label') && (
-                  <td className="px-4 py-3 text-[0.875rem] font-medium text-[#1A1A1A]">
+                  <td className="px-4 py-3 text-[0.875rem] font-medium text-[#1A1A1A] dark:text-gray-100">
                     {row.label}
                   </td>
                 )}
                 {columns.includes('secondary') && (
-                  <td className="px-4 py-3 text-[0.8rem] text-[#6B7280]">
+                  <td className="px-4 py-3 text-[0.8rem] text-[#6B7280] dark:text-gray-400">
                     {row.secondary ?? '—'}
                   </td>
                 )}
                 {columns.includes('orders') && (
-                  <td className="px-4 py-3 text-right text-[0.875rem] tabular-nums text-[#1A1A1A]">
+                  <td className="px-4 py-3 text-right text-[0.875rem] tabular-nums text-[#1A1A1A] dark:text-gray-100">
                     {formatNumber(row.orders)}
                   </td>
                 )}
                 {columns.includes('units') && (
-                  <td className="px-4 py-3 text-right text-[0.875rem] tabular-nums text-[#1A1A1A]">
+                  <td className="px-4 py-3 text-right text-[0.875rem] tabular-nums text-[#1A1A1A] dark:text-gray-100">
                     {formatNumber(row.units)}
                   </td>
                 )}
                 {columns.includes('revenue') && (
-                  <td className="px-4 py-3 text-right text-[0.875rem] font-medium tabular-nums text-[#1A1A1A]">
+                  <td className="px-4 py-3 text-right text-[0.875rem] font-medium tabular-nums text-[#1A1A1A] dark:text-gray-100">
                     {formatPeso(row.revenue, row.revenue % 1 !== 0)}
                   </td>
                 )}
                 {columns.includes('share') && (
                   <td className="px-4 py-3 text-right">
-                    <span className="text-[0.8rem] font-medium tabular-nums text-[#1A1A1A]">
+                    <span className="text-[0.8rem] font-medium tabular-nums text-[#1A1A1A] dark:text-gray-100">
                       {formatNumber(Math.round(row.share * 10) / 10)}%
                     </span>
                     <span className="mt-1 block w-20">
@@ -213,26 +213,26 @@ export function ReportBreakdownTable({
           </tbody>
           {showTotals && rows.length > 0 && (
             <tfoot>
-              <tr className="border-t-2 border-[#E5E7EB] bg-[#F7FAF6]">
+              <tr className="border-t-2 border-[#E5E7EB] dark:border-gray-700 bg-[#F7FAF6] dark:bg-gray-800/60">
                 {rank && <td />}
                 {columns.includes('label') && (
-                  <td className="px-4 py-3 text-[0.8rem] font-bold uppercase tracking-[0.08em] text-[#1A1A1A]">
+                  <td className="px-4 py-3 text-[0.8rem] font-bold uppercase tracking-[0.08em] text-[#1A1A1A] dark:text-gray-100">
                     Total
                   </td>
                 )}
                 {columns.includes('secondary') && <td />}
                 {columns.includes('orders') && (
-                  <td className="px-4 py-3 text-right text-[0.875rem] font-bold tabular-nums text-[#1A1A1A]">
+                  <td className="px-4 py-3 text-right text-[0.875rem] font-bold tabular-nums text-[#1A1A1A] dark:text-gray-100">
                     {formatNumber(totals.orders)}
                   </td>
                 )}
                 {columns.includes('units') && (
-                  <td className="px-4 py-3 text-right text-[0.875rem] font-bold tabular-nums text-[#1A1A1A]">
+                  <td className="px-4 py-3 text-right text-[0.875rem] font-bold tabular-nums text-[#1A1A1A] dark:text-gray-100">
                     {formatNumber(totals.units)}
                   </td>
                 )}
                 {columns.includes('revenue') && (
-                  <td className="px-4 py-3 text-right text-[0.875rem] font-bold tabular-nums text-[#1A1A1A]">
+                  <td className="px-4 py-3 text-right text-[0.875rem] font-bold tabular-nums text-[#1A1A1A] dark:text-gray-100">
                     {formatPeso(totals.revenue, totals.revenue % 1 !== 0)}
                   </td>
                 )}

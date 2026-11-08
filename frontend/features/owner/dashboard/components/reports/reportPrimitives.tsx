@@ -66,7 +66,7 @@ export function titleCaseStatus(status: string) {
   return status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-const CARD = 'bg-white border border-[#E5E7EB] rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.06)]';
+const CARD = 'bg-white dark:bg-gray-900 border border-[#E5E7EB] dark:border-gray-700 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.06)]';
 
 export function ReportCard({
   title,
@@ -97,10 +97,10 @@ export function ReportCard({
         <header className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 px-5 pt-4 pb-3">
           <div className="min-w-0">
             {title && (
-              <h3 className="break-words text-[1rem] font-semibold text-[#1A1A1A]">{title}</h3>
+              <h3 className="break-words text-[1rem] font-semibold text-[#1A1A1A] dark:text-gray-100">{title}</h3>
             )}
             {subtitle && (
-              <p className="break-words text-[0.8rem] leading-snug text-[#6B7280]">{subtitle}</p>
+              <p className="break-words text-[0.8rem] leading-snug text-[#6B7280] dark:text-gray-400">{subtitle}</p>
             )}
           </div>
           {action && <div className="shrink-0">{action}</div>}
@@ -119,24 +119,24 @@ export function ReportKpiTile({kpi}: {kpi: ReportKpi}) {
   const change = kpi.delta ?? 0;
   const good = LOWER_IS_BETTER.has(kpi.key) ? change < 0 : change > 0;
   const deltaTone =
-    change === 0 ? 'text-[#6B7280]' : good ? 'text-[#2D7A3A]' : 'text-red-500';
+    change === 0 ? 'text-[#6B7280] dark:text-gray-400' : good ? 'text-[#2D7A3A] dark:text-[#7ed4a0]' : 'text-red-500';
   return (
-    <div className="bg-white border border-[#E5E7EB] rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.06)] p-4 px-5 min-h-[104px] flex flex-col justify-between">
-      <p className="text-[0.7rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+    <div className="bg-white dark:bg-gray-900 border border-[#E5E7EB] dark:border-gray-700 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.06)] p-4 px-5 min-h-[104px] flex flex-col justify-between">
+      <p className="text-[0.7rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
         {kpi.label}
       </p>
-      <p className="text-[1.35rem] font-bold text-[#1A1A1A] leading-tight tabular-nums">
+      <p className="text-[1.35rem] font-bold text-[#1A1A1A] dark:text-gray-100 leading-tight tabular-nums">
         {formatKpiValue(kpi)}
       </p>
       {delta ? (
         <p className={cn('text-[0.72rem] font-medium', deltaTone)}>
           {delta}
-          {kpi.hint ? <span className="font-normal text-[#6B7280]"> · {kpi.hint}</span> : null}
+          {kpi.hint ? <span className="font-normal text-[#6B7280] dark:text-gray-400"> · {kpi.hint}</span> : null}
         </p>
       ) : kpi.hint ? (
-        <p className="text-[0.72rem] text-[#6B7280]">{kpi.hint}</p>
+        <p className="text-[0.72rem] text-[#6B7280] dark:text-gray-400">{kpi.hint}</p>
       ) : (
-        <p className="text-[0.72rem] text-[#6B7280]">No comparison period</p>
+        <p className="text-[0.72rem] text-[#6B7280] dark:text-gray-400">No comparison period</p>
       )}
     </div>
   );
@@ -201,7 +201,7 @@ export function ReportStatGrid({
   return <div className={cn('grid grid-cols-1 gap-3', GRID_COLS[columns])}>{children}</div>;
 }
 
-export const SHIMMER = 'animate-pulse rounded bg-[#E8EDE6]';
+export const SHIMMER = 'animate-pulse rounded bg-[#E8EDE6] dark:bg-[#7ed4a0]/10';
 
 /**
  * Placeholder shaped like a metric tile, so a loading grid occupies exactly the
@@ -272,20 +272,20 @@ export function ReportStatTile({
   skeletonWidth?: string;
 }) {
   const valueTone =
-    tone === 'danger' ? 'text-red-500' : tone === 'warning' ? 'text-[#B45309]' : 'text-[#1A1A1A]';
+    tone === 'danger' ? 'text-red-500' : tone === 'warning' ? 'text-[#B45309] dark:text-amber-300' : 'text-[#1A1A1A] dark:text-gray-100';
   return (
     <div
       className={cn(
         CARD,
         'flex min-h-[104px] flex-col justify-between p-4 px-5',
-        tone === 'warning' && 'border-[#F0D9A8] bg-[#FDF8EE]',
-        tone === 'danger' && 'border-red-200 bg-red-50'
+        tone === 'warning' && 'border-[#F0D9A8] dark:border-amber-500/30 bg-[#FDF8EE] dark:bg-amber-500/10',
+        tone === 'danger' && 'border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10'
       )}
     >
       <p
         className={cn(
           'text-[0.7rem] font-medium uppercase tracking-[0.08em]',
-          isLoading ? 'text-[#B4BCB2]' : 'text-[#6B7280]'
+          isLoading ? 'text-[#B4BCB2]' : 'text-[#6B7280] dark:text-gray-400'
         )}
       >
         {label}
@@ -306,7 +306,7 @@ export function ReportStatTile({
       {isLoading ? (
         <div className={cn(SHIMMER, 'h-2.5 w-36')} aria-hidden="true" />
       ) : hint ? (
-        <p className="text-[0.72rem] leading-snug text-[#6B7280]">{hint}</p>
+        <p className="text-[0.72rem] leading-snug text-[#6B7280] dark:text-gray-400">{hint}</p>
       ) : null}
     </div>
   );
@@ -355,7 +355,7 @@ export function ReportBody({
   if (isEmpty) {
     return (
       <div
-        className="flex items-center justify-center text-sm text-[#6B7280]"
+        className="flex items-center justify-center text-sm text-[#6B7280] dark:text-gray-400"
         style={{height}}
       >
         {emptyMessage}
@@ -369,7 +369,7 @@ export function ReportBody({
 export function ShareBar({share, color = '#4A7C35'}: {share: number; color?: string}) {
   const width = Math.max(0, Math.min(100, share));
   return (
-    <div className="h-1.5 w-full rounded-full bg-[#E8F0E3] overflow-hidden">
+    <div className="h-1.5 w-full rounded-full bg-[#E8F0E3] dark:bg-[#7ed4a0]/10 overflow-hidden">
       <div
         className="h-full rounded-full transition-all"
         style={{width: `${width}%`, backgroundColor: color}}
@@ -380,7 +380,7 @@ export function ShareBar({share, color = '#4A7C35'}: {share: number; color?: str
 
 export function ReportNote({children}: {children: ReactNode}) {
   return (
-    <p className="px-5 pb-4 text-[0.72rem] leading-relaxed text-[#6B7280] border-t border-[#E5E7EB] pt-3">
+    <p className="px-5 pb-4 text-[0.72rem] leading-relaxed text-[#6B7280] dark:text-gray-400 border-t border-[#E5E7EB] dark:border-gray-700 pt-3">
       {children}
     </p>
   );

@@ -10,21 +10,21 @@ interface Props {
 
 export function TopProductsTable({products, isLoading, isError}: Props) {
   return (
-    <div className="bg-white border border-[#E5E7EB] rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+    <div className="bg-white dark:bg-gray-900 border border-[#E5E7EB] dark:border-gray-700 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
       <div className="flex items-center justify-between px-5 pt-4 pb-3">
         <div>
-          <h3 className="text-[1rem] font-semibold text-[#1A1A1A]">
+          <h3 className="text-[1rem] font-semibold text-[#1A1A1A] dark:text-gray-100">
             Top Selling Products
           </h3>
-          <p className="text-[0.8rem] text-[#6B7280]">
+          <p className="text-[0.8rem] text-[#6B7280] dark:text-gray-400">
             Best performers this month
           </p>
         </div>
-        <Star className="h-4 w-4 text-[#6B7280]" />
+        <Star className="h-4 w-4 text-[#6B7280] dark:text-gray-400" />
       </div>
 
       {isLoading ? (
-        <div className="px-5 py-8 flex items-center justify-center text-sm text-[#6B7280]">
+        <div className="px-5 py-8 flex items-center justify-center text-sm text-[#6B7280] dark:text-gray-400">
           Loading...
         </div>
       ) : isError ? (
@@ -32,7 +32,7 @@ export function TopProductsTable({products, isLoading, isError}: Props) {
           Failed to load top products
         </div>
       ) : products.length === 0 ? (
-        <div className="px-5 py-8 flex items-center justify-center text-sm text-[#6B7280]">
+        <div className="px-5 py-8 flex items-center justify-center text-sm text-[#6B7280] dark:text-gray-400">
           No sales data yet this month
         </div>
       ) : (
@@ -62,17 +62,17 @@ export function TopProductsTable({products, isLoading, isError}: Props) {
           <div className="hidden overflow-x-auto sm:block">
             <table className="w-full min-w-[420px]">
               <thead>
-                <tr className="border-t border-[#E5E7EB]">
-                  <th className="text-left px-4 py-2.5 text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] w-12">
+                <tr className="border-t border-[#E5E7EB] dark:border-gray-700">
+                  <th className="text-left px-4 py-2.5 text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400 w-12">
                     Rank
                   </th>
-                  <th className="text-left px-4 py-2.5 text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+                  <th className="text-left px-4 py-2.5 text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
                     Product
                   </th>
-                  <th className="text-right px-4 py-2.5 text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+                  <th className="text-right px-4 py-2.5 text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
                     Units Sold
                   </th>
-                  <th className="text-right px-4 py-2.5 text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+                  <th className="text-right px-4 py-2.5 text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
                     Revenue
                   </th>
                 </tr>
@@ -81,20 +81,20 @@ export function TopProductsTable({products, isLoading, isError}: Props) {
                 {products.map(product => (
                   <tr
                     key={product.rank}
-                    className="border-t border-[#E5E7EB] hover:bg-[#E8F0E3] transition-colors"
+                    className="border-t border-[#E5E7EB] dark:border-gray-700 hover:bg-[#E8F0E3] dark:hover:bg-[#7ed4a0]/10 transition-colors"
                   >
                     <td className="px-4 py-3">
                       <div className="w-7 h-7 rounded-full bg-[#2D4A1E] text-white flex items-center justify-center text-[0.75rem] font-semibold">
                         {product.rank}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-[0.875rem] text-[#1A1A1A]">
+                    <td className="px-4 py-3 text-[0.875rem] text-[#1A1A1A] dark:text-gray-100">
                       {product.name}
                     </td>
-                    <td className="px-4 py-3 text-[0.875rem] text-[#1A1A1A] text-right tabular-nums">
+                    <td className="px-4 py-3 text-[0.875rem] text-[#1A1A1A] dark:text-gray-100 text-right tabular-nums">
                       {product.unitsSold}
                     </td>
-                    <td className="px-4 py-3 text-[0.875rem] text-[#1A1A1A] text-right font-medium tabular-nums">
+                    <td className="px-4 py-3 text-[0.875rem] text-[#1A1A1A] dark:text-gray-100 text-right font-medium tabular-nums">
                       ₱{product.revenue.toLocaleString()}
                     </td>
                   </tr>

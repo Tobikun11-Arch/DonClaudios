@@ -10,7 +10,7 @@ import {
   useSendOrderMessageMutation
 } from '@/lib/hooks/orders/useOrderMessage';
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
-import type {NormalizedApiError} from '@/lib/api/types';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 export default function CustomerOrderFollowUp({
   order,
@@ -28,7 +28,7 @@ export default function CustomerOrderFollowUp({
       await sendMutation.mutateAsync({orderId: order._id, body: text});
     } catch (error) {
       toast.error(
-        (error as NormalizedApiError)?.message ?? 'Failed to send message.'
+        getFriendlyErrorMessage(error, 'Failed to send message.')
       );
     }
   };

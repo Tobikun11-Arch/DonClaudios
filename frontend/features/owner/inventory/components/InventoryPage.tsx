@@ -36,12 +36,12 @@ function SummarySkeleton() {
       {Array.from({length: 4}).map((_, i) => (
         <div
           key={i}
-          className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4"
+          className="flex items-center gap-3 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 p-4"
         >
-          <div className="h-11 w-11 animate-pulse rounded-xl bg-gray-100" />
+          <div className="h-11 w-11 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
           <div className="flex-1 space-y-2">
-            <div className="h-3 w-16 animate-pulse rounded bg-gray-100" />
-            <div className="h-6 w-10 animate-pulse rounded bg-gray-100" />
+            <div className="h-3 w-16 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
+            <div className="h-6 w-10 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
           </div>
         </div>
       ))}
@@ -277,20 +277,25 @@ export default function InventoryPage() {
   };
 
   const handleTurnOffSellableOut = async (targets: Product[]) => {
+    // Count what actually succeeded so the summary never over-reports.
+    let done = 0;
     for (const product of targets) {
       try {
         await updateProductMutation.mutateAsync({
           id: product._id,
           body: {isAvailable: false}
         });
+        done += 1;
       } catch (error) {
         toastError(error, `Failed to update ${product.name}.`);
       }
     }
-    toast.success(
-      `${targets.length} product${targets.length > 1 ? 's' : ''} removed from menu.`,
-      {position: 'bottom-center'}
-    );
+    if (done > 0) {
+      toast.success(
+        `${done} product${done > 1 ? 's' : ''} removed from menu.`,
+        {position: 'bottom-center'}
+      );
+    }
   };
 
   const applyAttentionFilter = (status: 'low_stock' | 'out_of_stock') => {
@@ -338,10 +343,10 @@ export default function InventoryPage() {
     <div className="space-y-5 pb-24 md:pb-28">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-[1.75rem] font-extrabold text-[#2d4a35]">
+          <h1 className="text-[1.75rem] font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">
             Inventory Management
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Track stock levels, restock products, and view movement history.
           </p>
         </div>

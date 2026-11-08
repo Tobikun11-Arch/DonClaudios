@@ -323,7 +323,7 @@ export function MenuCategoriesTab() {
 
         <div className="mt-5">
           {editingId ? (
-            <div className="rounded-xl border border-[#2d4a35]/20 bg-[#e9f5ee] dark:bg-[#1f3a2a]/50 p-4">
+            <div className="rounded-xl border border-[#2d4a35]/20 dark:border-[#7ed4a0]/30 bg-[#e9f5ee] dark:bg-[#1f3a2a]/50 p-4">
               <p className="text-sm font-semibold text-[#2d4a35] dark:text-[#7ed4a0] mb-3">
                 Edit category
               </p>
@@ -381,7 +381,7 @@ export function MenuCategoriesTab() {
                   type="button"
                   onClick={() => handleUpdate(editingId)}
                   disabled={isBusy}
-                  className="bg-[#2d4a35] hover:bg-[#3c5e45]"
+                  className="bg-[#2d4a35] hover:bg-[#3c5e45] dark:text-white"
                 >
                   {updateMutation.isPending && (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -461,7 +461,7 @@ export function MenuCategoriesTab() {
                   type="button"
                   onClick={handleCreate}
                   disabled={isBusy}
-                  className="bg-[#2d4a35] hover:bg-[#3c5e45]"
+                  className="bg-[#2d4a35] hover:bg-[#3c5e45] dark:text-white"
                 >
                   {createMutation.isPending && (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -494,7 +494,7 @@ export function MenuCategoriesTab() {
             No categories yet. Add your first one above.
           </p>
         ) : (
-          <ul className="mt-3 divide-y divide-gray-100">
+          <ul className="mt-3 divide-y divide-gray-100 dark:divide-gray-700">
             {categories.map(cat => (
               <li
                 key={cat._id}
@@ -519,8 +519,8 @@ export function MenuCategoriesTab() {
                         className={cn(
                           'rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide',
                           cat.type === 'catering'
-                            ? 'border-amber-300 bg-amber-50 text-amber-800'
-                            : 'border-green-300 bg-green-50 text-green-700'
+                            ? 'border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-200'
+                            : 'border-green-300 dark:border-green-500/30 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-300'
                         )}
                       >
                         {CATEGORY_TYPE_SHORT[cat.type]}

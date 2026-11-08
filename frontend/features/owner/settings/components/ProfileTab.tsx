@@ -15,7 +15,8 @@ import type {MeUser} from '@/lib/api/authApi';
 type FieldDef = {
   label: string;
   value: string;
-  save: (v: string) => void;
+  /** Return false when nothing was saved (invalid or empty value). */
+  save: (v: string) => boolean | void;
   placeholder?: string;
 };
 
@@ -56,9 +57,10 @@ function AvatarUpload({
 
     try {
       const uploaded = await uploadProfileImage(file);
+      // The success toast comes from the save itself (one toast, and only
+      // once the change is really saved).
       onSave(uploaded.imageUrl);
       setOptimisticUrl(uploaded.imageUrl);
-      toast.success(label + ' updated.');
     } catch (err) {
       setOptimisticUrl(undefined);
       toast.error(getFriendlyErrorMessage(err, 'Failed to upload image'));
@@ -123,7 +125,8 @@ function InlineField({field, editing}: {field: FieldDef; editing: boolean}) {
   const commit = () => {
     const trimmed = value.trim();
     if (trimmed !== field.value.trim()) {
-      field.save(trimmed);
+      // Only flash "Saved" when a save was actually sent.
+      if (field.save(trimmed) === false) return;
       setShowSaved(true);
       setTimeout(() => setShowSaved(false), 1500);
     }
@@ -163,7 +166,7 @@ function InlineField({field, editing}: {field: FieldDef; editing: boolean}) {
       <div className="flex items-center gap-2 text-[15px] text-gray-800 dark:text-gray-200 break-words sm:w-[240px] sm:justify-end">
         {field.value || <span className="text-gray-400 dark:text-gray-500">Not set</span>}
         {showSaved && (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600">
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
             <Check className="h-3.5 w-3.5" />
             Saved
           </span>
@@ -192,10 +195,10 @@ function Section({
           type="button"
           onClick={onToggleEdit}
           aria-label={editing ? 'Finish editing' : 'Edit ' + title}
-          className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:bg-gray-800 hover:text-[#2d4a35] dark:text-[#7ed4a0]"
+          className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 dark:bg-gray-800 hover:text-[#2d4a35] dark:hover:text-[#7ed4a0] dark:text-[#7ed4a0]"
         >
           {editing ? (
-            <Check className="h-5 w-5 text-green-600" />
+            <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
           ) : (
             <Pencil className="h-5 w-5" />
           )}
@@ -224,7 +227,7 @@ export function ProfileTab() {
     );
   }
 
-  const persist = (body: Partial<MeUser>) => {
+  const persist = (body: Partial<MeUser>, successMessage = 'Saved.'): boolean => {
     const cleaned: Partial<MeUser> = {};
     for (const [key, value] of Object.entries(body)) {
       // Allow clearing business name/logo so they fall back to defaults.
@@ -239,11 +242,19 @@ export function ProfileTab() {
       cleaned[key as keyof MeUser] = value as never;
     }
 
+    // A cleared required field leaves nothing to send: say so instead of
+    // showing "Saved." for a request that changed nothing.
+    if (Object.keys(cleaned).length === 0) {
+      toast.error('This field cannot be empty.');
+      return false;
+    }
+
     updateProfileMutation.mutate(cleaned, {
       onError: err =>
         toast.error(getFriendlyErrorMessage(err, 'Failed to save')),
-      onSuccess: () => toast.success('Saved.')
+      onSuccess: () => toast.success(successMessage)
     });
+    return true;
   };
 
   const displayFullName = [user.firstName, user.lastName]
@@ -310,9 +321,9 @@ export function ProfileTab() {
         const parsed = Number(v);
         if (!Number.isInteger(parsed) || parsed < 1 || parsed > 1440) {
           toast.error('Enter a whole number of minutes between 1 and 1440.');
-          return;
+          return false;
         }
-        persist({defaultPrepMinutes: parsed});
+        return persist({defaultPrepMinutes: parsed});
       },
       placeholder: String(FALLBACK_PREP_MINUTES)
     }
@@ -331,10 +342,10 @@ export function ProfileTab() {
             label="Profile photo"
             imageUrl={user.profilePhoto}
             fallback={displayFullName || 'D'}
-            onSave={url => persist({profilePhoto: url})}
+            onSave={url => persist({profilePhoto: url}, 'Profile photo updated.')}
           />
         </div>
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-gray-100 dark:divide-gray-700">
           {profileFields.map(f => (
             <InlineField
               key={`${f.label}-${profileEditing}`}
@@ -356,10 +367,10 @@ export function ProfileTab() {
             label="Business logo"
             imageUrl={user.businessLogo}
             fallback={(user.businessName || 'D').charAt(0)}
-            onSave={url => persist({businessLogo: url})}
+            onSave={url => persist({businessLogo: url}, 'Business logo updated.')}
           />
         </div>
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-gray-100 dark:divide-gray-700">
           {businessFields.map(f => (
             <InlineField
               key={`${f.label}-${businessEditing}`}
@@ -374,8 +385,10 @@ export function ProfileTab() {
             variant="outline"
             size="sm"
             onClick={() => {
-              persist({businessName: '', businessLogo: ''});
-              toast.success('Business details reset to defaults.');
+              persist(
+                {businessName: '', businessLogo: ''},
+                'Business details reset to defaults.'
+              );
             }}
             disabled={updateProfileMutation.isPending}
           >
@@ -394,7 +407,7 @@ export function ProfileTab() {
           estimated by its slowest item, and cashiers are alerted if an order
           stays in Preparing longer than that.
         </p>
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-gray-100 dark:divide-gray-700">
           {prepFields.map(f => (
             <InlineField
               key={`${f.label}-${businessEditing}`}

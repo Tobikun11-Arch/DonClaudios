@@ -11,7 +11,7 @@ import CustomerNotificationBell from '@/features/customer/notifications/componen
 import SupportChatBubble from '@/features/support/components/SupportChatBubble';
 import {Z} from '@/lib/zIndex';
 import {useBrand} from '@/lib/hooks/useBrand';
-import {Toaster} from 'sonner';
+import {Toaster} from '@/components/ui/sonner';
 
 const TABS = [
   {
@@ -350,12 +350,7 @@ export default function DashboardLayout({
       </nav>
 
       <CustomerCartDrawer />
-      <Toaster
-        position="top-right"
-        richColors
-        duration={2500}
-        visibleToasts={4}
-      />
+      <Toaster duration={2500} />
       <SupportChatBubble />
     </div>
   );

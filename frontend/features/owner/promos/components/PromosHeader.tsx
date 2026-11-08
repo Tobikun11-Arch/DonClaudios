@@ -10,12 +10,12 @@ export function PromosHeader({onCreate}: Props) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-[#e9f5ee] text-[#2d4a35] flex items-center justify-center">
+        <div className="w-10 h-10 rounded-2xl bg-[#e9f5ee] dark:bg-[#7ed4a0]/10 text-[#2d4a35] dark:text-[#7ed4a0] flex items-center justify-center">
           <Tag className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="text-xl font-extrabold text-gray-900">Promos</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-xl font-extrabold text-gray-900 dark:text-gray-100">Promos</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Manage promo campaigns, discounts, and schedule.
           </p>
         </div>
@@ -24,7 +24,7 @@ export function PromosHeader({onCreate}: Props) {
       <div className="flex items-center gap-3">
         <Button
           onClick={onCreate}
-          className="bg-[#2d4a35] hover:bg-[#24402c]"
+          className="bg-[#2d4a35] hover:bg-[#24402c] dark:text-white"
         >
           <Plus className="h-4 w-4 mr-2" />
           Add Promo

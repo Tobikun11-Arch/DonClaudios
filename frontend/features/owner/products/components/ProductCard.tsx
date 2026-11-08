@@ -26,8 +26,8 @@ export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
   const poState = getPreOrderState(p);
 
   return (
-    <Card className="overflow-hidden border-gray-100 p-0">
-      <div className="relative aspect-[4/3] bg-gray-50">
+    <Card className="flex h-full flex-col overflow-hidden border-gray-100 dark:border-gray-700 p-0">
+      <div className="relative aspect-[4/3] bg-gray-50 dark:bg-gray-800/60">
         {p.imageUrl ? (
           <Image
             src={p.imageUrl}
@@ -46,18 +46,18 @@ export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
             className={cn(
               'text-[11px] font-bold px-3 py-1 rounded-full border',
               p.isAvailable
-                ? 'bg-[#e9f5ee] text-[#2d4a35] border-[#c9e7d4]'
-                : 'bg-gray-100 text-gray-600 border-gray-200'
+                ? 'bg-[#e9f5ee] dark:bg-gray-950/85 text-[#2d4a35] dark:text-[#7ed4a0] border-[#c9e7d4] dark:border-[#7ed4a0]/30'
+                : 'bg-gray-100 dark:bg-gray-950/85 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700'
             )}
           >
             {p.isAvailable ? 'AVAILABLE' : 'NOT AVAILABLE'}
           </span>
-          <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-amber-200 bg-amber-50 text-amber-700">
+          <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-gray-950/85 text-amber-700 dark:text-amber-300">
             <Clock size={11} />
             {p.prepTimeMinutes != null ? `~${p.prepTimeMinutes} min` : 'No time set'}
           </span>
           {isPreOrderProduct(p) && (
-            <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-purple-200 bg-purple-50 text-purple-700">
+            <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-purple-200 dark:border-purple-500/30 bg-purple-50 dark:bg-gray-950/85 text-purple-700 dark:text-purple-300">
               <CalendarClock size={11} />
               PRE-ORDER
               {po.closed && (
@@ -68,28 +68,28 @@ export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
         </div>
       </div>
 
-      <CardContent className="p-4">
+      <CardContent className="flex flex-1 flex-col p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="font-bold text-gray-900 truncate">{p.name}</p>
-            <p className="text-xs text-gray-500 truncate">{p.category}</p>
+            <p className="font-bold text-gray-900 dark:text-gray-100 truncate">{p.name}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{p.category}</p>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-sm font-extrabold text-gray-900">
+            <p className="text-sm font-extrabold text-gray-900 dark:text-gray-100">
               {formatPeso(p.price)}
             </p>
-            <p className="text-xs text-gray-500">Stock: {p.stock}{p.stockUnit ? ` ${stockUnitLabel(p.stockUnit)}` : ''}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Stock: {p.stock}{p.stockUnit ? ` ${stockUnitLabel(p.stockUnit)}` : ''}</p>
           </div>
         </div>
 
         {isPreOrderProduct(p) ? (
           <div className="mt-2 min-h-8 space-y-0.5">
-            <p className="text-xs font-semibold text-purple-700">
+            <p className="text-xs font-semibold text-purple-700 dark:text-purple-300">
               {po.statusLine}
             </p>
             {poState.hasBatches && poState.batches ? (
               <>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   {poState.batches.length}{' '}
                   {poState.batches.length === 1 ? 'batch' : 'batches'} ·{' '}
                   {poState.batches
@@ -99,27 +99,27 @@ export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
                     )
                     .join(', ')}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   Total remaining: {p.stock}
                   {p.stockUnit ? ` ${stockUnitLabel(p.stockUnit)}` : ''}
                 </p>
               </>
             ) : null}
             {preOrderLimitLabel(p) && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 {preOrderLimitLabel(p)}
               </p>
             )}
           </div>
         ) : p.description ? (
-          <p className="mt-2 text-xs text-gray-500 line-clamp-2 min-h-8">
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 line-clamp-2 min-h-8">
             {p.description}
           </p>
         ) : (
           <div className="mt-2 min-h-8" />
         )}
 
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-auto flex items-center gap-2 pt-3">
           <Button
             variant="outline"
             size="sm"
@@ -147,24 +147,24 @@ export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
 
 export function ProductCardSkeleton() {
   return (
-    <Card className="overflow-hidden border-gray-100 p-0">
-      <div className="aspect-[4/3] bg-gray-100 animate-pulse" />
+    <Card className="overflow-hidden border-gray-100 dark:border-gray-700 p-0">
+      <div className="aspect-[4/3] bg-gray-100 dark:bg-gray-800 animate-pulse" />
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-2 flex-1">
-            <div className="h-4 w-3/4 bg-gray-100 rounded-full animate-pulse" />
-            <div className="h-3 w-1/2 bg-gray-100 rounded-full animate-pulse" />
+            <div className="h-4 w-3/4 bg-gray-100 dark:bg-gray-800 rounded-full animate-pulse" />
+            <div className="h-3 w-1/2 bg-gray-100 dark:bg-gray-800 rounded-full animate-pulse" />
           </div>
           <div className="space-y-2 items-end flex flex-col shrink-0">
-            <div className="h-4 w-14 bg-gray-100 rounded-full animate-pulse" />
-            <div className="h-3 w-10 bg-gray-100 rounded-full animate-pulse" />
+            <div className="h-4 w-14 bg-gray-100 dark:bg-gray-800 rounded-full animate-pulse" />
+            <div className="h-3 w-10 bg-gray-100 dark:bg-gray-800 rounded-full animate-pulse" />
           </div>
         </div>
-        <div className="h-3 w-full bg-gray-100 rounded-full animate-pulse" />
-        <div className="h-3 w-2/3 bg-gray-100 rounded-full animate-pulse" />
+        <div className="h-3 w-full bg-gray-100 dark:bg-gray-800 rounded-full animate-pulse" />
+        <div className="h-3 w-2/3 bg-gray-100 dark:bg-gray-800 rounded-full animate-pulse" />
         <div className="flex gap-2 pt-1">
-          <div className="h-8 flex-1 bg-gray-100 rounded-lg animate-pulse" />
-          <div className="h-8 flex-1 bg-gray-100 rounded-lg animate-pulse" />
+          <div className="h-8 flex-1 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
+          <div className="h-8 flex-1 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
         </div>
       </CardContent>
     </Card>

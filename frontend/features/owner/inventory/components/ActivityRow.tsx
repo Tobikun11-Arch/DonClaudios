@@ -17,26 +17,26 @@ const TYPE_INFO: Record<
   restock: {
     label: 'Restocked',
     Icon: PackagePlus,
-    iconClass: 'text-green-600 bg-green-50',
-    badgeClass: 'text-green-700'
+    iconClass: 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10',
+    badgeClass: 'text-green-700 dark:text-green-300'
   },
   sold: {
     label: 'Sold',
     Icon: ShoppingCart,
-    iconClass: 'text-blue-600 bg-blue-50',
-    badgeClass: 'text-blue-700'
+    iconClass: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10',
+    badgeClass: 'text-blue-700 dark:text-blue-300'
   },
   adjustment: {
     label: 'Adjusted',
     Icon: Settings2,
-    iconClass: 'text-amber-600 bg-amber-50',
-    badgeClass: 'text-amber-700'
+    iconClass: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10',
+    badgeClass: 'text-amber-700 dark:text-amber-300'
   },
   spoilage: {
     label: 'Spoilage',
     Icon: Trash2,
-    iconClass: 'text-red-600 bg-red-50',
-    badgeClass: 'text-red-700'
+    iconClass: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10',
+    badgeClass: 'text-red-700 dark:text-red-300'
   }
 };
 
@@ -83,8 +83,8 @@ export function ActivityRow({
   const info = TYPE_INFO[m.type] ?? {
     label: m.type,
     Icon: Settings2,
-    iconClass: 'text-gray-600 bg-gray-50',
-    badgeClass: 'text-gray-700'
+    iconClass: 'text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/60',
+    badgeClass: 'text-gray-700 dark:text-gray-200'
   };
 
   const Icon = info.Icon;
@@ -92,7 +92,7 @@ export function ActivityRow({
   const unit = unitLabel ? ` ${unitLabel}` : '';
 
   return (
-    <div className="flex items-start gap-3 py-3 border-b border-gray-50 last:border-0">
+    <div className="flex items-start gap-3 py-3 border-b border-gray-50 dark:border-gray-700 last:border-0">
       <div
         className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center ${info.iconClass}`}
       >
@@ -102,7 +102,7 @@ export function ActivityRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           {showProduct && (
-            <p className="text-sm font-semibold text-gray-900 truncate">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
               {productName}
             </p>
           )}
@@ -111,7 +111,7 @@ export function ActivityRow({
           </span>
         </div>
         <p
-          className="text-xs text-gray-500 mt-0.5"
+          className="text-xs text-gray-500 dark:text-gray-400 mt-0.5"
           title={exactDateTime(m.createdAt)}
         >
           {movementPerformedBy(m)} · {relativeTime(m.createdAt)}

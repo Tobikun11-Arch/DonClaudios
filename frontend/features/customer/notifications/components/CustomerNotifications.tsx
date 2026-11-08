@@ -10,7 +10,7 @@ import {
   useMyNotificationsQuery
 } from '@/lib/hooks/notifications/useNotifications';
 import type {Notification} from '@/lib/types/notification';
-import type {NormalizedApiError} from '@/lib/api/types';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 export default function CustomerNotifications() {
   const {data, isLoading, isError} = useMyNotificationsQuery();
@@ -27,7 +27,7 @@ export default function CustomerNotifications() {
       await markReadMutation.mutateAsync(notification._id);
     } catch (error) {
       toast.error(
-        (error as NormalizedApiError)?.message ?? 'Failed to update notification.'
+        getFriendlyErrorMessage(error, 'Failed to update notification.')
       );
     }
   };
@@ -38,8 +38,7 @@ export default function CustomerNotifications() {
       toast.success('All notifications marked as read.');
     } catch (error) {
       toast.error(
-        (error as NormalizedApiError)?.message ??
-          'Failed to mark notifications as read.'
+        getFriendlyErrorMessage(error, 'Failed to mark notifications as read.')
       );
     }
   };
@@ -50,7 +49,7 @@ export default function CustomerNotifications() {
       toast.success('Notification deleted.');
     } catch (error) {
       toast.error(
-        (error as NormalizedApiError)?.message ?? 'Failed to delete notification.'
+        getFriendlyErrorMessage(error, 'Failed to delete notification.')
       );
     }
   };

@@ -117,9 +117,9 @@ export function IngredientChipsInput({
 
   return (
     <div className="space-y-2" ref={rootRef}>
-      <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-0.5 transition-colors focus-within:border-[#2d4a35] focus-within:ring-2 focus-within:ring-[#3c5e45]/20 overflow-hidden relative">
+      <div className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-0.5 transition-colors focus-within:border-[#2d4a35] focus-within:ring-2 focus-within:ring-[#3c5e45]/20 overflow-hidden relative">
         {query.trim() ? (
-          <LiveIcon className="h-4 w-4 text-gray-500 shrink-0" />
+          <LiveIcon className="h-4 w-4 text-gray-500 dark:text-gray-400 shrink-0" />
         ) : (
           <Search className="h-4 w-4 text-gray-400 shrink-0" />
         )}
@@ -132,7 +132,7 @@ export function IngredientChipsInput({
           onKeyDown={onKeyDown}
           placeholder="Search ingredient library (e.g. Garlic)"
           disabled={disabled || isLibraryLoading}
-          className="flex-1 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none"
+          className="flex-1 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none"
         />
         {isLibraryLoading ? (
           <Loader2 className="h-4 w-4 text-gray-400 animate-spin shrink-0" />
@@ -145,7 +145,7 @@ export function IngredientChipsInput({
               setQuery('');
               setOpen(true);
             }}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
             aria-label="Clear search"
           >
             <X className="h-4 w-4" />
@@ -155,9 +155,9 @@ export function IngredientChipsInput({
 
       {open && (
         <div className="relative z-20">
-          <div className="absolute inset-x-0 top-1 max-h-56 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+          <div className="absolute inset-x-0 top-1 max-h-56 overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg">
             {suggestions.length === 0 && !canAddNew ? (
-              <div className="px-4 py-3 text-sm text-gray-500">
+              <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                 {isLibraryLoading
                   ? 'Loading ingredient library...'
                   : q
@@ -178,16 +178,16 @@ export function IngredientChipsInput({
                       className={
                         'flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors' +
                         (index === activeIndex
-                          ? ' bg-[#e9f5ee]'
-                          : ' hover:bg-gray-50')
+                          ? ' bg-[#e9f5ee] dark:bg-[#7ed4a0]/10'
+                          : ' hover:bg-gray-50 dark:hover:bg-gray-800/60')
                       }
                     >
-                      <Icon className="h-4 w-4 text-gray-600 shrink-0" />
-                      <span className="flex-1 min-w-0 truncate text-gray-800">
+                      <Icon className="h-4 w-4 text-gray-600 dark:text-gray-300 shrink-0" />
+                      <span className="flex-1 min-w-0 truncate text-gray-800 dark:text-gray-100">
                         {renderHighlighted(item.name)}
                       </span>
                       {index === activeIndex ? (
-                        <Check className="h-4 w-4 text-[#2d4a35] shrink-0" />
+                        <Check className="h-4 w-4 text-[#2d4a35] dark:text-[#7ed4a0] shrink-0" />
                       ) : null}
                     </button>
                   );
@@ -199,14 +199,14 @@ export function IngredientChipsInput({
                     onClick={() => void handleAddNew()}
                     onMouseEnter={() => setHighlight(suggestions.length)}
                     className={
-                      'flex w-full items-center gap-2 border-t border-gray-100 px-4 py-2.5 text-left text-sm transition-colors' +
+                      'flex w-full items-center gap-2 border-t border-gray-100 dark:border-gray-700 px-4 py-2.5 text-left text-sm transition-colors' +
                       (activeIndex === suggestions.length
-                        ? ' bg-[#e9f5ee]'
-                        : ' hover:bg-gray-50')
+                        ? ' bg-[#e9f5ee] dark:bg-[#7ed4a0]/10'
+                        : ' hover:bg-gray-50 dark:hover:bg-gray-800/60')
                     }
                   >
-                    <Plus className="h-4 w-4 text-[#2d4a35] shrink-0" />
-                    <span className="flex-1 min-w-0 truncate text-[#2d4a35]">
+                    <Plus className="h-4 w-4 text-[#2d4a35] dark:text-[#7ed4a0] shrink-0" />
+                    <span className="flex-1 min-w-0 truncate text-[#2d4a35] dark:text-[#7ed4a0]">
                       Add &quot;{query.trim()}&quot; as new ingredient
                     </span>
                   </button>
@@ -225,14 +225,14 @@ export function IngredientChipsInput({
             return (
               <span
                 key={`${ingredient.name}-${index}`}
-                className="inline-flex items-center gap-1.5 rounded-full bg-[#e9f5ee] text-[#1c2f24] px-3 py-1.5 text-sm"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#e9f5ee] dark:bg-[#7ed4a0]/10 text-[#1c2f24] dark:text-gray-100 px-3 py-1.5 text-sm"
               >
                 <ChipIcon className="h-4 w-4 shrink-0" />
                 {ingredient.name}
                 {isFallback ? (
                   <span
                     title="Pending icon assignment"
-                    className="ml-0.5 rounded bg-amber-100 px-1 text-[10px] font-bold text-amber-700"
+                    className="ml-0.5 rounded bg-amber-100 dark:bg-amber-500/20 px-1 text-[10px] font-bold text-amber-700 dark:text-amber-300"
                   >
                     pending icon
                   </span>
@@ -243,7 +243,7 @@ export function IngredientChipsInput({
                     onChange(ingredients.filter((_, i) => i !== index))
                   }
                   disabled={disabled}
-                  className="text-gray-500 hover:text-red-600 ml-0.5"
+                  className="text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 ml-0.5"
                   aria-label={`Remove ${ingredient.name}`}
                 >
                   <X className="h-3.5 w-3.5" />

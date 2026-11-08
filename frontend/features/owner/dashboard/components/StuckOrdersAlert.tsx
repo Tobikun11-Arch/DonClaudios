@@ -25,11 +25,11 @@ export function StuckOrdersAlert({
 
   if (stuckOrders === 0) {
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-[#DCE8D3] bg-[#F7FAF3] px-4 py-3">
-        <CheckCircle2 className="h-5 w-5 shrink-0 text-[#4A7C35]" />
-        <p className="text-[0.85rem] text-[#1A1A1A]">
+      <div className="flex items-center gap-3 rounded-xl border border-[#DCE8D3] dark:border-[#7ed4a0]/30 bg-[#F7FAF3] dark:bg-[#7ed4a0]/10 px-4 py-3">
+        <CheckCircle2 className="h-5 w-5 shrink-0 text-[#4A7C35] dark:text-[#7ed4a0]" />
+        <p className="text-[0.85rem] text-[#1A1A1A] dark:text-gray-100">
           Order queue is clean.{' '}
-          <span className="text-[#6B7280]">
+          <span className="text-[#6B7280] dark:text-gray-400">
             Nothing has been open longer than {staleAfterDays} days, and{' '}
             {collectedShare}% of ordered value has been collected.
           </span>
@@ -39,36 +39,36 @@ export function StuckOrdersAlert({
   }
 
   return (
-    <div className="rounded-xl border border-[#EFC97A] bg-[#FDF8EC] px-4 py-3.5">
+    <div className="rounded-xl border border-[#EFC97A] dark:border-amber-500/30 bg-[#FDF8EC] dark:bg-amber-500/10 px-4 py-3.5">
       <div className="flex flex-wrap items-start gap-3">
-        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[#B45309]" />
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[#B45309] dark:text-amber-300" />
         <div className="min-w-0 flex-1">
-          <p className="text-[0.9rem] font-semibold text-[#1A1A1A]">
+          <p className="text-[0.9rem] font-semibold text-[#1A1A1A] dark:text-gray-100">
             {stuckOrders.toLocaleString()} orders worth ₱{stuckValue.toLocaleString()} are stuck
             {oldestStuckDays !== null && ` — the oldest has been waiting ${oldestStuckDays} days`}
           </p>
-          <p className="mt-0.5 text-[0.8rem] text-[#6B7280]">
+          <p className="mt-0.5 text-[0.8rem] text-[#6B7280] dark:text-gray-400">
             These were placed but never completed or cancelled, so they sit in the open queue
             forever. They are excluded from revenue below, but they will keep inflating the order
             count until someone closes them.
           </p>
           <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.75rem]">
-            <span className="text-[#1A1A1A]">
+            <span className="text-[#1A1A1A] dark:text-gray-100">
               Collected{' '}
               <span className="font-semibold tabular-nums">₱{collected.toLocaleString()}</span>
-              <span className="text-[#6B7280]"> ({collectedShare}%)</span>
+              <span className="text-[#6B7280] dark:text-gray-400"> ({collectedShare}%)</span>
             </span>
-            <span className="text-[#1A1A1A]">
+            <span className="text-[#1A1A1A] dark:text-gray-100">
               Still open{' '}
               <span className="font-semibold tabular-nums">₱{open.toLocaleString()}</span>
-              <span className="text-[#6B7280]">
+              <span className="text-[#6B7280] dark:text-gray-400">
                 {' '}
                 ({split.openOrders.toLocaleString()} orders)
               </span>
             </span>
             <Link
               href="/owner/dashboard?tab=orders"
-              className="ml-auto flex items-center gap-1 font-semibold text-[#2d4a35] hover:underline"
+              className="ml-auto flex items-center gap-1 font-semibold text-[#2d4a35] dark:text-[#7ed4a0] hover:underline"
             >
               Review open orders <ArrowRight className="h-3 w-3" />
             </Link>

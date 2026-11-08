@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import {useRouter} from 'next/navigation';
 import {toast} from 'sonner';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {Button} from '@/components/ui/button';
 import {cn} from '@/lib/utils';
 import {useCartUiStore} from '@/app/store/cartUiStore';
@@ -239,7 +240,9 @@ export default function CustomerCartDrawer() {
   const confirmRemoveItem = () => {
     if (!removeTarget) return;
     removeItemMutation.mutate(removeTarget.productId, {
-      onSuccess: () => setRemoveTarget(null)
+      onSuccess: () => setRemoveTarget(null),
+      onError: err =>
+        toast.error(getFriendlyErrorMessage(err, 'Could not remove the item. Please try again.'))
     });
   };
 
@@ -310,10 +313,10 @@ export default function CustomerCartDrawer() {
       toast.error(blocked);
       return;
     }
-    setQtyMutation.mutate({
-      productId: item.productId,
-      quantity: item.quantity + 1
-    });
+    setQtyMutation.mutate(
+      {productId: item.productId, quantity: item.quantity + 1},
+      {onError: err => toast.error(getFriendlyErrorMessage(err, 'Could not update the quantity.'))}
+    );
   };
 
   const summaryText =
@@ -491,10 +494,13 @@ export default function CustomerCartDrawer() {
                               requestRemoveItem(item);
                               return;
                             }
-                            setQtyMutation.mutate({
-                              productId: item.productId,
-                              quantity: item.quantity - 1
-                            });
+                            setQtyMutation.mutate(
+                              {productId: item.productId, quantity: item.quantity - 1},
+                              {
+                                onError: err =>
+                                  toast.error(getFriendlyErrorMessage(err, 'Could not update the quantity.'))
+                              }
+                            );
                           }}
                           aria-label="Decrease"
                           disabled={setQtyMutation.isPending}

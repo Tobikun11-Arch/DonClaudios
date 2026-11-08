@@ -33,7 +33,7 @@ export function AllergenChecklist({value, onChange, disabled}: Props) {
           type="button"
           onClick={() => setOpen(true)}
           disabled={disabled}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 hover:border-gray-300 transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
         >
           <Plus className="h-4 w-4" />
           Add allergen
@@ -41,9 +41,9 @@ export function AllergenChecklist({value, onChange, disabled}: Props) {
         {value.map(allergen => (
           <span
             key={allergen}
-            className="inline-flex items-center gap-1 rounded-full bg-[#e9f5ee] text-[#1c2f24] px-3 py-1.5 text-sm"
+            className="inline-flex items-center gap-1 rounded-full bg-[#e9f5ee] dark:bg-[#7ed4a0]/10 text-[#1c2f24] dark:text-gray-100 px-3 py-1.5 text-sm"
           >
-            <Check className="h-3.5 w-3.5 text-[#2d4a35]" />
+            <Check className="h-3.5 w-3.5 text-[#2d4a35] dark:text-[#7ed4a0]" />
             {ALLERGEN_LABELS[allergen]}
           </span>
         ))}
@@ -62,8 +62,8 @@ export function AllergenChecklist({value, onChange, disabled}: Props) {
               className={cn(
                 'inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm cursor-pointer transition-colors',
                 active
-                  ? 'border-[#2d4a35] bg-[#e9f5ee] text-[#1c2f24]'
-                  : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                  ? 'border-[#2d4a35] dark:border-[#7ed4a0]/60 bg-[#e9f5ee] dark:bg-[#7ed4a0]/10 text-[#1c2f24] dark:text-gray-100'
+                  : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
               )}
             >
               <input
@@ -82,7 +82,7 @@ export function AllergenChecklist({value, onChange, disabled}: Props) {
         type="button"
         onClick={() => setOpen(false)}
         disabled={disabled}
-        className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+        className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
       >
         <ChevronDown className="h-3.5 w-3.5 rotate-180 transition-transform" />
         Done

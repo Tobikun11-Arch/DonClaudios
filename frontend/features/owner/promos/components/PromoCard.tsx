@@ -56,8 +56,8 @@ export function PromoCard({promo, onEdit, onDelete}: Props) {
   const promoTypeLabel = formatPromoType(promo.promoType);
 
   return (
-    <div className="border border-gray-100 bg-white rounded-2xl overflow-hidden shadow-sm">
-      <div className="relative aspect-[16/9] bg-gray-50">
+    <div className="border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-sm">
+      <div className="relative aspect-[16/9] bg-gray-50 dark:bg-gray-800/60">
         {promo.imageUrl ? (
           <Image
             src={promo.imageUrl}
@@ -77,12 +77,12 @@ export function PromoCard({promo, onEdit, onDelete}: Props) {
             className={
               'text-xs font-bold px-2.5 py-1 rounded-full ' +
               (status === 'active'
-                ? 'bg-green-100 text-green-800'
+                ? 'bg-green-100 dark:bg-gray-950/85 text-green-800 dark:text-green-200'
                 : status === 'upcoming'
-                  ? 'bg-blue-100 text-blue-800'
+                  ? 'bg-blue-100 dark:bg-gray-950/85 text-blue-800 dark:text-blue-200'
                   : status === 'expired'
-                    ? 'bg-amber-100 text-amber-800'
-                    : 'bg-gray-100 text-gray-700')
+                    ? 'bg-amber-100 dark:bg-gray-950/85 text-amber-800 dark:text-amber-200'
+                    : 'bg-gray-100 dark:bg-gray-950/85 text-gray-700 dark:text-gray-200')
             }
           >
             {status.toUpperCase()}
@@ -93,24 +93,24 @@ export function PromoCard({promo, onEdit, onDelete}: Props) {
       <div className="p-4 space-y-2">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
           <div className="min-w-0 flex-1">
-            <p className="font-extrabold text-gray-900 leading-tight line-clamp-2 break-words">
+            <p className="font-extrabold text-gray-900 dark:text-gray-100 leading-tight line-clamp-2 break-words">
               {promo.title}
             </p>
-            <p className="text-xs text-gray-500 mt-0.5">{promoTypeLabel}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{promoTypeLabel}</p>
             {promo.description ? (
-              <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
                 {promo.description}
               </p>
             ) : null}
           </div>
           <div className="shrink-0 text-right">
-            <p className="text-sm font-extrabold text-[#2d4a35]">
+            <p className="text-sm font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">
               {discountLabel}
             </p>
           </div>
         </div>
 
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-gray-500 dark:text-gray-400">
           {formatDate(promo.startDate)} - {formatDate(promo.endDate)}
         </div>
 
@@ -129,15 +129,15 @@ export function PromoCard({promo, onEdit, onDelete}: Props) {
 
 export function PromoCardSkeleton() {
   return (
-    <div className="border border-gray-100 bg-white rounded-2xl overflow-hidden shadow-sm">
-      <div className="aspect-[16/9] bg-gray-100 animate-pulse" />
+    <div className="border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-sm">
+      <div className="aspect-[16/9] bg-gray-100 dark:bg-gray-800 animate-pulse" />
       <div className="p-4 space-y-3">
-        <div className="h-4 w-2/3 bg-gray-100 animate-pulse rounded" />
-        <div className="h-3 w-full bg-gray-100 animate-pulse rounded" />
-        <div className="h-3 w-1/2 bg-gray-100 animate-pulse rounded" />
+        <div className="h-4 w-2/3 bg-gray-100 dark:bg-gray-800 animate-pulse rounded" />
+        <div className="h-3 w-full bg-gray-100 dark:bg-gray-800 animate-pulse rounded" />
+        <div className="h-3 w-1/2 bg-gray-100 dark:bg-gray-800 animate-pulse rounded" />
         <div className="flex justify-end gap-2 pt-2">
-          <div className="h-9 w-20 bg-gray-100 animate-pulse rounded" />
-          <div className="h-9 w-20 bg-gray-100 animate-pulse rounded" />
+          <div className="h-9 w-20 bg-gray-100 dark:bg-gray-800 animate-pulse rounded" />
+          <div className="h-9 w-20 bg-gray-100 dark:bg-gray-800 animate-pulse rounded" />
         </div>
       </div>
     </div>

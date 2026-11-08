@@ -15,7 +15,7 @@ import {
   ChevronRight,
   Store
 } from 'lucide-react';
-import {Toaster} from 'sonner';
+import {Toaster} from '@/components/ui/sonner';
 import {useBrand} from '@/lib/hooks/useBrand';
 
 const PRIMARY_TABS = [
@@ -429,7 +429,7 @@ export default function DashboardLayout({
         </div>
       </div>
 
-      <Toaster position="top-right" richColors duration={2500} visibleToasts={4} />
+      <Toaster duration={2500} />
     </div>
   );
 }

@@ -26,7 +26,7 @@ export function FilterSelect({
         value={value}
         onChange={event => onChange(event.target.value)}
         aria-label={ariaLabel}
-        className="w-full appearance-none rounded-xl border border-gray-200 bg-white py-2.5 pl-3.5 pr-9 text-sm font-medium text-gray-700 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
+        className="w-full appearance-none rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-2.5 pl-3.5 pr-9 text-sm font-medium text-gray-700 dark:text-gray-200 focus:border-[#2d4a35] dark:focus:border-[#7ed4a0]/60 focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20"
       >
         {options.map(option => (
           <option key={option.value} value={option.value}>
@@ -102,8 +102,8 @@ export function FilterPills({
               className={cn(
                 'shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition-colors',
                 active
-                  ? 'border-[#2d4a35] bg-[#2d4a35] text-white'
-                  : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                  ? 'border-[#2d4a35] dark:border-[#7ed4a0]/60 bg-[#2d4a35] text-white'
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/60'
               )}
             >
               {item.label}

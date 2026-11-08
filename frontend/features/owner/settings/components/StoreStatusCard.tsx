@@ -112,7 +112,9 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
           setIsManuallyClosed(next);
           if (next) setIsManuallyOpen(false);
           toast.success(
-            next ? 'Store marked as closed.' : 'Store is now open.'
+            next
+              ? 'Store marked as closed.'
+              : 'Manual close lifted. The store follows its regular hours.'
           );
         }
       }
@@ -150,7 +152,7 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
         <span
           className={cn(
             'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide',
-            isOpen ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+            isOpen ? 'bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300' : 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300'
           )}
         >
           {isOpen ? (
@@ -174,7 +176,7 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
               : `Ordering closed at ${effectiveCloseTime}. Customers currently see a "we're closed" notice.`}
       </p>
 
-      <div className="divide-y divide-gray-100">
+      <div className="divide-y divide-gray-100 dark:divide-gray-700">
         <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
           <div className="min-w-0 flex-1">
             <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -269,14 +271,18 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
                       const next = isClosed
                         ? closedDays.filter(d => d !== day)
                         : [...closedDays, day];
+                      const previous = closedDays;
                       setClosedDays(next);
                       updateMutation.mutate(
                         {closedDays: next},
                         {
-                          onError: err =>
+                          onError: err => {
+                            // Put the pills back so they match what is saved.
+                            setClosedDays(previous);
                             toast.error(
                               getFriendlyErrorMessage(err, 'Failed to save closed days')
-                            ),
+                            );
+                          },
                           onSuccess: () => toast.success('Closed days updated.')
                         }
                       );
@@ -302,7 +308,7 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
           type="button"
           onClick={saveSchedule}
           disabled={isSubmitting}
-          className="bg-[#2d4a35] hover:bg-[#3c5e45]"
+          className="bg-[#2d4a35] hover:bg-[#3c5e45] dark:text-white"
         >
           {updateMutation.isPending && (
             <Loader2 className="h-4 w-4 animate-spin" />

@@ -30,6 +30,7 @@ import {
 import {ReportBreakdownTable, breakdownToCsvRows} from './ReportBreakdownTable';
 import {ReportExportBar} from './ReportExportBar';
 import type {ReportRange} from '@/lib/types/report';
+import {useChartColors} from '../chartTheme';
 
 const FUNNEL_COLORS: Record<string, string> = {
   pending: '#A8CC8C',
@@ -42,6 +43,7 @@ const FUNNEL_COLORS: Record<string, string> = {
 };
 
 export function OperationsReportView({range}: {range: ReportRange}) {
+  const chart = useChartColors();
   const opsQuery = useReportOperationsQuery(range);
   const cashierQuery = useReportBreakdownQuery(range, 'cashier', 12);
 
@@ -123,8 +125,8 @@ export function OperationsReportView({range}: {range: ReportRange}) {
       </ReportStatGrid>
 
       {!opsQuery.isLoading && (
-        <div className="rounded-lg border border-[#E5E7EB] bg-[#F7FAF6] px-4 py-2 text-[0.82rem] text-[#4B5563] shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-          <span className="mr-1.5 font-semibold text-[#1A1A1A]">Today:</span>
+        <div className="rounded-lg border border-[#E5E7EB] dark:border-gray-700 bg-[#F7FAF6] dark:bg-gray-800/60 px-4 py-2 text-[0.82rem] text-[#4B5563] dark:text-gray-300 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+          <span className="mr-1.5 font-semibold text-[#1A1A1A] dark:text-gray-100">Today:</span>
           <span>
             Deliveries {formatNumber(ops?.live.deliveriesToday ?? 0)} · Pickups{' '}
             {formatNumber(ops?.live.pickupsToday ?? 0)} · Reservations{' '}
@@ -141,26 +143,26 @@ export function OperationsReportView({range}: {range: ReportRange}) {
           <div className="grid grid-cols-1 gap-4 px-5 pb-5 sm:grid-cols-3">
             {opsQuery.isLoading ? (
               <div className="sm:col-span-3" aria-hidden="true">
-                <div className="h-3 w-32 animate-pulse rounded bg-[#E8EDE6]" />
-                <div className="mt-3 h-6 w-40 animate-pulse rounded bg-[#E8EDE6]" />
-                <div className="mt-3 h-3 w-full animate-pulse rounded bg-[#E8EDE6]" />
+                <div className="h-3 w-32 animate-pulse rounded bg-[#E8EDE6] dark:bg-[#7ed4a0]/10" />
+                <div className="mt-3 h-6 w-40 animate-pulse rounded bg-[#E8EDE6] dark:bg-[#7ed4a0]/10" />
+                <div className="mt-3 h-3 w-full animate-pulse rounded bg-[#E8EDE6] dark:bg-[#7ed4a0]/10" />
               </div>
             ) : ops ? (
               <>
-            <div className="rounded-lg border border-[#F0D9A8] bg-[#FDF8EE] px-3.5 py-3">
-              <p className="text-[0.68rem] font-medium uppercase tracking-[0.08em] text-[#8A6A2B]">
+            <div className="rounded-lg border border-[#F0D9A8] dark:border-amber-500/30 bg-[#FDF8EE] dark:bg-amber-500/10 px-3.5 py-3">
+              <p className="text-[0.68rem] font-medium uppercase tracking-[0.08em] text-[#8A6A2B] dark:text-amber-300">
                 Value at risk
               </p>
-              <p className="mt-1 text-[1.3rem] font-bold leading-none tabular-nums text-[#1A1A1A]">
+              <p className="mt-1 text-[1.3rem] font-bold leading-none tabular-nums text-[#1A1A1A] dark:text-gray-100">
                 {formatPeso(ops.staleOrders.value)}
               </p>
-              <p className="mt-1 text-[0.7rem] text-[#6B7280]">
+              <p className="mt-1 text-[0.7rem] text-[#6B7280] dark:text-gray-400">
                 {formatNumber(ops.staleOrders.count)} orders · oldest{' '}
                 {formatNumber(ops.staleOrders.oldestDays ?? 0)} days
               </p>
             </div>
             <div className="sm:col-span-2">
-              <p className="mb-1.5 text-[0.68rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+              <p className="mb-1.5 text-[0.68rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
                 By age
               </p>
               <div className="space-y-1.5">
@@ -174,12 +176,12 @@ export function OperationsReportView({range}: {range: ReportRange}) {
                     return (
                       <div key={bucket.label}>
                         <div className="mb-0.5 flex items-center justify-between text-[0.78rem]">
-                          <span className="text-[#1A1A1A]">{bucket.label}</span>
-                          <span className="tabular-nums text-[#6B7280]">
+                          <span className="text-[#1A1A1A] dark:text-gray-100">{bucket.label}</span>
+                          <span className="tabular-nums text-[#6B7280] dark:text-gray-400">
                             {formatNumber(bucket.count)} · {formatPeso(bucket.value)}
                           </span>
                         </div>
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#F7F2E7]">
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#F7F2E7] dark:bg-amber-500/10">
                           <div
                             className="h-full rounded-full bg-[#D4A843]"
                             style={{width: `${(bucket.count / max) * 100}%`}}
@@ -217,12 +219,12 @@ export function OperationsReportView({range}: {range: ReportRange}) {
               {funnel.map(entry => (
                 <div key={entry.status}>
                   <div className="mb-1 flex items-center justify-between text-[0.8rem]">
-                    <span className="font-medium text-[#1A1A1A]">
+                    <span className="font-medium text-[#1A1A1A] dark:text-gray-100">
                       {titleCaseStatus(entry.status)}
                     </span>
-                    <span className="tabular-nums text-[#6B7280]">{formatNumber(entry.count)}</span>
+                    <span className="tabular-nums text-[#6B7280] dark:text-gray-400">{formatNumber(entry.count)}</span>
                   </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-[#F3F6F1]">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-[#F3F6F1] dark:bg-[#7ed4a0]/10">
                     <div
                       className="h-full rounded-full transition-all"
                       style={{
@@ -248,20 +250,20 @@ export function OperationsReportView({range}: {range: ReportRange}) {
                 {label: 'Avg actual', value: ops ? `${formatNumber(ops.fulfilment.avgActualMinutes)} min` : '—'},
                 {label: 'Avg promised', value: ops ? `${formatNumber(ops.fulfilment.avgPromisedMinutes)} min` : '—'}
               ].map(tile => (
-                <div key={tile.label} className="rounded-lg bg-[#F7FAF6] px-3 py-2.5">
-                  <p className="text-[0.68rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+                <div key={tile.label} className="rounded-lg bg-[#F7FAF6] dark:bg-gray-800/60 px-3 py-2.5">
+                  <p className="text-[0.68rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
                     {tile.label}
                   </p>
                   {opsQuery.isLoading ? (
-                    <div className="mt-1 h-4 w-16 animate-pulse rounded bg-[#E1E8DE]" aria-hidden="true" />
+                    <div className="mt-1 h-4 w-16 animate-pulse rounded bg-[#E1E8DE] dark:bg-[#7ed4a0]/10" aria-hidden="true" />
                   ) : (
-                    <p className="mt-0.5 text-[1.05rem] font-bold tabular-nums text-[#1A1A1A]">
+                    <p className="mt-0.5 text-[1.05rem] font-bold tabular-nums text-[#1A1A1A] dark:text-gray-100">
                       {tile.value}
                     </p>
                   )}
                 </div>
               ))}
-            <p className="col-span-2 text-[0.72rem] leading-relaxed text-[#6B7280]">
+            <p className="col-span-2 text-[0.72rem] leading-relaxed text-[#6B7280] dark:text-gray-400">
               Measured from the kitchen-done status in the order timeline, so it only counts
               orders that were actually prepared in this window.
             </p>
@@ -296,8 +298,8 @@ export function OperationsReportView({range}: {range: ReportRange}) {
                 return (
                   <li key={reason.reason}>
                     <div className="mb-1 flex items-center justify-between gap-3 text-[0.82rem]">
-                      <span className="truncate text-[#1A1A1A]">{reason.reason}</span>
-                      <span className="shrink-0 tabular-nums text-[#6B7280]">
+                      <span className="truncate text-[#1A1A1A] dark:text-gray-100">{reason.reason}</span>
+                      <span className="shrink-0 tabular-nums text-[#6B7280] dark:text-gray-400">
                         {formatNumber(reason.count)} · {formatNumber(Math.round(pct))}%
                       </span>
                     </div>
@@ -330,10 +332,10 @@ export function OperationsReportView({range}: {range: ReportRange}) {
             >
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={ops?.byHour ?? []} margin={{top: 5, right: 10, left: -25, bottom: 0}}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                   <XAxis
                     dataKey="hour"
-                    tick={{fontSize: 10, fill: '#6B7280'}}
+                    tick={{fontSize: 10, fill: chart.tick}}
                     tickLine={false}
                     axisLine={false}
                     interval={2}
@@ -341,20 +343,20 @@ export function OperationsReportView({range}: {range: ReportRange}) {
                   />
                   <YAxis
                     allowDecimals={false}
-                    tick={{fontSize: 11, fill: '#6B7280'}}
+                    tick={{fontSize: 11, fill: chart.tick}}
                     tickLine={false}
                     axisLine={false}
                   />
                   <Tooltip
                     labelFormatter={(h: number) => formatHour(h)}
                     formatter={(value: number) => [formatNumber(value), 'Orders']}
-                    contentStyle={{borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 12}}
+                    contentStyle={chart.tooltip}
                   />
                   <Bar dataKey="orders" name="Orders" radius={[4, 4, 0, 0]}>
                     {(ops?.byHour ?? []).map(hour => (
                       <Cell
                         key={hour.hour}
-                        fill={hour.orders === peakHour?.hour ? '#2D4A1E' : '#7BAF5A'}
+                        fill={hour.orders === peakHour?.hour ? chart.barPeak : chart.barMuted}
                       />
                     ))}
                   </Bar>
@@ -374,24 +376,24 @@ export function OperationsReportView({range}: {range: ReportRange}) {
             >
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={ops?.byWeekday ?? []} margin={{top: 5, right: 10, left: -25, bottom: 0}}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
                   <XAxis
                     dataKey="label"
-                    tick={{fontSize: 11, fill: '#6B7280'}}
+                    tick={{fontSize: 11, fill: chart.tick}}
                     tickLine={false}
                     axisLine={false}
                   />
                   <YAxis
                     allowDecimals={false}
-                    tick={{fontSize: 11, fill: '#6B7280'}}
+                    tick={{fontSize: 11, fill: chart.tick}}
                     tickLine={false}
                     axisLine={false}
                   />
                   <Tooltip
                     formatter={(value: number) => [formatNumber(value), 'Orders']}
-                    contentStyle={{borderRadius: 8, border: '1px solid #E5E7EB', fontSize: 12}}
+                    contentStyle={chart.tooltip}
                   />
-                  <Bar dataKey="orders" name="Orders" fill="#4A7C35" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="orders" name="Orders" fill={chart.bar} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </ReportBody>

@@ -66,14 +66,14 @@ function StockTable({
       <div className="hidden overflow-x-auto sm:block">
         <table className="w-full min-w-[380px]">
           <thead>
-            <tr className="border-t border-[#E5E7EB]">
-              <th className="px-4 py-2.5 text-left text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+            <tr className="border-t border-[#E5E7EB] dark:border-gray-700">
+              <th className="px-4 py-2.5 text-left text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
                 Product
               </th>
-              <th className="px-4 py-2.5 text-right text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+              <th className="px-4 py-2.5 text-right text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
                 {unitLabel}
               </th>
-              <th className="px-4 py-2.5 text-right text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+              <th className="px-4 py-2.5 text-right text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
                 {valueLabel}
               </th>
             </tr>
@@ -82,13 +82,13 @@ function StockTable({
             {rows.map(row => (
               <tr
                 key={row.key}
-                className="border-t border-[#E5E7EB] transition-colors hover:bg-[#E8F0E3]"
+                className="border-t border-[#E5E7EB] dark:border-gray-700 transition-colors hover:bg-[#E8F0E3] dark:hover:bg-[#7ed4a0]/10"
               >
-                <td className="px-4 py-3 text-[0.875rem] font-medium text-[#1A1A1A]">{row.label}</td>
-                <td className="px-4 py-3 text-right text-[0.875rem] tabular-nums text-[#1A1A1A]">
+                <td className="px-4 py-3 text-[0.875rem] font-medium text-[#1A1A1A] dark:text-gray-100">{row.label}</td>
+                <td className="px-4 py-3 text-right text-[0.875rem] tabular-nums text-[#1A1A1A] dark:text-gray-100">
                   {formatNumber(row[unitKey] ?? 0)}
                 </td>
-                <td className="px-4 py-3 text-right text-[0.875rem] font-medium tabular-nums text-[#1A1A1A]">
+                <td className="px-4 py-3 text-right text-[0.875rem] font-medium tabular-nums text-[#1A1A1A] dark:text-gray-100">
                   {formatPeso(row[valueKey] ?? 0, (row[valueKey] ?? 0) % 1 !== 0)}
                 </td>
               </tr>
@@ -134,26 +134,26 @@ function WastageTable({
             wider than StockTable's three shorter ones. */}
         <table className="w-full min-w-[440px]">
           <thead>
-            <tr className="border-t border-[#E5E7EB]">
-              <th className="px-4 py-2.5 text-left text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+            <tr className="border-t border-[#E5E7EB] dark:border-gray-700">
+              <th className="px-4 py-2.5 text-left text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
                 Product
               </th>
-              <th className="px-4 py-2.5 text-right text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+              <th className="px-4 py-2.5 text-right text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
                 Units lost
               </th>
-              <th className="px-4 py-2.5 text-right text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280]">
+              <th className="px-4 py-2.5 text-right text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
                 Value at menu price
               </th>
             </tr>
           </thead>
           <tbody>
             {rows.map(row => (
-              <tr key={row.key} className="border-t border-[#E5E7EB] transition-colors hover:bg-[#E8F0E3]">
-                <td className="px-4 py-3 text-[0.875rem] font-medium text-[#1A1A1A]">{row.label}</td>
+              <tr key={row.key} className="border-t border-[#E5E7EB] dark:border-gray-700 transition-colors hover:bg-[#E8F0E3] dark:hover:bg-[#7ed4a0]/10">
+                <td className="px-4 py-3 text-[0.875rem] font-medium text-[#1A1A1A] dark:text-gray-100">{row.label}</td>
                 <td className="px-4 py-3 text-right text-[0.875rem] tabular-nums text-red-500">
                   {formatNumber(row.units)}
                 </td>
-                <td className="px-4 py-3 text-right text-[0.875rem] font-medium tabular-nums text-[#1A1A1A]">
+                <td className="px-4 py-3 text-right text-[0.875rem] font-medium tabular-nums text-[#1A1A1A] dark:text-gray-100">
                   {formatPeso(row.cost, row.cost % 1 !== 0)}
                 </td>
               </tr>
@@ -221,7 +221,7 @@ export function ProductsReportView({range}: {range: ReportRange}) {
         subtitle={breakdownQuery.isLoading ? undefined : breakdown?.note ?? 'Ranked by revenue'}
         action={
           <div className="flex items-center gap-2">
-            <div className="flex gap-1 rounded-full border border-gray-200 bg-white p-0.5">
+            <div className="flex gap-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-0.5">
               {(['product', 'category'] as const).map(value => (
                 <button
                   key={value}
@@ -230,7 +230,7 @@ export function ProductsReportView({range}: {range: ReportRange}) {
                   className={
                     dimension === value
                       ? 'rounded-full bg-[#2d4a35] px-3 py-1 text-[0.7rem] font-bold capitalize text-white'
-                      : 'rounded-full px-3 py-1 text-[0.7rem] font-bold capitalize text-gray-500 hover:bg-gray-50'
+                      : 'rounded-full px-3 py-1 text-[0.7rem] font-bold capitalize text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/60'
                   }
                 >
                   {value}

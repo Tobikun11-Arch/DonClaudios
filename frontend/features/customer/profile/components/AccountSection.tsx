@@ -7,6 +7,8 @@ import {useChangePasswordMutation} from '@/lib/hooks/auth/useProfile';
 import {useLogout} from '@/lib/hooks/auth/useLogout';
 import {deleteAccount, downloadMyData} from '@/lib/api/authApi';
 import type {MeUser} from '@/lib/api/authApi';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
+import {validatePassword} from '@/lib/utils/passwordRules';
 
 export function AccountSection({user}: {user: MeUser | undefined}) {
   const router = useRouter();
@@ -17,8 +19,15 @@ export function AccountSection({user}: {user: MeUser | undefined}) {
   const [showPw, setShowPw] = useState(false);
 
   const handleChangePassword = async () => {
-    if (!currentPassword || newPassword.length < 6) {
-      toast.error('Enter current password and a new one (6+ chars).');
+    if (!currentPassword || !newPassword) {
+      toast.error('Enter your current password and a new password.');
+      return;
+    }
+    // Same rules the server enforces, so a weak password is caught here with
+    // a clear reason instead of a vague "check current password".
+    const {valid, unmet} = validatePassword(newPassword);
+    if (!valid) {
+      toast.error(`New password needs: ${unmet.join(', ').toLowerCase()}.`);
       return;
     }
     try {
@@ -26,8 +35,10 @@ export function AccountSection({user}: {user: MeUser | undefined}) {
       toast.success('Password updated.');
       setCurrentPassword('');
       setNewPassword('');
-    } catch {
-      toast.error('Could not update password. Check current password.');
+    } catch (err) {
+      toast.error(
+        getFriendlyErrorMessage(err, 'Could not update password. Check your current password.')
+      );
     }
   };
 

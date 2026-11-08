@@ -120,7 +120,7 @@ function DetailsLink({view}: {view: ReportView}) {
   return (
     <Link
       href={goToReportsLink(view)}
-      className="flex items-center gap-0.5 text-[0.8rem] font-semibold text-[#2d4a35] hover:underline"
+      className="flex items-center gap-0.5 text-[0.8rem] font-semibold text-[#2d4a35] dark:text-[#7ed4a0] hover:underline"
     >
       Details <ChevronRight className="h-3.5 w-3.5" />
     </Link>
@@ -191,17 +191,17 @@ export function OverviewReportView({range}: {range: ReportRange}) {
               <div className="space-y-3 py-2" aria-hidden="true">
                 {[0, 1, 2].map(index => (
                   <div key={index} className="flex items-center gap-2.5">
-                    <div className="h-4 w-4 shrink-0 animate-pulse rounded bg-[#E8EDE6]" />
+                    <div className="h-4 w-4 shrink-0 animate-pulse rounded bg-[#E8EDE6] dark:bg-[#7ed4a0]/10" />
                     <div
-                      className="h-3 flex-1 animate-pulse rounded bg-[#E8EDE6]"
+                      className="h-3 flex-1 animate-pulse rounded bg-[#E8EDE6] dark:bg-[#7ed4a0]/10"
                       style={{maxWidth: `${85 - index * 15}%`}}
                     />
-                    <div className="h-3 w-12 shrink-0 animate-pulse rounded bg-[#E8EDE6]" />
+                    <div className="h-3 w-12 shrink-0 animate-pulse rounded bg-[#E8EDE6] dark:bg-[#7ed4a0]/10" />
                   </div>
                 ))}
               </div>
             ) : exceptions.length === 0 ? (
-              <p className="flex items-center gap-2 py-4 text-sm text-[#2D7A3A]">
+              <p className="flex items-center gap-2 py-4 text-sm text-[#2D7A3A] dark:text-[#7ed4a0]">
                 <CircleCheck className="h-4 w-4 shrink-0" />
                 All clear. Nothing needs your attention.
               </p>
@@ -216,10 +216,10 @@ export function OverviewReportView({range}: {range: ReportRange}) {
                           : 'mt-0.5 h-4 w-4 shrink-0 text-[#D4A843]'
                       }
                     />
-                    <span className="flex-1 text-[0.85rem] leading-snug text-[#1A1A1A]">{item.message}</span>
+                    <span className="flex-1 text-[0.85rem] leading-snug text-[#1A1A1A] dark:text-gray-100">{item.message}</span>
                     <Link
                       href={goToReportsLink('operations')}
-                      className="flex shrink-0 items-center gap-0.5 text-[0.78rem] font-semibold text-[#2d4a35] hover:underline"
+                      className="flex shrink-0 items-center gap-0.5 text-[0.78rem] font-semibold text-[#2d4a35] dark:text-[#7ed4a0] hover:underline"
                     >
                       View <ChevronRight className="h-3 w-3" />
                     </Link>
@@ -238,12 +238,12 @@ export function OverviewReportView({range}: {range: ReportRange}) {
                   <div key={index} className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <div
-                        className="h-3 w-24 animate-pulse rounded bg-[#E8EDE6]"
+                        className="h-3 w-24 animate-pulse rounded bg-[#E8EDE6] dark:bg-[#7ed4a0]/10"
                         style={{maxWidth: `${40 + index * 18}%`}}
                       />
-                      <div className="h-3 w-20 animate-pulse rounded bg-[#E8EDE6]" />
+                      <div className="h-3 w-20 animate-pulse rounded bg-[#E8EDE6] dark:bg-[#7ed4a0]/10" />
                     </div>
-                    <div className="h-2 w-full animate-pulse rounded-full bg-[#E8EDE6]" />
+                    <div className="h-2 w-full animate-pulse rounded-full bg-[#E8EDE6] dark:bg-[#7ed4a0]/10" />
                   </div>
                 ))}
               </div>
@@ -254,12 +254,12 @@ export function OverviewReportView({range}: {range: ReportRange}) {
                   return (
                     <div key={row.key}>
                       <div className="mb-1 flex items-center justify-between text-[0.82rem]">
-                        <span className="text-[#1A1A1A]">{row.label}</span>
-                        <span className="tabular-nums text-[#6B7280]">
+                        <span className="text-[#1A1A1A] dark:text-gray-100">{row.label}</span>
+                        <span className="tabular-nums text-[#6B7280] dark:text-gray-400">
                           {formatNumber(row.orders)} · {formatCompactPeso(row.revenue)}
                         </span>
                       </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-[#F3F6F1]">
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-[#F3F6F1] dark:bg-[#7ed4a0]/10">
                         <div
                           className="h-full rounded-full bg-[#4A7C35] transition-all"
                           style={{width: `${typeTotal > 0 ? (row.revenue / typeTotal) * 100 : 0}%`}}
@@ -269,7 +269,7 @@ export function OverviewReportView({range}: {range: ReportRange}) {
                   );
                 })}
                 {(summary?.byOrderType.length ?? 0) === 0 && (
-                  <p className="py-6 text-center text-sm text-[#6B7280]">No orders in this period</p>
+                  <p className="py-6 text-center text-sm text-[#6B7280] dark:text-gray-400">No orders in this period</p>
                 )}
               </>
             )}

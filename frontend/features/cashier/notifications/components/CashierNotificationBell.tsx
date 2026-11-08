@@ -13,7 +13,7 @@ import {
 } from '@/lib/hooks/notifications/useNotifications';
 import {useNotificationSound} from '@/lib/hooks/notifications/useNotificationSound';
 import type {Notification} from '@/lib/types/notification';
-import type {NormalizedApiError} from '@/lib/api/types';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 export default function CashierNotificationBell() {
   const [open, setOpen] = useState(false);
@@ -50,7 +50,7 @@ export default function CashierNotificationBell() {
         await markReadMutation.mutateAsync(notification._id);
       } catch (error) {
         toast.error(
-          (error as NormalizedApiError)?.message ?? 'Failed to update notification.'
+          getFriendlyErrorMessage(error, 'Failed to update notification.')
         );
       }
     }
@@ -71,8 +71,7 @@ export default function CashierNotificationBell() {
       toast.success('All notifications marked as read.');
     } catch (error) {
       toast.error(
-        (error as NormalizedApiError)?.message ??
-          'Failed to mark notifications as read.'
+        getFriendlyErrorMessage(error, 'Failed to mark notifications as read.')
       );
     }
   };
@@ -83,7 +82,7 @@ export default function CashierNotificationBell() {
       await deleteMutation.mutateAsync(notification._id);
     } catch (error) {
       toast.error(
-        (error as NormalizedApiError)?.message ?? 'Failed to delete notification.'
+        getFriendlyErrorMessage(error, 'Failed to delete notification.')
       );
     }
   };

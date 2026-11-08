@@ -2,7 +2,6 @@
 
 import {z} from 'zod';
 import {useState} from 'react';
-import {toast} from 'sonner';
 import type {CustomerPreferences} from '@/lib/api/authApi';
 import {sanitizeInteger} from '@/lib/validation/numeric';
 const schema = z.object({
@@ -17,7 +16,8 @@ export function PreferencesForm({
   onSave
 }: {
   preferences: CustomerPreferences;
-  onSave: (next: CustomerPreferences) => void;
+  /** `successMessage` is toasted by the page once the save succeeds. */
+  onSave: (next: CustomerPreferences, successMessage?: string) => void;
 }) {
   const [form, setForm] = useState<CustomerPreferences>(preferences);
   const [error, setError] = useState<string | null>(null);
@@ -31,8 +31,7 @@ export function PreferencesForm({
     }
     setError(null);
     setForm(next);
-    onSave(next);
-    toast.success('Saved.');
+    onSave(next, 'Preferences saved.');
   };
 
   return (
