@@ -15,6 +15,9 @@ import {customerRepository} from '../repositories/customer.repository';
 import {adminRepository} from '../repositories/admin.repository';
 import {sendOrderReceiptEmail} from '../services/receipt.service';
 import {emailService} from '../services/email.service';
+import {orderTrackingEmailTemplate} from '../templates/orderTrackingEmail';
+import {settingsRepository} from '../repositories/settings.repository';
+import {env} from '../config/env';
 import {storeStatusService} from '../services/storeStatus.service';
 import {guestOtpService} from '../services/guestOtp.service';
 import {paymentService} from '../services/payment.service';
@@ -1101,11 +1104,41 @@ export const orderController = {
 
       if (isNonEmptyString(guestInfo.email)) {
         try {
+          // Public site URL: email images and links must work outside localhost.
+          const siteUrl = (env.FRONTEND_URL || 'https://don-claudios.vercel.app').replace(/\/+$/, '');
+          const settings = await settingsRepository.findOne().catch(() => null);
+          const contact = (settings as any)?.contact ?? {};
+          const trackingNumber = String(order._id);
+          const {html, text} = orderTrackingEmailTemplate({
+            customerName: [guestInfo.firstName, guestInfo.lastName].filter(Boolean).join(' '),
+            trackingNumber,
+            orderCode: `#${trackingNumber.slice(-6).toUpperCase()}`,
+            orderTypeLabel:
+              orderType === 'delivery' ? 'Delivery' : orderType === 'reservation' ? 'Reservation' : 'Pick-up',
+            placedAt: new Date().toLocaleString('en-PH', {
+              timeZone: 'Asia/Manila',
+              month: 'short',
+              day: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit'
+            }),
+            items: normalizedItems.map(i => ({
+              name: guestDeliveryProductById.get(String(i.productId))?.name ?? 'Item',
+              quantity: i.quantity,
+              lineTotal: i.price * i.quantity
+            })),
+            total: safeTotalAmount,
+            trackUrl: `${siteUrl}/order-confirmation/${trackingNumber}`,
+            imageUrl: `${siteUrl}/assets/Template/order_tracking_email.jpg`,
+            businessName: "DonClaudio's Lechon House",
+            businessPhone: Array.isArray(contact.phones) ? contact.phones[0] : undefined,
+            businessAddress: contact.address || undefined
+          });
           await emailService.sendEmail({
             to: guestInfo.email.trim(),
-            subject: 'Your DonClaudio order tracking number',
-            text: `Your order has been placed. Your tracking number is: ${String(order._id)}`,
-            html: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px"><h2 style="color:#3c5e45;margin:0 0 12px">Order placed</h2><p style="margin:0 0 8px">Your tracking number is:</p><p style="font-size:22px;font-weight:700;letter-spacing:2px;color:#111;margin:0 0 16px">${String(order._id)}</p><p style="margin:0;color:#555">Use this number to track your order status.</p></div>`
+            subject: `Your order is in! Tracking #${trackingNumber.slice(-6).toUpperCase()} \u{1F437}`,
+            text,
+            html
           });
         } catch {
           // Do not fail order placement if email sending fails.
