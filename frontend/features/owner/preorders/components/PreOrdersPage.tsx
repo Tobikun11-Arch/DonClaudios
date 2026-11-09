@@ -205,7 +205,7 @@ function EventCard({
 }
 
 export default function PreOrdersPage() {
-  const {data: events = [], isLoading} = useOwnerPreOrders();
+  const {data: events = [], isLoading, isError, refetch, isFetching} = useOwnerPreOrders();
   const [view, setView] = useState<View>({kind: 'list'});
   const [dupFrom, setDupFrom] = useState<PreOrderEvent | null>(null);
   const [dupTitle, setDupTitle] = useState('');
@@ -300,7 +300,18 @@ export default function PreOrdersPage() {
         </div>
       </div>
 
-      {isLoading ? (
+      {isError ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center dark:border-red-500/30 dark:bg-red-500/10">
+          <p className="font-semibold text-red-700 dark:text-red-300">Could not load pre-order dates</p>
+          <p className="mt-1 text-sm text-red-600/80 dark:text-red-300/80">
+            The server did not respond as expected. Check your connection, or that the latest backend is
+            deployed, then try again.
+          </p>
+          <Button variant="outline" className="mt-4" disabled={isFetching} onClick={() => void refetch()}>
+            {isFetching ? 'Retrying…' : 'Try again'}
+          </Button>
+        </div>
+      ) : isLoading ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({length: 3}).map((_, i) => (
             <div key={i} className="h-56 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-900" />

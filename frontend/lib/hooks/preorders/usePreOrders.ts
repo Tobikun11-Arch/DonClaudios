@@ -24,9 +24,20 @@ export const preOrderKeys = {
   openOne: (id: string) => ['preorders', 'open', id] as const
 };
 
+/**
+ * Retry once for network/server hiccups, never for 4xx: a missing route or a
+ * closed date will not fix itself, and three backoff retries made the page
+ * spin for several seconds before showing anything.
+ */
+function retryServerErrors(failureCount: number, error: unknown) {
+  const status = (error as {status?: number | null} | null)?.status ?? null;
+  if (status !== null && status >= 400 && status < 500) return false;
+  return failureCount < 1;
+}
+
 // ----- owner -----
 export function useOwnerPreOrders() {
-  return useQuery({queryKey: preOrderKeys.owner, queryFn: listPreOrderEvents});
+  return useQuery({queryKey: preOrderKeys.owner, queryFn: listPreOrderEvents, retry: retryServerErrors});
 }
 
 export function useOwnerPreOrderOrders(id: string | null) {
@@ -34,6 +45,7 @@ export function useOwnerPreOrderOrders(id: string | null) {
     queryKey: preOrderKeys.ownerOrders(id ?? ''),
     queryFn: () => listPreOrderEventOrders(id as string),
     enabled: !!id,
+    retry: retryServerErrors,
     refetchInterval: 30000
   });
 }
@@ -76,7 +88,12 @@ export function useDeletePreOrder() {
 
 // ----- customers -----
 export function useOpenPreOrders() {
-  return useQuery({queryKey: preOrderKeys.open, queryFn: listOpenPreOrders, staleTime: 15000});
+  return useQuery({
+    queryKey: preOrderKeys.open,
+    queryFn: listOpenPreOrders,
+    staleTime: 15000,
+    retry: retryServerErrors
+  });
 }
 
 export function useOpenPreOrder(id: string) {
@@ -84,6 +101,7 @@ export function useOpenPreOrder(id: string) {
     queryKey: preOrderKeys.openOne(id),
     queryFn: () => getOpenPreOrder(id),
     enabled: !!id,
+    retry: retryServerErrors,
     // Remaining counts change as others order: keep them fresh.
     refetchInterval: 20000
   });
