@@ -543,7 +543,7 @@ function BalanceForm({
           subtitle={peso(summary.balanceDue)}
           disabled={!summary.configured}
         />
-        {summary.cashAllowed ? (
+        {(summary.balanceCashAllowed ?? summary.cashAllowed) ? (
           <PlanOption
             active={method === 'cash'}
             onClick={() => setMethod('cash')}

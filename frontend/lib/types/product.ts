@@ -36,6 +36,11 @@ export type Product = {
   allergens?: ProductAllergen[];
   isAvailable: boolean;
   pointsCost?: number | null;
+  /**
+   * Sold only through dated Holiday Pre-orders: hidden from the menu, the
+   * counter and inventory.
+   */
+  preOrderOnly?: boolean;
   /** Pre-order: only in the 4 eligible categories, signed-in customers only. */
   isPreOrder?: boolean;
   /**
@@ -85,6 +90,7 @@ export type CreateProductBody = {
   allergens?: ProductAllergen[];
   isAvailable?: boolean;
   pointsCost?: number | null;
+  preOrderOnly?: boolean;
   isPreOrder?: boolean;
   preOrderPurchaseLimit?: number | null;
   preOrderDeadline?: string | null;

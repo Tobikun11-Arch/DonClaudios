@@ -64,6 +64,9 @@ export type OrderHistoryItem = {
   specialRequest?: string;
   name?: string;
   imageUrl?: string;
+  /** Holiday pre-order size, e.g. "4-5 KG". */
+  sizeLabel?: string | null;
+  preOrderSizeId?: string | null;
 };
 
 /** Server-computed, request-time view of how the order is tracking. */
@@ -75,6 +78,18 @@ export type OrderPrepTiming = {
   /** Positive = minutes left. Negative = minutes past due. */
   minutesRemaining: number | null;
   isRunning: boolean;
+};
+
+export type OrderPreOrderInfo = {
+  eventId: string;
+  eventTitle: string;
+  pickupDate: string;
+  slotId: string;
+  slotLabel: string;
+  pickupAt: string;
+  receiveMethod: 'pickup' | 'lalamove';
+  /** Customers can cancel until this instant. */
+  cancelDeadline: string;
 };
 
 export type OrderHistoryEntry = {
@@ -109,6 +124,9 @@ export type OrderHistoryEntry = {
   /** When the open Xendit invoice expires. */
   paymentExpiresAt?: string | null;
   refundStatus?: 'none' | 'pending' | 'refunded' | 'failed';
+  /** Dated Holiday Pre-order (see `preOrder`). */
+  isPreOrder?: boolean;
+  preOrder?: OrderPreOrderInfo | null;
   /** Set on server docs; missing in some cached local entries. */
   orderSource?: 'online' | 'in-store' | null;
   /** Walk-in order number, e.g. "DC-001". */
@@ -463,7 +481,12 @@ export type PaymentSummary = {
   balanceChoice: 'cash' | 'online' | null;
   paymentChannel: PaymentChannel | null;
   refundStatus: 'none' | 'pending' | 'refunded' | 'failed';
+  /** Whole order in cash on pickup (never for pre-orders). */
   cashAllowed: boolean;
+  /** Balance after a down payment may be paid in cash (self pick-up only). */
+  balanceCashAllowed?: boolean;
+  isPreOrder?: boolean;
+  pickup?: {date: string; slotLabel: string; receiveMethod: 'pickup' | 'lalamove'} | null;
   downPaymentAllowed: boolean;
   downPaymentAmount: number;
   channels: Array<{id: PaymentChannel; label: string}>;

@@ -19,6 +19,7 @@ import {useAdminOrderMessagesQuery} from '@/lib/hooks/orders/useOrderMessage';
 import type {OrderHistoryEntry, OrderHistoryItem} from '@/lib/api/orderApi';
 import {cn} from '@/lib/utils';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
+import {PreOrderBadge, withSize} from '@/shared/components/PreOrderBadge';
 
 export const ORDER_STATUSES = [
   'pending',
@@ -735,6 +736,7 @@ function OrderCard({
                 : `Order #${String(order._id).slice(-6).toUpperCase()}`}
               {!isWalkIn && ` • ${orderTypeLabel(order.orderType)}`}
               {' • '}₱{order.totalAmount}.00
+              <PreOrderBadge order={order} className="ml-2" />
               {order.isGuest && (
                 <span className="ml-2 rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
                   GUEST
@@ -991,11 +993,12 @@ function OrderCard({
 }
 
 function getItemName(item: OrderHistoryItem) {
-  if (item.name) return item.name;
-  if (item.productId && typeof item.productId === 'object') {
-    return item.productId.name ?? 'Product';
+  let name = 'Product';
+  if (item.name) name = item.name;
+  else if (item.productId && typeof item.productId === 'object') {
+    name = item.productId.name ?? 'Product';
   }
-  return 'Product';
+  return withSize(name, item.sizeLabel);
 }
 
 /**

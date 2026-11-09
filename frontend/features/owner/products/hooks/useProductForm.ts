@@ -90,6 +90,7 @@ export function useProductForm(categories: Category[] = []) {
       promoStartDate: toDateInputValue(data.promoStartDate),
       promoEndDate: toDateInputValue(data.promoEndDate),
       isPromoActive: data.isPromoActive ?? true,
+      preOrderOnly: data.preOrderOnly === true,
       // Existing products default to no pre-order; only honour the stored
       // values if the product is still in an eligible category.
       isPreOrder:

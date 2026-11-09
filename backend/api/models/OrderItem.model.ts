@@ -13,6 +13,9 @@ export interface OrderItemDocument extends mongoose.Document {
    * the right batch even if the owner has since edited the schedule.
    */
   preOrderBatchStart?: string | null;
+  /** Dated pre-orders: the size bought (id within the PreOrderEvent) + label snapshot. */
+  preOrderSizeId?: mongoose.Types.ObjectId | null;
+  sizeLabel?: string | null;
 }
 
 const OrderItemSchema = new Schema<OrderItemDocument>(
@@ -23,7 +26,9 @@ const OrderItemSchema = new Schema<OrderItemDocument>(
     price: {type: Number, required: true},
     prepTimeMinutes: {type: Number, min: 0, max: 1440, default: null},
     specialRequest: {type: String},
-    preOrderBatchStart: {type: String, default: null}
+    preOrderBatchStart: {type: String, default: null},
+    preOrderSizeId: {type: Schema.Types.ObjectId, default: null},
+    sizeLabel: {type: String, default: null}
   },
   {timestamps: true}
 );

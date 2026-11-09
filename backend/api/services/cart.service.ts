@@ -158,6 +158,9 @@ export async function assertPreOrderOrderable(input: {
   customerId?: string;
 }): Promise<void> {
   const product = await productRepository.findById(input.productId);
+  if (product?.preOrderOnly === true) {
+    throw new ApiError(400, 'PREORDER_ONLY_PRODUCT', `"${product.name}" is only available through Holiday Pre-orders. Please order it from the Pre-orders section.`);
+  }
   if (!product || product.isPreOrder !== true) {
     return;
   }
@@ -199,6 +202,9 @@ export async function assertPreOrderItemsOrderable(input: {
 
   for (const item of items) {
     const product: any = byId.get(String(item.productId));
+    if (product?.preOrderOnly === true) {
+      throw new ApiError(400, 'PREORDER_ONLY_PRODUCT', `"${product.name}" is only available through Holiday Pre-orders. Please order it from the Pre-orders section.`);
+    }
     if (!product || product.isPreOrder !== true) {
       stamps.push({...item});
       continue;

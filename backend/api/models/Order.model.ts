@@ -63,6 +63,23 @@ export type OrderPaymentMethod =
   | 'shopeepay'
   | 'other';
 
+/** Pickup details of a dated pre-order (see PreOrderEvent). */
+export interface OrderPreOrderInfo {
+  eventId: mongoose.Types.ObjectId;
+  eventTitle: string;
+  /** Pickup day (Manila midnight). */
+  pickupDate: Date;
+  slotId: mongoose.Types.ObjectId;
+  slotLabel: string;
+  /** Pickup date + slot start: when the order is due. */
+  pickupAt: Date;
+  receiveMethod: 'pickup' | 'lalamove';
+  /** Customers may cancel until this moment. */
+  cancelDeadline: Date;
+  /** Latch: capacity was given back (cancel/expiry). Prevents double release. */
+  released: boolean;
+}
+
 export interface OrderDocument extends mongoose.Document {
   customerId?: mongoose.Types.ObjectId | null;
   sizeKg?: number | null;
@@ -84,6 +101,9 @@ export interface OrderDocument extends mongoose.Document {
   overdueNotifiedAt?: Date | null;
   isOnline: boolean;
   stockDeducted: boolean;
+  /** True for dated pre-orders (Holiday pre-orders). */
+  isPreOrder?: boolean;
+  preOrder?: OrderPreOrderInfo | null;
   /**
    * Loyalty points credited when this order was completed, or null if it has
    * not been credited yet. Doubles as an idempotency latch so re-sending
@@ -237,7 +257,25 @@ const OrderSchema = new Schema<OrderDocument>(
     orderNumber: {type: String},
     paidAt: {type: Date, default: null},
     paidBy: {type: String, default: null},
-    isOnline: {type: Boolean, default: true}
+    isOnline: {type: Boolean, default: true},
+    isPreOrder: {type: Boolean, default: false},
+    preOrder: {
+      type: new Schema(
+        {
+          eventId: {type: Schema.Types.ObjectId, ref: 'PreOrderEvent', required: true},
+          eventTitle: {type: String, required: true},
+          pickupDate: {type: Date, required: true},
+          slotId: {type: Schema.Types.ObjectId, required: true},
+          slotLabel: {type: String, required: true},
+          pickupAt: {type: Date, required: true},
+          receiveMethod: {type: String, enum: ['pickup', 'lalamove'], required: true},
+          cancelDeadline: {type: Date, required: true},
+          released: {type: Boolean, default: false}
+        },
+        {_id: false}
+      ),
+      default: null
+    }
   },
   {timestamps: true}
 );
@@ -248,6 +286,7 @@ OrderSchema.index({orderStatus: 1, overdueNotifiedAt: 1});
 OrderSchema.index({orderSource: 1, createdAt: -1});
 OrderSchema.index({orderNumber: 1}, {unique: true, sparse: true});
 OrderSchema.index({orderType: 1, createdAt: -1});
+OrderSchema.index({'preOrder.eventId': 1, createdAt: -1});
 
 export const OrderModel = mongoose.model<OrderDocument>(
   'Order',

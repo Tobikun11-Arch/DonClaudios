@@ -64,6 +64,8 @@ export interface ProductDocument extends mongoose.Document {
    * hidden entirely from guests.
    */
   isPreOrder?: boolean;
+  /** Sold only through dated pre-orders; hidden from the regular menu. */
+  preOrderOnly?: boolean;
   /**
    * Max quantity one customer may order per pre-order DAY (all batches share
    * the allowance). Whole number >= 1.
@@ -119,6 +121,9 @@ const ProductSchema = new Schema<ProductDocument>(
     isAvailable: {type: Boolean, default: true},
     pointsCost: {type: Number, min: 0, default: null},
     isPreOrder: {type: Boolean, default: false},
+    // Sold only through dated pre-orders (Holiday pre-orders): hidden from the
+    // regular menu, cart and counter. Sizes and prices live on each date.
+    preOrderOnly: {type: Boolean, default: false},
     preOrderPurchaseLimit: {type: Number, min: 1, default: null},
     preOrderDeadline: {type: Date, default: null},
     preOrderBatches: {type: [PreOrderBatchSchema], default: null},

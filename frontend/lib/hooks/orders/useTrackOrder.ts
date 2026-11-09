@@ -83,6 +83,7 @@ export function useCancelTrackedOrderMutation(
       await queryClient.invalidateQueries({queryKey: myOrdersQueryKey});
       await queryClient.invalidateQueries({queryKey: allOrdersQueryKey});
       await queryClient.invalidateQueries({queryKey: followUpOrdersKey});
+      await queryClient.invalidateQueries({queryKey: ['preorders']});
     }
   });
 }

@@ -15,6 +15,8 @@ export type ProductFormState = {
   allergens: ProductAllergen[];
   isAvailable: boolean;
   pointsCost: string;
+  /** Sold only through dated Holiday Pre-orders. */
+  preOrderOnly: boolean;
   isPreOrder: 'yes' | 'no';
   preOrderPurchaseLimit: string;
   /** YYYY-MM-DD for <input type="date">. */
@@ -47,6 +49,7 @@ export const emptyProductForm: ProductFormState = {
   allergens: [],
   isAvailable: true,
   pointsCost: '',
+  preOrderOnly: false,
   isPreOrder: 'no',
   preOrderPurchaseLimit: '',
   preOrderDeadline: '',

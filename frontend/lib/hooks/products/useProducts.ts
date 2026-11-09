@@ -23,13 +23,22 @@ export const productsQueryKey = (isSignedIn: boolean) =>
   ['products', isSignedIn ? 'member' : 'guest'] as const;
 export const productQueryKey = (id: string) => ['product', id] as const;
 
-export function useProductsQuery() {
+/**
+ * Products sold only through dated Holiday Pre-orders (`preOrderOnly`) are
+ * left out by default, so they never show on the menu, carts, the counter or
+ * inventory. The owner's Products page and pre-order editor opt in.
+ */
+export function useProductsQuery(options: {includePreOrderOnly?: boolean} = {}) {
+  const {includePreOrderOnly = false} = options;
   const {data: me, isLoading: meLoading} = useMeQuery();
   const isSignedIn = !!me;
 
   return useQuery({
     queryKey: productsQueryKey(isSignedIn),
     queryFn: listProducts,
+    select: includePreOrderOnly
+      ? undefined
+      : data => ({...data, products: data.products.filter(p => p.preOrderOnly !== true)}),
     // Wait for the session check so we never paint a guest view that
     // briefly contains pre-order items.
     enabled: !meLoading,

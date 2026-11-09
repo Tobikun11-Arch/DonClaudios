@@ -30,7 +30,7 @@ import {IngredientLibraryBanner} from './IngredientLibraryBanner';
 import {toast} from 'sonner';
 
 export default function ProductsPage() {
-  const productsQuery = useProductsQuery();
+  const productsQuery = useProductsQuery({includePreOrderOnly: true});
   const createMutation = useCreateProductMutation();
   const updateMutation = useUpdateProductMutation();
   const deleteMutation = useDeleteProductMutation();
@@ -273,6 +273,7 @@ export default function ProductsPage() {
           promoEndDate,
           isPromoActive,
           pointsCost,
+          preOrderOnly: form.preOrderOnly,
           isPreOrder,
           preOrderPurchaseLimit,
           preOrderDeadline,
@@ -300,6 +301,7 @@ export default function ProductsPage() {
             promoEndDate,
             isPromoActive,
             pointsCost,
+            preOrderOnly: form.preOrderOnly,
             isPreOrder,
             preOrderPurchaseLimit,
             preOrderDeadline,

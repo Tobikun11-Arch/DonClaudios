@@ -71,6 +71,8 @@ export const createProductDto = z.object({
   // The deadline is accepted as a raw string on purpose: it may be a
   // bare 'YYYY-MM-DD' from <input type="date">, and converting that to the
   // correct end-of-day instant is done once, in preOrder.ts.
+  // Sold only through dated Holiday Pre-orders (hidden from the regular menu).
+  preOrderOnly: z.boolean().optional(),
   isPreOrder: z.coerce.boolean().optional(),
   preOrderPurchaseLimit: z.preprocess(
     value => (value === '' || value === null ? null : value),

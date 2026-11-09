@@ -26,13 +26,15 @@ import {
   OrderPaymentPanel
 } from './CashierOrders';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
+import {PreOrderBadge, withSize} from '@/shared/components/PreOrderBadge';
 
 function getItemName(item: OrderHistoryItem) {
-  if (item.name) return item.name;
-  if (item.productId && typeof item.productId === 'object') {
-    return item.productId.name ?? 'Product';
+  let name = 'Product';
+  if (item.name) name = item.name;
+  else if (item.productId && typeof item.productId === 'object') {
+    name = item.productId.name ?? 'Product';
   }
-  return 'Product';
+  return withSize(name, item.sizeLabel);
 }
 
 function getItemImage(item: OrderHistoryItem) {
@@ -129,6 +131,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
             </div>
             <p className="text-xs text-gray-400 mt-1">
               Order #{orderNo} • {orderTypeLabel(order.orderType)} • ₱{order.totalAmount}.00
+              <PreOrderBadge order={order} className="ml-2" />
               {order.isGuest && (
                 <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
                   GUEST

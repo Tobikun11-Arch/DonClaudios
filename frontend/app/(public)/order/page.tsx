@@ -36,6 +36,7 @@ import {
   FEATURED_TAB_IMAGE,
   FEATURED_TAB_LABEL
 } from '@/lib/menu/featured';
+import PreOrderDatesStrip from '@/features/preorders/components/PreOrderDatesStrip';
 
 function ProductsSection() {
   const brand = useBrand();
@@ -383,6 +384,8 @@ function ProductsSection() {
           </div>
         </div>
       </div>
+
+      <PreOrderDatesStrip signedIn={isSignedIn} />
 
       <div className="flex justify-between">
         <h1 className="text-2xl font-bold mb-2">{brand.name} Menu</h1>

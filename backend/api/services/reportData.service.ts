@@ -286,7 +286,7 @@ export async function getSalesData(range: ResolvedRange) {
 
 export async function getProductData(range: ResolvedRange, sales?: SaleRow[]) {
   const saleRows = sales ?? (await fetchSales(range));
-  const products = await ProductModel.find({}, {name: 1, category: 1, price: 1, stock: 1, isAvailable: 1}).lean();
+  const products = await ProductModel.find({}, {name: 1, category: 1, price: 1, stock: 1, isAvailable: 1, preOrderOnly: 1}).lean();
   const byId = new Map(products.map(p => [String(p._id), p]));
 
   const mix = new Map<string, {qty: number; sales: number}>();
@@ -325,7 +325,10 @@ export async function getProductData(range: ResolvedRange, sales?: SaleRow[]) {
     }))
     .sort((a, b) => b.sales - a.sales);
 
+  // Pre-order-only products have no shelf stock (capacity lives on each
+  // pre-order date), so they are left out of stock on hand.
   const onHand = products
+    .filter(p => p.preOrderOnly !== true)
     .map(p => ({
       id: String(p._id),
       name: p.name,

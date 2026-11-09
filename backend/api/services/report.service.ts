@@ -1142,7 +1142,7 @@ export async function getReportInventoryHealth(
 ): Promise<ReportInventoryHealth> {
   const [sales, products, wastage, stockValueRow] = await Promise.all([
     productSales(range.from, range.to),
-    ProductModel.find({}).select('name category stock price stockUnit isAvailable').lean(),
+    ProductModel.find({preOrderOnly: {$ne: true}}).select('name category stock price stockUnit isAvailable').lean(),
     StockMovementModel.aggregate([
       {
         $match: {

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import {ChevronDown, ChevronUp} from 'lucide-react';
 import OrderTracking from './OrderTracking';
 import type {OrderHistoryEntry, OrderHistoryItem} from '@/lib/api/orderApi';
+import {PreOrderBadge} from '@/shared/components/PreOrderBadge';
 function formatStatus(status: string) {
   return status
     .split('_')
@@ -229,6 +230,7 @@ function OrderCard({
             {formatOrderType(order.orderType)}
             {badge ? ` • ${badge}` : ''}
           </p>
+          <PreOrderBadge order={order} className="mt-1" />
           <p className="text-xs text-gray-500 mt-0.5">
             {order.createdAt ? new Date(order.createdAt).toLocaleString() : ''}
           </p>
