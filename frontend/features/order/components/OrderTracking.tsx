@@ -593,12 +593,13 @@ function OrderSummaryCard({order}: {order: OrderHistoryEntry}) {
           <span>Subtotal</span>
           <span className="font-semibold">{fmtMoney(subtotal)}</span>
         </div>
-        <div className="mt-2 flex items-center justify-between text-sm text-gray-700">
-          <span>Delivery fee</span>
-          <span className="font-semibold">
-            {deliveryFee > 0 ? fmtMoney(deliveryFee) : 'Free'}
-          </span>
-        </div>
+        {/* The store does not deliver, so only show a fee when one was charged. */}
+        {deliveryFee > 0 ? (
+          <div className="mt-2 flex items-center justify-between text-sm text-gray-700">
+            <span>Delivery fee</span>
+            <span className="font-semibold">{fmtMoney(deliveryFee)}</span>
+          </div>
+        ) : null}
         <div className="mt-2 h-px bg-gray-200" />
         <div className="mt-2 flex items-center justify-between">
           <span className="text-sm font-bold text-gray-900">Total</span>

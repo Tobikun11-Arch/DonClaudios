@@ -354,12 +354,13 @@ function OrderCard({
               <span>Subtotal</span>
               <span className="font-semibold">₱{subtotal}.00</span>
             </div>
-            <div className="mt-2 flex items-center justify-between text-sm text-gray-700">
-              <span>Delivery fee</span>
-              <span className="font-semibold">
-                {deliveryFee > 0 ? `₱${deliveryFee}.00` : 'Free'}
-              </span>
-            </div>
+            {/* The store does not deliver, so only show a fee when one was charged. */}
+            {deliveryFee > 0 ? (
+              <div className="mt-2 flex items-center justify-between text-sm text-gray-700">
+                <span>Delivery fee</span>
+                <span className="font-semibold">₱{deliveryFee}.00</span>
+              </div>
+            ) : null}
             <div className="mt-2 h-px bg-gray-200" />
             <div className="mt-2 flex items-center justify-between">
               <span className="text-sm font-semibold text-gray-900">Total</span>

@@ -23,6 +23,7 @@ import {notificationService} from './notification.service';
 import {pushService} from './push.service';
 import {stockMovementService} from './stockMovement.service';
 import {preOrderEventService} from './preOrderEvent.service';
+import {isPreOrderId, notifyOwners} from './ownerNotify.service';
 import {
   isXenditConfigured,
   xenditService,
@@ -125,6 +126,11 @@ export function assertWebhookToken(token: unknown) {
 // ---------------------------------------------------------------------------
 
 async function notifyStaff(title: string, message: string, orderId: string) {
+  // Pre-orders are owner-only: skip the cashiers entirely.
+  if (await isPreOrderId(orderId).catch(() => false)) {
+    await notifyOwners({type: 'order_status', title, message, orderId});
+    return;
+  }
   try {
     const cashiers = ((await cashierRepository.listAll()) ?? []) as Array<
       CashierDocument & {_id: unknown}

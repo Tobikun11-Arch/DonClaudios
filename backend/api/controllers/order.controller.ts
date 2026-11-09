@@ -22,6 +22,7 @@ import {storeStatusService} from '../services/storeStatus.service';
 import {guestOtpService} from '../services/guestOtp.service';
 import {paymentService} from '../services/payment.service';
 import {preOrderEventService} from '../services/preOrderEvent.service';
+import {assertCashierMayHandle, notifyOwners} from '../services/ownerNotify.service';
 import {assertOrderCustomerAccess} from '../utils/orderAccess';
 import {
   buildPrepSnapshot,
@@ -226,6 +227,8 @@ export const orderController = {
         : undefined;
 
       const filter: Record<string, unknown> = {orderSource: {$ne: 'in-store'}};
+      // Holiday pre-orders are handled by the owner only.
+      if (req.auth?.type === 'cashier') filter.isPreOrder = {$ne: true};
       if (range) filter.createdAt = {$gte: range.from, $lt: range.to};
       if (query.status) filter.orderStatus = query.status;
       if (query.type) filter.orderType = query.type;
@@ -336,6 +339,7 @@ export const orderController = {
       if (!order) {
         throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
       }
+      assertCashierMayHandle(req.auth, order);
 
       const items = await orderItemRepository.listByOrderIds([String(order._id)]);
 
@@ -507,11 +511,21 @@ export const orderController = {
             .filter(Boolean)
             .join(' ') || 'Guest'
         : 'Customer';
-      await notifyCashiersOfOrderCancelled(
-        String(order._id),
-        customerName,
-        reason
-      );
+      if (order.isPreOrder) {
+        await notifyOwners({
+          type: 'order_status',
+          title: 'Pre-order cancelled',
+          message: `${customerName} cancelled pre-order #${String(order._id).slice(-6).toUpperCase()}.${reason ? ` Reason: ${reason}.` : ''}`,
+          orderId: String(order._id),
+          link: '/owner/dashboard?tab=preorders'
+        });
+      } else {
+        await notifyCashiersOfOrderCancelled(
+          String(order._id),
+          customerName,
+          reason
+        );
+      }
 
       const updated = await orderRepository.findById(String(order._id));
       res.status(200).json({order: updated});
@@ -1422,6 +1436,7 @@ export const orderController = {
       if (!order) {
         throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
       }
+      assertCashierMayHandle(req.auth, order);
       if (order.orderSource === 'in-store') {
         throw new ApiError(
           400,
@@ -1845,6 +1860,7 @@ export const orderController = {
       if (!order) {
         throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
       }
+      assertCashierMayHandle(req.auth, order);
 
       if (status === 'ready' && order.orderType === 'delivery') {
         throw new ApiError(

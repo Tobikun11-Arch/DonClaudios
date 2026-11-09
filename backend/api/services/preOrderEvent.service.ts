@@ -11,11 +11,10 @@ import {CustomerModel} from '../models/Customer.model';
 import {orderRepository} from '../repositories/order.repository';
 import {orderItemRepository} from '../repositories/orderItem.repository';
 import {transactionRepository} from '../repositories/transaction.repository';
-import {cashierRepository} from '../repositories/cashier.repository';
 import {customerRepository} from '../repositories/customer.repository';
 import {notificationRepository} from '../repositories/notification.repository';
 import {notificationService} from './notification.service';
-import {pushService} from './push.service';
+import {notifyOwners} from './ownerNotify.service';
 import {ApiError} from '../utils/error';
 
 /*
@@ -377,25 +376,14 @@ async function announceToCustomers(event: PreOrderEventDocument) {
 async function notifyStaffNewPreOrder(order: OrderDocument) {
   const code = String(order._id).slice(-6).toUpperCase();
   const message = `New pre-order #${code} for ${formatPickup(order.preOrder!.pickupDate, order.preOrder!.slotLabel)}.`;
-  try {
-    const cashiers = (await cashierRepository.listAll()) ?? [];
-    for (const cashier of cashiers as any[]) {
-      await notificationService
-        .createForCashier({
-          cashierId: String(cashier._id),
-          type: 'new_order',
-          title: 'New pre-order',
-          message,
-          orderId: String(order._id),
-          link: '/cashier/dashboard?tab=orders'
-        })
-        .catch(() => undefined);
-    }
-    await pushService.sendToRole('cashier', {title: 'New pre-order', body: message, url: '/cashier/dashboard?tab=orders'}).catch(() => undefined);
-    await pushService.sendToRole('admin', {title: 'New pre-order', body: message, url: '/owner/dashboard?tab=preorders'}).catch(() => undefined);
-  } catch (error) {
-    console.error('Failed to notify staff of pre-order', error);
-  }
+  // Pre-orders are owner-only: cashiers are not notified.
+  await notifyOwners({
+    type: 'new_order',
+    title: 'New pre-order',
+    message,
+    orderId: String(order._id),
+    link: '/owner/dashboard?tab=preorders'
+  });
 }
 
 // --- capacity -------------------------------------------------------------

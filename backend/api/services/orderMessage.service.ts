@@ -5,6 +5,7 @@ import {customerRepository} from '../repositories/customer.repository';
 import {adminRepository} from '../repositories/admin.repository';
 import {cashierRepository} from '../repositories/cashier.repository';
 import {notificationService} from './notification.service';
+import {notifyOwners} from './ownerNotify.service';
 import type {OrderDocument} from '../models/Order.model';
 import type {CustomerDocument} from '../models/Customer.model';
 import type {AdminDocument} from '../models/Admin.model';
@@ -24,7 +25,7 @@ async function getOrderOrThrow(orderId: string) {
 
 export const orderMessageService = {
 
-  async listFollowUpOrders() {
+  async listFollowUpOrders(excludePreOrders = false) {
     const summaries = await orderMessageRepository.listOrderSummaries();
     const orderIds = summaries.map(s => String(s._id));
     const orders = await orderRepository.listByIds(orderIds);
@@ -39,6 +40,7 @@ export const orderMessageService = {
       const order = ordersById.get(String(summary._id));
       if (!order) continue;
       if (order.orderSource === 'in-store') continue;
+      if (excludePreOrders && order.isPreOrder) continue;
       results.push({
         orderId: String(order._id),
         orderType: order.orderType,
@@ -102,26 +104,36 @@ export const orderMessageService = {
       body: body.trim()
     });
 
-    try {
-      const cashiers = (await cashierRepository.listAll()) as
-        | (CashierDocument & {_id: unknown})[]
-        | null;
-      for (const cashier of cashiers ?? []) {
-        try {
-          await notificationService.createForCashier({
-            cashierId: String(cashier._id),
-            type: 'order_message',
-            title: 'Order follow-up',
-            message: `${senderName || 'Customer'} asked about order #${String(order._id).slice(-6).toUpperCase()}: "${body.trim()}"`,
-            orderId: orderId,
-            link: '/cashier/dashboard?tab=orders'
-          });
-        } catch (error) {
-          console.error('Failed to create order message cashier notification', error);
+    if (order.isPreOrder) {
+      // Pre-orders are owner-only.
+      await notifyOwners({
+        type: 'order_message',
+        title: 'Pre-order follow-up',
+        message: `${senderName || 'Customer'} asked about pre-order #${String(order._id).slice(-6).toUpperCase()}: "${body.trim()}"`,
+        orderId
+      });
+    } else {
+      try {
+        const cashiers = (await cashierRepository.listAll()) as
+          | (CashierDocument & {_id: unknown})[]
+          | null;
+        for (const cashier of cashiers ?? []) {
+          try {
+            await notificationService.createForCashier({
+              cashierId: String(cashier._id),
+              type: 'order_message',
+              title: 'Order follow-up',
+              message: `${senderName || 'Customer'} asked about order #${String(order._id).slice(-6).toUpperCase()}: "${body.trim()}"`,
+              orderId: orderId,
+              link: '/cashier/dashboard?tab=orders'
+            });
+          } catch (error) {
+            console.error('Failed to create order message cashier notification', error);
+          }
         }
+      } catch (error) {
+        console.error('Failed to notify cashiers about order message', error);
       }
-    } catch (error) {
-      console.error('Failed to notify cashiers about order message', error);
     }
 
     return message;

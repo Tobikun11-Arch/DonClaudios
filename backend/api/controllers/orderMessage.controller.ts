@@ -1,11 +1,20 @@
 import {Request, Response, NextFunction} from 'express';
 import {ApiError} from '../utils/error';
 import {orderMessageService} from '../services/orderMessage.service';
+import {OrderModel} from '../models/Order.model';
+import {assertCashierMayHandle} from '../services/ownerNotify.service';
+
+/** Cashiers cannot read or answer pre-order follow-ups. */
+async function guardPreOrder(req: Request) {
+  if (req.auth?.type !== 'cashier') return;
+  const order = await OrderModel.findById(req.params.id, {isPreOrder: 1}).lean();
+  assertCashierMayHandle(req.auth, order);
+}
 
 export const orderMessageController = {
   async listFollowUpOrders(req: Request, res: Response, next: NextFunction) {
     try {
-      const orders = await orderMessageService.listFollowUpOrders();
+      const orders = await orderMessageService.listFollowUpOrders(req.auth?.type === 'cashier');
       res.status(200).json({orders});
     } catch (error) {
       next(error);
@@ -32,6 +41,7 @@ export const orderMessageController = {
       if (!_req.auth) {
         throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
       }
+      await guardPreOrder(_req);
       const messages = await orderMessageService.listForAdmin(
         _req.auth.userId,
         _req.params.id
@@ -63,6 +73,7 @@ export const orderMessageController = {
       if (!req.auth) {
         throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
       }
+      await guardPreOrder(req);
       const message = await orderMessageService.sendByAdmin(
         req.auth.userId,
         req.params.id,
