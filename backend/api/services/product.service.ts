@@ -239,6 +239,7 @@ export const productService = {
       promoEndDate?: string;
       isPromoActive?: boolean;
       isPreOrder?: boolean;
+      preOrderOnly?: boolean;
       preOrderPurchaseLimit?: number | null;
       preOrderDeadline?: string | null;
       preOrderBatches?: PreOrderBatchInput[] | null;
@@ -303,6 +304,7 @@ export const productService = {
       promoEndDate?: string;
       isPromoActive?: boolean;
       isPreOrder?: boolean;
+      preOrderOnly?: boolean;
       preOrderPurchaseLimit?: number | null;
       preOrderDeadline?: string | null;
       preOrderBatches?: PreOrderBatchInput[] | null;

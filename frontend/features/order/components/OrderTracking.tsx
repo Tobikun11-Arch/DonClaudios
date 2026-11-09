@@ -7,7 +7,10 @@ import {
   Clock,
   X,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  Bike,
+  CalendarDays,
+  Store
 } from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import FrameLoader from '@/shared/components/FrameLoader';
@@ -33,6 +36,68 @@ const STORE_ADDRESS =
   'Jasmine St. De Roman Brgy.Daang Amaya 1, Tanza, Cavite, Philippines 4108';
 
 const CANCELLABLE = ['pending'];
+
+/** Pre-orders: cancellable in any open status until the date's cut-off. */
+function canCustomerCancel(order: OrderHistoryEntry) {
+  if (order.isPreOrder && order.preOrder) {
+    if (order.orderStatus === 'cancelled' || order.orderStatus === 'completed') return false;
+    return Date.now() < new Date(order.preOrder.cancelDeadline).getTime();
+  }
+  return CANCELLABLE.includes(order.orderStatus);
+}
+
+function manilaDate(iso: string, opts: Intl.DateTimeFormatOptions) {
+  return new Date(iso).toLocaleDateString('en-PH', {timeZone: 'Asia/Manila', ...opts});
+}
+
+function PreOrderPickupCard({order}: {order: OrderHistoryEntry}) {
+  const po = order.preOrder;
+  if (!po) return null;
+  const lalamove = po.receiveMethod === 'lalamove';
+  const open = order.orderStatus !== 'cancelled' && order.orderStatus !== 'completed';
+  const canCancel = canCustomerCancel(order);
+  return (
+    <div className="overflow-hidden rounded-2xl border border-[#d7e3da] bg-white">
+      <div className="flex items-center gap-4 bg-[#3c5e45] px-5 py-4 text-white">
+        <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-white/10">
+          <span className="text-[0.65rem] font-semibold uppercase tracking-wider text-[#fbd897]">
+            {manilaDate(po.pickupAt, {month: 'short'})}
+          </span>
+          <span className="text-2xl font-bold leading-none">
+            {manilaDate(po.pickupAt, {day: 'numeric'})}
+          </span>
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] uppercase tracking-wider text-[#fbd897]">Holiday Pre-order</p>
+          <p className="truncate font-bold">{po.eventTitle}</p>
+          <p className="text-sm text-white/80">
+            {manilaDate(po.pickupAt, {weekday: 'long', month: 'long', day: 'numeric'})} · {po.slotLabel}
+          </p>
+        </div>
+      </div>
+      <div className="space-y-2 px-5 py-4 text-sm text-gray-700">
+        <p className="flex items-start gap-2">
+          {lalamove ? (
+            <Bike className="mt-0.5 h-4 w-4 shrink-0 text-[#2d4a35]" />
+          ) : (
+            <Store className="mt-0.5 h-4 w-4 shrink-0 text-[#2d4a35]" />
+          )}
+          {lalamove
+            ? 'Lalamove: please book your own rider to collect at the store within your time slot.'
+            : 'Self pick-up at the store within your time slot.'}
+        </p>
+        {open ? (
+          <p className="flex items-start gap-2 text-gray-500">
+            <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-[#2d4a35]" />
+            {canCancel
+              ? `You can cancel until ${manilaDate(new Date(new Date(po.cancelDeadline).getTime() - 1).toISOString(), {month: 'long', day: 'numeric'})}.`
+              : 'The cancellation period for this pre-order has ended.'}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 const CANCEL_REASONS = [
   'Ordered by mistake',
@@ -134,7 +199,19 @@ function paymentDisplay(order: OrderHistoryEntry) {
   return label;
 }
 
+/** Pre-orders say how they are received instead of the generic order type. */
+function typeDisplay(order: OrderHistoryEntry) {
+  if (order.isPreOrder && order.preOrder) {
+    return order.preOrder.receiveMethod === 'lalamove'
+      ? 'Pre-order · Lalamove (you book)'
+      : 'Pre-order · Self pick-up';
+  }
+  return orderTypeDisplay(order.orderType);
+}
+
 function deliveryAddress(order: OrderHistoryEntry) {
+  // Lalamove pre-orders are collected at the store by the customer's rider.
+  if (order.isPreOrder) return STORE_ADDRESS;
   if (order.orderType === 'delivery') {
     return order.guestInfo?.address?.length
       ? order.guestInfo.address
@@ -243,6 +320,7 @@ export default function OrderTracking({
                 </p>
               </div>
             ) : null}
+            {order.isPreOrder ? <PreOrderPickupCard order={order} /> : null}
             {order.orderStatus === 'cancelled' ? (
               <CancelledCard order={order} />
             ) : (
@@ -254,8 +332,16 @@ export default function OrderTracking({
             ) : null}
             <OrderPaymentCard order={order} phone={resolvedPhone} />
             <PaymentsDetailsCard order={order} />
-            {CANCELLABLE.includes(order.orderStatus) && (
-              <CancelOrderButton orderId={orderId} phone={resolvedPhone} />
+            {canCustomerCancel(order) && (
+              <CancelOrderButton
+                orderId={orderId}
+                phone={resolvedPhone}
+                hint={
+                  order.isPreOrder && order.preOrder
+                    ? `Pre-orders can be cancelled up to ${order.preOrder.cancelDeadline ? Math.round((new Date(order.preOrder.pickupAt).getTime() - new Date(order.preOrder.cancelDeadline).getTime()) / 86400000) : 14} days before pickup.`
+                    : undefined
+                }
+              />
             )}
           </>
         )}
@@ -348,7 +434,7 @@ function StatusTrackerCard({order}: {order: OrderHistoryEntry}) {
         <div>
           <p className="text-sm font-bold text-gray-900">Order status</p>
           <p className="text-xs text-gray-500">
-            {STORE_NAME} • {orderTypeDisplay(order.orderType)}
+            {STORE_NAME} • {typeDisplay(order)}
           </p>
         </div>
       </div>
@@ -479,6 +565,11 @@ function OrderSummaryCard({order}: {order: OrderHistoryEntry}) {
                   <p className="text-sm font-bold text-gray-900 line-clamp-2">
                     {getItemName(item)}
                   </p>
+                  {item.sizeLabel ? (
+                    <p className="text-xs font-semibold text-[#2d4a35] mt-0.5">
+                      {item.sizeLabel}
+                    </p>
+                  ) : null}
                   <p className="text-xs text-gray-500 mt-0.5">
                     Qty {item.quantity} • {fmtMoney(item.price)} each
                   </p>
@@ -502,12 +593,13 @@ function OrderSummaryCard({order}: {order: OrderHistoryEntry}) {
           <span>Subtotal</span>
           <span className="font-semibold">{fmtMoney(subtotal)}</span>
         </div>
-        <div className="mt-2 flex items-center justify-between text-sm text-gray-700">
-          <span>Delivery fee</span>
-          <span className="font-semibold">
-            {deliveryFee > 0 ? fmtMoney(deliveryFee) : 'Free'}
-          </span>
-        </div>
+        {/* The store does not deliver, so only show a fee when one was charged. */}
+        {deliveryFee > 0 ? (
+          <div className="mt-2 flex items-center justify-between text-sm text-gray-700">
+            <span>Delivery fee</span>
+            <span className="font-semibold">{fmtMoney(deliveryFee)}</span>
+          </div>
+        ) : null}
         <div className="mt-2 h-px bg-gray-200" />
         <div className="mt-2 flex items-center justify-between">
           <span className="text-sm font-bold text-gray-900">Total</span>
@@ -524,9 +616,14 @@ function PaymentsDetailsCard({order}: {order: OrderHistoryEntry}) {
   const rows: {label: string; value: string}[] = [
     {label: 'Payment method', value: paymentDisplay(order)},
     {label: 'Order Number', value: order._id},
-    {label: 'Order type', value: orderTypeDisplay(order.orderType)},
+    {label: 'Order type', value: typeDisplay(order)},
     {
-      label: order.orderType === 'delivery' ? 'Delivery address' : 'Branch location',
+      label:
+        order.orderType === 'delivery' && !order.isPreOrder
+          ? 'Delivery address'
+          : order.isPreOrder
+            ? 'Pickup location'
+            : 'Branch location',
       value: deliveryAddress(order)
     }
   ];
@@ -566,10 +663,12 @@ function PaymentsDetailsCard({order}: {order: OrderHistoryEntry}) {
 
 function CancelOrderButton({
   orderId,
-  phone
+  phone,
+  hint = 'You can only cancel while your order is still pending.'
 }: {
   orderId: string;
   phone?: string;
+  hint?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState(CANCEL_REASONS[0]);
@@ -598,7 +697,7 @@ function CancelOrderButton({
         Cancel Order
       </Button>
       <p className="mt-2 text-center text-xs text-gray-400">
-        You can only cancel while your order is still pending.
+        {hint}
       </p>
 
       {open ? (

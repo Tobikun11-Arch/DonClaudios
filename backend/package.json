@@ -15,7 +15,8 @@
     "rewards:backfill": "tsx scripts/backfillRewardPointsCost.ts --apply",
     "rewards:backfill:revert": "tsx scripts/backfillRewardPointsCost.ts --apply --revert",
     "rewards:migrate": "tsx scripts/migratePointsScale.ts up",
-    "rewards:rollback": "tsx scripts/migratePointsScale.ts down"
+    "rewards:rollback": "tsx scripts/migratePointsScale.ts down",
+    "seed:preorders": "tsx scripts/seedPreOrders.ts"
   },
   "keywords": [],
   "author": "",

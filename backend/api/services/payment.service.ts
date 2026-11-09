@@ -22,6 +22,8 @@ import {adminRepository} from '../repositories/admin.repository';
 import {notificationService} from './notification.service';
 import {pushService} from './push.service';
 import {stockMovementService} from './stockMovement.service';
+import {preOrderEventService} from './preOrderEvent.service';
+import {isPreOrderId, notifyOwners} from './ownerNotify.service';
 import {
   isXenditConfigured,
   xenditService,
@@ -65,6 +67,7 @@ async function getOrderProductFlags(order: OrderDocument) {
 
 /** Down payments are only for carts made up entirely of pre-order products. */
 export async function orderAllowsDownPayment(order: OrderDocument) {
+  if (order.isPreOrder) return true;
   const flags = await getOrderProductFlags(order);
   return !flags.hasRegular;
 }
@@ -123,6 +126,11 @@ export function assertWebhookToken(token: unknown) {
 // ---------------------------------------------------------------------------
 
 async function notifyStaff(title: string, message: string, orderId: string) {
+  // Pre-orders are owner-only: skip the cashiers entirely.
+  if (await isPreOrderId(orderId).catch(() => false)) {
+    await notifyOwners({type: 'order_status', title, message, orderId});
+    return;
+  }
   try {
     const cashiers = ((await cashierRepository.listAll()) ?? []) as Array<
       CashierDocument & {_id: unknown}
@@ -333,7 +341,18 @@ export const paymentService = {
       balanceChoice: order.balanceChoice ?? null,
       paymentChannel: order.paymentChannel ?? null,
       refundStatus: order.refundStatus ?? 'none',
-      cashAllowed: order.orderType === 'pickup',
+      // Pre-orders must start with an online payment (down or full); only the
+      // balance may be paid in cash, and only when the customer picks it up.
+      cashAllowed: order.orderType === 'pickup' && !order.isPreOrder,
+      balanceCashAllowed: order.orderType === 'pickup',
+      isPreOrder: order.isPreOrder === true,
+      pickup: order.preOrder
+        ? {
+            date: order.preOrder.pickupDate,
+            slotLabel: order.preOrder.slotLabel,
+            receiveMethod: order.preOrder.receiveMethod
+          }
+        : null,
       downPaymentAllowed: allowsDownPayment,
       downPaymentAmount: dp,
       channels: PAYMENT_CHANNELS.map(id => ({id, label: PAYMENT_FEES[id].label})),
@@ -426,7 +445,7 @@ export const paymentService = {
     await cancelPendingInvoices(orderId);
 
     const quote = computeCharge(amount, channel);
-    const {hasPreOrder} = await getOrderProductFlags(order);
+    const hasPreOrder = order.isPreOrder === true || (await getOrderProductFlags(order)).hasPreOrder;
     const durationSeconds =
       hasPreOrder || kind === 'balance'
         ? env.PREORDER_PAYMENT_EXPIRY_HOURS * 3600
@@ -507,6 +526,13 @@ export const paymentService = {
     }
     if (order.orderType !== 'pickup') {
       throw new ApiError(400, 'INVALID_OPERATION', 'Cash payment is only available for pick-up orders');
+    }
+    if (order.isPreOrder) {
+      throw new ApiError(
+        400,
+        'PREORDER_NEEDS_ONLINE_PAYMENT',
+        'Pre-orders need an online down payment or full payment. The balance can be paid in cash on pickup.'
+      );
     }
     if ((order.paymentStatus ?? 'unpaid') !== 'unpaid') {
       throw new ApiError(409, 'ALREADY_PAID', 'This order is already paid');
@@ -844,7 +870,9 @@ async function autoCancelUnpaidOrder(order: OrderDocument) {
   const orderId = String(order._id);
   const reason = 'Payment was not completed in time';
 
-  if (order.stockDeducted) {
+  if (order.isPreOrder) {
+    await preOrderEventService.releaseForOrder(order);
+  } else if (order.stockDeducted) {
     const claim = await orderRepository.claimStockRestore(orderId);
     if (claim.modifiedCount > 0) {
       try {

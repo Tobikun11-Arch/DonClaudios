@@ -7,6 +7,7 @@ import {itemName, orderCustomerName} from '../hooks/useOwnerOrders';
 import {formatPeso, titleCaseStatus} from '../../dashboard/components/reports/reportPrimitives';
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
 import {OrderPaymentPanel} from '@/features/cashier/orders/components/CashierOrders';
+import {PreOrderBadge, withSize} from '@/shared/components/PreOrderBadge';
 
 function formatDateTime(iso?: string) {
   if (!iso) return '—';
@@ -96,6 +97,7 @@ export function OrderDetailDrawer({
           <div className="flex flex-wrap items-center gap-2">
             <OrderStatusPill status={order.orderStatus} />
             <OrderTypePill type={order.orderType} />
+            <PreOrderBadge order={order} />
             {order.deliveryMode ? (
               <span className="rounded-md bg-gray-50 dark:bg-gray-800/60 px-2 py-0.5 text-[0.7rem] font-semibold text-gray-600 dark:text-gray-300">
                 {order.deliveryMode === 'DONCLAUDIO'
@@ -224,7 +226,7 @@ export function OrderDetailDrawer({
                 <li key={item._id ?? index} className="flex items-start justify-between gap-3 px-3 py-2.5">
                   <div className="min-w-0">
                     <p className="text-[0.85rem] font-medium text-[#1A1A1A] dark:text-gray-100">
-                      {itemName(item) || 'Removed product'}
+                      {withSize(itemName(item) || 'Removed product', item.sizeLabel)}
                     </p>
                     <p className="text-[0.75rem] text-[#6B7280] dark:text-gray-400">
                       {item.quantity} × {formatPeso(item.price, item.price % 1 !== 0)}

@@ -56,7 +56,13 @@ export function ProductCard({product: p, onEdit, onDelete, isDeleting}: Props) {
             <Clock size={11} />
             {p.prepTimeMinutes != null ? `~${p.prepTimeMinutes} min` : 'No time set'}
           </span>
-          {isPreOrderProduct(p) && (
+          {p.preOrderOnly && (
+            <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-purple-200 dark:border-purple-500/30 bg-purple-50 dark:bg-gray-950/85 text-purple-700 dark:text-purple-300">
+              <CalendarClock size={11} />
+              PRE-ORDER ONLY
+            </span>
+          )}
+          {!p.preOrderOnly && isPreOrderProduct(p) && (
             <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-purple-200 dark:border-purple-500/30 bg-purple-50 dark:bg-gray-950/85 text-purple-700 dark:text-purple-300">
               <CalendarClock size={11} />
               PRE-ORDER

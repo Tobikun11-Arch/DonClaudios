@@ -12,6 +12,7 @@ import {
   ClipboardList,
   Archive,
   Star,
+  CalendarClock,
   Settings,
   LogOut,
   MoreHorizontal,
@@ -55,6 +56,12 @@ const PRIMARY_TABS = [
 
 const DRAWER_ITEMS = [
   {
+    label: 'Pre-orders',
+    tab: 'preorders',
+    icon: CalendarClock,
+    href: '/owner/dashboard?tab=preorders'
+  },
+  {
     label: 'Reviews',
     tab: 'reviews',
     icon: Star,
@@ -78,6 +85,7 @@ type DashboardLayoutProps = {
   cashiers?: React.ReactNode;
   appearance?: React.ReactNode;
   reviews?: React.ReactNode;
+  preorders?: React.ReactNode;
 };
 
 export default function DashboardLayout({
@@ -87,7 +95,8 @@ export default function DashboardLayout({
   inventory,
   cashiers,
   appearance,
-  reviews: reviewsSlot
+  reviews: reviewsSlot,
+  preorders
 }: DashboardLayoutProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -131,7 +140,8 @@ export default function DashboardLayout({
     inventory,
     cashiers,
     appearance,
-    reviews: reviewsSlot
+    reviews: reviewsSlot,
+    preorders
   };
 
   const handleLogout = async () => {

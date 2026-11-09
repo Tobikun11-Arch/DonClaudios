@@ -117,7 +117,8 @@ export default function DashboardLayout({
 
   const isStandalonePage =
     pathname.startsWith('/customer/dashboard/checkout') ||
-    pathname.startsWith('/customer/dashboard/order-confirmation');
+    pathname.startsWith('/customer/dashboard/order-confirmation') ||
+    pathname.startsWith('/customer/dashboard/preorder');
   const content = isStandalonePage
     ? children
     : tab && slotByTab[tab]

@@ -314,8 +314,30 @@ export function ProductFormModal({
           />
         </div>
 
-        {/* Pre-order — only offered in the eligible categories. */}
-        {canPreOrder && (
+        {/* Holiday Pre-orders: the product is sold only on dated pre-orders. */}
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 p-4">
+          <input
+            type="checkbox"
+            checked={form.preOrderOnly}
+            onChange={e => onFormChange('preOrderOnly', e.target.checked)}
+            disabled={isDisabled}
+            className="mt-0.5 h-4 w-4 accent-[#4a7c59]"
+          />
+          <span>
+            <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
+              Pre-order only
+            </span>
+            <span className="block text-xs text-gray-600 dark:text-gray-300">
+              Hidden from the menu, the counter and inventory. Customers order it
+              through Holiday Pre-orders, where you set the sizes, prices and limits
+              per date.
+            </span>
+          </span>
+        </label>
+
+        {/* Old same-day pre-order windows: kept only for products that still
+            use them, so the owner can switch them off. */}
+        {canPreOrder && form.isPreOrder === 'yes' && !form.preOrderOnly && (
           <div className="space-y-3 rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/60 dark:bg-amber-500/10 p-4">
             <div className="space-y-1.5">
               <Label htmlFor="isPreOrder">Pre-order</Label>

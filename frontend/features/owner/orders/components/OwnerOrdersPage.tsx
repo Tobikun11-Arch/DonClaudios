@@ -25,6 +25,7 @@ import {orderCustomerName, useOwnerOrders, OWNER_ORDERS_PAGE_SIZE} from '../hook
 import {useCounterOrdersQuery} from '@/lib/hooks/orders/useCashierCounterOrder';
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
 import type {ReportRange} from '@/lib/types/report';
+import {PreOrderBadge} from '@/shared/components/PreOrderBadge';
 
 function formatDateTime(iso?: string) {
   if (!iso) return '—';
@@ -583,6 +584,7 @@ export default function OwnerOrdersPage() {
                       </td>
                       <td className="px-4 py-3">
                         {order.orderSource !== 'in-store' && <OrderTypePill type={order.orderType} />}
+                      <PreOrderBadge order={order} />
                       </td>
                       <td className="px-4 py-3">
                         {order.orderSource !== 'in-store' && (
@@ -656,6 +658,7 @@ export default function OwnerOrdersPage() {
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {order.orderSource !== 'in-store' && <OrderStatusPill status={order.orderStatus} />}
                       {order.orderSource !== 'in-store' && <OrderTypePill type={order.orderType} />}
+                      <PreOrderBadge order={order} />
                       {order.orderSource === 'in-store' && order.paymentStatus && (
                         <span
                           className={

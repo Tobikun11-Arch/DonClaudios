@@ -19,6 +19,7 @@ import ingredientRoutes from './ingredient.routes';
 import categoryRoutes from './category.routes';
 import pushRoutes from './push.routes';
 import webhookRoutes from './webhook.routes';
+import preOrderEventRoutes from './preOrderEvent.routes';
 
 const router = Router();
 
@@ -42,5 +43,6 @@ router.use('/ingredients', ingredientRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/push', pushRoutes);
 router.use('/webhooks', webhookRoutes);
+router.use('/preorders', preOrderEventRoutes);
 
 export default router;
