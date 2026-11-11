@@ -108,7 +108,7 @@ export default function OrderHistorySection({
     <section className="w-full max-w-6xl mx-auto px-4 mb-10">
       <div className="flex items-end justify-between gap-4 mb-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{title}</h2>
+          <h1 className="text-2xl font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">{title}</h1>
           <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">{description}</p>
         </div>
       </div>

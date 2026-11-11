@@ -9,24 +9,25 @@ interface Props {
 
 export function ProductsHeader({showButton, onAdd}: Props) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-      <div>
+    <div className="flex flex-wrap items-start gap-3">
+      <div className="min-w-0 flex-1">
         <h1 className="text-2xl font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">
-          Products Management
+          Products
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Manage your menu items and categories.
         </p>
       </div>
-      <div className="flex items-center gap-3">
-        {showButton && (
-          <Button onClick={onAdd} className="bg-[#2d4a35] hover:bg-[#24402c] dark:text-white">
+      {/* Phones: bell stays beside the title, the action drops to its own row. */}
+      {showButton && (
+        <div className="order-last flex w-full items-center gap-2 sm:order-none sm:w-auto">
+          <Button onClick={onAdd} className="flex-1 bg-[#2d4a35] hover:bg-[#24402c] dark:text-white sm:flex-none">
             <Plus className="h-4 w-4" />
             Add Product
           </Button>
-        )}
-        <OwnerNotificationBell />
-      </div>
+        </div>
+      )}
+      <OwnerNotificationBell />
     </div>
   );
 }

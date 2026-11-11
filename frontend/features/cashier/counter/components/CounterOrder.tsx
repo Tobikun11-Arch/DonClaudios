@@ -1,24 +1,9 @@
 'use client';
 
-import {useMemo, useState} from 'react';
-import Image from 'next/image';
-import {
-  Minus,
-  Plus,
-  Search,
-  Trash2,
-  ClipboardList,
-  Pencil,
-  Check,
-  X,
-  Loader2
-} from 'lucide-react';
+import {useEffect, useMemo, useState} from 'react';
+import {ChevronUp, Search, X} from 'lucide-react';
 import {toast} from 'sonner';
-import {Button} from '@/components/ui/button';
-import {Input} from '@/components/ui/input';
-import {Label} from '@/components/ui/label';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
-
 import {
   useCounterOrdersQuery,
   useCreateCounterOrderMutation,
@@ -26,33 +11,40 @@ import {
   useUpdateCounterOrderMutation
 } from '@/lib/hooks/orders/useCashierCounterOrder';
 import type {CounterOrderEntry} from '@/lib/api/orderApi';
+import type {Product} from '@/lib/types/product';
 import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
+import {FilterPills} from '@/shared/components/FilterPills';
+import {cn} from '@/lib/utils';
+import {
+  PAYMENT_METHODS,
+  orderLabel,
+  peso,
+  type CartLine,
+  type PaymentMethod
+} from '../counterShared';
+import ProductTile from './ProductTile';
+import OrderTicket, {type TicketBusy} from './OrderTicket';
+import RecentOrders from './RecentOrders';
+import CounterDialog from './CounterDialog';
+import CounterOrderReceipt from './CounterOrderReceipt';
 
-type CartLine = {
-  productId: string;
-  name: string;
-  price: number;
-  imageUrl?: string;
-  qty: number;
-  maxQty: number;
-  originalQty?: number;
+type PanelTab = 'order' | 'recent';
+
+type ConfirmState = {
+  title: string;
+  body: React.ReactNode;
+  confirmLabel: string;
+  destructive?: boolean;
+  onConfirm: () => void;
 };
 
-const PAYMENT_METHODS = [
-  {value: 'cash', label: 'Cash'},
-  {value: 'card', label: 'Card'},
-  {value: 'gcash', label: 'GCash'},
-  {value: 'other', label: 'Other'}
-] as const;
+type CompletedSale = {
+  order: CounterOrderEntry;
+  cashReceived: number | null;
+};
 
-function orderLabel(order: CounterOrderEntry): string {
-  return order.orderNumber ?? `DC-${String(order._id).slice(-6).toUpperCase()}`;
-}
-
-function paymentMethodLabel(value?: string | null): string {
-  return PAYMENT_METHODS.find(m => m.value === value)?.label ?? 'Cash';
-}
+const ALL = 'all';
 
 export default function CounterOrder() {
   const {data: productsData, isLoading} = useProductsQuery();
@@ -60,49 +52,90 @@ export default function CounterOrder() {
     () => productsData?.products ?? [],
     [productsData?.products]
   );
-  const availableProducts = useMemo(
-    () => products.filter(p => p.isAvailable && p.stock > 0 && !p.isPreOrder),
+  // Pre-order items are never sold at the counter (the backend rejects them).
+  // Sold-out / unavailable items stay visible as disabled tiles.
+  const menuProducts = useMemo(
+    () => products.filter(p => !p.isPreOrder && !p.preOrderOnly),
     [products]
   );
 
   const [cart, setCart] = useState<CartLine[]>([]);
   const [query, setQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-
-  const [paidMethod, setPaidMethod] =
-    useState<(typeof PAYMENT_METHODS)[number]['value'] | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string>(ALL);
+  const [chargeMethod, setChargeMethod] = useState<PaymentMethod>('cash');
+  const [cashReceived, setCashReceived] = useState('');
+  const [panelTab, setPanelTab] = useState<PanelTab>('order');
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [busy, setBusy] = useState<TicketBusy>(null);
 
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [editingOrderNumber, setEditingOrderNumber] = useState<string | null>(
     null
   );
+
+  const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   const [markPaidTarget, setMarkPaidTarget] = useState<CounterOrderEntry | null>(
     null
   );
+  const [paidMethod, setPaidMethod] = useState<PaymentMethod | null>(null);
+  const [markPaidError, setMarkPaidError] = useState<string | null>(null);
+  const [completedSale, setCompletedSale] = useState<CompletedSale | null>(null);
+  const [receiptOrder, setReceiptOrder] = useState<CounterOrderEntry | null>(
+    null
+  );
+
+  // Escape closes the phone order sheet, like the other counter dialogs. Not
+  // while a save/charge is running, and not when a dialog sits on top of it
+  // (that dialog handles its own Escape).
+  const dialogOnTop =
+    !!confirmState || !!markPaidTarget || !!completedSale || !!receiptOrder;
+  useEffect(() => {
+    if (!sheetOpen || busy !== null || dialogOnTop) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSheetOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [sheetOpen, busy, dialogOnTop]);
 
   const categories = useMemo(
     () =>
       Array.from(
         new Set(
-          availableProducts
+          menuProducts
             .map(p => p.category)
             .filter(c => typeof c === 'string' && c.trim().length > 0)
         )
       ).sort((a, b) => a.localeCompare(b)),
-    [availableProducts]
+    [menuProducts]
+  );
+
+  const categoryPills = useMemo(
+    () => [
+      {key: ALL, label: 'All'},
+      ...categories.map(c => ({key: c, label: c}))
+    ],
+    [categories]
   );
 
   const visibleProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    return availableProducts.filter(p => {
-      const matchesCategory =
-        !activeCategory || p.category === activeCategory;
-      const matchesQuery =
-        !normalizedQuery || p.name.toLowerCase().includes(normalizedQuery);
-      return matchesCategory && matchesQuery;
-    });
-  }, [availableProducts, activeCategory, query]);
+    const sellable = (p: Product) => p.isAvailable && p.stock > 0;
+    return menuProducts
+      .filter(p => {
+        const matchesCategory =
+          activeCategory === ALL || p.category === activeCategory;
+        const matchesQuery =
+          !normalizedQuery || p.name.toLowerCase().includes(normalizedQuery);
+        return matchesCategory && matchesQuery;
+      })
+      .sort((a, b) => Number(sellable(b)) - Number(sellable(a)));
+  }, [menuProducts, activeCategory, query]);
 
+  const qtyByProduct = useMemo(
+    () => new Map(cart.map(c => [c.productId, c.qty])),
+    [cart]
+  );
   const cartCount = useMemo(() => cart.reduce((s, c) => s + c.qty, 0), [cart]);
   const orderTotal = useMemo(
     () => cart.reduce((s, c) => s + c.price * c.qty, 0),
@@ -111,7 +144,8 @@ export default function CounterOrder() {
 
   // Stock checks (and their toasts) happen outside the setCart updater:
   // React may run updaters twice, which used to show the warning twice.
-  const addToCart = (product: (typeof availableProducts)[number]) => {
+  const addToCart = (product: Product) => {
+    if (!product.isAvailable || product.stock <= 0) return;
     const existing = cart.find(c => c.productId === product._id);
     if (existing && existing.qty + 1 > existing.maxQty) {
       toast.warning(`Only ${existing.maxQty} left in stock`);
@@ -137,16 +171,15 @@ export default function CounterOrder() {
         }
       ];
     });
+    setPanelTab('order');
   };
-
-  const [removeTarget, setRemoveTarget] = useState<string | null>(null);
 
   const changeQty = (productId: string, delta: number) => {
     const target = cart.find(c => c.productId === productId);
     if (!target) return;
     const next = target.qty + delta;
     if (next < 1) {
-      setRemoveTarget(productId);
+      removeLine(productId);
       return;
     }
     if (next > target.maxQty) {
@@ -159,13 +192,7 @@ export default function CounterOrder() {
   };
 
   const removeLine = (productId: string) => {
-    setRemoveTarget(productId);
-  };
-
-  const confirmRemoveItem = () => {
-    if (!removeTarget) return;
-    setCart(prev => prev.filter(c => c.productId !== removeTarget));
-    setRemoveTarget(null);
+    setCart(prev => prev.filter(c => c.productId !== productId));
   };
 
   const createOrder = useCreateCounterOrderMutation();
@@ -173,23 +200,35 @@ export default function CounterOrder() {
   const markPaid = useMarkCounterOrderPaidMutation();
   const {data: historyData, isLoading: historyLoading} = useCounterOrdersQuery();
   const history = useMemo(() => historyData?.orders ?? [], [historyData]);
-  const recentOrders = useMemo(() => history.slice(0, 10), [history]);
+  const recentOrders = useMemo(() => history.slice(0, 20), [history]);
+  const unpaidCount = useMemo(
+    () =>
+      recentOrders.filter(
+        o => o.paymentStatus !== 'paid' && o.orderStatus !== 'cancelled'
+      ).length,
+    [recentOrders]
+  );
 
   const resetForm = () => {
     setCart([]);
     setEditingOrderId(null);
     setEditingOrderNumber(null);
+    setCashReceived('');
   };
 
-  const loadOrderForEdit = (order: CounterOrderEntry) => {
-    if (order.paymentStatus === 'paid') return;
-    if (cart.length > 0 && !editingOrderId) {
-      const label = orderLabel(order);
-      if (!window.confirm(`Discard the current order and edit ${label}?`)) {
-        return;
-      }
-    }
+  const handleClear = () => {
+    setConfirmState({
+      title: editingOrderId ? 'Discard changes?' : 'Clear this order?',
+      body: editingOrderId
+        ? `${editingOrderNumber} stays as it was.`
+        : 'All items will be removed from the ticket.',
+      confirmLabel: editingOrderId ? 'Discard' : 'Clear order',
+      destructive: true,
+      onConfirm: resetForm
+    });
+  };
 
+  const applyEdit = (order: CounterOrderEntry) => {
     const lines: CartLine[] = (order.items ?? []).map(item => {
       const pid =
         typeof item.productId === 'string'
@@ -219,49 +258,133 @@ export default function CounterOrder() {
     });
 
     setCart(lines);
+    setCashReceived('');
     setEditingOrderId(order._id);
     setEditingOrderNumber(orderLabel(order));
+    setPanelTab('order');
   };
 
-  const handleSave = async () => {
-    if (cart.length === 0) {
-      toast.error('Add at least one item');
+  const loadOrderForEdit = (order: CounterOrderEntry) => {
+    if (order.paymentStatus === 'paid') return;
+    if (cart.length > 0 && editingOrderId !== order._id) {
+      setConfirmState({
+        title: `Edit ${orderLabel(order)}?`,
+        body: 'The items on the current ticket will be discarded.',
+        confirmLabel: 'Discard and edit',
+        destructive: true,
+        onConfirm: () => applyEdit(order)
+      });
       return;
     }
+    applyEdit(order);
+  };
 
-    const body = {
-      items: cart.map(c => ({
-        productId: c.productId,
-        quantity: c.qty,
-        price: c.price
-      })),
-      totalAmount: orderTotal
-    };
+  const buildBody = () => ({
+    items: cart.map(c => ({
+      productId: c.productId,
+      quantity: c.qty,
+      price: c.price
+    })),
+    totalAmount: orderTotal
+  });
 
+  /** Creates (or updates) the order; returns its id and label, or null. */
+  const saveOrder = async (): Promise<{id: string; label: string} | null> => {
+    const body = buildBody();
     try {
       if (editingOrderId) {
         const result = await updateOrder.mutateAsync({
           orderId: editingOrderId,
           body
         });
-        const label = result.order?.orderNumber ?? editingOrderNumber;
-        toast.success(`Order ${label} updated.`);
-      } else {
-        const result = await createOrder.mutateAsync(body);
-        const label = result.order?.orderNumber ?? 'recorded';
-        toast.success(`Order ${label} recorded.`);
+        return {
+          id: editingOrderId,
+          label: result.order?.orderNumber ?? editingOrderNumber ?? 'Order'
+        };
       }
-      resetForm();
+      const result = await createOrder.mutateAsync(body);
+      return {
+        id: result.order._id,
+        label: result.order?.orderNumber ?? 'Order'
+      };
     } catch (err: unknown) {
       toast.error(getFriendlyErrorMessage(err, 'Failed to save order'));
+      return null;
     }
   };
 
-  const handleCancelEdit = () => {
+  const handleSaveUnpaid = async () => {
+    if (cart.length === 0) {
+      toast.error('Add at least one item');
+      return;
+    }
+    setBusy('save');
+    const wasEditing = !!editingOrderId;
+    const saved = await saveOrder();
+    setBusy(null);
+    if (!saved) return;
+    toast.success(
+      wasEditing ? `Order ${saved.label} updated.` : `Order ${saved.label} saved as unpaid.`
+    );
     resetForm();
+    setSheetOpen(false);
   };
 
-  const [markPaidError, setMarkPaidError] = useState<string | null>(null);
+  const handleCharge = async () => {
+    if (cart.length === 0) {
+      toast.error('Add at least one item');
+      return;
+    }
+    const received =
+      chargeMethod === 'cash' && cashReceived.trim() !== ''
+        ? Number(cashReceived)
+        : null;
+    if (received !== null && (!Number.isFinite(received) || received < orderTotal)) {
+      toast.error('Cash received is less than the total');
+      return;
+    }
+
+    setBusy('charge');
+    const lines = cart;
+    const saved = await saveOrder();
+    if (!saved) {
+      setBusy(null);
+      return;
+    }
+    try {
+      const result = await markPaid.mutateAsync({
+        orderId: saved.id,
+        paymentMethod: chargeMethod
+      });
+      setCompletedSale({
+        order: {
+          ...result.order,
+          items: lines.map(line => ({
+            productId: line.productId,
+            name: line.name,
+            quantity: line.qty,
+            price: line.price
+          }))
+        },
+        cashReceived: received
+      });
+    } catch (err: unknown) {
+      toast.error(
+        `${saved.label} was saved but not marked as paid: ${getFriendlyErrorMessage(err, 'please mark it as paid from Recent')}`
+      );
+      setPanelTab('recent');
+    } finally {
+      setBusy(null);
+      resetForm();
+      setSheetOpen(false);
+    }
+  };
+
+  const closeMarkPaid = () => {
+    setMarkPaidTarget(null);
+    setPaidMethod(null);
+    setMarkPaidError(null);
+  };
 
   const confirmMarkPaid = async () => {
     if (!markPaidTarget || !paidMethod) return;
@@ -272,465 +395,408 @@ export default function CounterOrder() {
         paymentMethod: paidMethod
       });
       toast.success(`${orderLabel(markPaidTarget)} marked as paid.`);
-      setMarkPaidTarget(null);
-      setPaidMethod(null);
+      if (editingOrderId === markPaidTarget._id) resetForm();
+      closeMarkPaid();
     } catch (err: unknown) {
       setMarkPaidError(getFriendlyErrorMessage(err, 'Failed to mark as paid'));
     }
   };
 
-  const hasCart = cart.length > 0;
-  const hasRecent = recentOrders.length > 0;
-  const showRightColumn = hasCart || hasRecent;
+  const renderPanel = () => (
+    <>
+      <div className="p-3 pb-0">
+        <div
+          role="tablist"
+          aria-label="Order panel"
+          className="grid grid-cols-2 gap-1 rounded-xl bg-gray-100 p-1"
+        >
+          {(
+            [
+              {key: 'order', label: 'Current order', badge: cartCount},
+              {key: 'recent', label: 'Recent', badge: unpaidCount}
+            ] as const
+          ).map(tab => {
+            const active = panelTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setPanelTab(tab.key)}
+                className={cn(
+                  'flex min-h-11 items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-colors',
+                  active
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                )}
+              >
+                {tab.label}
+                {tab.badge > 0 && (
+                  <span
+                    className={cn(
+                      'grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-xs font-bold tabular-nums',
+                      tab.key === 'recent'
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-[#2d4a35] text-white'
+                    )}
+                    aria-label={
+                      tab.key === 'recent'
+                        ? `${tab.badge} unpaid`
+                        : `${tab.badge} items`
+                    }
+                  >
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {panelTab === 'order' ? (
+        <OrderTicket
+          cart={cart}
+          cartCount={cartCount}
+          total={orderTotal}
+          editingLabel={editingOrderId ? editingOrderNumber : null}
+          onCancelEdit={resetForm}
+          onChangeQty={changeQty}
+          onRemove={removeLine}
+          onClear={handleClear}
+          method={chargeMethod}
+          onMethodChange={method => {
+            setChargeMethod(method);
+            if (method !== 'cash') setCashReceived('');
+          }}
+          cashReceived={cashReceived}
+          onCashReceivedChange={setCashReceived}
+          onCharge={handleCharge}
+          onSave={handleSaveUnpaid}
+          busy={busy}
+        />
+      ) : (
+        <RecentOrders
+          orders={recentOrders}
+          loading={historyLoading}
+          editingOrderId={editingOrderId}
+          markPaidPending={markPaid.isPending}
+          onMarkPaid={order => {
+            setPaidMethod(null);
+            setMarkPaidError(null);
+            setMarkPaidTarget(order);
+          }}
+          onEdit={loadOrderForEdit}
+          onViewReceipt={setReceiptOrder}
+        />
+      )}
+    </>
+  );
 
   return (
-    <div className="flex min-h-full flex-col gap-4 lg:h-full">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div className="flex min-h-full flex-col gap-4 lg:h-[calc(100dvh-3rem)] lg:min-h-0">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-[#2d4a35]">
-            Walk-in Order
-          </h1>
+          <h1 className="text-2xl font-extrabold text-[#2d4a35]">Walk-in Order</h1>
           <p className="text-sm text-gray-500">
-            Record walk-in orders and track their payment status.
+            Ring up counter sales and settle open tickets.
           </p>
         </div>
         <CashierNotificationBell />
       </div>
 
-      <div className="flex flex-1 flex-col gap-4 lg:h-full lg:flex-row">
-        <div className="flex-1 overflow-auto rounded-2xl border border-gray-200 bg-white p-4">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">
-                DonClaudio&apos;s Menu
-              </h2>
-              <p className="text-sm text-gray-500">
-                Select items to add to the order
-              </p>
-            </div>
-            <div className="relative w-full sm:w-64">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
+      <div className="flex flex-1 flex-col gap-4 lg:min-h-0 lg:flex-row">
+        {/* Menu */}
+        <section
+          aria-label="Menu"
+          className="flex flex-1 flex-col rounded-2xl border border-gray-200 bg-white lg:min-h-0"
+        >
+          <div className="space-y-3 border-b border-gray-100 p-3 sm:p-4">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="search"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder="Search menu"
                 aria-label="Search menu"
-                className="pl-9"
+                className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-10 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-[#2d4a35] focus:bg-white focus:ring-2 focus:ring-[#2d4a35]/20 [&::-webkit-search-cancel-button]:hidden"
               />
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <Label className="text-xs font-medium" htmlFor="walkin-category">
-              Category
-            </Label>
-            <select
-              id="walkin-category"
-              value={activeCategory ?? 'all'}
-              onChange={e =>
-                setActiveCategory(e.target.value === 'all' ? null : e.target.value)
-              }
-              className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20 sm:w-64"
-            >
-              <option value="all">All</option>
-              {categories.map(category => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {isLoading && (
-            <div className="text-sm text-gray-500">Loading products...</div>
-          )}
-
-          {!isLoading && visibleProducts.length === 0 && (
-            <div className="text-sm text-gray-500">
-              No products available in this category.
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">
-            {visibleProducts.map(product => {
-              const qty =
-                cart.find(c => c.productId === product._id)?.qty ?? 0;
-              const inOrder = qty > 0;
-              return (
-                <div
-                  key={product._id}
-                  className={
-                    'flex items-center gap-3 rounded-xl border border-gray-100 px-3 py-3 transition-colors hover:bg-gray-50 ' +
-                    (inOrder ? 'bg-[#3c5e45]/5' : 'bg-white')
-                  }
+              {query && (
+                <button
+                  type="button"
+                  aria-label="Clear search"
+                  onClick={() => setQuery('')}
+                  className="absolute right-1 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-gray-400 hover:text-gray-700"
                 >
-                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                    <Image
-                      src={
-                        product.imageUrl && product.imageUrl.length > 0
-                          ? product.imageUrl
-                          : '/assets/sample_menu.png'
-                      }
-                      alt={product.name}
-                      fill
-                      sizes="48px"
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-gray-800">
-                      {product.name}
-                    </p>
-                    <p className="text-xs text-gray-500">{product.category}</p>
-                  </div>
-                  <div className="shrink-0 text-sm text-gray-700">
-                    ₱{product.price.toLocaleString()}
-                  </div>
-                  {inOrder ? (
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        aria-label={`Decrease ${product.name}`}
-                        onClick={() => changeQty(product._id, -1)}
-                        className="grid h-9 w-9 place-items-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#3c5e45]/40"
-                      >
-                        <Minus className="h-3.5 w-3.5" />
-                      </button>
-                      <span
-                        className="w-6 text-center text-sm font-semibold"
-                        aria-live="polite"
-                      >
-                        {qty}
-                      </span>
-                      <button
-                        type="button"
-                        aria-label={`Increase ${product.name}`}
-                        onClick={() => changeQty(product._id, 1)}
-                        className="grid h-9 w-9 place-items-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#3c5e45]/40"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      aria-label={`Add ${product.name} to order`}
-                      onClick={() => addToCart(product)}
-                      className="grid h-9 w-9 place-items-center rounded-lg bg-[#3c5e45] text-white hover:bg-[#2d4a35] focus:outline-none focus:ring-2 focus:ring-[#3c5e45]/40"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {showRightColumn && (
-          <div className="flex flex-col gap-4 lg:h-full">
-            {hasCart && (
-              <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-4 lg:w-96">
-                <div className="mb-3 flex items-center justify-between">
-                  <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900">
-                    <ClipboardList className="h-5 w-5 text-[#c30010]" />
-                    {editingOrderId ? `Editing ${editingOrderNumber}` : 'Order Details'}
-                  </h2>
-                  <span className="rounded-full bg-[#3c5e45]/10 px-3 py-1 text-sm font-semibold text-[#3c5e45]">
-                    {cartCount} item{cartCount !== 1 ? 's' : ''}
-                  </span>
-                </div>
-
-                {cart.length === 0 ? (
-                  <div className="flex-1 text-sm text-gray-400">
-                    No items yet. Select from the menu.
-                  </div>
-                ) : (
-                  <div className="max-h-48 flex-1 space-y-2 overflow-auto">
-                    {cart.map(line => (
-                      <div
-                        key={line.productId}
-                        className="flex items-center justify-between gap-2 rounded-xl border border-gray-100 p-2"
-                      >
-                        <div className="flex min-w-0 flex-1 items-center gap-2">
-                          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                            <Image
-                              src={
-                                line.imageUrl && line.imageUrl.length > 0
-                                  ? line.imageUrl
-                                  : '/assets/sample_menu.png'
-                              }
-                              alt={line.name}
-                              fill
-                              sizes="40px"
-                              className="object-cover"
-                            />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-gray-800">
-                              {line.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              ₱{line.price.toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => changeQty(line.productId, -1)}
-                            className="grid h-9 w-9 place-items-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50"
-                          >
-                            <Minus className="h-3.5 w-3.5" />
-                          </button>
-                          <span className="w-6 text-center text-sm font-semibold">
-                            {line.qty}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => changeQty(line.productId, 1)}
-                            className="grid h-9 w-9 place-items-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50"
-                          >
-                            <Plus className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => removeLine(line.productId)}
-                            className="ml-1 grid h-9 w-9 place-items-center rounded-md text-red-500 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
-                  <span className="text-sm text-gray-500">Order Total</span>
-                  <span className="text-base font-medium text-gray-900">
-                    ₱{orderTotal.toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="mt-4 space-y-3">
-                  <div className="sticky bottom-20 z-10 -mx-4 mt-1 bg-white px-4 py-3 md:bottom-0 lg:static lg:mx-0 lg:mt-4 lg:p-0">
-                    <div className="flex gap-2">
-                      {editingOrderId && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="flex-1"
-                          onClick={handleCancelEdit}
-                        >
-                          Cancel
-                        </Button>
-                      )}
-                      <Button
-                        type="button"
-                        className="flex-1 bg-[#3c5e45] hover:bg-[#2d4a35]"
-                        disabled={
-                          createOrder.isPending || updateOrder.isPending
-                        }
-                        onClick={handleSave}
-                      >
-                        {createOrder.isPending || updateOrder.isPending ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" /> Saving...
-                          </>
-                        ) : editingOrderId ? (
-                          'Save Changes'
-                        ) : (
-                          'Save Order'
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            {categories.length > 0 && (
+              <FilterPills
+                items={categoryPills}
+                value={activeCategory}
+                onChange={setActiveCategory}
+                ariaLabel="Category"
+              />
             )}
+          </div>
 
-            {hasRecent && (
-              <div className="flex flex-1 flex-col rounded-2xl border border-gray-200 bg-white p-4 lg:w-96">
-                <h3 className="mb-3 text-lg font-bold text-gray-900">
-                  Recent Walk-in Orders
-                </h3>
-                {historyLoading && (
-                  <div className="text-sm text-gray-500">Loading...</div>
-                )}
-                {!historyLoading && recentOrders.length === 0 && (
-                  <div className="text-sm text-gray-400">
-                    No walk-in orders yet.
-                  </div>
-                )}
-                <div className="max-h-64 space-y-2 overflow-auto">
-                  {recentOrders.map(order => {
-                    const paid = order.paymentStatus === 'paid';
-                    const label = orderLabel(order);
-                    return (
-                      <div
-                        key={order._id}
-                        className="rounded-xl border border-gray-100 p-3"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-semibold text-gray-800">
-                            {label}
-                          </span>
-                          <span
-                            className={
-                              'rounded-full px-2 py-0.5 text-xs font-semibold ' +
-                              (paid
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-amber-100 text-amber-700')
-                            }
-                          >
-                            {paid ? 'Paid' : 'Unpaid'}
-                          </span>
-                        </div>
-                        <div className="mt-2 flex items-center justify-between gap-2">
-                          <span className="text-sm font-bold text-gray-900">
-                            ₱{order.totalAmount.toLocaleString()}
-                          </span>
-                          <div className="flex items-center gap-1">
-                            {!paid && (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="text-[#3c5e45] border-[#3c5e45]"
-                                disabled={markPaid.isPending}
-                                onClick={() => setMarkPaidTarget(order)}
-                              >
-                                <Check className="h-4 w-4" /> Mark as Paid
-                              </Button>
-                            )}
-                            {!paid && (
-                              <button
-                                type="button"
-                                aria-label="Edit order"
-                                className="grid h-9 w-9 place-items-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50"
-                                onClick={() => loadOrderForEdit(order)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </button>
-                            )}
-                            {paid && order.paymentMethod && (
-                              <span className="text-xs text-gray-500">
-                                {paymentMethodLabel(order.paymentMethod)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+          <div className="subtle-scrollbar p-3 sm:p-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+            {isLoading ? (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                {Array.from({length: 8}).map((_, i) => (
+                  <div
+                    key={i}
+                    className="aspect-[4/5] animate-pulse rounded-2xl bg-gray-100"
+                  />
+                ))}
+              </div>
+            ) : visibleProducts.length === 0 ? (
+              <p className="py-12 text-center text-sm text-gray-500">
+                {query.trim()
+                  ? `No items match “${query.trim()}”.`
+                  : 'No items in this category.'}
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                {visibleProducts.map(product => (
+                  <ProductTile
+                    key={product._id}
+                    product={product}
+                    qtyInOrder={qtyByProduct.get(product._id) ?? 0}
+                    onAdd={() => addToCart(product)}
+                  />
+                ))}
               </div>
             )}
           </div>
-        )}
+        </section>
+
+        {/* Ticket (lg+) */}
+        <aside
+          aria-label="Order"
+          className="hidden min-h-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white lg:flex lg:w-[380px] xl:w-[420px]"
+        >
+          {renderPanel()}
+        </aside>
       </div>
 
-      {removeTarget && (
-        <div className="fixed inset-0 z-100">
+      {/* Phone/tablet order bar: sits above the cashier bottom nav (72px +
+          safe area) below md, and at the bottom edge from md to lg. */}
+      <div className="sticky bottom-[calc(80px_+_env(safe-area-inset-bottom,10px))] z-30 md:bottom-4 lg:hidden">
+        <button
+          type="button"
+          onClick={() => {
+            setPanelTab(cart.length > 0 || unpaidCount === 0 ? 'order' : 'recent');
+            setSheetOpen(true);
+          }}
+          className="flex min-h-14 w-full items-center justify-between gap-3 rounded-2xl bg-[#2d4a35] px-4 py-2 text-left text-white shadow-lg shadow-[#2d4a35]/30"
+        >
+          <span className="min-w-0">
+            {cart.length > 0 ? (
+              <span className="block truncate text-base font-bold tabular-nums">
+                {cartCount} item{cartCount !== 1 ? 's' : ''} · {peso(orderTotal)}
+              </span>
+            ) : (
+              <span className="block truncate text-sm font-semibold text-white/80">
+                {unpaidCount > 0
+                  ? `No items · ${unpaidCount} unpaid order${unpaidCount !== 1 ? 's' : ''}`
+                  : 'No items yet'}
+              </span>
+            )}
+            {editingOrderId && (
+              <span className="block text-xs text-white/70">
+                Editing {editingOrderNumber}
+              </span>
+            )}
+          </span>
+          <span className="flex shrink-0 items-center gap-1 rounded-xl bg-white/15 px-3 py-2 text-sm font-semibold">
+            {cart.length > 0 || unpaidCount === 0 ? 'View order' : 'Recent'}
+            <ChevronUp className="h-4 w-4" />
+          </span>
+        </button>
+      </div>
+
+      {/* Phone/tablet ticket sheet */}
+      {sheetOpen && (
+        <div className="fixed inset-0 z-[100] lg:hidden">
           <div
             className="absolute inset-0 bg-black/40"
-            onClick={() => setRemoveTarget(null)}
+            onClick={() => (busy ? undefined : setSheetOpen(false))}
           />
-          <div className="absolute inset-0 flex items-center justify-center p-4">
-            <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
-              <h3 className="text-lg font-bold text-gray-900">Remove item?</h3>
-              <p className="mt-2 text-sm text-gray-600">
-                Are you sure you want to remove{' '}
-                <span className="font-bold text-gray-900">
-                  {cart.find(c => c.productId === removeTarget)?.name ?? 'this item'}
-                </span>{' '}
-                from the order?
-              </p>
-              <div className="mt-4 flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setRemoveTarget(null)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  className="bg-red-600 text-white hover:bg-red-700"
-                  onClick={confirmRemoveItem}
-                >
-                  Remove
-                </Button>
-              </div>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Order"
+            className="absolute inset-x-0 bottom-0 flex max-h-[90dvh] flex-col overflow-hidden rounded-t-3xl bg-white pb-[env(safe-area-inset-bottom,0px)] shadow-2xl md:inset-x-auto md:right-4 md:bottom-4 md:w-[420px] md:rounded-3xl"
+          >
+            <div className="relative flex h-11 items-center justify-center">
+              <span className="h-1 w-10 rounded-full bg-gray-200" />
+              <button
+                type="button"
+                aria-label="Close"
+                disabled={busy !== null}
+                onClick={() => setSheetOpen(false)}
+                className="absolute right-1 top-0 grid h-11 w-11 place-items-center rounded-full text-gray-500 hover:bg-gray-100 disabled:opacity-50"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
+            <div className="flex min-h-0 flex-1 flex-col">{renderPanel()}</div>
           </div>
         </div>
       )}
 
-      {markPaidTarget && (
-        <div className="fixed inset-0 z-100">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setMarkPaidTarget(null)}
-          />
-          <div className="absolute inset-0 flex items-center justify-center p-4">
-            <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
-              <h3 className="text-lg font-bold text-gray-900">
-                Mark {markPaidTarget ? orderLabel(markPaidTarget) : ''} as paid?
-              </h3>
-              <p className="mt-2 text-sm text-gray-600">
-                Total: ₱{markPaidTarget.totalAmount.toLocaleString()}
-              </p>
-              <div className="mt-4">
-                <Label className="text-xs font-medium">Payment method</Label>
-                <div className="mt-1 flex flex-wrap gap-2">
-                  {PAYMENT_METHODS.map(method => (
-                    <button
-                      key={method.value}
-                      type="button"
-                      onClick={() => setPaidMethod(method.value)}
-                      className={
-                        'rounded-full px-3 py-1.5 min-h-[40px] text-sm font-medium transition-colors ' +
-                        (paidMethod === method.value
-                          ? 'bg-[#3c5e45] text-white'
-                          : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50')
-                      }
-                    >
-                      {method.label}
-                    </button>
-                  ))}
-                </div>
-                {markPaidError && (
-                  <p className="mt-2 text-xs text-red-500">{markPaidError}</p>
-                )}
-              </div>
-              <div className="mt-4 flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setMarkPaidTarget(null);
-                    setPaidMethod(null);
-                    setMarkPaidError(null);
-                  }}
-                  disabled={markPaid.isPending}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  className="bg-[#3c5e45] hover:bg-[#2d4a35]"
-                  onClick={confirmMarkPaid}
-                  disabled={!paidMethod || markPaid.isPending}
-                >
-                  {markPaid.isPending ? 'Saving...' : 'Confirm'}
-                </Button>
-              </div>
+      <CounterDialog
+        open={!!confirmState}
+        onClose={() => setConfirmState(null)}
+        title={confirmState?.title}
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setConfirmState(null)}
+              className="min-h-11 flex-1 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                confirmState?.onConfirm();
+                setConfirmState(null);
+              }}
+              className={cn(
+                'min-h-11 flex-1 rounded-xl text-sm font-semibold text-white',
+                confirmState?.destructive
+                  ? 'bg-red-600 hover:bg-red-700'
+                  : 'bg-[#2d4a35] hover:bg-[#24402b]'
+              )}
+            >
+              {confirmState?.confirmLabel}
+            </button>
+          </>
+        }
+      >
+        <p className="text-sm text-gray-600">{confirmState?.body}</p>
+      </CounterDialog>
+
+      <CounterDialog
+        open={!!markPaidTarget}
+        onClose={closeMarkPaid}
+        dismissible={!markPaid.isPending}
+        title={markPaidTarget ? `Mark ${orderLabel(markPaidTarget)} as paid` : ''}
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={closeMarkPaid}
+              disabled={markPaid.isPending}
+              className="min-h-11 flex-1 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={confirmMarkPaid}
+              disabled={!paidMethod || markPaid.isPending}
+              className="min-h-11 flex-1 rounded-xl bg-[#2d4a35] text-sm font-semibold text-white hover:bg-[#24402b] disabled:cursor-not-allowed disabled:bg-gray-300"
+            >
+              {markPaid.isPending ? 'Saving…' : 'Confirm payment'}
+            </button>
+          </>
+        }
+      >
+        {markPaidTarget && (
+          <>
+            <div className="flex items-baseline justify-between rounded-xl bg-gray-50 px-4 py-3">
+              <span className="text-sm text-gray-600">Amount due</span>
+              <span className="text-2xl font-extrabold tabular-nums text-gray-900">
+                {peso(markPaidTarget.totalAmount)}
+              </span>
             </div>
+            <p className="mt-4 text-sm font-semibold text-gray-700">
+              Payment method
+            </p>
+            <div
+              role="radiogroup"
+              aria-label="Payment method"
+              className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4"
+            >
+              {PAYMENT_METHODS.map(method => {
+                const active = paidMethod === method.value;
+                return (
+                  <button
+                    key={method.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setPaidMethod(method.value)}
+                    className={cn(
+                      'min-h-12 rounded-xl border text-sm font-semibold transition-colors',
+                      active
+                        ? 'border-[#2d4a35] bg-[#2d4a35] text-white'
+                        : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                    )}
+                  >
+                    {method.label}
+                  </button>
+                );
+              })}
+            </div>
+            {markPaidError && (
+              <p className="mt-3 text-sm text-red-600">{markPaidError}</p>
+            )}
+          </>
+        )}
+      </CounterDialog>
+
+      <CounterDialog
+        open={!!completedSale}
+        onClose={() => setCompletedSale(null)}
+        title="Payment complete"
+        footer={
+          <button
+            type="button"
+            autoFocus
+            onClick={() => setCompletedSale(null)}
+            className="min-h-12 flex-1 rounded-xl bg-[#2d4a35] text-base font-bold text-white hover:bg-[#24402b]"
+          >
+            New sale
+          </button>
+        }
+      >
+        {completedSale && (
+          <div className="space-y-4">
+            {completedSale.cashReceived !== null &&
+              completedSale.cashReceived > completedSale.order.totalAmount && (
+                <div className="rounded-2xl bg-[#2d4a35]/5 px-4 py-3 text-center">
+                  <p className="text-sm font-semibold text-[#2d4a35]">Change due</p>
+                  <p className="text-3xl font-extrabold tabular-nums text-[#2d4a35]">
+                    {peso(
+                      completedSale.cashReceived - completedSale.order.totalAmount
+                    )}
+                  </p>
+                </div>
+              )}
+            <CounterOrderReceipt
+              order={completedSale.order}
+              cashReceived={completedSale.cashReceived}
+            />
           </div>
-        </div>
-      )}
+        )}
+      </CounterDialog>
+
+      <CounterDialog
+        open={!!receiptOrder}
+        onClose={() => setReceiptOrder(null)}
+        title={receiptOrder ? orderLabel(receiptOrder) : ''}
+      >
+        {receiptOrder && <CounterOrderReceipt order={receiptOrder} />}
+      </CounterDialog>
     </div>
   );
 }

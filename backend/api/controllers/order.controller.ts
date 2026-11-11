@@ -2107,17 +2107,21 @@ export const orderController = {
 
         if (status === 'completed') {
           try {
-            // points_earned = Math.floor(earnable_amount), where
-            // earnable_amount = totalAmount - deliveryFee.
+            // points_earned = Math.floor(earnable_amount * points / pesos),
+            // where earnable_amount = totalAmount - deliveryFee and
+            // points/pesos is the owner's earn rule (Settings > Rewards).
             // The stored totalAmount INCLUDES the delivery fee, and delivery
             // fees never earn points. Pickup/reservation/counter orders carry
             // deliveryFee 0, so the whole total earns.
-            // The earn rate lives in api/config/rewards.ts. Points are only
-            // ever credited here, on a completed (paid) order — never on
-            // cart/pending orders.
+            // The rule is read at award time (defaults in api/config/rewards.ts);
+            // past orders keep the points they were already awarded.
+            // Points are only ever credited here, on a completed (paid)
+            // order — never on cart/pending orders.
+            const earnRule = await settingsService.getRewardsEarn();
             const pointsEarned = pointsEarnedForOrder(
               order.totalAmount,
-              order.deliveryFee
+              order.deliveryFee,
+              earnRule
             );
             if (pointsEarned > 0) {
               // Claim first: only the caller that flips pointsAwarded from

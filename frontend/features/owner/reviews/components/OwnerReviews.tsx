@@ -253,7 +253,7 @@ export default function OwnerReviews() {
     <div className="w-full">
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Reviews</h2>
+          <h1 className="text-2xl font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">Reviews</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Approve, reject, and reply to customer reviews. Approved reviews
             appear on the homepage.

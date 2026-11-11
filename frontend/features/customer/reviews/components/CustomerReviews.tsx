@@ -304,7 +304,7 @@ export default function CustomerReviews() {
     <div className="w-full max-w-6xl mx-auto">
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Reviews</h2>
+          <h1 className="text-2xl font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">My Reviews</h1>
           <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
             Share your experience with DonClaudio&apos;s. Reviews appear on the
             homepage once approved.

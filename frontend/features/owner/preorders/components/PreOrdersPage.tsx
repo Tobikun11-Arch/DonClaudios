@@ -2,7 +2,6 @@
 
 import {useState, type ReactNode} from 'react';
 import {
-  CalendarClock,
   CalendarDays,
   Copy,
   Eye,
@@ -278,10 +277,9 @@ export default function PreOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
-            <CalendarClock className="h-6 w-6 text-[#2d4a35] dark:text-[#7ed4a0]" />
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">
             Pre-orders
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -289,15 +287,15 @@ export default function PreOrdersPage() {
             and per time slot.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="order-last flex w-full items-center gap-2 sm:order-none sm:w-auto">
           <Button
             onClick={() => setView({kind: 'edit', id: null})}
-            className="bg-[#2d4a35] text-white hover:bg-[#3a5c44] dark:bg-[#4a7c59] dark:hover:bg-[#5a8f6a]"
+            className="flex-1 bg-[#2d4a35] text-white hover:bg-[#3a5c44] dark:bg-[#4a7c59] dark:hover:bg-[#5a8f6a] sm:flex-none"
           >
             <Plus size={16} /> New date
           </Button>
-          <OwnerNotificationBell />
         </div>
+        <OwnerNotificationBell />
       </div>
 
       {isError ? (

@@ -1,8 +1,12 @@
 /**
- * SINGLE SOURCE OF TRUTH for the loyalty points economy.
+ * Loyalty points economy: defaults, limits and the point maths.
  *
- * The owner can change every value below without touching business logic.
- * Do NOT hardcode point maths anywhere else — import from here.
+ * The EARN RATE is owner-editable in Settings > Rewards and is stored on the
+ * SiteSetting singleton (`rewardsEarnPoints` / `rewardsEarnPesos`). The values
+ * below are only the defaults used while the owner has never saved one, and
+ * the validation limits. Read the live rule with
+ * `settingsService.getRewardsEarn()` and pass it to the helpers here.
+ * Keep the point maths in this file — do not reimplement it elsewhere.
  */
 
 /* ------------------------------------------------------------------ *
@@ -10,13 +14,29 @@
  * ------------------------------------------------------------------ */
 
 /**
- * How many points a customer earns per ₱1 of EARNABLE amount.
+ * Earn rule: customers earn `rewardsEarnPoints` points for every
+ * `rewardsEarnPesos` pesos of EARNABLE amount.
  *
- * points_earned = Math.floor(earnable_amount * POINTS_PER_PESO)
+ * points_earned = Math.floor(earnable_amount * rewardsEarnPoints / rewardsEarnPesos)
  *
- * 1 => "1 point for every ₱1 you spend".
+ * {1, 1} => "1 point for every ₱1 you spend", {1, 20} => "1 point for every ₱20".
  */
-export const POINTS_PER_PESO = 1;
+export type RewardsEarnRule = {
+  rewardsEarnPoints: number;
+  rewardsEarnPesos: number;
+};
+
+/** Default earn rule (1 point per ₱1). Used when the owner never saved one. */
+export const DEFAULT_REWARDS_EARN_RULE: RewardsEarnRule = {
+  rewardsEarnPoints: 1,
+  rewardsEarnPesos: 1
+};
+
+/** Validation limits for the owner-editable earn rule (whole numbers). */
+export const REWARDS_EARN_POINTS_MIN = 1;
+export const REWARDS_EARN_POINTS_MAX = 1000;
+export const REWARDS_EARN_PESOS_MIN = 1;
+export const REWARDS_EARN_PESOS_MAX = 100_000;
 
 /**
  * The amount of an order that actually earns points.
@@ -45,14 +65,21 @@ export function earnableAmountForOrder(
 }
 
 /**
- * Points earned for an order's earnable amount. Floored per the spec:
- * points_earned = Math.floor(earnable_amount)
+ * Points earned for an order's earnable amount, floored:
+ * points_earned = Math.floor(earnable_amount * points / pesos)
  */
-export function pointsEarnedForAmount(earnableAmount: number): number {
+export function pointsEarnedForAmount(
+  earnableAmount: number,
+  rule: RewardsEarnRule = DEFAULT_REWARDS_EARN_RULE
+): number {
   if (!Number.isFinite(earnableAmount) || earnableAmount <= 0) {
     return 0;
   }
-  return Math.floor(earnableAmount * POINTS_PER_PESO);
+  const {rewardsEarnPoints: points, rewardsEarnPesos: pesos} = rule;
+  if (!(points > 0) || !(pesos > 0)) {
+    return 0;
+  }
+  return Math.floor((earnableAmount * points) / pesos);
 }
 
 /**
@@ -60,9 +87,10 @@ export function pointsEarnedForAmount(earnableAmount: number): number {
  */
 export function pointsEarnedForOrder(
   totalAmount: number,
-  deliveryFee?: number | null
+  deliveryFee: number | null | undefined,
+  rule: RewardsEarnRule = DEFAULT_REWARDS_EARN_RULE
 ): number {
-  return pointsEarnedForAmount(earnableAmountForOrder(totalAmount, deliveryFee));
+  return pointsEarnedForAmount(earnableAmountForOrder(totalAmount, deliveryFee), rule);
 }
 
 /* ------------------------------------------------------------------ *
@@ -135,6 +163,13 @@ export function pesoValueOfPoints(points: number): number {
   return (points / 100) * POINTS_PER_PESO_REWARD_VALUE;
 }
 
-/** The banner / tooltip copy. Keep in sync with frontend/config/rewards.ts */
-export const REWARDS_EARN_COPY =
-  'Earn 1 point for every ₱1 you spend (delivery fees not included). Redeem them for your favorite dishes!';
+/**
+ * The banner / tooltip copy for an earn rule. The customer UI builds the same
+ * text with `buildEarnBannerText` in frontend/config/rewards.ts.
+ */
+export function buildRewardsEarnCopy(
+  rule: RewardsEarnRule = DEFAULT_REWARDS_EARN_RULE
+): string {
+  const {rewardsEarnPoints: points, rewardsEarnPesos: pesos} = rule;
+  return `Earn ${points.toLocaleString('en-PH')} point${points === 1 ? '' : 's'} for every ₱${pesos.toLocaleString('en-PH')} you spend (delivery fees not included). Redeem them for your favorite dishes!`;
+}

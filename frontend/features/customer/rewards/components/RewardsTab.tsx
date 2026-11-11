@@ -11,6 +11,7 @@ import {
   useRewardsQuery,
   useRedeemRewardMutation
 } from '@/lib/hooks/rewards/useRewards';
+import {useRewardsEarnQuery} from '@/lib/hooks/useRewardsEarn';
 import type {RewardProduct, RewardRedemption} from '@/lib/api/rewardsApi';
 import {formatPoints} from '@/lib/utils/formatPoints';
 import {
@@ -28,6 +29,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default function RewardsTab() {
   const rewardsQuery = useRewardsQuery();
   const redeemMutation = useRedeemRewardMutation();
+  const {rule: earnRule} = useRewardsEarnQuery();
   const [selected, setSelected] = useState<RewardProduct | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -119,7 +121,7 @@ export default function RewardsTab() {
               </span>
             </p>
             <p className="mt-2 text-sm text-[#b8d4c0]">
-              {buildEarnBannerText()}
+              {buildEarnBannerText(earnRule.rewardsEarnPoints, earnRule.rewardsEarnPesos)}
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:items-end">

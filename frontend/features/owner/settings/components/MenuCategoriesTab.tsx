@@ -315,8 +315,7 @@ export function MenuCategoriesTab() {
         className="hidden"
       />
       <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">
-        <h2 className="text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">Menu Categories</h2>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Your category list is what Products use when adding or editing menu
           items. The chosen type decides whether Ingredient/Allergen tags apply,
           and the unit is locked to the category for stock tracking.

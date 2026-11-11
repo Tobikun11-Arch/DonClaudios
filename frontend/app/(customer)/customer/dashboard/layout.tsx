@@ -298,20 +298,19 @@ export default function DashboardLayout({
             md:bg-transparent md:p-0 md:dark:bg-transparent
           `}
         >
+          {/* Logo only: the Order tab's banner already spells out the name. */}
           <Link
             href="/customer/dashboard"
-            className="flex min-w-0 items-center gap-2 md:hidden"
+            aria-label={`${brand.name} home`}
+            className="flex items-center md:hidden"
           >
             <Image
               src={brand.logo}
               alt=""
-              width={32}
-              height={32}
-              className="h-8 w-8 shrink-0 object-contain"
+              width={36}
+              height={36}
+              className="h-9 w-9 shrink-0 object-contain"
             />
-            <span className="truncate text-sm font-bold text-[#2d4a35] dark:text-[#7ed4a0]">
-              {brand.name}
-            </span>
           </Link>
           <CustomerNotificationBell />
         </header>

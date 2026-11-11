@@ -148,7 +148,7 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
   return (
     <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">
       <div className="mb-5 flex items-center justify-between gap-2">
-        <h2 className="text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">Store Status</h2>
+        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Right now</p>
         <span
           className={cn(
             'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide',

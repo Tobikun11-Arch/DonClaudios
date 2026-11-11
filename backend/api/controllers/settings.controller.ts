@@ -57,6 +57,30 @@ export const settingsController = {
     }
   },
 
+  async getRewardsEarn(_req: Request, res: Response, next: NextFunction) {
+    try {
+      const rewardsEarn = await settingsService.getRewardsEarn();
+      res.status(200).json({
+        rewardsEarn,
+        defaults: settingsService.defaultRewardsEarn()
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateRewardsEarn(req: Request, res: Response, next: NextFunction) {
+    try {
+      const rewardsEarn = await settingsService.updateRewardsEarn(req.body);
+      res.status(200).json({
+        rewardsEarn,
+        defaults: settingsService.defaultRewardsEarn()
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async getNotificationPreferences(req: Request, res: Response, next: NextFunction) {
     try {
       if (!req.auth) {
