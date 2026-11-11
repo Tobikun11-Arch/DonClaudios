@@ -338,7 +338,7 @@ export default function CustomerCartDrawer() {
 
       <div
         className={
-          'absolute bg-white shadow-2xl flex flex-col ' +
+          'absolute bg-white shadow-2xl flex flex-col dark:bg-gray-900 ' +
           'w-full md:w-105 ' +
           'bottom-0 md:bottom-auto md:top-0 md:right-0 ' +
           'h-[85dvh] md:h-dvh ' +
@@ -347,21 +347,21 @@ export default function CustomerCartDrawer() {
         role="dialog"
         aria-modal="true"
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b">
+        <div className="flex items-center justify-between px-5 py-4 border-b dark:border-gray-800">
           <div className="min-w-0">
-            <p className="text-lg font-bold text-gray-900">
+            <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
               My Cart ({items.length} {items.length === 1 ? 'item' : 'items'})
             </p>
             <button
               type="button"
-              className="mt-0.5 w-full inline-flex items-center justify-between gap-2 text-left text-xs font-semibold text-[#c30010]"
+              className="mt-0.5 w-full inline-flex items-center justify-between gap-2 text-left text-xs font-semibold text-[#c30010] dark:text-red-400"
               onClick={openOrderDetails}
             >
               <span className="min-w-0 truncate">{summaryText}</span>
               <ChevronDown className="h-4 w-4 shrink-0" />
             </button>
             {orderType === 'Delivery' && items.length > 0 ? (
-              <p className="mt-1 text-[11px] font-medium text-gray-600">
+              <p className="mt-1 text-[11px] font-medium text-gray-600 dark:text-gray-300">
                 {deliveryMode === 'LALAMOVE'
                   ? "You'll book your own Lalamove courier for this order. Courier fee is paid by you directly to Lalamove."
                   : "Free delivery by DonClaudio's 🎉"}
@@ -383,19 +383,19 @@ export default function CustomerCartDrawer() {
 
         <div className="flex-1 overflow-y-auto px-4 py-3">
           {cartQuery.isLoading && (
-            <div className="text-sm text-gray-500 py-10 text-center">
+            <div className="text-sm text-gray-500 py-10 text-center dark:text-gray-400">
               Loading cart...
             </div>
           )}
 
           {cartQuery.isError && (
-            <div className="text-sm text-gray-500 py-10 text-center">
+            <div className="text-sm text-gray-500 py-10 text-center dark:text-gray-400">
               Failed to load cart.
             </div>
           )}
 
           {!cartQuery.isLoading && !cartQuery.isError && items.length === 0 && (
-            <div className="text-sm text-gray-500 py-10 text-center">
+            <div className="text-sm text-gray-500 py-10 text-center dark:text-gray-400">
               Your cart is empty.
             </div>
           )}
@@ -405,9 +405,9 @@ export default function CustomerCartDrawer() {
               {items.map(item => (
                 <div
                   key={item.productId}
-                  className="flex items-start gap-3 rounded-2xl border border-gray-100 bg-white p-3"
+                  className="flex items-start gap-3 rounded-2xl border border-gray-100 bg-white p-3 dark:border-gray-800 dark:bg-gray-900"
                 >
-                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-gray-50">
+                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-gray-800/50">
                     <Image
                       src={
                         item.imageUrl && item.imageUrl.length > 0
@@ -424,7 +424,7 @@ export default function CustomerCartDrawer() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 line-clamp-2">
+                        <p className="text-sm font-semibold text-gray-900 line-clamp-2 dark:text-gray-100">
                           {item.name}
                         </p>
                         {(() => {
@@ -442,8 +442,8 @@ export default function CustomerCartDrawer() {
                               className={cn(
                                 'mt-0.5 text-[11px] font-semibold',
                                 display.closed || !display.orderable
-                                  ? 'text-gray-500'
-                                  : 'text-purple-700'
+                                  ? 'text-gray-500 dark:text-gray-400'
+                                  : 'text-purple-700 dark:text-purple-300'
                               )}
                             >
                               {label}
@@ -452,7 +452,7 @@ export default function CustomerCartDrawer() {
                         })()}
                         <button
                           type="button"
-                          className="mt-1 text-xs font-semibold text-[#c30010]"
+                          className="mt-1 text-xs font-semibold text-[#c30010] dark:text-red-400"
                           onClick={() => requestRemoveItem(item)}
                           disabled={removeItemMutation.isPending}
                         >
@@ -471,7 +471,7 @@ export default function CustomerCartDrawer() {
 
                         return (
                           <div className="shrink-0 text-right">
-                            <p className="text-sm font-bold text-gray-900">
+                            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
                               ₱{unitPrice}.00
                             </p>
                             {isDiscounted ? (
@@ -485,10 +485,10 @@ export default function CustomerCartDrawer() {
                     </div>
 
                     <div className="mt-3 flex items-center justify-end">
-                      <div className="inline-flex items-center rounded-full border border-gray-200 overflow-hidden">
+                      <div className="inline-flex items-center rounded-full border border-gray-200 overflow-hidden dark:border-gray-800">
                         <button
                           type="button"
-                          className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50"
+                          className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800"
                           onClick={() => {
                             if (item.quantity <= 1) {
                               requestRemoveItem(item);
@@ -507,12 +507,12 @@ export default function CustomerCartDrawer() {
                         >
                           <Minus className="h-4 w-4" />
                         </button>
-                        <div className="min-w-10 text-center text-sm font-semibold text-gray-900">
+                        <div className="min-w-10 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">
                           {item.quantity}
                         </div>
                         <button
                           type="button"
-                          className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                          className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed dark:hover:bg-gray-800"
                           onClick={() => increaseItem(item)}
                           aria-label="Increase"
                           disabled={
@@ -529,7 +529,7 @@ export default function CustomerCartDrawer() {
               ))}
 
               <div className="pt-2 space-y-2">
-                <div className="flex items-center justify-between text-sm text-gray-700">
+                <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
                   <span>Subtotal</span>
                   <span className="font-semibold">₱{subtotal}.00</span>
                 </div>
@@ -538,10 +538,10 @@ export default function CustomerCartDrawer() {
           )}
         </div>
 
-        <div className="border-t px-5 py-4 bg-white">
+        <div className="border-t px-5 py-4 bg-white dark:border-gray-800 dark:bg-gray-900">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-gray-700">Total</p>
-            <p className="text-lg font-extrabold text-gray-900">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Total</p>
+            <p className="text-lg font-extrabold text-gray-900 dark:text-gray-100">
               ₱{items.length > 0 ? total : 0}.00
             </p>
           </div>
@@ -565,7 +565,7 @@ export default function CustomerCartDrawer() {
           aria-modal="true"
         >
           <div
-            className="w-full max-w-[520px] max-h-[calc(100vh-32px)] rounded-[24px] bg-white shadow-[0_24px_60px_rgba(0,0,0,.35)] overflow-hidden flex flex-col"
+            className="w-full max-w-[520px] max-h-[calc(100vh-32px)] rounded-[24px] bg-white shadow-[0_24px_60px_rgba(0,0,0,.35)] overflow-hidden flex flex-col dark:bg-gray-900 dark:[--brand-green-tint:#7ed4a01f]! dark:[--brand-green-text:#7ed4a0]! dark:[--border:#374151]! dark:[--surface-muted:#1f2937]! dark:[--surface-soft:#1f293780]! dark:[--surface-card:#111827]! dark:[--text:#f3f4f6]! dark:[--text-muted:#9ca3af]!"
             onClick={e => e.stopPropagation()}
             style={
               {
@@ -614,7 +614,7 @@ export default function CustomerCartDrawer() {
               {(['Delivery', 'Pick-up', 'Reservation'] as const).map(type => {
                 const isSelected = draftOrderType === type;
                 const baseClasses =
-                  'relative flex flex-1 flex-col items-center gap-2 rounded-2xl border-[1.5px] bg-white px-2 pb-4 pt-5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2';
+                  'relative flex flex-1 flex-col items-center gap-2 rounded-2xl border-[1.5px] bg-white px-2 pb-4 pt-5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2 dark:ring-offset-gray-900';
                 return (
                   <button
                     key={type}
@@ -640,7 +640,7 @@ export default function CustomerCartDrawer() {
                         : 'var(--border)',
                       backgroundColor: isSelected
                         ? 'var(--brand-green-tint)'
-                        : 'white',
+                        : 'var(--surface-card, white)',
                       boxShadow: isSelected
                         ? '0 0 0 1px var(--brand-green)'
                         : undefined,
@@ -672,7 +672,9 @@ export default function CustomerCartDrawer() {
                         backgroundColor: isSelected
                           ? 'var(--brand-green)'
                           : 'var(--surface-muted)',
-                        color: isSelected ? 'white' : 'var(--brand-green)'
+                        color: isSelected
+                          ? 'white'
+                          : 'var(--brand-green-text, var(--brand-green))'
                       }}
                     >
                       {type === 'Delivery' ? (
@@ -720,7 +722,7 @@ export default function CustomerCartDrawer() {
                       Pick up at
                     </span>
                     <div
-                      className="flex items-center gap-3 rounded-xl border-[1.5px] p-3.5"
+                      className="flex items-center gap-3 rounded-xl border-[1.5px] p-3.5 dark:border-gray-800"
                       style={{
                         borderColor: 'var(--border)',
                         backgroundColor: 'var(--surface-soft)'
@@ -730,7 +732,7 @@ export default function CustomerCartDrawer() {
                         className="flex h-10 w-10 items-center justify-center rounded-[14px] shrink-0"
                         style={{
                           backgroundColor: 'var(--surface-muted)',
-                          color: 'var(--brand-green)'
+                          color: 'var(--brand-green-text, var(--brand-green))'
                         }}
                       >
                         <svg
@@ -782,7 +784,7 @@ export default function CustomerCartDrawer() {
                         value={draftReservationDate}
                         min={defaultScheduleDate}
                         onChange={e => setDraftReservationDate(e.target.value)}
-                        className="h-12 w-full rounded-xl border-[1.5px] px-3.5 text-[15px] font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--brand-green)] focus:ring-offset-0"
+                        className="h-12 w-full rounded-xl border-[1.5px] px-3.5 text-[15px] font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--brand-green)] focus:ring-offset-0 dark:bg-gray-800 dark:scheme-dark dark:text-gray-100 dark:border-gray-700"
                         style={{
                           borderColor: 'var(--border)',
                           color: 'var(--text)'
@@ -802,7 +804,7 @@ export default function CustomerCartDrawer() {
                         type="time"
                         value={draftReservationTime}
                         onChange={e => setDraftReservationTime(e.target.value)}
-                        className="h-12 w-full rounded-xl border-[1.5px] px-3.5 text-[15px] font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--brand-green)] focus:ring-offset-0"
+                        className="h-12 w-full rounded-xl border-[1.5px] px-3.5 text-[15px] font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--brand-green)] focus:ring-offset-0 dark:bg-gray-800 dark:scheme-dark dark:text-gray-100 dark:border-gray-700"
                         style={{
                           borderColor: 'var(--border)',
                           color: 'var(--text)'
@@ -822,7 +824,7 @@ export default function CustomerCartDrawer() {
                       <button
                         type="button"
                         aria-label="Fewer guests"
-                        className="flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] bg-white transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2"
+                        className="flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] bg-white transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2 dark:bg-gray-900 dark:ring-offset-gray-900 dark:hover:bg-gray-800 dark:border-gray-800"
                         style={{borderColor: 'var(--border)', minHeight: 44}}
                         onClick={() =>
                           setDraftReservationGuests(
@@ -838,7 +840,7 @@ export default function CustomerCartDrawer() {
                       <button
                         type="button"
                         aria-label="More guests"
-                        className="flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] bg-white transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2"
+                        className="flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] bg-white transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2 dark:bg-gray-900 dark:ring-offset-gray-900 dark:hover:bg-gray-800 dark:border-gray-800"
                         style={{borderColor: 'var(--border)', minHeight: 44}}
                         onClick={() =>
                           setDraftReservationGuests(
@@ -861,14 +863,14 @@ export default function CustomerCartDrawer() {
             </div>
 
             <div
-              className="mt-2 flex items-center justify-end gap-2.5 border-t px-[28px] py-[28px]"
+              className="mt-2 flex items-center justify-end gap-2.5 border-t px-[28px] py-[28px] dark:border-gray-800!"
               style={{borderColor: '#eee'}}
             >
               <Button
                 type="button"
                 variant="outline"
                 onClick={cancelOrderDetails}
-                className="h-12 rounded-xl border-[1.5px] px-6 text-[15px] font-bold"
+                className="h-12 rounded-xl border-[1.5px] px-6 text-[15px] font-bold dark:border-gray-800"
                 style={{borderColor: 'var(--border)'}}
               >
                 Cancel

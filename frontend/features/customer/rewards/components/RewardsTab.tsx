@@ -138,12 +138,12 @@ export default function RewardsTab() {
       {/* Rewards catalog */}
       <div className="mt-8">
         <div className="flex items-center gap-2">
-          <Gift className="h-5 w-5 text-[#2d4a35]" />
-          <h2 className="text-xl font-bold text-gray-900">
+          <Gift className="h-5 w-5 text-[#2d4a35] dark:text-[#7ed4a0]" />
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
             Redeem with your points
           </h2>
         </div>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Pick a product below and spend your points to get it.
         </p>
         <p className="mt-1 text-xs text-gray-400">
@@ -160,7 +160,7 @@ export default function RewardsTab() {
                 className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
                   category === cat
                     ? 'bg-[#2d4a35] text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300'
                 }`}
               >
                 {cat}
@@ -170,20 +170,20 @@ export default function RewardsTab() {
         )}
 
         {rewardsQuery.isLoading ? (
-          <div className="mt-6 flex flex-col items-center justify-center rounded-3xl bg-white py-16 shadow-sm">
-            <Loader2 className="h-8 w-8 animate-spin text-[#2d4a35]" />
-            <p className="mt-3 text-sm text-gray-500">Loading rewards...</p>
+          <div className="mt-6 flex flex-col items-center justify-center rounded-3xl bg-white py-16 shadow-sm dark:bg-gray-900">
+            <Loader2 className="h-8 w-8 animate-spin text-[#2d4a35] dark:text-[#7ed4a0]" />
+            <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading rewards...</p>
           </div>
         ) : rewardsQuery.isError ? (
-          <div className="mt-6 rounded-3xl bg-white p-8 text-center shadow-sm">
-            <p className="text-sm text-red-500">
+          <div className="mt-6 rounded-3xl bg-white p-8 text-center shadow-sm dark:bg-gray-900">
+            <p className="text-sm text-red-500 dark:text-red-400">
               Failed to load rewards. Please try again.
             </p>
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div className="mt-6 rounded-3xl bg-white p-8 text-center shadow-sm">
+          <div className="mt-6 rounded-3xl bg-white p-8 text-center shadow-sm dark:bg-gray-900">
             <Gift className="mx-auto h-10 w-10 text-gray-300" />
-            <p className="mt-3 text-sm text-gray-500">No rewards available.</p>
+            <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">No rewards available.</p>
           </div>
         ) : (
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -193,9 +193,9 @@ export default function RewardsTab() {
               return (
                 <div
                   key={product._id}
-                  className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 transition-shadow hover:shadow-md"
+                  className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 transition-shadow hover:shadow-md dark:bg-gray-900 dark:ring-gray-800"
                 >
-                  <div className="relative h-40 w-full bg-gray-100">
+                  <div className="relative h-40 w-full bg-gray-100 dark:bg-gray-800">
                     {product.imageUrl ? (
                       <Image
                         src={product.imageUrl}
@@ -217,7 +217,7 @@ export default function RewardsTab() {
                     )}
                   </div>
                   <div className="flex flex-1 flex-col p-4">
-                    <p className="font-bold text-gray-900">{product.name}</p>
+                    <p className="font-bold text-gray-900 dark:text-gray-100">{product.name}</p>
                     <p className="mt-0.5 text-xs text-gray-400">
                       {product.category}
                     </p>
@@ -226,7 +226,7 @@ export default function RewardsTab() {
                       <span className="font-extrabold text-[#c9a227]">
                         {formatPoints(product.pointsRequired)}
                       </span>
-                      <span className="text-sm text-gray-500">points</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">points</span>
                     </div>
                     <Button
                       type="button"
@@ -260,19 +260,19 @@ export default function RewardsTab() {
           onClick={() => setConfirmOpen(false)}
         >
           <div
-            className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
+            className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-lg font-bold text-gray-900">Redeem reward?</p>
-                <p className="mt-2 text-sm leading-relaxed text-gray-500">
+                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">Redeem reward?</p>
+                <p className="mt-2 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
                   Spend{' '}
                   <span className="font-bold text-[#c9a227]">
                     {formatPoints(selected.pointsRequired)} points
                   </span>{' '}
                   to get{' '}
-                  <span className="font-semibold text-gray-900">
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
                     {selected.name}
                   </span>
                   ?
@@ -331,15 +331,15 @@ export default function RewardsTab() {
           onClick={() => setHistoryOpen(false)}
         >
           <div
-            className="flex max-h-[80vh] w-full max-w-md flex-col rounded-3xl bg-white p-6 shadow-2xl"
+            className="flex max-h-[80vh] w-full max-w-md flex-col rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-lg font-bold text-gray-900">
+                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                   Redemption History
                 </p>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   Products you redeemed with your points.
                 </p>
               </div>
@@ -359,15 +359,15 @@ export default function RewardsTab() {
               {redemptions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <History className="h-10 w-10 text-gray-300" />
-                  <p className="mt-3 text-sm text-gray-500">
+                  <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
                     No redemptions yet.
                   </p>
                 </div>
               ) : (
-                <ul className="divide-y divide-gray-100">
+                <ul className="divide-y divide-gray-100 dark:divide-gray-800">
                   {redemptions.map(redemption => (
                     <li key={redemption._id} className="flex items-center gap-3 py-3">
-                      <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
+                      <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800">
                         {redemption.productImage ? (
                           <Image
                             src={redemption.productImage}
@@ -383,7 +383,7 @@ export default function RewardsTab() {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-semibold text-gray-900">
+                        <p className="truncate font-semibold text-gray-900 dark:text-gray-100">
                           {redemption.productName}
                         </p>
                         <p className="text-xs text-gray-400">
@@ -399,10 +399,10 @@ export default function RewardsTab() {
                           <span
                             className={`mt-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
                               redemption.status === 'fulfilled'
-                                ? 'bg-emerald-100 text-emerald-700'
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
                                 : redemption.status === 'cancelled'
-                                  ? 'bg-red-100 text-red-600'
-                                  : 'bg-amber-100 text-amber-700'
+                                  ? 'bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-300'
+                                  : 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
                             }`}
                           >
                             {redemption.status === 'fulfilled' && (
@@ -417,7 +417,7 @@ export default function RewardsTab() {
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 w-6 rounded-full p-0 text-[#2d4a35] hover:bg-[#2d4a35] hover:text-white"
+                                className="h-6 w-6 rounded-full p-0 text-[#2d4a35] hover:bg-[#2d4a35] hover:text-white dark:text-[#7ed4a0] dark:hover:bg-[#2d4a35] dark:hover:text-white"
                                 onClick={() => setQrView(redemption)}
                                 aria-label="Show QR code"
                               >
@@ -444,13 +444,13 @@ export default function RewardsTab() {
         onClick={() => setRedeemedReward(null)}
       >
         <div
-          className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
+          className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900"
           onClick={e => e.stopPropagation()}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <QrCode className="h-5 w-5 text-[#2d4a35]" />
-              <p className="text-lg font-bold text-gray-900">
+              <QrCode className="h-5 w-5 text-[#2d4a35] dark:text-[#7ed4a0]" />
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                 Your Redemption QR
               </p>
             </div>
@@ -486,12 +486,12 @@ export default function RewardsTab() {
             </Button>
           </div>
 
-          <div className="mt-4 rounded-xl bg-amber-50 p-3 text-center">
-            <p className="flex items-center justify-center gap-1.5 text-xs font-bold text-amber-800">
+          <div className="mt-4 rounded-xl bg-amber-50 p-3 text-center dark:bg-amber-500/10">
+            <p className="flex items-center justify-center gap-1.5 text-xs font-bold text-amber-800 dark:text-amber-300">
               <Store className="h-4 w-4" />
               In-Store Only
             </p>
-            <p className="mt-1 text-xs text-amber-700">
+            <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
               Rewards can only be redeemed at our physical store. Show this QR
               code at the counter to claim your reward.
             </p>
@@ -513,13 +513,13 @@ export default function RewardsTab() {
         onClick={() => setQrView(null)}
       >
         <div
-          className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
+          className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900"
           onClick={e => e.stopPropagation()}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <QrCode className="h-5 w-5 text-[#2d4a35]" />
-              <p className="text-lg font-bold text-gray-900">
+              <QrCode className="h-5 w-5 text-[#2d4a35] dark:text-[#7ed4a0]" />
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                 Redemption QR
               </p>
             </div>
@@ -555,12 +555,12 @@ export default function RewardsTab() {
             </Button>
           </div>
 
-          <div className="mt-4 rounded-xl bg-amber-50 p-3 text-center">
-            <p className="flex items-center justify-center gap-1.5 text-xs font-bold text-amber-800">
+          <div className="mt-4 rounded-xl bg-amber-50 p-3 text-center dark:bg-amber-500/10">
+            <p className="flex items-center justify-center gap-1.5 text-xs font-bold text-amber-800 dark:text-amber-300">
               <Store className="h-4 w-4" />
               In-Store Only
             </p>
-            <p className="mt-1 text-xs text-amber-700">
+            <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
               This reward can only be claimed in-store. Present this QR code at
               the counter to redeem.
             </p>

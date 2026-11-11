@@ -57,7 +57,7 @@ function PreOrderPickupCard({order}: {order: OrderHistoryEntry}) {
   const open = order.orderStatus !== 'cancelled' && order.orderStatus !== 'completed';
   const canCancel = canCustomerCancel(order);
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#d7e3da] bg-white">
+    <div className="overflow-hidden rounded-2xl border border-[#d7e3da] bg-white dark:border-gray-800 dark:bg-gray-900">
       <div className="flex items-center gap-4 bg-[#3c5e45] px-5 py-4 text-white">
         <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-white/10">
           <span className="text-[0.65rem] font-semibold uppercase tracking-wider text-[#fbd897]">
@@ -75,20 +75,20 @@ function PreOrderPickupCard({order}: {order: OrderHistoryEntry}) {
           </p>
         </div>
       </div>
-      <div className="space-y-2 px-5 py-4 text-sm text-gray-700">
+      <div className="space-y-2 px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
         <p className="flex items-start gap-2">
           {lalamove ? (
-            <Bike className="mt-0.5 h-4 w-4 shrink-0 text-[#2d4a35]" />
+            <Bike className="mt-0.5 h-4 w-4 shrink-0 text-[#2d4a35] dark:text-[#7ed4a0]" />
           ) : (
-            <Store className="mt-0.5 h-4 w-4 shrink-0 text-[#2d4a35]" />
+            <Store className="mt-0.5 h-4 w-4 shrink-0 text-[#2d4a35] dark:text-[#7ed4a0]" />
           )}
           {lalamove
             ? 'Lalamove: please book your own rider to collect at the store within your time slot.'
             : 'Self pick-up at the store within your time slot.'}
         </p>
         {open ? (
-          <p className="flex items-start gap-2 text-gray-500">
-            <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-[#2d4a35]" />
+          <p className="flex items-start gap-2 text-gray-500 dark:text-gray-400">
+            <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-[#2d4a35] dark:text-[#7ed4a0]" />
             {canCancel
               ? `You can cancel until ${manilaDate(new Date(new Date(po.cancelDeadline).getTime() - 1).toISOString(), {month: 'long', day: 'numeric'})}.`
               : 'The cancellation period for this pre-order has ended.'}
@@ -286,12 +286,12 @@ export default function OrderTracking({
             />
           </div>
         ) : query.isError || !order ? (
-          <div className="rounded-2xl bg-white shadow p-10 text-center">
+          <div className="rounded-2xl bg-white shadow p-10 text-center dark:bg-gray-900">
             <AlertTriangle className="h-10 w-10 mx-auto text-gray-400" />
-            <p className="mt-4 text-base font-bold text-gray-900">
+            <p className="mt-4 text-base font-bold text-gray-900 dark:text-gray-100">
               Order not found
             </p>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               {variant === 'customer'
                 ? 'We could not load this order. Make sure you are signed in with the account that placed it.'
                 : 'We couldn\u2019t find this order. Please check the link or the phone number you entered.'}
@@ -308,7 +308,7 @@ export default function OrderTracking({
         ) : (
           <>
             {order.orderStatus === 'pending' ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
                 <p className="font-semibold">Awaiting confirmation call</p>
                 <p className="mt-1">
                   Our team will call{' '}
@@ -359,8 +359,8 @@ function CustomerEtaPanel({order}: {order: OrderHistoryEntry}) {
 
   if (order.orderStatus === 'cancelled' || order.orderStatus === 'completed') {
     return (
-      <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-        <p className="text-sm font-semibold text-gray-700">
+      <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-800/50">
+        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           This order took about {formatMinutes(estimate as number)} to prepare.
         </p>
       </div>
@@ -369,11 +369,11 @@ function CustomerEtaPanel({order}: {order: OrderHistoryEntry}) {
 
   if (isOverdue) {
     return (
-      <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-        <p className="text-sm font-bold text-amber-800">
+      <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-500/30 dark:bg-amber-500/10">
+        <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
           Your order is taking longer than usual
         </p>
-        <p className="mt-1 text-sm text-amber-700">
+        <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
           We expected it in about {formatMinutes((estimate as number) + OVERDUE_GRACE_MINUTES)}{' '}
           and the kitchen is still working on it. Sorry for the wait — you can
           follow the live status below, and our team is aware.
@@ -384,11 +384,11 @@ function CustomerEtaPanel({order}: {order: OrderHistoryEntry}) {
 
   if (isRunning && remaining !== null) {
     return (
-      <div className="mt-5 rounded-xl border border-[#3c5e45]/20 bg-[#3c5e45]/5 px-4 py-3">
-        <p className="text-sm font-bold text-[#2d4a35]">
+      <div className="mt-5 rounded-xl border border-[#3c5e45]/20 bg-[#3c5e45]/5 px-4 py-3 dark:border-[#7ed4a0]/30 dark:bg-[#7ed4a0]/10">
+        <p className="text-sm font-bold text-[#2d4a35] dark:text-[#7ed4a0]">
           Ready in about {formatMinutes(remaining)}
         </p>
-        <p className="mt-1 text-sm text-[#2d4a35]/80">
+        <p className="mt-1 text-sm text-[#2d4a35]/80 dark:text-[#7ed4a0]/80">
           Started preparing at{' '}
           {order.prepTiming?.preparingAt
             ? new Date(order.prepTiming.preparingAt).toLocaleTimeString([], {
@@ -403,11 +403,11 @@ function CustomerEtaPanel({order}: {order: OrderHistoryEntry}) {
   }
 
   return (
-    <div className="mt-5 rounded-xl border border-gray-200 bg-white px-4 py-3">
-      <p className="text-sm font-semibold text-gray-900">
+    <div className="mt-5 rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
+      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
         Estimated prep time: {formatMinutes(estimate as number)}
       </p>
-      <p className="mt-1 text-sm text-gray-500">
+      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
         The countdown starts once the kitchen begins preparing your order.
       </p>
     </div>
@@ -421,9 +421,9 @@ function StatusTrackerCard({order}: {order: OrderHistoryEntry}) {
   const currentIndex = order.orderStatus === 'pending' ? -1 : statusIndex;
 
   return (
-    <div className="rounded-2xl bg-white shadow p-6 sm:p-8">
+    <div className="rounded-2xl bg-white shadow p-6 sm:p-8 dark:bg-gray-900">
       <div className="flex items-center gap-3">
-        <div className="relative w-12 h-12 rounded-full bg-[#3c5e45]/10 overflow-hidden shrink-0">
+        <div className="relative w-12 h-12 rounded-full bg-[#3c5e45]/10 overflow-hidden shrink-0 dark:bg-[#7ed4a0]/10">
           <Image
             src={brand.logo}
             alt="DonClaudio's"
@@ -432,16 +432,16 @@ function StatusTrackerCard({order}: {order: OrderHistoryEntry}) {
           />
         </div>
         <div>
-          <p className="text-sm font-bold text-gray-900">Order status</p>
-          <p className="text-xs text-gray-500">
+          <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Order status</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             {STORE_NAME} • {typeDisplay(order)}
           </p>
         </div>
       </div>
 
       {order.orderStatus === 'pending' && (
-        <div className="mt-5 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
-          <p className="text-sm font-semibold text-amber-800">
+        <div className="mt-5 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 dark:bg-amber-500/10 dark:border-amber-500/30">
+          <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
             Waiting for the store to confirm your order
           </p>
         </div>
@@ -463,7 +463,7 @@ function StatusTrackerCard({order}: {order: OrderHistoryEntry}) {
                       ? 'mt-1 h-5 w-5 rounded-full bg-[#3c5e45] ring-4 ring-[#3c5e45]/20'
                       : isPast
                         ? 'mt-1.5 h-4 w-4 rounded-full bg-gray-400'
-                        : 'mt-1.5 h-4 w-4 rounded-full border-2 border-gray-300 bg-white'
+                        : 'mt-1.5 h-4 w-4 rounded-full border-2 border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900'
                   }
                 />
                 {!isLast && (
@@ -471,7 +471,7 @@ function StatusTrackerCard({order}: {order: OrderHistoryEntry}) {
                     className={
                       isPast || isCurrent
                         ? 'w-0.5 flex-1 min-h-8 bg-[#3c5e45]'
-                        : 'w-0.5 flex-1 min-h-8 bg-gray-200'
+                        : 'w-0.5 flex-1 min-h-8 bg-gray-200 dark:bg-gray-800'
                     }
                   />
                 )}
@@ -480,9 +480,9 @@ function StatusTrackerCard({order}: {order: OrderHistoryEntry}) {
                 <p
                   className={
                     isCurrent
-                      ? 'text-sm font-bold text-gray-900'
+                      ? 'text-sm font-bold text-gray-900 dark:text-gray-100'
                       : isPast
-                        ? 'text-sm text-gray-500'
+                        ? 'text-sm text-gray-500 dark:text-gray-400'
                         : 'text-sm text-gray-400'
                   }
                 >
@@ -494,9 +494,9 @@ function StatusTrackerCard({order}: {order: OrderHistoryEntry}) {
         })}
       </div>
 
-      <div className="mt-4 pt-5 border-t border-gray-100 flex items-center gap-2 text-sm text-gray-600">
+      <div className="mt-4 pt-5 border-t border-gray-100 flex items-center gap-2 text-sm text-gray-600 dark:border-gray-800 dark:text-gray-300">
         <Clock className="h-4 w-4 text-gray-400" />
-        <span className="font-semibold text-gray-900">Estimated time </span>
+        <span className="font-semibold text-gray-900 dark:text-gray-100">Estimated time </span>
         <span>
           Check back on this page for the latest update on your order.
         </span>
@@ -507,18 +507,18 @@ function StatusTrackerCard({order}: {order: OrderHistoryEntry}) {
 
 function CancelledCard({order}: {order: OrderHistoryEntry}) {
   return (
-    <div className="rounded-2xl bg-red-50 border border-red-200 shadow p-8 text-center">
-      <div className="h-14 w-14 mx-auto rounded-full bg-red-100 flex items-center justify-center">
-        <XCircle className="h-7 w-7 text-red-600" />
+    <div className="rounded-2xl bg-red-50 border border-red-200 shadow p-8 text-center dark:bg-red-500/10 dark:border-red-500/30">
+      <div className="h-14 w-14 mx-auto rounded-full bg-red-100 flex items-center justify-center dark:bg-red-500/15">
+        <XCircle className="h-7 w-7 text-red-600 dark:text-red-300" />
       </div>
-      <p className="mt-4 text-lg font-bold text-gray-900">
+      <p className="mt-4 text-lg font-bold text-gray-900 dark:text-gray-100">
         This order was cancelled
       </p>
-      <p className="mt-1 text-sm text-gray-600">
+      <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
         No further updates will be made to this order.
       </p>
       {order.cancelReason?.length ? (
-        <p className="mt-4 inline-block rounded-full bg-white border border-red-200 px-4 py-1.5 text-xs font-semibold text-red-600">
+        <p className="mt-4 inline-block rounded-full bg-white border border-red-200 px-4 py-1.5 text-xs font-semibold text-red-600 dark:bg-gray-900 dark:border-red-500/30 dark:text-red-300">
           Reason: {order.cancelReason}
         </p>
       ) : null}
@@ -534,12 +534,12 @@ function OrderSummaryCard({order}: {order: OrderHistoryEntry}) {
   const deliveryFee = order.deliveryFee ?? 0;
 
   return (
-    <div className="rounded-2xl bg-white shadow p-6">
-      <p className="text-base font-bold text-gray-900">Order Summary</p>
+    <div className="rounded-2xl bg-white shadow p-6 dark:bg-gray-900">
+      <p className="text-base font-bold text-gray-900 dark:text-gray-100">Order Summary</p>
 
       <div className="mt-5 space-y-4">
         {order.items.length === 0 ? (
-          <p className="text-sm text-gray-500">No items on this order.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">No items on this order.</p>
         ) : (
           order.items.map((item, index) => {
             const itemImageUrl = getItemImage(item);
@@ -548,7 +548,7 @@ function OrderSummaryCard({order}: {order: OrderHistoryEntry}) {
                 key={item._id ?? `${order._id}-${index}`}
                 className="flex items-start gap-3"
               >
-                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-gray-50">
+                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-gray-800/50">
                   <Image
                     src={
                       itemImageUrl && itemImageUrl.length > 0
@@ -562,24 +562,24 @@ function OrderSummaryCard({order}: {order: OrderHistoryEntry}) {
                   />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-gray-900 line-clamp-2">
+                  <p className="text-sm font-bold text-gray-900 line-clamp-2 dark:text-gray-100">
                     {getItemName(item)}
                   </p>
                   {item.sizeLabel ? (
-                    <p className="text-xs font-semibold text-[#2d4a35] mt-0.5">
+                    <p className="text-xs font-semibold text-[#2d4a35] mt-0.5 dark:text-[#7ed4a0]">
                       {item.sizeLabel}
                     </p>
                   ) : null}
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">
                     Qty {item.quantity} • {fmtMoney(item.price)} each
                   </p>
                   {item.specialRequest ? (
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">
                       Request: {item.specialRequest}
                     </p>
                   ) : null}
                 </div>
-                <p className="shrink-0 text-sm font-extrabold text-gray-900">
+                <p className="shrink-0 text-sm font-extrabold text-gray-900 dark:text-gray-100">
                   {fmtMoney(item.price * item.quantity)}
                 </p>
               </div>
@@ -588,22 +588,22 @@ function OrderSummaryCard({order}: {order: OrderHistoryEntry}) {
         )}
       </div>
 
-      <div className="mt-6 rounded-xl bg-gray-50 p-4">
-        <div className="flex items-center justify-between text-sm text-gray-700">
+      <div className="mt-6 rounded-xl bg-gray-50 p-4 dark:bg-gray-800/50">
+        <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
           <span>Subtotal</span>
           <span className="font-semibold">{fmtMoney(subtotal)}</span>
         </div>
         {/* The store does not deliver, so only show a fee when one was charged. */}
         {deliveryFee > 0 ? (
-          <div className="mt-2 flex items-center justify-between text-sm text-gray-700">
+          <div className="mt-2 flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
             <span>Delivery fee</span>
             <span className="font-semibold">{fmtMoney(deliveryFee)}</span>
           </div>
         ) : null}
-        <div className="mt-2 h-px bg-gray-200" />
+        <div className="mt-2 h-px bg-gray-200 dark:bg-gray-800" />
         <div className="mt-2 flex items-center justify-between">
-          <span className="text-sm font-bold text-gray-900">Total</span>
-          <span className="text-xl font-extrabold text-gray-900">
+          <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Total</span>
+          <span className="text-xl font-extrabold text-gray-900 dark:text-gray-100">
             {fmtMoney(order.totalAmount)}
           </span>
         </div>
@@ -642,16 +642,16 @@ function PaymentsDetailsCard({order}: {order: OrderHistoryEntry}) {
   }
 
   return (
-    <div className="rounded-2xl bg-white shadow p-6">
-      <p className="text-base font-bold text-gray-900">Payment & Order Details</p>
+    <div className="rounded-2xl bg-white shadow p-6 dark:bg-gray-900">
+      <p className="text-base font-bold text-gray-900 dark:text-gray-100">Payment & Order Details</p>
 
       <div className="mt-5 space-y-4">
         {rows.map(row => (
           <div key={row.label} className="flex items-start justify-between gap-6">
-            <p className="text-xs text-gray-500 shrink-0 pt-0.5">
+            <p className="text-xs text-gray-500 shrink-0 pt-0.5 dark:text-gray-400">
               {row.label}
             </p>
-            <p className="text-right text-sm font-semibold text-gray-900 break-words min-w-0">
+            <p className="text-right text-sm font-semibold text-gray-900 break-words min-w-0 dark:text-gray-100">
               {row.value}
             </p>
           </div>
@@ -712,21 +712,21 @@ function CancelOrderButton({
           <div className="absolute inset-0 flex items-end sm:items-center justify-center p-0 sm:p-6">
             <div
               onClick={e => e.stopPropagation()}
-              className="w-full sm:max-w-md bg-white shadow-xl border border-gray-100 rounded-t-2xl sm:rounded-2xl p-6"
+              className="w-full sm:max-w-md bg-white shadow-xl border border-gray-100 rounded-t-2xl sm:rounded-2xl p-6 dark:bg-gray-900 dark:border-gray-800"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-lg font-bold text-gray-900">
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                     Let us know why you&apos;re cancelling
                   </p>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     This will permanently cancel your order.
                   </p>
                 </div>
                 <button
                   type="button"
                   aria-label="Close"
-                  className="shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100"
+                  className="shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                   onClick={() => {
                     if (!isPending) setOpen(false);
                   }}
@@ -739,7 +739,7 @@ function CancelOrderButton({
                 {CANCEL_REASONS.map(option => (
                   <label
                     key={option}
-                    className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 cursor-pointer has-[:checked]:border-[#3c5e45] has-[:checked]:bg-[#3c5e45]/5"
+                    className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 cursor-pointer has-[:checked]:border-[#3c5e45] has-[:checked]:bg-[#3c5e45]/5 dark:border-gray-800 dark:has-[:checked]:border-[#7ed4a0]/60 dark:has-[:checked]:bg-[#7ed4a0]/10"
                   >
                     <input
                       type="radio"
@@ -749,7 +749,7 @@ function CancelOrderButton({
                       onChange={() => setReason(option)}
                       className="accent-[#3c5e45] h-4 w-4"
                     />
-                    <span className="text-sm text-gray-800">{option}</span>
+                    <span className="text-sm text-gray-800 dark:text-gray-100">{option}</span>
                   </label>
                 ))}
               </div>
@@ -760,12 +760,12 @@ function CancelOrderButton({
                   value={otherText}
                   onChange={e => setOtherText(e.target.value)}
                   placeholder="Tell us more (optional)"
-                  className="mt-3 w-full h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none focus:border-[#3c5e45]"
+                  className="mt-3 w-full h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none focus:border-[#3c5e45] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-[#7ed4a0]/60"
                 />
               ) : null}
 
               {error?.message ? (
-                <p className="mt-3 text-xs text-red-600">{error.message}</p>
+                <p className="mt-3 text-xs text-red-600 dark:text-red-300">{error.message}</p>
               ) : null}
 
               <div className="mt-6 space-y-2.5">
@@ -781,7 +781,7 @@ function CancelOrderButton({
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full h-12 rounded-full border-[#3c5e45] text-[#3c5e45]"
+                  className="w-full h-12 rounded-full border-[#3c5e45] text-[#3c5e45] dark:text-[#7ed4a0] dark:border-[#7ed4a0]/60"
                   disabled={isPending}
                   onClick={() => setOpen(false)}
                 >

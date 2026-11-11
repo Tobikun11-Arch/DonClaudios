@@ -35,11 +35,11 @@ export function PreferencesForm({
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-      <h2 className="text-lg font-bold text-foreground">Preferences</h2>
+    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+      <h2 className="text-lg font-bold text-foreground dark:text-gray-100">Preferences</h2>
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="space-y-1.5 text-sm">
-          <span className="text-muted-foreground">Default fulfillment</span>
+          <span className="text-muted-foreground dark:text-gray-400">Default fulfillment</span>
           <select
             value={form.defaultFulfillment ?? 'pickup'}
             onChange={e =>
@@ -47,14 +47,14 @@ export function PreferencesForm({
                 defaultFulfillment: e.target.value as 'pickup' | 'delivery'
               })
             }
-            className="min-h-[44px] w-full rounded-lg border border-border px-3 text-sm"
+            className="min-h-[44px] w-full rounded-lg border border-border px-3 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:scheme-dark"
           >
             <option value="pickup">Pickup</option>
             <option value="delivery">Delivery</option>
           </select>
         </label>
         <label className="space-y-1.5 text-sm">
-          <span className="text-muted-foreground">Preferred lead time (days)</span>
+          <span className="text-muted-foreground dark:text-gray-400">Preferred lead time (days)</span>
           <input
             type="number"
             min={0}
@@ -62,11 +62,11 @@ export function PreferencesForm({
             onChange={e =>
               update({preferredLeadTimeDays: Number(sanitizeInteger(e.target.value))})
             }
-            className="min-h-[44px] w-full rounded-lg border border-border px-3 text-sm"
+            className="min-h-[44px] w-full rounded-lg border border-border px-3 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
           />
         </label>
         <label className="space-y-1.5 text-sm">
-          <span className="text-muted-foreground">Serving style</span>
+          <span className="text-muted-foreground dark:text-gray-400">Serving style</span>
           <select
             value={form.servingStyle ?? 'whole'}
             onChange={e =>
@@ -77,7 +77,7 @@ export function PreferencesForm({
                   | 'plated'
               })
             }
-            className="min-h-[44px] w-full rounded-lg border border-border px-3 text-sm"
+            className="min-h-[44px] w-full rounded-lg border border-border px-3 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:scheme-dark"
           >
             <option value="whole">Whole</option>
             <option value="chopped">Chopped</option>
@@ -85,13 +85,13 @@ export function PreferencesForm({
           </select>
         </label>
         <label className="space-y-1.5 text-sm">
-          <span className="text-muted-foreground">Sauce count</span>
+          <span className="text-muted-foreground dark:text-gray-400">Sauce count</span>
           <input
             type="number"
             min={0}
             value={form.sauceCount ?? 0}
             onChange={e => update({sauceCount: Number(sanitizeInteger(e.target.value))})}
-            className="min-h-[44px] w-full rounded-lg border border-border px-3 text-sm"
+            className="min-h-[44px] w-full rounded-lg border border-border px-3 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
           />
         </label>
       </div>

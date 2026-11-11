@@ -300,34 +300,34 @@ export default function CustomerCheckoutPage() {
         <Button
           type="button"
           variant="ghost"
-          className="text-[#3c5e45] hover:text-[#3c5e45] hover:bg-[#3c5e45]/10"
+          className="text-[#3c5e45] hover:text-[#3c5e45] hover:bg-[#3c5e45]/10 dark:text-[#7ed4a0] dark:hover:text-[#7ed4a0] dark:hover:bg-[#7ed4a0]/10"
           onClick={() => router.back()}
         >
           <ChevronLeft className="h-5 w-5 mr-2" />
           Back
         </Button>
 
-        <p className="text-sm font-semibold text-[#3c5e45]">
+        <p className="text-sm font-semibold text-[#3c5e45] dark:text-[#7ed4a0]">
           Checkout #{params?.id ?? ''}
         </p>
       </div>
 
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 items-start gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-2xl bg-white p-6 shadow">
+          <div className="rounded-2xl bg-white p-6 shadow dark:bg-gray-900">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xl font-bold text-gray-900">
+                <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
                   Account Details
                 </p>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">
                   We will use your saved account information for this order.
                 </p>
               </div>
               <button
                 type="button"
                 aria-label="Edit account details"
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800"
                 onClick={() => router.push('/customer/dashboard?tab=profile')}
               >
                 <Pencil className="h-3.5 w-3.5" />
@@ -337,37 +337,37 @@ export default function CustomerCheckoutPage() {
 
             <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
               <div>
-                <p className="text-xs font-semibold text-gray-700">Name</p>
-                <p className="mt-1 font-semibold text-gray-900">
+                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Name</p>
+                <p className="mt-1 font-semibold text-gray-900 dark:text-gray-100">
                   {[customer?.firstName, customer?.lastName]
                     .filter(Boolean)
                     .join(' ') || 'No name saved'}
                 </p>
               </div>
               <div>
-                <p className="text-xs font-semibold text-gray-700">
+                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                   Mobile Number
                 </p>
-                <p className="mt-1 font-semibold text-gray-900">
+                <p className="mt-1 font-semibold text-gray-900 dark:text-gray-100">
                   {customer?.phoneNumber || 'No mobile number saved'}
                 </p>
               </div>
               <div className="md:col-span-2">
-                <p className="text-xs font-semibold text-gray-700">Email</p>
-                <p className="mt-1 font-semibold text-gray-900">
+                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Email</p>
+                <p className="mt-1 font-semibold text-gray-900 dark:text-gray-100">
                   {customer?.email || 'No email saved'}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl bg-white p-6 shadow">
+          <div className="rounded-2xl bg-white p-6 shadow dark:bg-gray-900">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xl font-bold text-gray-900">
+                <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
                   Delivery Details
                 </p>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">
                   Let us know where and how to send your order.
                 </p>
               </div>
@@ -375,7 +375,7 @@ export default function CustomerCheckoutPage() {
 
             <div className="mt-5 space-y-5">
               <div>
-                <p className="text-xs text-gray-500 mb-2">Receive by</p>
+                <p className="text-xs text-gray-500 mb-2 dark:text-gray-400">Receive by</p>
                 <OrderTypeSelector
                   value={orderType}
                   onChange={setOrderType}
@@ -391,8 +391,8 @@ export default function CustomerCheckoutPage() {
                 <div
                   className={
                     deliveryMode === 'LALAMOVE'
-                      ? 'rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900'
-                      : 'rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900'
+                      ? 'rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300'
+                      : 'rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300'
                   }
                 >
                   {deliveryMode === 'LALAMOVE' ? (
@@ -421,12 +421,12 @@ export default function CustomerCheckoutPage() {
                           )}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="rounded-full border border-amber-600 px-3 py-1.5 text-xs font-semibold text-amber-700"
+                          className="rounded-full border border-amber-600 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300"
                         >
                           Open in Google Maps
                         </a>
                       </div>
-                      <div className="mt-3 h-40 overflow-hidden rounded-xl border border-amber-200">
+                      <div className="mt-3 h-40 overflow-hidden rounded-xl border border-amber-200 dark:border-amber-500/30">
                         <iframe
                           src={`https://maps.google.com/maps?q=${STORE.lat},${STORE.lng}&z=15&output=embed`}
                           className="w-full h-full"
@@ -445,24 +445,24 @@ export default function CustomerCheckoutPage() {
 
               {orderType === 'Pick-up' ? (
                 <div className="space-y-3">
-                  <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                    <p className="text-xs font-semibold text-gray-700">
+                  <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-800/50">
+                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                       Pick up at
                     </p>
-                    <p className="mt-1 text-sm font-semibold text-gray-900">
+                    <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
                       DonClaudio&apos;s Lechon House
                     </p>
-                    <p className="text-xs text-gray-600">{STORE_ADDRESS}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-300">{STORE_ADDRESS}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-gray-700">
+                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                       Pick-up time
                     </p>
                     <input
                       type="time"
                       value={pickupTime}
                       onChange={e => setPickupTime(e.target.value)}
-                      className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
+                      className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900 dark:border-gray-700 dark:text-gray-100 dark:bg-gray-800 dark:scheme-dark"
                     />
                   </div>
                 </div>
@@ -471,21 +471,21 @@ export default function CustomerCheckoutPage() {
               {orderType === 'Reservation' ? (
                 <div className="flex flex-wrap items-center gap-3">
                   <div>
-                    <p className="text-xs font-semibold text-gray-700">Date</p>
+                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Date</p>
                     <input
                       type="date"
                       value={reservationDate}
                       onChange={e => setReservationDate(e.target.value)}
-                      className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
+                      className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900 dark:border-gray-700 dark:text-gray-100 dark:bg-gray-800 dark:scheme-dark"
                     />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-gray-700">Time</p>
+                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Time</p>
                     <input
                       type="time"
                       value={reservationTime}
                       onChange={e => setReservationTime(e.target.value)}
-                      className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
+                      className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900 dark:border-gray-700 dark:text-gray-100 dark:bg-gray-800 dark:scheme-dark"
                     />
                   </div>
                 </div>
@@ -493,14 +493,14 @@ export default function CustomerCheckoutPage() {
 
               {orderType === 'Delivery' ? (
                 <>
-                  <div className="h-px bg-gray-100" />
+                  <div className="h-px bg-gray-100 dark:bg-gray-800" />
 
                   <div className="flex items-start gap-3">
-                    <div className="h-9 w-9 rounded-full bg-[#3c5e45]/10 inline-flex items-center justify-center shrink-0">
-                      <MapPin className="h-4 w-4 text-[#3c5e45]" />
+                    <div className="h-9 w-9 rounded-full bg-[#3c5e45]/10 inline-flex items-center justify-center shrink-0 dark:bg-[#7ed4a0]/10">
+                      <MapPin className="h-4 w-4 text-[#3c5e45] dark:text-[#7ed4a0]" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs text-gray-500">Deliver to (Customer address)</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Deliver to (Customer address)</p>
                       <p className="text-[11px] text-gray-400 mt-0.5">
                         For your courier booking and our records
                       </p>
@@ -512,13 +512,13 @@ export default function CustomerCheckoutPage() {
                             ? 'Edit your delivery address'
                             : 'Enter your delivery address'
                         }
-                        className="mt-2"
+                        className="mt-2 dark:bg-gray-800 dark:text-gray-100"
                       />
                     </div>
                   </div>
 
                   {orderType === 'Delivery' && mapPreviewSrc ? (
-                    <div className="h-40 overflow-hidden rounded-xl border border-gray-200">
+                    <div className="h-40 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
                       <iframe
                         src={mapPreviewSrc}
                         className="w-full h-full"
@@ -531,8 +531,8 @@ export default function CustomerCheckoutPage() {
                   ) : null}
 
                   {orderType === 'Delivery' && !location?.lat ? (
-                    <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4">
-                      <p className="mb-3 text-xs font-semibold text-gray-700">
+                    <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-800/50">
+                      <p className="mb-3 text-xs font-semibold text-gray-700 dark:text-gray-300">
                         Set your delivery location
                       </p>
                       <LocationPicker
@@ -545,7 +545,7 @@ export default function CustomerCheckoutPage() {
                   ) : null}
 
                   <div>
-                    <p className="text-xs font-semibold text-gray-700">
+                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                       Address type
                     </p>
                     <div className="mt-2 grid grid-cols-2 gap-3">
@@ -557,8 +557,8 @@ export default function CustomerCheckoutPage() {
                           className={cn(
                             'flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3c5e45]/30',
                             addressType === type
-                              ? 'border-[#3c5e45]/30 bg-[#3c5e45]/10 text-[#3c5e45]'
-                              : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                              ? 'border-[#3c5e45]/30 bg-[#3c5e45]/10 text-[#3c5e45] dark:border-[#7ed4a0]/30 dark:bg-[#7ed4a0]/10 dark:text-[#7ed4a0]'
+                              : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800'
                           )}
                         >
                           <span
@@ -566,7 +566,7 @@ export default function CustomerCheckoutPage() {
                               'inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
                               addressType === type
                                 ? 'border-[#3c5e45] bg-[#3c5e45]'
-                                : 'border-gray-300 bg-white'
+                                : 'border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900'
                             )}
                           >
                             {addressType === type ? (
@@ -581,13 +581,13 @@ export default function CustomerCheckoutPage() {
                 </>
               ) : null}
 
-              <div className="h-px bg-gray-100" />
+              <div className="h-px bg-gray-100 dark:bg-gray-800" />
 
               <div>
-                <p className="text-sm font-bold text-gray-900">
+                <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
                   Additional details
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
                   Delivery instructions (optional)
                 </p>
 
@@ -601,8 +601,8 @@ export default function CustomerCheckoutPage() {
                       className={cn(
                         'rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3c5e45]/30',
                         isNoteActive(suggestion)
-                          ? 'border-[#3c5e45]/30 bg-[#3c5e45]/10 text-[#3c5e45]'
-                          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                          ? 'border-[#3c5e45]/30 bg-[#3c5e45]/10 text-[#3c5e45] dark:border-[#7ed4a0]/30 dark:bg-[#7ed4a0]/10 dark:text-[#7ed4a0]'
+                          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800'
                       )}
                     >
                       {suggestion}
@@ -614,31 +614,31 @@ export default function CustomerCheckoutPage() {
                   value={notesToRider}
                   onChange={e => setNotesToRider(e.target.value)}
                   placeholder="Notes to rider"
-                  className="mt-3"
+                  className="mt-3 dark:bg-gray-800 dark:text-gray-100"
                 />
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl bg-white p-6 shadow">
+          <div className="rounded-2xl bg-white p-6 shadow dark:bg-gray-900">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xl font-bold text-gray-900">
+                <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
                   Payment after confirmation
                 </p>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">
                   No payment is needed yet.
                 </p>
               </div>
-              <CreditCard className="h-5 w-5 text-[#3c5e45]" />
+              <CreditCard className="h-5 w-5 text-[#3c5e45] dark:text-[#7ed4a0]" />
             </div>
 
-            <p className="mt-5 text-sm text-gray-600 leading-relaxed">
+            <p className="mt-5 text-sm text-gray-600 leading-relaxed dark:text-gray-300">
               Once your order is placed, our cashier will give you a call to
               confirm the details and arrange the payment with you (down payment
               or full payment &mdash; whatever you both agree on).
             </p>
-            <p className="mt-3 text-sm text-gray-600 leading-relaxed">
+            <p className="mt-3 text-sm text-gray-600 leading-relaxed dark:text-gray-300">
               After the cashier confirms the order, the payment instructions and
               the account details will appear on your order page, along with a
               place to upload your proof of payment.
@@ -647,12 +647,12 @@ export default function CustomerCheckoutPage() {
         </div>
 
         <div className="lg:col-span-1 lg:sticky lg:top-6">
-          <div className="rounded-2xl bg-white p-6 shadow">
+          <div className="rounded-2xl bg-white p-6 shadow dark:bg-gray-900">
             <div className="flex items-center justify-between">
-              <p className="text-lg font-bold text-gray-900">Order summary</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">Order summary</p>
               <button
                 type="button"
-                className="text-xs font-semibold text-[#3c5e45] hover:underline"
+                className="text-xs font-semibold text-[#3c5e45] hover:underline dark:text-[#7ed4a0]"
                 onClick={() => router.push('/customer/dashboard')}
               >
                 Add items
@@ -661,9 +661,9 @@ export default function CustomerCheckoutPage() {
 
             <div className="mt-5 space-y-5">
               {cartQuery.isLoading ? (
-                <p className="text-sm text-gray-500">Loading cart...</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Loading cart...</p>
               ) : items.length === 0 ? (
-                <p className="text-sm text-gray-500">Your cart is empty.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Your cart is empty.</p>
               ) : (
                 items.map(item => {
                   const {unitPrice} = getDiscountedUnitPrice({
@@ -676,9 +676,9 @@ export default function CustomerCheckoutPage() {
                   return (
                     <div
                       key={getProductId(item.productId)}
-                      className="flex items-start gap-3 border-b border-gray-100 pb-4 last:border-0 last:pb-0"
+                      className="flex items-start gap-3 border-b border-gray-100 pb-4 last:border-0 last:pb-0 dark:border-gray-800"
                     >
-                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-gray-50">
+                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-gray-800/50">
                         <Image
                           src={
                             item.imageUrl && item.imageUrl.length > 0
@@ -694,16 +694,16 @@ export default function CustomerCheckoutPage() {
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-bold text-gray-900 line-clamp-2">
+                          <p className="text-sm font-bold text-gray-900 line-clamp-2 dark:text-gray-100">
                             {item.name}
                           </p>
-                          <p className="shrink-0 text-sm font-extrabold text-gray-900">
+                          <p className="shrink-0 text-sm font-extrabold text-gray-900 dark:text-gray-100">
                             ₱{unitPrice * item.quantity}.00
                           </p>
                         </div>
 
                         <div className="mt-0.5">
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
                             ₱{unitPrice}.00 each
                           </p>
                           {isDiscounted ? (
@@ -714,15 +714,15 @@ export default function CustomerCheckoutPage() {
                         </div>
 
                         {item.instructions?.trim() ? (
-                          <p className="mt-1 text-xs text-gray-500 italic">
+                          <p className="mt-1 text-xs text-gray-500 italic dark:text-gray-400">
                             “{item.instructions}”
                           </p>
                         ) : null}
 
-                        <div className="mt-2 inline-flex items-center rounded-full border border-gray-200 overflow-hidden">
+                        <div className="mt-2 inline-flex items-center rounded-full border border-gray-200 overflow-hidden dark:border-gray-800">
                           <button
                             type="button"
-                            className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50"
+                            className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800"
                             onClick={() =>
                               setQtyMutation.mutate({
                                 productId: getProductId(item.productId),
@@ -734,12 +734,12 @@ export default function CustomerCheckoutPage() {
                           >
                             <Minus className="h-4 w-4" />
                           </button>
-                          <div className="min-w-9 text-center text-base font-bold text-gray-900">
+                          <div className="min-w-9 text-center text-base font-bold text-gray-900 dark:text-gray-100">
                             {item.quantity}
                           </div>
                           <button
                             type="button"
-                            className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50"
+                            className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800"
                             onClick={() =>
                               setQtyMutation.mutate({
                                 productId: getProductId(item.productId),
@@ -759,22 +759,22 @@ export default function CustomerCheckoutPage() {
               )}
 
               <div className="pt-1 space-y-2">
-                <div className="flex items-center justify-between text-sm text-gray-700">
-                  <span className="text-gray-500">Subtotal</span>
+                <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
+                  <span className="text-gray-500 dark:text-gray-400">Subtotal</span>
                   <span className="font-semibold">₱{subtotal}.00</span>
                 </div>
               </div>
 
-              <div className="h-px bg-gray-200" />
+              <div className="h-px bg-gray-200 dark:bg-gray-800" />
 
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-gray-900">Total</span>
-                <span className="text-2xl font-extrabold text-gray-900">
+                <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Total</span>
+                <span className="text-2xl font-extrabold text-gray-900 dark:text-gray-100">
                   ₱{total}.00
                 </span>
               </div>
               {orderType === 'Delivery' && deliveryMode === 'LALAMOVE' ? (
-                <p className="text-xs text-amber-700">
+                <p className="text-xs text-amber-700 dark:text-amber-300">
                   Courier fee not included, paid by you to Lalamove.
                 </p>
               ) : null}
@@ -788,31 +788,31 @@ export default function CustomerCheckoutPage() {
                   disabled={
                     createOrderMutation.isPending || clearCartMutation.isPending
                   }
-                  className="mt-1 h-4 w-4 rounded border-gray-300 text-[#3c5e45] focus:ring-[#3c5e45]"
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-[#3c5e45] focus:ring-[#3c5e45] dark:border-gray-700 dark:text-[#7ed4a0]"
                   required
                 />
                 <label
                   htmlFor="agreeToTermsCheckout"
-                  className="text-xs text-gray-600"
+                  className="text-xs text-gray-600 dark:text-gray-300"
                 >
                   I agree to the{' '}
                   <Link
                     href="/terms"
-                    className="text-[#3c5e45] hover:underline"
+                    className="text-[#3c5e45] hover:underline dark:text-[#7ed4a0]"
                   >
                     Terms & Conditions
                   </Link>
                   ,{' '}
                   <Link
                     href="/return-policy"
-                    className="text-[#3c5e45] hover:underline"
+                    className="text-[#3c5e45] hover:underline dark:text-[#7ed4a0]"
                   >
                     Return Policy
                   </Link>
                   , and{' '}
                   <Link
                     href="/privacy"
-                    className="text-[#3c5e45] hover:underline"
+                    className="text-[#3c5e45] hover:underline dark:text-[#7ed4a0]"
                   >
                     Privacy Policy
                   </Link>
@@ -825,16 +825,16 @@ export default function CustomerCheckoutPage() {
                 keeps the action in the thumb zone; at `lg` the order summary
                 card sits beside the form and the CTA stays in-flow inside it.
               */}
-              <div className="lg:hidden sticky bottom-0 z-10 -mx-6 mb-6 border-t border-gray-100 bg-white px-6 py-4 space-y-3">
+              <div className="lg:hidden sticky bottom-0 z-10 -mx-6 mb-6 border-t border-gray-100 bg-white px-6 py-4 space-y-3 dark:border-gray-800 dark:bg-gray-900">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-gray-900">Total</span>
-                  <span className="text-2xl font-extrabold text-gray-900">
+                  <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Total</span>
+                  <span className="text-2xl font-extrabold text-gray-900 dark:text-gray-100">
                     ₱{total}.00
                   </span>
                 </div>
                 {checkoutButton}
                 {checkoutError ? (
-                  <p className="text-center text-xs font-medium text-red-600">
+                  <p className="text-center text-xs font-medium text-red-600 dark:text-red-300">
                     {checkoutError}
                   </p>
                 ) : null}
@@ -843,7 +843,7 @@ export default function CustomerCheckoutPage() {
               <div className="hidden lg:block">
                 {checkoutButton}
                 {checkoutError ? (
-                  <p className="text-center text-xs font-medium text-red-600">
+                  <p className="text-center text-xs font-medium text-red-600 dark:text-red-300">
                     {checkoutError}
                   </p>
                 ) : null}

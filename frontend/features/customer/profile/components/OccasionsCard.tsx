@@ -111,9 +111,9 @@ export function OccasionsCard({
   const nudge = nudgeList[0];
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-foreground">Occasions</h2>
+        <h2 className="text-lg font-bold text-foreground dark:text-gray-100">Occasions</h2>
         <button
           type="button"
           onClick={() => setAdding(v => !v)}
@@ -124,14 +124,14 @@ export function OccasionsCard({
       </div>
 
       {nudge && (
-        <p className="mb-4 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
+        <p className="mb-4 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground dark:bg-gray-800 dark:text-gray-400">
           {nudge.label} is in {daysUntil(nudge.d)} days. Reserve your lechon
           early for the best slot.
         </p>
       )}
 
       {occasions.length === 0 && !adding && (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground dark:text-gray-400">
           No saved occasions yet. Add birthdays, fiestas, or reunions and we
           will remind you before the date.
         </p>
@@ -145,12 +145,12 @@ export function OccasionsCard({
           return (
             <div
               key={occ._id ?? idx}
-              className="rounded-xl border border-border p-4"
+              className="rounded-xl border border-border p-4 dark:border-gray-800"
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="font-medium text-foreground">{occ.label}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="font-medium text-foreground dark:text-gray-100">{occ.label}</p>
+                  <p className="text-xs text-muted-foreground dark:text-gray-400">
                     {d.toLocaleDateString('en-PH', {
                       month: 'short',
                       day: 'numeric'
@@ -171,7 +171,7 @@ export function OccasionsCard({
                 type="button"
                 onClick={() => handleReorder(occ)}
                 disabled={addItem.isPending || !order}
-                className="mt-3 inline-flex min-h-[44px] items-center rounded-lg border border-border px-3 text-xs font-medium disabled:opacity-50"
+                className="mt-3 inline-flex min-h-[44px] items-center rounded-lg border border-border px-3 text-xs font-medium disabled:opacity-50 dark:border-gray-800"
               >
                 {order ? 'Reserve / Reorder' : 'No past order yet'}
               </button>
@@ -186,13 +186,13 @@ export function OccasionsCard({
             value={label}
             onChange={e => setLabel(e.target.value)}
             placeholder="Label (Mama's birthday)"
-            className="min-h-[44px] w-full rounded-lg border border-border px-3 text-sm"
+            className="min-h-[44px] w-full rounded-lg border border-border px-3 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
           />
           <input
             type="date"
             value={date}
             onChange={e => setDate(e.target.value)}
-            className="min-h-[44px] w-full rounded-lg border border-border px-3 text-sm"
+            className="min-h-[44px] w-full rounded-lg border border-border px-3 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:scheme-dark"
           />
           <button
             type="button"

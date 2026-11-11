@@ -76,7 +76,7 @@ export default function OrderChatThread({
           onKeyDown={handleKeyDown}
           rows={2}
           placeholder={placeholder}
-          className="flex-1 resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e]"
+          className="flex-1 resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e] dark:border-gray-700 dark:text-gray-100 dark:bg-gray-800"
         />
         <Button
           onClick={handleSubmit}
@@ -109,12 +109,12 @@ function MessageBubble({
         className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
           onRight
             ? 'bg-[#2d4a35] text-white'
-            : 'bg-gray-100 text-gray-800 border border-gray-200'
+            : 'bg-gray-100 text-gray-800 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100'
         } ${sending ? 'opacity-70' : ''}`}
       >
         <p
           className={`text-xs font-bold mb-0.5 ${
-            onRight ? 'text-[#b8d4c0]' : 'text-gray-500'
+            onRight ? 'text-[#b8d4c0]' : 'text-gray-500 dark:text-gray-400'
           }`}
         >
           {isTeam ? "DonClaudio's Team" : message.senderName || 'You'}

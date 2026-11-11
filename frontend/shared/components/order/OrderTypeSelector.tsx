@@ -21,7 +21,7 @@ export default function OrderTypeSelector({
 
   return (
     <div
-      className={className ?? 'flex gap-3'}
+      className={`${className ?? 'flex gap-3'} dark:[--brand-green-tint:#7ed4a01f]! dark:[--brand-green-text:#7ed4a0]! dark:[--border:#374151]! dark:[--surface-muted:#1f2937]! dark:[--surface-soft:#1f293780]! dark:[--surface-card:#111827]! dark:[--text:#f3f4f6]! dark:[--text-muted:#9ca3af]!`}
       role="radiogroup"
       style={
         {
@@ -50,10 +50,10 @@ export default function OrderTypeSelector({
             role="radio"
             aria-checked={isSelected}
             onClick={() => onChange(type)}
-            className="relative flex flex-1 flex-col items-center gap-2 rounded-2xl border-[1.5px] bg-white px-2 pb-4 pt-5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2"
+            className="relative flex flex-1 flex-col items-center gap-2 rounded-2xl border-[1.5px] bg-white px-2 pb-4 pt-5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2 dark:ring-offset-gray-900 dark:border-gray-800 dark:bg-gray-900"
             style={{
               borderColor: isSelected ? 'var(--brand-green)' : 'var(--border)',
-              backgroundColor: isSelected ? 'var(--brand-green-tint)' : 'white',
+              backgroundColor: isSelected ? 'var(--brand-green-tint)' : 'var(--surface-card, white)',
               boxShadow: isSelected ? '0 0 0 1px var(--brand-green)' : undefined,
               minHeight: '44px'
             }}
@@ -72,7 +72,9 @@ export default function OrderTypeSelector({
                 backgroundColor: isSelected
                   ? 'var(--brand-green)'
                   : 'var(--surface-muted)',
-                color: isSelected ? 'white' : 'var(--brand-green)'
+                color: isSelected
+                  ? 'white'
+                  : 'var(--brand-green-text, var(--brand-green))'
               }}
             >
               {type === 'Delivery' ? (

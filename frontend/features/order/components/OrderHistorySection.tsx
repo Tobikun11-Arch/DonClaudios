@@ -108,8 +108,8 @@ export default function OrderHistorySection({
     <section className="w-full max-w-6xl mx-auto px-4 mb-10">
       <div className="flex items-end justify-between gap-4 mb-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
-          <p className="text-sm text-gray-500 mt-1">{description}</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{title}</h2>
+          <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">{description}</p>
         </div>
       </div>
 
@@ -123,7 +123,7 @@ export default function OrderHistorySection({
               className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-bold transition-colors ${
                 activeRange === option.value
                   ? 'bg-[#3c5e45] text-white'
-                  : 'bg-[#3c5e45]/10 text-[#3c5e45] hover:bg-[#3c5e45]/20'
+                  : 'bg-[#3c5e45]/10 text-[#3c5e45] hover:bg-[#3c5e45]/20 dark:bg-[#7ed4a0]/10 dark:text-[#7ed4a0] dark:hover:bg-[#7ed4a0]/20'
               }`}
             >
               {option.label}
@@ -133,15 +133,15 @@ export default function OrderHistorySection({
       ) : null}
 
       {isLoading ? (
-        <div className="rounded-2xl bg-white shadow p-5 text-sm text-gray-500">
+        <div className="rounded-2xl bg-white shadow p-5 text-sm text-gray-500 dark:bg-gray-900 dark:text-gray-400">
           Loading order history...
         </div>
       ) : isError ? (
-        <div className="rounded-2xl bg-white shadow p-5 text-sm text-red-600">
+        <div className="rounded-2xl bg-white shadow p-5 text-sm text-red-600 dark:bg-gray-900 dark:text-red-300">
           Failed to load order history.
         </div>
       ) : orders.length === 0 ? (
-        <div className="rounded-2xl bg-white shadow p-5 text-sm text-gray-500">
+        <div className="rounded-2xl bg-white shadow p-5 text-sm text-gray-500 dark:bg-gray-900 dark:text-gray-400">
           No orders yet.
         </div>
       ) : (
@@ -196,15 +196,15 @@ function OrderCard({
     <div
       ref={highlightRef}
       id={`order-${order._id}`}
-      className="rounded-2xl bg-white shadow"
+      className="rounded-2xl bg-white shadow dark:bg-gray-900"
     >
       <button
         type="button"
         onClick={() => setExpanded(prev => !prev)}
         aria-expanded={expanded}
-        className="w-full text-left p-5 flex items-center gap-3 transition-colors hover:bg-gray-50"
+        className="w-full text-left p-5 flex items-center gap-3 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
       >
-        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-50">
+        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-gray-800/50">
           {firstItem ? (
             <Image
               src={
@@ -223,24 +223,24 @@ function OrderCard({
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold text-gray-900 line-clamp-1">
+          <p className="text-sm font-bold text-gray-900 line-clamp-1 dark:text-gray-100">
             {name}
           </p>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">
             {formatOrderType(order.orderType)}
             {badge ? ` • ${badge}` : ''}
           </p>
           <PreOrderBadge order={order} className="mt-1" />
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">
             {order.createdAt ? new Date(order.createdAt).toLocaleString() : ''}
           </p>
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <span className="rounded-full bg-[#3c5e45]/10 px-3 py-1 text-xs font-bold text-[#3c5e45]">
+          <span className="rounded-full bg-[#3c5e45]/10 px-3 py-1 text-xs font-bold text-[#3c5e45] dark:bg-[#7ed4a0]/10 dark:text-[#7ed4a0]">
             {formatStatus(order.orderStatus)}
           </span>
-          <span className="text-sm font-extrabold text-gray-900">
+          <span className="text-sm font-extrabold text-gray-900 dark:text-gray-100">
             ₱{order.totalAmount}.00
           </span>
         </div>
@@ -251,7 +251,7 @@ function OrderCard({
       </button>
 
   {expanded && order.orderStatus !== 'completed' ? (
-    <div className="border-t border-gray-100 p-4 sm:p-5">
+    <div className="border-t border-gray-100 p-4 sm:p-5 dark:border-gray-800">
       <OrderTracking orderId={order._id} variant={variant} embedded />
       {renderFollowUp ? (
         <div className="mt-4">
@@ -260,46 +260,46 @@ function OrderCard({
       ) : null}
     </div>
   ) : expanded ? (
-        <div className="border-t border-gray-100 p-5">
+        <div className="border-t border-gray-100 p-5 dark:border-gray-800">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
             <div>
-              <p className="text-sm font-bold text-gray-900">
+              <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
                 Order #{order._id}
               </p>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
                 {order.createdAt ? new Date(order.createdAt).toLocaleString() : ''}
               </p>
             </div>
 
             <div className="flex flex-col items-start md:items-end gap-2">
-              <span className="rounded-full bg-[#3c5e45]/10 px-3 py-1 text-xs font-bold text-[#3c5e45]">
+              <span className="rounded-full bg-[#3c5e45]/10 px-3 py-1 text-xs font-bold text-[#3c5e45] dark:bg-[#7ed4a0]/10 dark:text-[#7ed4a0]">
                 {formatStatus(order.orderStatus)}
               </span>
             </div>
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-gray-100 p-3">
-              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+            <div className="rounded-xl border border-gray-100 p-3 dark:border-gray-800">
+              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
                 Order type
               </p>
-              <p className="mt-1 text-sm font-bold text-gray-900">
+              <p className="mt-1 text-sm font-bold text-gray-900 dark:text-gray-100">
                 {formatOrderType(order.orderType)}
               </p>
             </div>
-            <div className="rounded-xl border border-gray-100 p-3">
-              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+            <div className="rounded-xl border border-gray-100 p-3 dark:border-gray-800">
+              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
                 Payment method
               </p>
-              <p className="mt-1 text-sm font-bold text-gray-900">
+              <p className="mt-1 text-sm font-bold text-gray-900 dark:text-gray-100">
                 {formatPaymentMethod(order.paymentMethod)}
               </p>
             </div>
-            <div className="rounded-xl border border-gray-100 p-3">
-              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+            <div className="rounded-xl border border-gray-100 p-3 dark:border-gray-800">
+              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
                 Payment status
               </p>
-              <p className="mt-1 text-sm font-bold text-gray-900">
+              <p className="mt-1 text-sm font-bold text-gray-900 dark:text-gray-100">
                 {order.orderStatus === 'cancelled' ? 'Cancelled' : 'Paid'}
               </p>
             </div>
@@ -311,9 +311,9 @@ function OrderCard({
               return (
                 <div
                   key={item._id ?? `${order._id}-${index}`}
-                  className="flex items-start gap-3 rounded-xl border border-gray-100 p-3"
+                  className="flex items-start gap-3 rounded-xl border border-gray-100 p-3 dark:border-gray-800"
                 >
-                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-50">
+                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-gray-800/50">
                     <Image
                       src={
                         itemImageUrl && itemImageUrl.length > 0
@@ -328,20 +328,20 @@ function OrderCard({
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-gray-900 line-clamp-2">
+                    <p className="text-sm font-bold text-gray-900 line-clamp-2 dark:text-gray-100">
                       {getItemName(item)}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
                       Qty {item.quantity} • ₱{item.price}.00 each
                     </p>
                     {item.specialRequest ? (
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
                         Request: {item.specialRequest}
                       </p>
                     ) : null}
                   </div>
 
-                  <p className="text-sm font-bold text-gray-900">
+                  <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
                     ₱{item.price * item.quantity}.00
                   </p>
                 </div>
@@ -349,29 +349,29 @@ function OrderCard({
             })}
           </div>
 
-          <div className="mt-4 rounded-xl bg-gray-50 p-4">
-            <div className="flex items-center justify-between text-sm text-gray-700">
+          <div className="mt-4 rounded-xl bg-gray-50 p-4 dark:bg-gray-800/50">
+            <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
               <span>Subtotal</span>
               <span className="font-semibold">₱{subtotal}.00</span>
             </div>
             {/* The store does not deliver, so only show a fee when one was charged. */}
             {deliveryFee > 0 ? (
-              <div className="mt-2 flex items-center justify-between text-sm text-gray-700">
+              <div className="mt-2 flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
                 <span>Delivery fee</span>
                 <span className="font-semibold">₱{deliveryFee}.00</span>
               </div>
             ) : null}
-            <div className="mt-2 h-px bg-gray-200" />
+            <div className="mt-2 h-px bg-gray-200 dark:bg-gray-800" />
             <div className="mt-2 flex items-center justify-between">
-              <span className="text-sm font-semibold text-gray-900">Total</span>
-              <span className="text-base font-extrabold text-gray-900">
+              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Total</span>
+              <span className="text-base font-extrabold text-gray-900 dark:text-gray-100">
                 ₱{order.totalAmount}.00
               </span>
             </div>
           </div>
 
           {order.riderNotes ? (
-            <p className="mt-4 text-xs text-gray-500">
+            <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
               Notes: {order.riderNotes}
             </p>
           ) : null}

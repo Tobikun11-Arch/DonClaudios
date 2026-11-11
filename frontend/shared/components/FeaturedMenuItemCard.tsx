@@ -62,7 +62,7 @@ function FeaturedMenuItemCard({
     allowanceReached;
 
   return (
-    <div className="group relative min-h-[240px] rounded-[20px] bg-white border border-gray-200 shadow-sm px-4 pt-28 pb-6 transition-colors duration-200 hover:bg-[#2d4a35] active:bg-[#2d4a35]">
+    <div className="group relative min-h-[240px] rounded-[20px] bg-white border border-gray-200 shadow-sm px-4 pt-28 pb-6 transition-colors duration-200 hover:bg-[#2d4a35] active:bg-[#2d4a35] dark:bg-gray-900 dark:border-gray-800 dark:hover:bg-[#2d4a35] dark:active:bg-[#2d4a35]">
       <Link
         href={linkHref}
         aria-label={name}
@@ -78,7 +78,7 @@ function FeaturedMenuItemCard({
           }
           alt={name}
           fill
-          className="rounded-full object-cover ring-4 ring-white"
+          className="rounded-full object-cover ring-4 ring-white dark:ring-gray-900"
         />
       </div>
 
@@ -113,7 +113,7 @@ function FeaturedMenuItemCard({
       </div>
 
       <div className="relative z-0 pointer-events-none text-center">
-        <p className="text-[18px] font-bold text-[#1a1a1a] leading-snug line-clamp-2 transition-colors duration-200 group-hover:text-white group-active:text-white">
+        <p className="text-[18px] font-bold text-[#1a1a1a] leading-snug line-clamp-2 transition-colors duration-200 group-hover:text-white group-active:text-white dark:text-gray-100 dark:group-hover:text-white dark:group-active:text-white">
           {name}
         </p>
 
@@ -121,12 +121,12 @@ function FeaturedMenuItemCard({
           <div className="mt-2 min-h-8 leading-snug">
             <p
               className={cn(
-                'text-[11px] font-semibold transition-colors duration-200 group-hover:text-white group-active:text-white',
+                'text-[11px] font-semibold transition-colors duration-200 group-hover:text-white group-active:text-white dark:group-hover:text-white dark:group-active:text-white',
                 preOrderGuestLocked
-                  ? 'text-gray-500'
+                  ? 'text-gray-500 dark:text-gray-400'
                   : preOrderOrderable && !preOrderClosed
-                    ? 'text-purple-700'
-                    : 'text-gray-500'
+                    ? 'text-purple-700 dark:text-purple-300'
+                    : 'text-gray-500 dark:text-gray-400'
               )}
             >
               {preOrderGuestLocked
@@ -135,13 +135,13 @@ function FeaturedMenuItemCard({
                   (preOrderClosed ? 'Pre-order closed' : 'Pre-order')}
             </p>
             {preOrderGuestLocked ? (
-              <p className="text-[11px] text-gray-500 transition-colors duration-200 group-hover:text-white/70 group-active:text-white/70">
+              <p className="text-[11px] text-gray-500 transition-colors duration-200 group-hover:text-white/70 group-active:text-white/70 dark:text-gray-400 dark:group-hover:text-white/70 dark:group-active:text-white/70">
                 Register / log in as a customer.
               </p>
             ) : preOrderSubLine ||
               (typeof preOrderLimit === 'number' && preOrderLimit >= 1) ||
               preOrderAllowance != null ? (
-              <p className="text-[11px] text-gray-500 transition-colors duration-200 group-hover:text-white/70 group-active:text-white/70">
+              <p className="text-[11px] text-gray-500 transition-colors duration-200 group-hover:text-white/70 group-active:text-white/70 dark:text-gray-400 dark:group-hover:text-white/70 dark:group-active:text-white/70">
                 {preOrderSubLine ||
                   (typeof preOrderLimit === 'number' && preOrderLimit >= 1
                     ? `Max ${preOrderLimit} per customer`
@@ -149,10 +149,10 @@ function FeaturedMenuItemCard({
                 {preOrderAllowance != null ? (
                   <span
                     className={cn(
-                      'block font-semibold transition-colors duration-200 group-hover:text-white/70 group-active:text-white/70',
+                      'block font-semibold transition-colors duration-200 group-hover:text-white/70 group-active:text-white/70 dark:group-hover:text-white/70 dark:group-active:text-white/70',
                       preOrderAllowance > 0
-                        ? 'text-purple-700'
-                        : 'text-[#c30010]'
+                        ? 'text-purple-700 dark:text-purple-300'
+                        : 'text-[#c30010] dark:text-red-400'
                     )}
                   >
                     {preOrderAllowance > 0
@@ -164,7 +164,7 @@ function FeaturedMenuItemCard({
             ) : null}
           </div>
         ) : note ? (
-          <p className="text-[12px] text-gray-500 mt-2 leading-snug line-clamp-2 min-h-8 transition-colors duration-200 group-hover:text-white/70 group-active:text-white/70">
+          <p className="text-[12px] text-gray-500 mt-2 leading-snug line-clamp-2 min-h-8 transition-colors duration-200 group-hover:text-white/70 group-active:text-white/70 dark:text-gray-400 dark:group-hover:text-white/70 dark:group-active:text-white/70">
             {note}
           </p>
         ) : (
@@ -172,7 +172,7 @@ function FeaturedMenuItemCard({
         )}
 
         <div className="mt-5 flex items-center justify-start pr-12">
-          <span className="text-[17px] font-bold text-[#1a1a1a] transition-colors duration-200 group-hover:text-white group-active:text-white">
+          <span className="text-[17px] font-bold text-[#1a1a1a] transition-colors duration-200 group-hover:text-white group-active:text-white dark:text-gray-100 dark:group-hover:text-white dark:group-active:text-white">
             ₱{price}.00
           </span>
         </div>
@@ -196,8 +196,8 @@ function FeaturedMenuItemCard({
         className={cn(
           'absolute bottom-6 right-4 z-10 w-10 h-10 rounded-full grid place-items-center transition-colors shadow-md border',
           addDisabled
-            ? 'cursor-not-allowed bg-gray-200 text-gray-400 border-gray-300'
-            : 'bg-[#fbd897] text-[#2d4a35] hover:bg-white border-[#2d4a35]/20'
+            ? 'cursor-not-allowed bg-gray-200 text-gray-400 border-gray-300 dark:bg-gray-800 dark:border-gray-700'
+            : 'bg-[#fbd897] text-[#2d4a35] hover:bg-white border-[#2d4a35]/20 dark:hover:bg-white'
         )}
       >
         <Plus size={20} strokeWidth={3} />

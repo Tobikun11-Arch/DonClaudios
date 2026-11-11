@@ -70,13 +70,13 @@ function MessageBubble({
       <div
         className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
           isTeam
-            ? 'bg-gray-100 text-gray-800 border border-gray-200'
+            ? 'bg-gray-100 text-gray-800 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100'
             : 'bg-[#2d4a35] text-white'
         } ${sending ? 'opacity-70' : ''}`}
       >
         <p
           className={`text-xs font-bold mb-0.5 ${
-            isTeam ? 'text-gray-500' : 'text-[#b8d4c0]'
+            isTeam ? 'text-gray-500 dark:text-gray-400' : 'text-[#b8d4c0]'
           }`}
         >
           {isTeam ? "DonClaudio's Team" : message.senderName || 'You'}
@@ -304,8 +304,8 @@ export default function CustomerReviews() {
     <div className="w-full max-w-6xl mx-auto">
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">My Reviews</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Reviews</h2>
+          <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
             Share your experience with DonClaudio&apos;s. Reviews appear on the
             homepage once approved.
           </p>
@@ -313,38 +313,38 @@ export default function CustomerReviews() {
       </div>
 
       {/* Submit review */}
-      <div className="rounded-2xl bg-white shadow p-6 mb-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-1">Leave a Review</h3>
+      <div className="rounded-2xl bg-white shadow p-6 mb-6 dark:bg-gray-900">
+        <h3 className="text-lg font-bold text-gray-900 mb-1 dark:text-gray-100">Leave a Review</h3>
         {canReview ? (
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-gray-500 mb-4 dark:text-gray-400">
             You can review after completing an order. You have{' '}
-            <span className="font-semibold text-[#2d4a35]">
+            <span className="font-semibold text-[#2d4a35] dark:text-[#7ed4a0]">
               {remainingCount} review{remainingCount === 1 ? '' : 's'}
             </span>{' '}
             left.
           </p>
         ) : (
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-gray-500 mb-4 dark:text-gray-400">
             One review per completed order. Come back after your next completed
             order to leave another review.
           </p>
         )}
 
         {!eligibilityLoading && !canReview ? (
-          <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 text-sm text-gray-500">
+          <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 text-sm text-gray-500 dark:bg-gray-800/50 dark:border-gray-800 dark:text-gray-400">
             You&apos;ve already left a review for all of your completed orders.
           </div>
         ) : (
           <>
             <div className="mb-4">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">
                 Your Rating
               </label>
               <StarRating value={rating} onChange={setRating} />
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">
                 Your Review
               </label>
               <textarea
@@ -353,14 +353,14 @@ export default function CustomerReviews() {
                 rows={4}
                 maxLength={1000}
                 placeholder="Tell us about your experience..."
-                className={`w-full rounded-xl border px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e] ${
+                className={`w-full rounded-xl border px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e] dark:text-gray-100 dark:bg-gray-800 ${
                   profanityHint.hasMatch
-                    ? 'border-red-300 focus:ring-red-200'
-                    : 'border-gray-200'
+                    ? 'border-red-300 focus:ring-red-200 dark:border-red-500/30'
+                    : 'border-gray-200 dark:border-gray-700'
                 }`}
               />
               {profanityHint.hasMatch ? (
-                <p className="mt-2 text-xs font-medium text-red-600">
+                <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-300">
                   {profanityHint.severe
                     ? 'This review will be blocked. Please remove the inappropriate language.'
                     : 'This review will be held for review. Please reword any rude or insulting words.'}
@@ -375,7 +375,7 @@ export default function CustomerReviews() {
 
             {/* Images */}
             <div className="mb-5">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">
                 Photos{' '}
                 <span className="font-normal text-gray-400">
                   (optional, up to {MAX_REVIEW_IMAGES})
@@ -385,7 +385,7 @@ export default function CustomerReviews() {
                 {images.map((image, index) => (
                   <div
                     key={image.previewUrl}
-                    className="relative h-24 w-24 rounded-xl overflow-hidden border border-gray-200"
+                    className="relative h-24 w-24 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800"
                   >
                     <Image
                       src={image.previewUrl}
@@ -408,7 +408,7 @@ export default function CustomerReviews() {
                   <button
                     type="button"
                     onClick={() => imageInputRef.current?.click()}
-                    className="h-24 w-24 rounded-xl border-2 border-dashed border-gray-300 hover:border-[#6b8a6e] hover:bg-gray-50 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-[#2d4a35] transition-colors"
+                    className="h-24 w-24 rounded-xl border-2 border-dashed border-gray-300 hover:border-[#6b8a6e] hover:bg-gray-50 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-[#2d4a35] transition-colors dark:border-gray-700 dark:hover:bg-gray-800 dark:hover:text-[#7ed4a0] dark:hover:border-[#6b8a6e]"
                   >
                     <ImagePlus size={20} />
                     <span className="text-[11px] font-semibold">Add Photo</span>
@@ -442,15 +442,15 @@ export default function CustomerReviews() {
 
       {/* My reviews list */}
       {isLoading ? (
-        <div className="rounded-2xl bg-white shadow p-5 text-sm text-gray-500">
+        <div className="rounded-2xl bg-white shadow p-5 text-sm text-gray-500 dark:bg-gray-900 dark:text-gray-400">
           Loading your reviews...
         </div>
       ) : isError ? (
-        <div className="rounded-2xl bg-white shadow p-5 text-sm text-red-600">
+        <div className="rounded-2xl bg-white shadow p-5 text-sm text-red-600 dark:bg-gray-900 dark:text-red-300">
           Failed to load your reviews.
         </div>
       ) : reviews.length === 0 ? (
-        <div className="rounded-2xl bg-white shadow p-5 text-sm text-gray-500">
+        <div className="rounded-2xl bg-white shadow p-5 text-sm text-gray-500 dark:bg-gray-900 dark:text-gray-400">
           You haven&apos;t submitted any reviews yet.
         </div>
       ) : (
@@ -465,14 +465,14 @@ export default function CustomerReviews() {
             const isReplying = replyingId === review._id;
             const draft = drafts[review._id] ?? '';
             return (
-              <div key={review._id} id={`review-${review._id}`} className="rounded-2xl bg-white shadow p-6">
+              <div key={review._id} id={`review-${review._id}`} className="rounded-2xl bg-white shadow p-6 dark:bg-gray-900">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-2">
                     <StarRating value={review.rating} onChange={() => {}} disabled />
                   </div>
                 </div>
 
-                <p className="text-sm text-gray-700 mt-3">
+                <p className="text-sm text-gray-700 mt-3 dark:text-gray-300">
                   &ldquo;{review.comment}&rdquo;
                 </p>
 
@@ -485,7 +485,7 @@ export default function CustomerReviews() {
                         alt={image.alt || 'Review photo'}
                         width={96}
                         height={96}
-                        className="h-24 w-24 rounded-lg object-cover border border-gray-200"
+                        className="h-24 w-24 rounded-lg object-cover border border-gray-200 dark:border-gray-800"
                       />
                     ))}
                   </div>
@@ -498,7 +498,7 @@ export default function CustomerReviews() {
                 </p>
 
                 {review.status === 'rejected' && (
-                  <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+                  <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
                     <p className="font-semibold">Not published</p>
                     <p className="mt-1">
                       {review.moderation &&
@@ -520,14 +520,14 @@ export default function CustomerReviews() {
                 )}
 
                 {review.status === 'pending' && (
-                  <p className="mt-3 text-xs font-medium text-amber-600">
+                  <p className="mt-3 text-xs font-medium text-amber-600 dark:text-amber-300">
                     Pending approval — not visible to other customers yet.
                   </p>
                 )}
 
                 {messages.length > 0 && (
                   <div className="mt-5 space-y-2.5">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide dark:text-gray-400">
                       Conversation
                     </p>
                     {messages.map(message => (
@@ -540,13 +540,13 @@ export default function CustomerReviews() {
                   </div>
                 )}
 
-                <div className="mt-5 pt-4 border-t border-gray-100">
+                <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-800">
                   {!isReplying ? (
                     <Button
                       onClick={() => setReplyingId(review._id)}
                       variant="outline"
                       size="sm"
-                      className="gap-2 text-[#2d4a35]"
+                      className="gap-2 text-[#2d4a35] dark:text-[#7ed4a0]"
                     >
                       <MessageCircle size={16} />
                       {draft.trim() || hasPreviousMessage
@@ -573,7 +573,7 @@ export default function CustomerReviews() {
                         rows={3}
                         maxLength={2000}
                         placeholder="Write your reply..."
-                        className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e]"
+                        className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e] dark:border-gray-700 dark:text-gray-100 dark:bg-gray-800"
                       />
                       <div className="flex justify-end gap-2 mt-2">
                         <Button

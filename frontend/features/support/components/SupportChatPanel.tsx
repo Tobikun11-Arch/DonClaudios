@@ -228,25 +228,25 @@ export default function SupportChatPanel({
       </div>
 
       {conversationStatus === 'closed' ? (
-        <div className="border-t border-amber-100 bg-amber-50 px-3 py-2 text-[11px] leading-snug text-amber-700">
+        <div className="border-t border-amber-100 bg-amber-50 px-3 py-2 text-[11px] leading-snug text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
           {closedBy === 'customer'
             ? 'You marked this conversation as resolved.'
             : "DonClaudio's marked this conversation as resolved."}{' '}
           Send a message to reopen.
         </div>
       ) : (
-        <div className="flex justify-end border-t border-gray-100 px-3 py-1.5">
+        <div className="flex justify-end border-t border-gray-100 px-3 py-1.5 dark:border-gray-800">
           <button
             onClick={handleCloseChat}
             disabled={closeMutation.isPending}
-            className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-gray-400 transition-colors hover:bg-gray-100 hover:text-[#2d4a35] disabled:opacity-50"
+            className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-gray-400 transition-colors hover:bg-gray-100 hover:text-[#2d4a35] disabled:opacity-50 dark:hover:bg-gray-800 dark:hover:text-[#7ed4a0]"
           >
             {closeMutation.isPending ? 'Marking...' : 'Mark as resolved'}
           </button>
         </div>
       )}
 
-      <div className="flex items-end gap-2 border-t border-gray-100 p-3">
+      <div className="flex items-end gap-2 border-t border-gray-100 p-3 dark:border-gray-800">
         <textarea
           value={draft}
           onChange={e => setDraft(e.target.value)}
@@ -257,7 +257,7 @@ export default function SupportChatPanel({
               ? 'Send a message to reopen...'
               : 'Type your message... (Enter to send)'
           }
-          className="flex-1 resize-none rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e]"
+          className="flex-1 resize-none rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e] dark:border-gray-700 dark:text-gray-100 dark:bg-gray-800"
         />
         <button
           onClick={handleSend}

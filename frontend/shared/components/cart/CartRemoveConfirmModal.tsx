@@ -29,15 +29,15 @@ export default function CartRemoveConfirmModal({
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
+        className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-lg font-bold text-gray-900">Remove item?</p>
-            <p className="mt-2 text-sm leading-relaxed text-gray-500">
+            <p className="text-lg font-bold text-gray-900 dark:text-gray-100">Remove item?</p>
+            <p className="mt-2 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
               Are you sure you want to remove{' '}
-              <span className="font-semibold text-gray-900">{itemName}</span>{' '}
+              <span className="font-semibold text-gray-900 dark:text-gray-100">{itemName}</span>{' '}
               from your cart?
             </p>
           </div>

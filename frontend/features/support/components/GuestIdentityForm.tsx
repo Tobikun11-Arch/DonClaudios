@@ -27,15 +27,15 @@ export default function GuestIdentityForm({
 
   return (
     <div className="px-4 py-6">
-      <p className="text-sm font-semibold text-gray-900">
+      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
         Tell us who you are
       </p>
-      <p className="mt-1 text-xs text-gray-500">
+      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
         Enter your name and a phone or email so we can get back to you.
       </p>
       <form onSubmit={handleSubmit} className="mt-4 space-y-3">
         <div className="space-y-1.5">
-          <Label htmlFor="guest-name" className="text-xs text-gray-600">
+          <Label htmlFor="guest-name" className="text-xs text-gray-600 dark:text-gray-300">
             Name
           </Label>
           <Input
@@ -43,11 +43,11 @@ export default function GuestIdentityForm({
             value={name}
             onChange={e => setName(sanitizeName(e.target.value))}
             placeholder="Juan Dela Cruz"
-            className="h-9"
+            className="h-9 dark:bg-gray-800 dark:text-gray-100"
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="guest-contact" className="text-xs text-gray-600">
+          <Label htmlFor="guest-contact" className="text-xs text-gray-600 dark:text-gray-300">
             Phone or Email
           </Label>
           <Input
@@ -55,7 +55,7 @@ export default function GuestIdentityForm({
             value={contact}
             onChange={e => setContact(e.target.value)}
             placeholder="09xx-xxx-xxxx or email@example.com"
-            className="h-9"
+            className="h-9 dark:bg-gray-800 dark:text-gray-100"
           />
         </div>
         <Button

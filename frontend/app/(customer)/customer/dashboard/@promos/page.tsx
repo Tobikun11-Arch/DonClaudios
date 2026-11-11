@@ -14,7 +14,7 @@ function PromoImage({promo}: {promo: Promo}) {
   }, [promo.startDate]);
 
   return (
-    <div className="relative aspect-video bg-gray-100 overflow-hidden rounded-xl">
+    <div className="relative aspect-video bg-gray-100 overflow-hidden rounded-xl dark:bg-gray-800">
       {promo.imageUrl ? (
         <Image
           src={promo.imageUrl}
@@ -28,7 +28,7 @@ function PromoImage({promo}: {promo: Promo}) {
         />
       ) : null}
       {!loaded ? (
-        <div className="absolute inset-0 animate-pulse bg-gray-200" />
+        <div className="absolute inset-0 animate-pulse bg-gray-200 dark:bg-gray-800" />
       ) : null}
 
       {isUpcoming ? (
@@ -42,12 +42,12 @@ function PromoImage({promo}: {promo: Promo}) {
 
 function PromoCardSkeleton() {
   return (
-    <div className="border rounded-2xl bg-white overflow-hidden">
-      <div className="aspect-video bg-gray-100 animate-pulse" />
+    <div className="border rounded-2xl bg-white overflow-hidden dark:bg-gray-900 dark:border-gray-800">
+      <div className="aspect-video bg-gray-100 animate-pulse dark:bg-gray-800" />
       <div className="p-4 space-y-3">
-        <div className="h-5 w-2/3 bg-gray-100 animate-pulse rounded" />
-        <div className="h-4 w-full bg-gray-100 animate-pulse rounded" />
-        <div className="h-4 w-5/6 bg-gray-100 animate-pulse rounded" />
+        <div className="h-5 w-2/3 bg-gray-100 animate-pulse rounded dark:bg-gray-800" />
+        <div className="h-4 w-full bg-gray-100 animate-pulse rounded dark:bg-gray-800" />
+        <div className="h-4 w-5/6 bg-gray-100 animate-pulse rounded dark:bg-gray-800" />
       </div>
     </div>
   );
@@ -64,7 +64,7 @@ export default function PromoPage() {
     <div className="p-4">
       <div className="mb-4">
         <h1 className="text-xl font-bold">Promos</h1>
-        <p className="text-sm text-gray-500">Available deals and discounts</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Available deals and discounts</p>
       </div>
 
       {promosQuery.isLoading ? (
@@ -76,7 +76,7 @@ export default function PromoPage() {
       ) : null}
 
       {!promosQuery.isLoading && promos.length === 0 ? (
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-gray-500 dark:text-gray-400">
           No promos available right now.
         </div>
       ) : null}
@@ -86,13 +86,13 @@ export default function PromoPage() {
           {promos.map((promo: Promo) => (
             <div
               key={promo._id}
-              className="border rounded-2xl bg-white overflow-hidden"
+              className="border rounded-2xl bg-white overflow-hidden dark:bg-gray-900 dark:border-gray-800"
             >
               <PromoImage promo={promo} />
               <div className="p-4">
-                <div className="font-semibold text-gray-900">{promo.title}</div>
+                <div className="font-semibold text-gray-900 dark:text-gray-100">{promo.title}</div>
                 {promo.description ? (
-                  <div className="text-sm text-gray-500 mt-1 line-clamp-2">
+                  <div className="text-sm text-gray-500 mt-1 line-clamp-2 dark:text-gray-400">
                     {promo.description}
                   </div>
                 ) : null}

@@ -142,16 +142,16 @@ export default function LocationPicker({
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-3xl mx-auto shadow-sm">
-      <h2 className="text-xl font-semibold text-center text-gray-900 mb-1">
+    <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-3xl mx-auto shadow-sm dark:bg-gray-900 dark:border-gray-800">
+      <h2 className="text-xl font-semibold text-center text-gray-900 mb-1 dark:text-gray-100">
         Enter Location
       </h2>
-      <p className="text-sm text-center text-gray-500 mb-5">
+      <p className="text-sm text-center text-gray-500 mb-5 dark:text-gray-400">
         Enter your delivery address to find the store nearest you.
       </p>
 
       {permissionDenied && (
-        <div className="flex items-start gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4">
+        <div className="flex items-start gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4 dark:bg-gray-800/50 dark:border-gray-800">
           <svg
             className="w-4 h-4 mt-0.5 shrink-0 text-gray-400"
             viewBox="0 0 24 24"
@@ -162,13 +162,13 @@ export default function LocationPicker({
             <circle cx="12" cy="12" r="10" />
             <path d="M12 8v4m0 4h.01" />
           </svg>
-          <p className="text-sm text-gray-600 flex-1">
+          <p className="text-sm text-gray-600 flex-1 dark:text-gray-300">
             Location access was denied. Type your delivery address in the search
             box below.
           </p>
           <button
             onClick={requestLocation}
-            className="text-xs border border-gray-300 rounded-full px-3 py-1 hover:bg-gray-100 transition-colors whitespace-nowrap"
+            className="text-xs border border-gray-300 rounded-full px-3 py-1 hover:bg-gray-100 transition-colors whitespace-nowrap dark:border-gray-700 dark:hover:bg-gray-800"
           >
             Try again
           </button>
@@ -192,14 +192,14 @@ export default function LocationPicker({
           value={location.address}
           onChange={e => handleSearchInput(e.target.value)}
           placeholder="Search for your address here."
-          className="w-full pl-10 pr-12 py-2.5 rounded-full border border-gray-200 bg-gray-50 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"
+          className="w-full pl-10 pr-12 py-2.5 rounded-full border border-gray-200 bg-gray-50 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-transparent"
         />
 
         <button
           onClick={requestLocation}
           disabled={isLocating}
           title="Use my current location"
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors disabled:opacity-40"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors disabled:opacity-40 dark:hover:text-gray-100"
         >
           {isLocating ? (
             <svg
@@ -227,11 +227,11 @@ export default function LocationPicker({
         </button>
       </div>
 
-      <p className="text-xs text-red-500 text-center mb-2">
+      <p className="text-xs text-red-500 text-center mb-2 dark:text-red-400">
         Move/drag the map below if the pinned location is incorrect.
       </p>
 
-      <div className="w-full h-72 rounded-xl overflow-hidden border border-gray-200">
+      <div className="w-full h-72 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800">
         <iframe
           src={mapSrc}
           className="w-full h-full"
@@ -262,8 +262,8 @@ export default function LocationPicker({
             statusMsg.includes('not found') ||
             statusMsg.includes('failed') ||
             statusMsg.includes('first')
-              ? 'text-red-500'
-              : 'text-gray-500'
+              ? 'text-red-500 dark:text-red-400'
+              : 'text-gray-500 dark:text-gray-400'
           }`}
         >
           {statusMsg}

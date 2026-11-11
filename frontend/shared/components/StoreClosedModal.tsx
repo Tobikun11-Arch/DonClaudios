@@ -48,7 +48,7 @@ export default function StoreClosedModal() {
       onClick={handleBrowse}
     >
       <div
-        className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
+        className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900"
         onClick={e => e.stopPropagation()}
       >
         <Image

@@ -2,7 +2,7 @@
 
 import {toast} from 'sonner';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
-import {ProfileHeader, UsualOrderCard, AddressList, OccasionsCard, PreferencesForm, PromosCard, AccountSection, useCustomerProfileData} from '@/features/customer/profile';
+import {ProfileHeader, UsualOrderCard, AddressList, OccasionsCard, PreferencesForm, PromosCard, AccountSection, AppearanceCard, useCustomerProfileData} from '@/features/customer/profile';
 
 export default function ProfileSlot() {
   const {
@@ -61,6 +61,7 @@ export default function ProfileSlot() {
         />
         <UsualOrderCard orders={orders} />
         <PreferencesForm preferences={preferences} onSave={savePreferences} />
+        <AppearanceCard />
         <PromosCard promos={promos} />
       </div>
     </div>
