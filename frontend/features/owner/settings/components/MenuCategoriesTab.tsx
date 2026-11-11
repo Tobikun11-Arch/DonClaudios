@@ -26,6 +26,7 @@ import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {ImageCropModal} from '@/features/owner/products/components/ImageCropModal';
 import {uploadCategoryImage} from '@/lib/api/uploadApi';
 import {
+  Check,
   Loader2,
   Pencil,
   Plus,
@@ -532,33 +533,67 @@ export function MenuCategoriesTab() {
                     </div>
                   </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => startEdit(cat)}
-                    disabled={isBusy}
-                    aria-label={`Edit ${cat.name}`}
+                {confirmingId === cat._id ? (
+                  <div
+                    role="group"
+                    aria-label={`Confirm deleting ${cat.name}`}
+                    className="flex shrink-0 items-center gap-1.5"
                   >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={confirmingId === cat._id ? 'destructive' : 'ghost'}
-                    size="sm"
-                    onClick={() => handleDelete(cat)}
-                    disabled={isBusy}
-                    aria-label={`Delete ${cat.name}`}
-                  >
-                    {deleteMutation.isPending && confirmingId === cat._id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
+                    <span className="hidden text-xs font-semibold text-red-600 dark:text-red-400 sm:inline">
+                      Delete?
+                    </span>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDelete(cat)}
+                      disabled={deleteMutation.isPending}
+                      aria-label={`Confirm delete ${cat.name}`}
+                      title="Confirm delete"
+                      autoFocus
+                    >
+                      {deleteMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setConfirmingId(null)}
+                      disabled={deleteMutation.isPending}
+                      aria-label={`Cancel deleting ${cat.name}`}
+                      title="Cancel"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => startEdit(cat)}
+                      disabled={isBusy}
+                      aria-label={`Edit ${cat.name}`}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(cat)}
+                      disabled={isBusy}
+                      aria-label={`Delete ${cat.name}`}
+                    >
                       <Trash2 className="h-4 w-4" />
-                    )}
-                    {confirmingId === cat._id && 'Confirm'}
-                  </Button>
-                </div>
+                    </Button>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

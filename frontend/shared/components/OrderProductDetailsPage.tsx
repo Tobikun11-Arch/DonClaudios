@@ -365,8 +365,8 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
     <div
       className={
         isCustomerRoute
-          ? 'min-h-screen bg-gray-50'
-          : 'min-h-screen bg-gray-50 flex justify-center items-center'
+          ? 'min-h-screen bg-gray-50 dark:bg-gray-950'
+          : 'min-h-screen bg-gray-50 flex justify-center items-center dark:bg-gray-950'
       }
     >
       <div
@@ -385,7 +385,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
               aria-label="Open cart"
             >
               <span className="relative">
-                <ShoppingCart className="h-5 w-5 text-[#2d4a35]" />
+                <ShoppingCart className="h-5 w-5 text-[#2d4a35] dark:text-[#7ed4a0]" />
                 {cartUniqueCount > 0 && (
                   <span className="absolute -right-2 -top-2 h-5 min-w-5 px-1 rounded-full bg-[#c30010] text-white text-[10px] font-bold grid place-items-center">
                     {cartUniqueCount}
@@ -393,7 +393,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                 )}
               </span>
               {cartUniqueCount > 0 && (
-                <span className="ml-2 text-sm font-semibold text-[#2d4a35]">
+                <span className="ml-2 text-sm font-semibold text-[#2d4a35] dark:text-[#7ed4a0]">
                   ₱{cartSubtotal}.00
                 </span>
               )}
@@ -404,7 +404,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
         <Button
           type="button"
           variant="ghost"
-          className="text-[#3c5e45] hover:text-[#3c5e45] hover:bg-[#3c5e45]/10"
+          className="text-[#3c5e45] hover:text-[#3c5e45] hover:bg-[#3c5e45]/10 dark:text-[#7ed4a0] dark:hover:text-[#7ed4a0] dark:hover:bg-[#7ed4a0]/10"
           onClick={() => router.back()}
         >
           <ChevronLeft className="h-5 w-5 mr-2" />
@@ -414,7 +414,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
         {productQuery.isLoading && <ProductDetailSkeleton />}
 
         {productQuery.isError && (
-          <div className="mt-8 text-sm text-gray-500">
+          <div className="mt-8 text-sm text-gray-500 dark:text-gray-400">
             Failed to load product.
           </div>
         )}
@@ -422,7 +422,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
         {product && (
           <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
             <div className="w-full">
-              <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-white border border-gray-100">
+              <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-white border border-gray-100 dark:bg-gray-900 dark:border-gray-800">
                 <Image
                   src={
                     product.imageUrl && product.imageUrl.length > 0
@@ -442,7 +442,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
               {promoState &&
               (promoState.isActive || promoState.isUpcoming) &&
               !isPreOrder ? (
-                <div className="w-full rounded-[20px] overflow-hidden bg-white border border-gray-200">
+                <div className="w-full rounded-[20px] overflow-hidden bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-800">
                   {/* Hero */}
                   <div className="bg-[#2F4A3A] text-white px-5.5 pt-5 pb-6">
                     <div className="flex justify-between items-center">
@@ -476,36 +476,36 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                     )}
                   </div>
                   <div className="relative h-0">
-                    <div className="absolute inset-x-5 top-0 border-t-2 border-dashed border-gray-300" />
-                    <div className="absolute -left-3.25 -top-3.25 w-6.5 h-6.5 rounded-full bg-gray-50" />
-                    <div className="absolute -right-3.25 -top-3.25 w-6.5 h-6.5 rounded-full bg-gray-50" />
+                    <div className="absolute inset-x-5 top-0 border-t-2 border-dashed border-gray-300 dark:border-gray-700" />
+                    <div className="absolute -left-3.25 -top-3.25 w-6.5 h-6.5 rounded-full bg-gray-50 dark:bg-gray-950" />
+                    <div className="absolute -right-3.25 -top-3.25 w-6.5 h-6.5 rounded-full bg-gray-50 dark:bg-gray-950" />
                   </div>
                   <div className="px-5.5 pt-6 pb-5.5">
-                    <div className="flex items-center gap-2.5 text-base text-gray-900">
-                      <CalendarDays className="w-5 h-5 text-gray-500" />
+                    <div className="flex items-center gap-2.5 text-base text-gray-900 dark:text-gray-100">
+                      <CalendarDays className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                       <span>
                         {promoState.startDate} - {promoState.endDate}
                       </span>
                     </div>
 
                     {product.description && (
-                      <div className="mt-4 text-sm text-gray-600 leading-relaxed">
+                      <div className="mt-4 text-sm text-gray-600 leading-relaxed dark:text-gray-300">
                         {product.description}
                       </div>
                     )}
 
                     <div className="mt-5">
-                      <Label className="text-sm font-semibold text-gray-900">
+                      <Label className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                         Order notes
                       </Label>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
                         Add a note for the kitchen (e.g. no ginger, less spicy).
                       </p>
                       <textarea
                         value={instructions}
                         onChange={e => setInstructions(e.target.value)}
                         placeholder="Type your request here..."
-                        className="mt-3 w-full min-h-28 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3c5e45]/20 focus:border-[#3c5e45]"
+                        className="mt-3 w-full min-h-28 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3c5e45]/20 focus:border-[#3c5e45] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-[#7ed4a0]/60"
                       />
                     </div>
 
@@ -514,19 +514,19 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                         <button
                           type="button"
                           onClick={() => setQty(q => Math.max(1, q - 1))}
-                          className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
+                          className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
                           aria-label="Decrease quantity"
                         >
-                          <Minus className="h-3.5 w-3.5 text-gray-600" />
+                          <Minus className="h-3.5 w-3.5 text-gray-600 dark:text-gray-300" />
                         </button>
                         <span className="min-w-6 text-center">{qty}</span>
                         <button
                           type="button"
                           onClick={() => setQty(q => q + 1)}
-                          className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
+                          className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
                           aria-label="Increase quantity"
                         >
-                          <Plus className="h-3.5 w-3.5 text-gray-600" />
+                          <Plus className="h-3.5 w-3.5 text-gray-600 dark:text-gray-300" />
                         </button>
                       </div>
                       <Button
@@ -537,7 +537,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                         Add to cart · ₱{promoState.discountPrice * qty}.00
                       </Button>
                     </div>
-                    <p className="mt-5 text-[13px] leading-relaxed text-gray-500">
+                    <p className="mt-5 text-[13px] leading-relaxed text-gray-500 dark:text-gray-400">
                       This promo is available for a limited time. Add it to your
                       cart before it expires!
                     </p>
@@ -547,10 +547,10 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                 <div>
                   <div className="flex items-start justify-between gap-6">
                     <div className="min-w-0">
-                      <h2 className="text-xl font-bold text-gray-900">
+                      <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
                         {product.name}
                       </h2>
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
                         {product.category}
                       </p>
                     </div>
@@ -564,7 +564,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                         const isDiscounted = unitPrice < product.price;
                         return (
                           <div>
-                            <p className="text-sm font-bold text-gray-900">
+                            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
                               ₱{unitPrice}.00
                             </p>
                             {isDiscounted ? (
@@ -585,7 +585,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                   ) : null}
 
                   {product.description && (
-                    <p className="mt-4 text-sm text-gray-600 leading-relaxed">
+                    <p className="mt-4 text-sm text-gray-600 leading-relaxed dark:text-gray-300">
                       {product.description}
                     </p>
                   )}
@@ -594,17 +594,17 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                   <IngredientGrid ingredients={product.ingredients ?? []} />
 
                   <div className="mt-8">
-                    <Label className="text-sm font-semibold text-gray-900">
+                    <Label className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       Order notes
                     </Label>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
                       Add a note for the kitchen (e.g. no ginger, less spicy).
                     </p>
                     <textarea
                       value={instructions}
                       onChange={e => setInstructions(e.target.value)}
                       placeholder="Type your request here..."
-                      className="mt-3 w-full min-h-28 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3c5e45]/20 focus:border-[#3c5e45]"
+                      className="mt-3 w-full min-h-28 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3c5e45]/20 focus:border-[#3c5e45] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-[#7ed4a0]/60"
                     />
                   </div>
 
@@ -613,13 +613,13 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                       <button
                         type="button"
                         onClick={() => setQty(q => Math.max(1, q - 1))}
-                        className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
+                        className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
                         aria-label="Decrease quantity"
                       >
-                        <Minus className="h-3.5 w-3.5 text-gray-600" />
+                        <Minus className="h-3.5 w-3.5 text-gray-600 dark:text-gray-300" />
                       </button>
 
-                      <span className="min-w-6 text-center text-base font-semibold text-gray-900">
+                      <span className="min-w-6 text-center text-base font-semibold text-gray-900 dark:text-gray-100">
                         {selectableQty}
                       </span>
 
@@ -629,10 +629,10 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                           setQty(q => Math.min(q + 1, maxSelectableQty))
                         }
                         disabled={selectableQty >= maxSelectableQty}
-                        className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white"
+                        className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
                         aria-label="Increase quantity"
                       >
-                        <Plus className="h-3.5 w-3.5 text-gray-600" />
+                        <Plus className="h-3.5 w-3.5 text-gray-600 dark:text-gray-300" />
                       </button>
                     </div>
                     <Button
@@ -657,7 +657,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
 
               {/* Pre-order ticket — replaces the whole right panel */}
               {isPreOrder && preOrderExt && (
-                <div className="w-full rounded-[20px] overflow-hidden bg-white border border-gray-200">
+                <div className="w-full rounded-[20px] overflow-hidden bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-800">
                   {/* Hero */}
                   <div className="bg-[#2F4A3A] text-white px-[22px] pt-5 pb-6">
                     <div className="flex justify-between items-center">
@@ -741,19 +741,19 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                     ) : null}
                   </div>
                   <div className="relative h-0">
-                    <div className="absolute inset-x-5 top-0 border-t-2 border-dashed border-gray-300" />
-                    <div className="absolute -left-[13px] -top-[13px] w-[26px] h-[26px] rounded-full bg-gray-50" />
-                    <div className="absolute -right-[13px] -top-[13px] w-[26px] h-[26px] rounded-full bg-gray-50" />
+                    <div className="absolute inset-x-5 top-0 border-t-2 border-dashed border-gray-300 dark:border-gray-700" />
+                    <div className="absolute -left-[13px] -top-[13px] w-[26px] h-[26px] rounded-full bg-gray-50 dark:bg-gray-950" />
+                    <div className="absolute -right-[13px] -top-[13px] w-[26px] h-[26px] rounded-full bg-gray-50 dark:bg-gray-950" />
                   </div>
                   <div className="px-[22px] pt-6 pb-[22px]">
-                    <div className="flex items-center gap-[10px] text-base text-gray-900">
-                      <CalendarDays className="w-5 h-5 text-gray-500" />
+                    <div className="flex items-center gap-[10px] text-base text-gray-900 dark:text-gray-100">
+                      <CalendarDays className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                       <span>{preOrderExt.scheduleLabel}</span>
                     </div>
                     {!preOrderExt.singleBatch &&
                       preOrderState.batches.length > 0 && (
                         <div className="mt-4">
-                          <div className="flex items-center gap-2 text-[13px] text-gray-500 mb-2">
+                          <div className="flex items-center gap-2 text-[13px] text-gray-500 mb-2 dark:text-gray-400">
                             <Clock className="w-4 h-4" />
                             <span>Today&apos;s batches</span>
                           </div>
@@ -769,8 +769,8 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                                     isLive
                                       ? 'border-[#2F4A3A] bg-[#2F4A3A] text-white'
                                       : isDone
-                                        ? 'border-gray-200 bg-gray-50 text-gray-400'
-                                        : 'border-gray-200 bg-white text-gray-600'
+                                        ? 'border-gray-200 bg-gray-50 text-gray-400 dark:border-gray-800 dark:bg-gray-800/50'
+                                        : 'border-gray-200 bg-white text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300'
                                   }`}
                                 >
                                   <div className="text-[11px] opacity-80">
@@ -792,11 +792,11 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                           <span className="text-[22px] font-medium">
                             {preOrderExt.remaining} left
                           </span>
-                          <span className="text-[13px] text-gray-500">
+                          <span className="text-[13px] text-gray-500 dark:text-gray-400">
                             of {preOrderExt.stock}
                           </span>
                         </div>
-                        <div className="mt-2 h-[10px] rounded-full bg-gray-100 overflow-hidden">
+                        <div className="mt-2 h-[10px] rounded-full bg-gray-100 overflow-hidden dark:bg-gray-800">
                           <div
                             className="h-full rounded-full"
                             style={{
@@ -812,7 +812,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                     )}
                     <div className="mt-4 flex flex-wrap gap-2">
                       {preOrderExt.limitLabel && (
-                        <div className="flex items-center gap-1 text-[13px] px-3 py-1.5 rounded-full bg-gray-100 text-gray-600">
+                        <div className="flex items-center gap-1 text-[13px] px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                           <User className="w-4 h-4" />
                           <span>{preOrderExt.limitLabel}</span>
                         </div>
@@ -821,8 +821,8 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                         <div
                           className={`flex items-center gap-1 text-[13px] px-3 py-1.5 rounded-full ${
                             preOrderAllowance > 0
-                              ? 'bg-[#e7f0e3] text-[#2d4a35]'
-                              : 'bg-[#fdecea] text-[#a12622]'
+                              ? 'bg-[#e7f0e3] text-[#2d4a35] dark:bg-[#7ed4a0]/10 dark:text-[#7ed4a0]'
+                              : 'bg-[#fdecea] text-[#a12622] dark:bg-red-500/10 dark:text-red-300'
                           }`}
                         >
                           <User className="w-4 h-4" />
@@ -833,7 +833,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                           </span>
                         </div>
                       )}
-                      <div className="flex items-center gap-1 text-[13px] px-3 py-1.5 rounded-full bg-gray-100 text-gray-600">
+                      <div className="flex items-center gap-1 text-[13px] px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                         <Lock className="w-4 h-4" />
                         <span>Signed-in customers only</span>
                       </div>
@@ -850,9 +850,9 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                             (preOrderExt.uiState !== 'live' &&
                               preOrderExt.uiState !== 'live_low')
                           }
-                          className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
                         >
-                          <Minus className="h-3.5 w-3.5 text-gray-600" />
+                          <Minus className="h-3.5 w-3.5 text-gray-600 dark:text-gray-300" />
                         </button>
                         <span className="min-w-6 text-center">
                           {selectableQty}
@@ -868,9 +868,9 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                               preOrderExt.uiState !== 'live_low') ||
                             selectableQty >= maxSelectableQty
                           }
-                          className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
                         >
-                          <Plus className="h-3.5 w-3.5 text-gray-600" />
+                          <Plus className="h-3.5 w-3.5 text-gray-600 dark:text-gray-300" />
                         </button>
                       </div>
                       <Button
@@ -885,10 +885,10 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                         disabled={preOrderAddDisabled}
                         className={`flex-1 h-[54px] rounded-full text-[17px] font-medium ${
                           preOrderGuestLocked
-                            ? 'bg-[#2F4A3A] text-white hover:bg-[#254133] transition-colors'
+                            ? 'bg-[#2F4A3A] text-white hover:bg-[#254133] transition-colors dark:hover:bg-[#254133]'
                             : preOrderLive && selectableQty > 0
                               ? 'bg-[#2F4A3A] text-white'
-                              : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                              : 'bg-gray-100 text-gray-500 cursor-not-allowed dark:bg-gray-800 dark:text-gray-400'
                         }`}
                       >
                         {preOrderGuestLocked
@@ -900,7 +900,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                             : preOrderExt.buttonLabel}
                       </Button>
                     </div>
-                    <p className="mt-5 text-[13px] leading-relaxed text-gray-500">
+                    <p className="mt-5 text-[13px] leading-relaxed text-gray-500 dark:text-gray-400">
                       {preOrderGuestLocked
                         ? "Pre-orders are for registered DonClaudio's customers. Create an account or log in, then come back to place your order."
                         : preOrderExt.singleBatch

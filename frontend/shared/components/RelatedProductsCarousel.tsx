@@ -108,10 +108,10 @@ function RelatedProductsCarousel({
       <div className="mt-12">
         <div className="flex items-center justify-between mb-0">
           <div>
-            <h2 className="text-[22px] font-bold text-gray-900">
+            <h2 className="text-[22px] font-bold text-gray-900 dark:text-gray-100">
               You may also like
             </h2>
-            <p className="text-sm text-gray-500 mt-0.5">
+            <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">
               More from {categoryName}
             </p>
           </div>
@@ -132,10 +132,10 @@ function RelatedProductsCarousel({
     <div className="mt-16">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-[22px] font-bold text-gray-900">
+          <h2 className="text-[22px] font-bold text-gray-900 dark:text-gray-100">
             You may also like
           </h2>
-          <p className="text-sm text-gray-500 mt-0.5">Browse our menu</p>
+          <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">Browse our menu</p>
         </div>
         {hasOverflow && (
           <div className="hidden md:flex gap-2">
@@ -144,18 +144,18 @@ function RelatedProductsCarousel({
               onClick={() => scroll('left')}
               disabled={!canScrollLeft}
               aria-label="Scroll left"
-              className="h-10 w-10 rounded-full border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="h-10 w-10 rounded-full border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800"
             >
-              <ChevronLeft className="h-5 w-5 text-gray-600" />
+              <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-300" />
             </button>
             <button
               type="button"
               onClick={() => scroll('right')}
               disabled={!canScrollRight}
               aria-label="Scroll right"
-              className="h-10 w-10 rounded-full border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="h-10 w-10 rounded-full border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800"
             >
-              <ChevronRight className="h-5 w-5 text-gray-600" />
+              <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-300" />
             </button>
           </div>
         )}

@@ -197,7 +197,7 @@ export function ProductFormModal({
               onChange={e => onCategoryChange(e.target.value)}
               disabled={isDisabled || categoriesLoading}
               className={cn(
-                'h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-2.5 text-base shadow-xs outline-none transition-[color,box-shadow]',
+                'h-9 w-full min-w-0 rounded-md border border-input bg-transparent dark:bg-gray-900 px-2.5 text-base shadow-xs outline-none transition-[color,box-shadow]',
                 'focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
                 'disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
               )}
@@ -550,7 +550,7 @@ export function ProductFormModal({
                       )
                     }
                     disabled={isDisabled}
-                    className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 py-1 text-base shadow-xs outline-none disabled:opacity-50 md:text-sm"
+                    className="h-9 w-full rounded-md border border-input bg-transparent dark:bg-gray-900 px-2.5 py-1 text-base shadow-xs outline-none disabled:opacity-50 md:text-sm"
                   >
                     <option value="percentage">Percentage Discount</option>
                     <option value="fixed_amount">Fixed Amount Discount</option>

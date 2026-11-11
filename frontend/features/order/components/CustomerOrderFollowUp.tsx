@@ -34,26 +34,26 @@ export default function CustomerOrderFollowUp({
   };
 
   return (
-    <div className="mt-4 pt-4 border-t border-gray-100">
+    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
       <Button
         onClick={() => setOpen(prev => !prev)}
         variant="outline"
         size="sm"
-        className="gap-2 text-[#2d4a35]"
+        className="gap-2 text-[#2d4a35] dark:text-[#7ed4a0]"
       >
         {open ? <X size={16} /> : <MessageCircle size={16} />}
         {open ? 'Close Follow Up' : 'Follow Up on this Order'}
       </Button>
 
       {open && (
-        <div className="mt-4 rounded-xl bg-gray-50 p-4">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">
+        <div className="mt-4 rounded-xl bg-gray-50 p-4 dark:bg-gray-800/50">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3 dark:text-gray-400">
             Conversation with DonClaudio&apos;s
           </p>
           {messagesQuery.isLoading ? (
-            <div className="text-sm text-gray-500">Loading conversation...</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Loading conversation...</div>
           ) : messagesQuery.isError ? (
-            <div className="text-sm text-red-600">
+            <div className="text-sm text-red-600 dark:text-red-300">
               Failed to load conversation.
             </div>
           ) : (

@@ -24,7 +24,7 @@ export default function SupportMessageBubble({
         className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 ${
           onRight
             ? 'bg-[#2d4a35] text-white'
-            : 'bg-gray-100 text-gray-800 border border-gray-200'
+            : 'bg-gray-100 text-gray-800 border border-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700'
         } ${pending ? 'opacity-70' : ''}`}
       >
         <div className="flex items-center gap-1.5">
@@ -42,7 +42,7 @@ export default function SupportMessageBubble({
           )}
           <span
             className={`text-[10px] font-bold uppercase tracking-wide ${
-              onRight ? 'text-[#b8d4c0]' : 'text-gray-500'
+              onRight ? 'text-[#b8d4c0]' : 'text-gray-500 dark:text-gray-400'
             }`}
           >
             {isOwner ? "DonClaudio's" : message.senderName || 'Customer'}

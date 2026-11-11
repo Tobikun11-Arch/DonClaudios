@@ -60,10 +60,10 @@ export default function ColorPickerPanel({colors, onChange}: Props) {
       {open && (
         <div className="fixed bottom-20 right-6 z-50 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-5 w-72">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-[#3c5e45]">Brand Colors</h3>
+            <h3 className="text-sm font-bold text-[#3c5e45] dark:text-[#7ed4a0]">Brand Colors</h3>
             <button
               onClick={() => setOpen(false)}
-              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"
+              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
             >
               <X size={16} />
             </button>
@@ -108,7 +108,7 @@ export default function ColorPickerPanel({colors, onChange}: Props) {
                         handleColorChange(key, '#000000');
                       }
                     }}
-                    className="w-full px-2 py-1 text-xs font-mono border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:border-[#3c5e45]"
+                    className="w-full px-2 py-1 text-xs font-mono border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:border-[#3c5e45] dark:bg-gray-800 dark:text-gray-100 dark:focus:border-[#7ed4a0]/60"
                   />
                 </div>
               </div>

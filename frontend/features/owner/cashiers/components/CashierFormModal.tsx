@@ -47,6 +47,7 @@ export function CashierFormModal({
             <Label htmlFor="firstName">First Name</Label>
             <Input
               id="firstName"
+              autoComplete="off"
               value={form.firstName}
               onChange={e => onFormChange('firstName', sanitizeName(e.target.value))}
               placeholder="e.g. Juan"
@@ -56,6 +57,7 @@ export function CashierFormModal({
             <Label htmlFor="lastName">Last Name</Label>
             <Input
               id="lastName"
+              autoComplete="off"
               value={form.lastName}
               onChange={e => onFormChange('lastName', sanitizeName(e.target.value))}
               placeholder="e.g. Dela Cruz"
@@ -65,6 +67,7 @@ export function CashierFormModal({
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
+              autoComplete="off"
               type="email"
               value={form.email}
               onChange={e => onFormChange('email', e.target.value)}
@@ -75,6 +78,7 @@ export function CashierFormModal({
             <Label htmlFor="username">Username</Label>
             <Input
               id="username"
+              autoComplete="off"
               value={form.username}
               onChange={e => onFormChange('username', e.target.value)}
               placeholder="e.g. juan123"
@@ -86,6 +90,7 @@ export function CashierFormModal({
             </Label>
             <Input
               id="password"
+              autoComplete="new-password"
               type="password"
               value={form.password}
               onChange={e => onFormChange('password', e.target.value)}
@@ -105,6 +110,7 @@ export function CashierFormModal({
             <Label htmlFor="phoneNumber">Phone Number</Label>
             <Input
               id="phoneNumber"
+              autoComplete="off"
               value={form.phoneNumber}
               onChange={e => onFormChange('phoneNumber', sanitizePhone(e.target.value))}
               placeholder="e.g. 09171234567"
@@ -116,6 +122,7 @@ export function CashierFormModal({
           <Label htmlFor="address">Address</Label>
           <Input
             id="address"
+            autoComplete="off"
             value={form.address}
             onChange={e => onFormChange('address', e.target.value)}
             placeholder="e.g. 123 Lechon St."

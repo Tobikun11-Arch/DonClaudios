@@ -64,9 +64,9 @@ export function AddressList({
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-foreground">Addresses</h2>
+        <h2 className="text-lg font-bold text-foreground dark:text-gray-100">Addresses</h2>
         <Button
           type="button"
           variant="outline"
@@ -79,7 +79,7 @@ export function AddressList({
       </div>
 
       {items.length === 0 && !adding && (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground dark:text-gray-400">
           No saved addresses yet. Add Bahay, Opisina, or any spot we should
           deliver to.
         </p>
@@ -89,14 +89,14 @@ export function AddressList({
         {items.map((a, idx) => (
           <div
             key={a._id ?? idx}
-            className="rounded-xl border border-border p-4 space-y-3"
+            className="rounded-xl border border-border p-4 space-y-3 dark:border-gray-800"
           >
             <div className="flex items-center justify-between gap-2">
               <Input
                 value={a.label}
                 onChange={e => updateField(idx, 'label', e.target.value)}
                 placeholder="Label (Bahay, Opisina)"
-                className="min-h-[44px]"
+                className="min-h-[44px] dark:bg-gray-800 dark:text-gray-100"
               />
               <button
                 type="button"
@@ -111,19 +111,19 @@ export function AddressList({
               value={a.line}
               onChange={e => updateField(idx, 'line', e.target.value)}
               placeholder="Street, barangay, city"
-              className="min-h-[44px]"
+              className="min-h-[44px] dark:bg-gray-800 dark:text-gray-100"
             />
             <Input
               value={a.landmark ?? ''}
               onChange={e => updateField(idx, 'landmark', e.target.value)}
               placeholder="Landmark (e.g. beside 7-Eleven)"
-              className="min-h-[44px]"
+              className="min-h-[44px] dark:bg-gray-800 dark:text-gray-100"
             />
             <Input
               value={a.riderNotes ?? ''}
               onChange={e => updateField(idx, 'riderNotes', e.target.value)}
               placeholder="Rider notes (gate code, call on arrival)"
-              className="min-h-[44px]"
+              className="min-h-[44px] dark:bg-gray-800 dark:text-gray-100"
             />
             <button
               type="button"
@@ -131,7 +131,7 @@ export function AddressList({
               className={`text-xs font-medium ${
                 a.isDefault
                   ? 'text-accent-warm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  : 'text-muted-foreground hover:text-foreground dark:text-gray-400 dark:hover:text-gray-100'
               }`}
             >
               {a.isDefault ? 'Default address' : 'Set as default'}
@@ -141,30 +141,30 @@ export function AddressList({
       </div>
 
       {adding && (
-        <div className="mt-4 rounded-xl border border-dashed border-border p-4 space-y-3">
+        <div className="mt-4 rounded-xl border border-dashed border-border p-4 space-y-3 dark:border-gray-800">
           <Input
             value={draft.label}
             onChange={e => setDraft({...draft, label: e.target.value})}
             placeholder="Label (Bahay, Opisina)"
-            className="min-h-[44px]"
+            className="min-h-[44px] dark:bg-gray-800 dark:text-gray-100"
           />
           <Input
             value={draft.line}
             onChange={e => setDraft({...draft, line: e.target.value})}
             placeholder="Street, barangay, city"
-            className="min-h-[44px]"
+            className="min-h-[44px] dark:bg-gray-800 dark:text-gray-100"
           />
           <Input
             value={draft.landmark ?? ''}
             onChange={e => setDraft({...draft, landmark: e.target.value})}
             placeholder="Landmark"
-            className="min-h-[44px]"
+            className="min-h-[44px] dark:bg-gray-800 dark:text-gray-100"
           />
           <Input
             value={draft.riderNotes ?? ''}
             onChange={e => setDraft({...draft, riderNotes: e.target.value})}
             placeholder="Rider notes"
-            className="min-h-[44px]"
+            className="min-h-[44px] dark:bg-gray-800 dark:text-gray-100"
           />
           <div className="flex gap-2">
             <Button type="button" size="sm" onClick={add}>

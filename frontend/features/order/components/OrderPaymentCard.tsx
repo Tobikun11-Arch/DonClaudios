@@ -105,9 +105,9 @@ export default function OrderPaymentCard({
   if (!visible) return null;
 
   return (
-    <div className="rounded-2xl bg-white shadow p-6">
+    <div className="rounded-2xl bg-white shadow p-6 dark:bg-gray-900">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-base font-bold text-gray-900">Payment</p>
+        <p className="text-base font-bold text-gray-900 dark:text-gray-100">Payment</p>
         {summary ? <StatusPill summary={summary} /> : null}
       </div>
 
@@ -116,7 +116,7 @@ export default function OrderPaymentCard({
           <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
         </div>
       ) : query.isError ? (
-        <p className="mt-4 text-sm text-red-600">
+        <p className="mt-4 text-sm text-red-600 dark:text-red-300">
           We could not load the payment details. Please refresh the page.
         </p>
       ) : (
@@ -136,26 +136,26 @@ function StatusPill({summary}: {summary: PaymentSummary}) {
   const base =
     'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold';
   if (summary.refundStatus === 'refunded') {
-    return <span className={`${base} bg-sky-50 text-sky-700`}>Refunded</span>;
+    return <span className={`${base} bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300`}>Refunded</span>;
   }
   if (summary.refundStatus === 'pending') {
-    return <span className={`${base} bg-sky-50 text-sky-700`}>Refund in progress</span>;
+    return <span className={`${base} bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300`}>Refund in progress</span>;
   }
   if (summary.paymentStatus === 'paid') {
     return (
-      <span className={`${base} bg-emerald-50 text-emerald-700`}>
+      <span className={`${base} bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300`}>
         <CheckCircle2 className="h-3.5 w-3.5" />
         Paid
       </span>
     );
   }
   if (summary.paymentStatus === 'down_payment') {
-    return <span className={`${base} bg-amber-50 text-amber-700`}>Down payment paid</span>;
+    return <span className={`${base} bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300`}>Down payment paid</span>;
   }
   if (summary.paymentChoice === 'cash_on_pickup') {
-    return <span className={`${base} bg-gray-100 text-gray-700`}>Cash on pickup</span>;
+    return <span className={`${base} bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300`}>Cash on pickup</span>;
   }
-  return <span className={`${base} bg-amber-50 text-amber-700`}>Awaiting payment</span>;
+  return <span className={`${base} bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300`}>Awaiting payment</span>;
 }
 
 function PaymentBody({
@@ -176,7 +176,7 @@ function PaymentBody({
   // Refund state (cancelled orders).
   if (order.orderStatus === 'cancelled') {
     return (
-      <p className="mt-4 text-sm text-gray-600">
+      <p className="mt-4 text-sm text-gray-600 dark:text-gray-300">
         {summary.refundStatus === 'refunded'
           ? 'Your payment was refunded to your original payment method. It may take a few days to reflect.'
           : summary.refundStatus === 'failed'
@@ -193,10 +193,10 @@ function PaymentBody({
   // Waiting for Xendit's webhook after the redirect back.
   if (returned === 'success' && summary.pendingPayment) {
     return (
-      <div className="mt-4 flex items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-        <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin text-[#3c5e45]" />
-        <div className="text-sm text-gray-700">
-          <p className="font-semibold text-gray-900">Confirming your payment…</p>
+      <div className="mt-4 flex items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-800/50">
+        <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin text-[#3c5e45] dark:text-[#7ed4a0]" />
+        <div className="text-sm text-gray-700 dark:text-gray-300">
+          <p className="font-semibold text-gray-900 dark:text-gray-100">Confirming your payment…</p>
           <p className="mt-0.5">
             This usually takes a few seconds. You can keep this page open.
           </p>
@@ -207,7 +207,7 @@ function PaymentBody({
 
   const returnedFailed =
     returned === 'failed' ? (
-      <div className="mt-4 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+      <div className="mt-4 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
         <span>The payment was not completed. You can try again below.</span>
         <button
           type="button"
@@ -224,7 +224,7 @@ function PaymentBody({
     return (
       <div className="mt-4 space-y-4">
         {returnedFailed}
-        <div className="rounded-xl border border-gray-200 px-4 py-3 text-sm">
+        <div className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-gray-800">
           <Row label="Order total" value={peso(summary.totalAmount)} />
           <Row label="Down payment paid" value={peso(summary.amountPaid)} />
           <Row label="Balance due" value={peso(summary.balanceDue)} bold />
@@ -232,14 +232,14 @@ function PaymentBody({
         {summary.pendingPayment && !changing ? (
           <PendingInvoice summary={summary} onChange={() => setChanging(true)} />
         ) : summary.balanceChoice === 'cash' && !changing ? (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
             <p className="font-semibold">
               Pay the {peso(summary.balanceDue)} balance in cash when you pick up your order.
             </p>
             <button
               type="button"
               onClick={() => setChanging(true)}
-              className="mt-2 text-xs font-semibold text-[#3c5e45] hover:underline"
+              className="mt-2 text-xs font-semibold text-[#3c5e45] hover:underline dark:text-[#7ed4a0]"
             >
               Pay the balance online instead
             </button>
@@ -259,15 +259,15 @@ function PaymentBody({
   // Unpaid.
   if (summary.paymentChoice === 'cash_on_pickup' && !changing) {
     return (
-      <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
-        <p className="font-semibold text-gray-900">
+      <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 dark:border-gray-800 dark:bg-gray-800/50 dark:text-gray-300">
+        <p className="font-semibold text-gray-900 dark:text-gray-100">
           Pay {peso(summary.totalAmount)} in cash when you pick up your order.
         </p>
         {order.orderStatus === 'confirmed' ? (
           <button
             type="button"
             onClick={() => setChanging(true)}
-            className="mt-2 text-xs font-semibold text-[#3c5e45] hover:underline"
+            className="mt-2 text-xs font-semibold text-[#3c5e45] hover:underline dark:text-[#7ed4a0]"
           >
             Pay online instead
           </button>
@@ -288,7 +288,7 @@ function PaymentBody({
   if (order.orderStatus !== 'confirmed') {
     // Orders that moved on before this payment flow existed.
     return (
-      <p className="mt-4 text-sm text-gray-600">
+      <p className="mt-4 text-sm text-gray-600 dark:text-gray-300">
         Payment for this order is arranged with the store.
       </p>
     );
@@ -310,8 +310,8 @@ function PaymentBody({
 function Row({label, value, bold}: {label: string; value: string; bold?: boolean}) {
   return (
     <div className="flex items-center justify-between gap-4 py-0.5">
-      <span className="text-gray-500">{label}</span>
-      <span className={bold ? 'font-bold text-gray-900' : 'font-semibold text-gray-800'}>
+      <span className="text-gray-500 dark:text-gray-400">{label}</span>
+      <span className={bold ? 'font-bold text-gray-900 dark:text-gray-100' : 'font-semibold text-gray-800 dark:text-gray-100'}>
         {value}
       </span>
     </div>
@@ -322,8 +322,8 @@ function PaidDetails({summary}: {summary: PaymentSummary}) {
   const paidOnline = summary.payments.filter(p => p.status === 'PAID');
   return (
     <div className="mt-4 space-y-2 text-sm">
-      <p className="text-gray-600">Your payment is complete. Thank you!</p>
-      <div className="rounded-xl border border-gray-200 px-4 py-3">
+      <p className="text-gray-600 dark:text-gray-300">Your payment is complete. Thank you!</p>
+      <div className="rounded-xl border border-gray-200 px-4 py-3 dark:border-gray-800">
         {paidOnline.map(p => (
           <Row
             key={p.id}
@@ -341,7 +341,7 @@ function PaidDetails({summary}: {summary: PaymentSummary}) {
           />
         ) : null}
         {summary.transactionFee > 0 ? (
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             Includes {peso(summary.transactionFee)} transaction fee charged by the payment provider.
           </p>
         ) : null}
@@ -359,7 +359,7 @@ function PendingInvoice({
 }) {
   const p = summary.pendingPayment!;
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
       <p className="flex items-center gap-1.5 font-semibold">
         <Clock className="h-4 w-4" />
         Waiting for your {PAYMENT_CHANNEL_LABELS[p.channel]} payment of {peso(p.charge)}
@@ -381,7 +381,7 @@ function PendingInvoice({
         <button
           type="button"
           onClick={onChange}
-          className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 px-4 py-2 text-xs font-semibold text-amber-900"
+          className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 px-4 py-2 text-xs font-semibold text-amber-900 dark:border-amber-500/30 dark:text-amber-300"
         >
           <RotateCcw className="h-3.5 w-3.5" />
           Choose another method
@@ -431,7 +431,7 @@ function PayForm({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-gray-600 dark:text-gray-300">
         Your order is confirmed. Choose how you want to pay.
       </p>
 
@@ -463,7 +463,7 @@ function PayForm({
       </div>
 
       {!summary.configured ? (
-        <p className="flex items-start gap-2 rounded-xl bg-gray-50 px-3 py-2 text-xs text-gray-600">
+        <p className="flex items-start gap-2 rounded-xl bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-gray-800/50 dark:text-gray-300">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           Online payment is not available yet.
           {summary.cashAllowed ? ' You can pay in cash on pickup.' : ' Please contact the store.'}
@@ -479,7 +479,7 @@ function PayForm({
         />
       ) : null}
 
-      {error ? <p className="text-xs font-medium text-red-600">{error}</p> : null}
+      {error ? <p className="text-xs font-medium text-red-600 dark:text-red-300">{error}</p> : null}
 
       <div className="flex flex-wrap gap-2">
         <Button
@@ -534,7 +534,7 @@ function BalanceForm({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-gray-600">How do you want to pay the balance?</p>
+      <p className="text-sm text-gray-600 dark:text-gray-300">How do you want to pay the balance?</p>
       <div className="space-y-2">
         <PlanOption
           active={method === 'online'}
@@ -562,7 +562,7 @@ function BalanceForm({
         />
       ) : null}
 
-      {error ? <p className="text-xs font-medium text-red-600">{error}</p> : null}
+      {error ? <p className="text-xs font-medium text-red-600 dark:text-red-300">{error}</p> : null}
 
       <div className="flex flex-wrap gap-2">
         <Button
@@ -605,19 +605,19 @@ function PlanOption({
       onClick={onClick}
       disabled={disabled}
       className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-        active ? 'border-[#3c5e45]/40 bg-[#3c5e45]/5' : 'border-gray-200 hover:bg-gray-50'
+        active ? 'border-[#3c5e45]/40 bg-[#3c5e45]/5 dark:border-[#7ed4a0]/30 dark:bg-[#7ed4a0]/10' : 'border-gray-200 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800'
       }`}
     >
       <span
         className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-          active ? 'border-[#3c5e45] bg-[#3c5e45]' : 'border-gray-300'
+          active ? 'border-[#3c5e45] bg-[#3c5e45]' : 'border-gray-300 dark:border-gray-700'
         }`}
       >
         {active ? <span className="h-2 w-2 rounded-full bg-white" /> : null}
       </span>
       <span className="min-w-0">
-        <span className="block text-sm font-bold text-gray-900">{title}</span>
-        <span className="block text-xs text-gray-500">{subtitle}</span>
+        <span className="block text-sm font-bold text-gray-900 dark:text-gray-100">{title}</span>
+        <span className="block text-xs text-gray-500 dark:text-gray-400">{subtitle}</span>
       </span>
     </button>
   );
@@ -637,7 +637,7 @@ function ChannelPicker({
   const q = quotes[channel];
   return (
     <div className="space-y-3">
-      <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+      <p className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
         Pay with
       </p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -648,8 +648,8 @@ function ChannelPicker({
             onClick={() => onChange(c.id)}
             className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
               channel === c.id
-                ? 'border-[#3c5e45] bg-[#3c5e45]/5 font-bold text-gray-900'
-                : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                ? 'border-[#3c5e45] bg-[#3c5e45]/5 font-bold text-gray-900 dark:bg-[#7ed4a0]/10 dark:text-gray-100 dark:border-[#7ed4a0]/60'
+                : 'border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800'
             }`}
           >
             {c.label}
@@ -657,12 +657,12 @@ function ChannelPicker({
         ))}
       </div>
       {q ? (
-        <div className="rounded-xl border border-gray-200 px-4 py-3 text-sm">
+        <div className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-gray-800">
           <Row label="Order amount" value={peso(q.amount)} />
           <Row label="Transaction fee" value={peso(q.transactionFee)} />
-          <div className="my-1 border-t border-gray-100" />
+          <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
           <Row label="Total to pay" value={peso(q.charge)} bold />
-          <p className="mt-2 text-xs text-gray-500">
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
             The transaction fee is charged by our payment provider (Xendit) for{' '}
             {PAYMENT_CHANNEL_LABELS[channel]}. You will be redirected to a secure
             Xendit page to pay.

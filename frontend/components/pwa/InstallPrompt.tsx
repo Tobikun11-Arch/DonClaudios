@@ -72,7 +72,7 @@ export function InstallPrompt() {
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 z-50 w-[92%] max-w-md -translate-x-1/2 rounded-lg border bg-white p-4 shadow-lg">
+    <div className="fixed bottom-4 left-1/2 z-50 w-[92%] max-w-md -translate-x-1/2 rounded-lg border bg-white p-4 shadow-lg dark:border-gray-800 dark:bg-gray-900">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           <h3 className="font-semibold">Install DonClaudio&apos;s</h3>
@@ -89,7 +89,7 @@ export function InstallPrompt() {
         </div>
         <button
           onClick={handleDismiss}
-          className="-mr-2 -mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-black/5 hover:text-foreground"
+          className="-mr-2 -mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10"
           aria-label="Dismiss"
         >
           ✕
@@ -106,7 +106,7 @@ export function InstallPrompt() {
         )}
         <button
           onClick={handleDismiss}
-          className="rounded-md border px-3 py-1.5 text-sm"
+          className="rounded-md border px-3 py-1.5 text-sm dark:border-gray-700"
         >
           Not now
         </button>

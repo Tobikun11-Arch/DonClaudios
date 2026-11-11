@@ -11,6 +11,8 @@ export interface BaseUserDocument extends mongoose.Document {
   phoneVerified: boolean;
   verificationCode?: string | null;
   verificationExpiry?: Date | null;
+  /** Refresh tokens issued before this moment are rejected (signs out other devices). */
+  passwordChangedAt?: Date | null;
 }
 
 export function createBaseUserSchema<T extends BaseUserDocument>() {
@@ -31,7 +33,8 @@ export function createBaseUserSchema<T extends BaseUserDocument>() {
       isVerified: {type: Boolean, default: false},
       phoneVerified: {type: Boolean, default: false},
       verificationCode: {type: String, default: null},
-      verificationExpiry: {type: Date, default: null}
+      verificationExpiry: {type: Date, default: null},
+      passwordChangedAt: {type: Date, default: null}
     },
     {timestamps: true}
   );

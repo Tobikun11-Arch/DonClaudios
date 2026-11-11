@@ -7,7 +7,7 @@ export default async function Page({params}: {params: Promise<{id: string}>}) {
     return (
       <div className="min-h-screen">
         <div className="w-full max-w-6xl mx-auto px-4 py-10">
-          <p className="text-sm text-gray-600">Missing product id.</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300">Missing product id.</p>
         </div>
       </div>
     );

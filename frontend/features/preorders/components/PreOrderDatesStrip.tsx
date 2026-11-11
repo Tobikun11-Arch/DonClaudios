@@ -17,10 +17,10 @@ function DateCard({event, href, signedIn}: {event: PreOrderEvent; href: string; 
   return (
     <Link
       href={href}
-      className={`group relative flex w-[17rem] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border bg-white transition-all md:w-auto ${
+      className={`group relative flex w-[17rem] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border bg-white transition-all md:w-auto dark:bg-gray-900 ${
         event.soldOut
-          ? 'border-gray-200 opacity-70'
-          : 'border-[#e3ece5] hover:-translate-y-0.5 hover:border-[#2d4a35]/40 hover:shadow-lg'
+          ? 'border-gray-200 opacity-70 dark:border-gray-800'
+          : 'border-[#e3ece5] hover:-translate-y-0.5 hover:border-[#2d4a35]/40 hover:shadow-lg dark:border-gray-800 dark:hover:border-[#7ed4a0]/40'
       }`}
     >
       <div className="flex items-start gap-3 p-4">
@@ -29,28 +29,28 @@ function DateCard({event, href, signedIn}: {event: PreOrderEvent; href: string; 
           <span className="text-2xl font-bold leading-none">{day}</span>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 pr-12 font-bold leading-snug text-gray-900">{event.title}</p>
-          <p className="text-xs text-gray-500">{weekday(event.pickupDate)}</p>
-          <p className="mt-1 text-sm font-semibold text-[#2d4a35]">
+          <p className="line-clamp-2 pr-12 font-bold leading-snug text-gray-900 dark:text-gray-100">{event.title}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{weekday(event.pickupDate)}</p>
+          <p className="mt-1 text-sm font-semibold text-[#2d4a35] dark:text-[#7ed4a0]">
             {event.soldOut ? 'Fully booked' : event.fromPrice != null ? `From ${peso(event.fromPrice)}` : ''}
           </p>
         </div>
       </div>
 
-      <div className="mt-auto flex items-center justify-between border-t border-[#eef3ef] bg-[#f7faf6] px-4 py-2.5">
+      <div className="mt-auto flex items-center justify-between border-t border-[#eef3ef] bg-[#f7faf6] px-4 py-2.5 dark:border-gray-800 dark:bg-gray-800/50">
         <div className="flex -space-x-2">
           {photos.map((src, i) => (
-            <span key={i} className="relative h-7 w-7 overflow-hidden rounded-full border-2 border-white bg-gray-100">
+            <span key={i} className="relative h-7 w-7 overflow-hidden rounded-full border-2 border-white bg-gray-100 dark:border-gray-800 dark:bg-gray-800">
               <Image src={src} alt="" fill sizes="28px" className="object-cover" />
             </span>
           ))}
           {event.products.length > photos.length && (
-            <span className="grid h-7 w-7 place-items-center rounded-full border-2 border-white bg-[#e9f5ee] text-[0.65rem] font-bold text-[#2d4a35]">
+            <span className="grid h-7 w-7 place-items-center rounded-full border-2 border-white dark:border-gray-800 bg-[#e9f5ee] text-[0.65rem] font-bold text-[#2d4a35] dark:bg-[#7ed4a0]/10 dark:text-[#7ed4a0]">
               +{event.products.length - photos.length}
             </span>
           )}
         </div>
-        <span className="flex items-center gap-1 whitespace-nowrap text-xs font-semibold text-[#2d4a35]">
+        <span className="flex items-center gap-1 whitespace-nowrap text-xs font-semibold text-[#2d4a35] dark:text-[#7ed4a0]">
           {!signedIn && <Lock size={12} />}
           {full ? 'View my pre-order' : event.soldOut ? 'View' : signedIn ? 'Pre-order' : 'Sign in to order'}
           <ChevronRight size={14} className="transition-transform group-hover:translate-x-0.5" />
@@ -58,12 +58,12 @@ function DateCard({event, href, signedIn}: {event: PreOrderEvent; href: string; 
       </div>
 
       {ordered && (
-        <span className="absolute right-3 top-3 rounded-full bg-[#e9f5ee] px-2 py-0.5 text-[0.65rem] font-bold text-[#2d4a35]">
+        <span className="absolute right-3 top-3 rounded-full bg-[#e9f5ee] px-2 py-0.5 text-[0.65rem] font-bold text-[#2d4a35] dark:bg-[#7ed4a0]/10 dark:text-[#7ed4a0]">
           Pre-ordered
         </span>
       )}
       {!ordered && days <= 14 && days >= 0 && !event.soldOut && (
-        <span className="absolute right-3 top-3 rounded-full bg-[#fff4dd] px-2 py-0.5 text-[0.65rem] font-bold text-[#9a6400]">
+        <span className="absolute right-3 top-3 rounded-full bg-[#fff4dd] px-2 py-0.5 text-[0.65rem] font-bold text-[#9a6400] dark:bg-amber-500/10 dark:text-amber-300">
           {days === 0 ? 'Today' : `${days}d left`}
         </span>
       )}
@@ -83,11 +83,11 @@ export default function PreOrderDatesStrip({signedIn}: {signedIn: boolean}) {
     <section className="mb-10" aria-labelledby="holiday-preorders">
       <div className="mb-3 flex items-end justify-between gap-3">
         <div>
-          <h2 id="holiday-preorders" className="flex items-center gap-2 text-xl font-bold text-gray-900">
-            <CalendarHeart className="h-5 w-5 text-[#c30010]" />
+          <h2 id="holiday-preorders" className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-gray-100">
+            <CalendarHeart className="h-5 w-5 text-[#c30010] dark:text-red-400" />
             Holiday Pre-orders
           </h2>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Reserve your lechon for the holidays. Limited sizes and pickup slots per date.
           </p>
         </div>

@@ -126,7 +126,7 @@ export default function DashboardLayout({
       : (order ?? children);
 
   return (
-    <div className="flex h-screen cursor-default bg-gray-50">
+    <div className="flex h-screen cursor-default bg-gray-50 dark:bg-gray-950">
       <aside
         onMouseEnter={handleSidebarEnter}
         onMouseLeave={handleSidebarLeave}
@@ -272,7 +272,7 @@ export default function DashboardLayout({
         </div>
       </aside>
 
-      <main className="relative flex-1 overflow-y-auto overflow-x-hidden bg-gray-50">
+      <main className="relative flex-1 overflow-y-auto overflow-x-hidden bg-gray-50 dark:bg-gray-950">
         {/*
           `Z.floating` (60) keeps the bell under the cart drawer overlay and
           its modals (1000+), so an open drawer dims it and eats its clicks

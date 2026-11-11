@@ -42,7 +42,7 @@ export function ProfileHeader({
   if (last) summaryParts.push(last);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
       <div className="flex items-center gap-4">
         {user?.profilePhoto ? (
           <Image
@@ -59,14 +59,14 @@ export function ProfileHeader({
             alt="Don Claudio's Lechon House"
             width={64}
             height={64}
-            className="h-16 w-16 rounded-full object-contain bg-muted p-2"
+            className="h-16 w-16 rounded-full object-contain bg-muted p-2 dark:bg-gray-800"
           />
         )}
         <div className="min-w-0">
-          <h1 className="text-xl font-bold text-foreground">
+          <h1 className="text-xl font-bold text-foreground dark:text-gray-100">
             Kumusta, {firstName}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground dark:text-gray-400">
             {summaryParts.join(' · ')}
           </p>
         </div>

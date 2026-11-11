@@ -80,7 +80,7 @@ export default function OrderPromoBundleDetailsPage({id}: {id: string}) {
   const total = unitPrice * qty;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center items-center">
+    <div className="min-h-screen bg-gray-50 flex justify-center items-center dark:bg-gray-950">
       <div className="w-full max-w-6xl mx-auto px-4 py-6">
         {isCustomerRoute ? (
           <div className="flex justify-end mb-4">
@@ -92,7 +92,7 @@ export default function OrderPromoBundleDetailsPage({id}: {id: string}) {
               aria-label="Open cart"
             >
               <span className="relative">
-                <ShoppingCart className="h-5 w-5 text-[#2d4a35]" />
+                <ShoppingCart className="h-5 w-5 text-[#2d4a35] dark:text-[#7ed4a0]" />
                 {cartUniqueCount > 0 && (
                   <span className="absolute -right-2 -top-2 h-5 min-w-5 px-1 rounded-full bg-[#c30010] text-white text-[10px] font-bold grid place-items-center">
                     {cartUniqueCount}
@@ -100,7 +100,7 @@ export default function OrderPromoBundleDetailsPage({id}: {id: string}) {
                 )}
               </span>
               {cartUniqueCount > 0 && (
-                <span className="ml-2 text-sm font-semibold text-[#2d4a35]">
+                <span className="ml-2 text-sm font-semibold text-[#2d4a35] dark:text-[#7ed4a0]">
                   ₱{cartSubtotal}.00
                 </span>
               )}
@@ -111,20 +111,20 @@ export default function OrderPromoBundleDetailsPage({id}: {id: string}) {
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white hover:bg-gray-50"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800"
             aria-label="Back"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="text-lg font-bold text-gray-900">Bundle details</h1>
+          <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Bundle details</h1>
         </div>
 
         {(promoQuery.isLoading || productsQuery.isLoading) && (
-          <div className="mt-8 text-sm text-gray-500">Loading bundle...</div>
+          <div className="mt-8 text-sm text-gray-500 dark:text-gray-400">Loading bundle...</div>
         )}
 
         {(promoQuery.isError || productsQuery.isError) && (
-          <div className="mt-8 text-sm text-gray-500">
+          <div className="mt-8 text-sm text-gray-500 dark:text-gray-400">
             Failed to load bundle.
           </div>
         )}
@@ -134,7 +134,7 @@ export default function OrderPromoBundleDetailsPage({id}: {id: string}) {
           typeof promo.price === 'number' && (
             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
               <div className="w-full">
-                <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-white border border-gray-100">
+                <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-white border border-gray-100 dark:bg-gray-900 dark:border-gray-800">
                   <Image
                     src={
                       promo.imageUrl && promo.imageUrl.length > 0
@@ -152,46 +152,46 @@ export default function OrderPromoBundleDetailsPage({id}: {id: string}) {
               <div className="w-full">
                 <div className="flex items-start justify-between gap-6">
                   <div className="min-w-0">
-                    <h2 className="text-xl font-bold text-gray-900">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
                       {promo.title}
                     </h2>
-                    <p className="text-sm text-gray-500 mt-1">Promo Bundle</p>
+                    <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">Promo Bundle</p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className="text-sm font-bold text-gray-900">
+                    <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
                       ₱{promo.price}.00
                     </p>
                   </div>
                 </div>
 
                 {promo.description && (
-                  <p className="mt-4 text-sm text-gray-600 leading-relaxed">
+                  <p className="mt-4 text-sm text-gray-600 leading-relaxed dark:text-gray-300">
                     {promo.description}
                   </p>
                 )}
 
                 {includedProducts.length > 0 && (
                   <div className="mt-6">
-                    <p className="text-sm font-semibold text-gray-900">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       Included
                     </p>
                     <div className="mt-2 space-y-2">
                       {includedProducts.map(p => (
                         <div
                           key={p._id}
-                          className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3"
+                          className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900"
                         >
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-gray-900 line-clamp-1">
+                            <p className="text-sm font-semibold text-gray-900 line-clamp-1 dark:text-gray-100">
                               {p.name}
                             </p>
                             {p.category && (
-                              <p className="text-xs text-gray-500 mt-0.5">
+                              <p className="text-xs text-gray-500 mt-0.5 dark:text-gray-400">
                                 {p.category}
                               </p>
                             )}
                           </div>
-                          <p className="text-sm font-bold text-gray-900 shrink-0">
+                          <p className="text-sm font-bold text-gray-900 shrink-0 dark:text-gray-100">
                             ₱{p.price}.00
                           </p>
                         </div>
@@ -201,17 +201,17 @@ export default function OrderPromoBundleDetailsPage({id}: {id: string}) {
                 )}
 
                 <div className="mt-8">
-                  <Label className="text-sm font-semibold text-gray-900">
+                  <Label className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                     Order notes
                   </Label>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
                     Add a note for the kitchen (e.g. no ginger, less spicy).
                   </p>
                   <textarea
                     value={instructions}
                     onChange={e => setInstructions(e.target.value)}
                     placeholder="Type your request here..."
-                    className="mt-3 w-full min-h-28 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3c5e45]/20 focus:border-[#3c5e45]"
+                    className="mt-3 w-full min-h-28 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3c5e45]/20 focus:border-[#3c5e45] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-[#7ed4a0]/60"
                   />
                 </div>
 
@@ -220,23 +220,23 @@ export default function OrderPromoBundleDetailsPage({id}: {id: string}) {
                     <button
                       type="button"
                       onClick={() => setQty(q => Math.max(1, q - 1))}
-                      className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
+                      className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
                       aria-label="Decrease quantity"
                     >
-                      <Minus className="h-3.5 w-3.5 text-gray-600" />
+                      <Minus className="h-3.5 w-3.5 text-gray-600 dark:text-gray-300" />
                     </button>
 
-                    <span className="min-w-6 text-center text-base font-semibold text-gray-900">
+                    <span className="min-w-6 text-center text-base font-semibold text-gray-900 dark:text-gray-100">
                       {qty}
                     </span>
 
                     <button
                       type="button"
                       onClick={() => setQty(q => q + 1)}
-                      className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
+                      className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
                       aria-label="Increase quantity"
                     >
-                      <Plus className="h-3.5 w-3.5 text-gray-600" />
+                      <Plus className="h-3.5 w-3.5 text-gray-600 dark:text-gray-300" />
                     </button>
                   </div>
 

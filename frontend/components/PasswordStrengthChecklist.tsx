@@ -24,10 +24,10 @@ export default function PasswordStrengthChecklist({value}: {value: string}) {
         : 'bg-red-500';
   const labelColor =
     strength === 'Strong'
-      ? 'text-emerald-600'
+      ? 'text-emerald-600 dark:text-emerald-300'
       : strength === 'Medium'
-        ? 'text-amber-600'
-        : 'text-red-600';
+        ? 'text-amber-600 dark:text-amber-300'
+        : 'text-red-600 dark:text-red-300';
 
   return (
     <div className="mt-2 space-y-2">
@@ -37,7 +37,7 @@ export default function PasswordStrengthChecklist({value}: {value: string}) {
             key={rule.id}
             className={cn(
               'flex items-center gap-2 text-xs font-medium',
-              rule.met ? 'text-emerald-600' : 'text-gray-500'
+              rule.met ? 'text-emerald-600 dark:text-emerald-300' : 'text-gray-500 dark:text-gray-400'
             )}
           >
             {rule.met ? (
@@ -50,7 +50,7 @@ export default function PasswordStrengthChecklist({value}: {value: string}) {
         ))}
       </ul>
       <div className="flex items-center gap-2">
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
           <div
             className={cn('h-full rounded-full transition-all', barColor)}
             style={{width: `${(met / results.length) * 100}%`}}

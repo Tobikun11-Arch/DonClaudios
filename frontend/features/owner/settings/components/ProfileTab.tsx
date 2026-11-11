@@ -195,7 +195,7 @@ function Section({
           type="button"
           onClick={onToggleEdit}
           aria-label={editing ? 'Finish editing' : 'Edit ' + title}
-          className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 dark:bg-gray-800 hover:text-[#2d4a35] dark:hover:text-[#7ed4a0] dark:text-[#7ed4a0]"
+          className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-[#2d4a35] dark:hover:text-[#7ed4a0]"
         >
           {editing ? (
             <Check className="h-5 w-5 text-green-600 dark:text-green-400" />

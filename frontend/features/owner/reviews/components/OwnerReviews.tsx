@@ -102,12 +102,12 @@ function MessageBubble({
         className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
           isMy
             ? 'bg-[#2d4a35] text-white'
-            : 'bg-gray-100 text-gray-800 border border-gray-200'
+            : 'bg-gray-100 text-gray-800 border border-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700'
         } ${sending ? 'opacity-70' : ''}`}
       >
         <p
           className={`text-xs font-bold mb-0.5 ${
-            isMy ? 'text-[#b8d4c0]' : 'text-gray-500'
+            isMy ? 'text-[#b8d4c0]' : 'text-gray-500 dark:text-gray-400'
           }`}
         >
           {message.senderName}

@@ -24,7 +24,7 @@ export function CustomizeTab() {
     <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">
       <h2 className="mb-1 text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">Customize</h2>
       <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">
-        Choose how the owner dashboard appears. The storefront, cashier and customer pages always stay light. Current:{' '}
+        Choose how the dashboard appears on this browser. The storefront and cashier pages always stay light. Current:{' '}
         <span className="font-medium text-gray-700 dark:text-gray-300">
           {mounted ? resolvedTheme : '…'}
         </span>

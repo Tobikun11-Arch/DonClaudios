@@ -423,7 +423,7 @@ export default function OrderSlot() {
         >
           <Link href="/customer/dashboard?tab=history">
             <span className="relative">
-              <History className="h-20 w-20 text-[#2d4a35]" />
+              <History className="h-20 w-20 text-[#2d4a35] dark:text-[#7ed4a0]" />
               {activeOrderCount > 0 && (
                 <span className="absolute -right-3 -top-2.5 h-6 min-w-6 px-1.5 rounded-full bg-[#c30010] text-white text-[11px] font-bold grid place-items-center">
                   {activeOrderCount}
@@ -441,7 +441,7 @@ export default function OrderSlot() {
           aria-label="Open cart"
         >
           <span className="relative">
-            <ShoppingCart className="h-8 w-8 text-[#2d4a35]" />
+            <ShoppingCart className="h-8 w-8 text-[#2d4a35] dark:text-[#7ed4a0]" />
 
             {cartUniqueCount > 0 && (
               <span className="absolute -right-3 -top-2.5 h-6 min-w-6 px-1.5 rounded-full bg-[#c30010] text-white text-[11px] font-bold grid place-items-center">
@@ -451,7 +451,7 @@ export default function OrderSlot() {
           </span>
 
           {cartUniqueCount > 0 && (
-            <span className="ml-2 text-sm font-semibold text-[#2d4a35]">
+            <span className="ml-2 text-sm font-semibold text-[#2d4a35] dark:text-[#7ed4a0]">
               ₱{cartSubtotal}.00
             </span>
           )}
@@ -502,13 +502,13 @@ export default function OrderSlot() {
           </button>
 
           <div className="relative flex-1 md:max-w-md">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#999999]" />
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#999999] dark:text-gray-400" />
             <Input
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search"
               aria-label="Search"
-              className="pl-11 h-11 rounded-full border-0 bg-[#F5F5F5] text-gray-800 focus-visible:ring-2 focus-visible:ring-[#2d4a35]/40"
+              className="pl-11 h-11 rounded-full border-0 bg-[#F5F5F5] text-gray-800 focus-visible:ring-2 focus-visible:ring-[#2d4a35]/40 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
             />
           </div>
         </div>
@@ -530,11 +530,11 @@ export default function OrderSlot() {
         </div>
 
         <div className="mt-8">
-          <h2 className="text-[22px] font-bold text-gray-900">
+          <h2 className="text-[22px] font-bold text-gray-900 dark:text-gray-100">
             {tabs.find(t => t.id === resolvedActiveTab)?.label ?? 'Products'}
           </h2>
 
-          <p className="text-sm text-gray-500 mt-0.5 mb-24">Browse items</p>
+          <p className="text-sm text-gray-500 mt-0.5 mb-24 dark:text-gray-400">Browse items</p>
 
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -543,7 +543,7 @@ export default function OrderSlot() {
               ))}
             </div>
           ) : isError ? (
-            <div className="text-sm text-gray-500">Failed to load products.</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Failed to load products.</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {visibleItems.map(item => (

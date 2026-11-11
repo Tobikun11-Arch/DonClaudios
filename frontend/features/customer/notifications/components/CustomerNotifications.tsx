@@ -58,8 +58,8 @@ export default function CustomerNotifications() {
     <div className="w-full max-w-6xl mx-auto">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Notifications</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Notifications</h2>
+          <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
             Replies and updates from the DonClaudio&apos;s team.
           </p>
         </div>
@@ -77,15 +77,15 @@ export default function CustomerNotifications() {
       </div>
 
       {isLoading ? (
-        <div className="rounded-2xl bg-white shadow p-5 text-sm text-gray-500">
+        <div className="rounded-2xl bg-white shadow p-5 text-sm text-gray-500 dark:bg-gray-900 dark:text-gray-400">
           Loading notifications...
         </div>
       ) : isError ? (
-        <div className="rounded-2xl bg-white shadow p-5 text-sm text-red-600">
+        <div className="rounded-2xl bg-white shadow p-5 text-sm text-red-600 dark:bg-gray-900 dark:text-red-300">
           Failed to load notifications.
         </div>
       ) : notifications.length === 0 ? (
-        <div className="rounded-2xl bg-white shadow p-5 text-sm text-gray-500">
+        <div className="rounded-2xl bg-white shadow p-5 text-sm text-gray-500 dark:bg-gray-900 dark:text-gray-400">
           You have no notifications yet.
         </div>
       ) : (
@@ -94,7 +94,7 @@ export default function CustomerNotifications() {
             <div
               key={notification._id}
               onClick={() => handleRead(notification)}
-              className={`rounded-2xl bg-white shadow p-5 flex gap-4 cursor-pointer transition-colors ${
+              className={`rounded-2xl bg-white shadow p-5 flex gap-4 cursor-pointer transition-colors dark:bg-gray-900 ${
                 notification.read ? 'opacity-70' : 'border-l-4 border-[#f08080]'
               }`}
             >
@@ -108,26 +108,26 @@ export default function CustomerNotifications() {
 
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-bold text-gray-900">
+                  <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
                     {notification.title}
                   </p>
                   {!notification.read && (
                     <span className="inline-block h-2 w-2 rounded-full bg-[#f08080]" />
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
                   {notification.createdAt
                     ? new Date(notification.createdAt).toLocaleString()
                     : ''}
                 </p>
-                <p className="text-sm text-gray-700 mt-2">
+                <p className="text-sm text-gray-700 mt-2 dark:text-gray-300">
                   &ldquo;{notification.message}&rdquo;
                 </p>
               </div>
 
               <div className="flex flex-col items-end justify-between gap-2 shrink-0">
                 {!notification.read && (
-                  <span className="rounded-full bg-amber-100 text-amber-700 px-2.5 py-0.5 text-xs font-semibold">
+                  <span className="rounded-full bg-amber-100 text-amber-700 px-2.5 py-0.5 text-xs font-semibold dark:bg-amber-500/15 dark:text-amber-300">
                     Unread
                   </span>
                 )}
@@ -137,7 +137,7 @@ export default function CustomerNotifications() {
                     handleDelete(notification);
                   }}
                   disabled={deleteMutation.isPending}
-                  className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                  className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors dark:hover:text-red-400 dark:hover:bg-red-500/10"
                   aria-label="Delete notification"
                 >
                   <Trash2 size={18} />

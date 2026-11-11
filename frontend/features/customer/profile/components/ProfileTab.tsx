@@ -79,7 +79,7 @@ function AvatarUpload({
           className="h-full w-full object-cover"
         />
       ) : (
-        <span className="flex h-full w-full items-center justify-center bg-[#e9f5ee] text-[#2d4a35] text-4xl font-bold">
+        <span className="flex h-full w-full items-center justify-center bg-[#e9f5ee] text-[#2d4a35] text-4xl font-bold dark:bg-[#7ed4a0]/10 dark:text-[#7ed4a0]">
           {fallback.charAt(0).toUpperCase()}
         </span>
       )}
@@ -125,7 +125,7 @@ function InlineField({field, editing}: {field: FieldDef; editing: boolean}) {
   if (editing && !field.readOnly) {
     return (
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-gray-500">
+        <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
           {field.label}
         </label>
         <Input
@@ -138,7 +138,7 @@ function InlineField({field, editing}: {field: FieldDef; editing: boolean}) {
             }
           }}
           placeholder={field.placeholder}
-          className="min-h-[44px]"
+          className="min-h-[44px] dark:bg-gray-800 dark:text-gray-100"
         />
       </div>
     );
@@ -146,13 +146,13 @@ function InlineField({field, editing}: {field: FieldDef; editing: boolean}) {
 
   return (
     <div className="space-y-1">
-      <div className="text-xs font-medium text-gray-500">{field.label}</div>
-      <div className="flex items-center gap-2 text-[15px] text-gray-800">
+      <div className="text-xs font-medium text-gray-500 dark:text-gray-400">{field.label}</div>
+      <div className="flex items-center gap-2 text-[15px] text-gray-800 dark:text-gray-100">
         {field.value || (
           <span className="text-gray-400">Not set</span>
         )}
         {showSaved && (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600">
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
             <Check className="h-3.5 w-3.5" />
             Saved
           </span>
@@ -174,17 +174,17 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
       <div className="mb-5 flex items-center justify-between gap-2">
-        <h2 className="text-lg font-bold text-[#2d4a35]">{title}</h2>
+        <h2 className="text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">{title}</h2>
         <button
           type="button"
           onClick={onToggleEdit}
           aria-label={editing ? 'Finish editing' : 'Edit ' + title}
-          className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-[#2d4a35]"
+          className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-[#2d4a35] dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-[#7ed4a0]"
         >
           {editing ? (
-            <Check className="h-5 w-5 text-green-600" />
+            <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
           ) : (
             <Pencil className="h-5 w-5" />
           )}
@@ -206,7 +206,7 @@ export function ProfileTab() {
   if (!user) {
     return (
       <div className="space-y-6">
-        <div className="h-64 rounded-2xl bg-gray-100 animate-pulse" />
+        <div className="h-64 rounded-2xl bg-gray-100 animate-pulse dark:bg-gray-800" />
       </div>
     );
   }
@@ -272,10 +272,10 @@ export function ProfileTab() {
             onSave={url => persist({profilePhoto: url}, 'Profile photo updated.')}
           />
           <div>
-            <p className="text-base font-semibold text-gray-900">
+            <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
               {displayFullName || '—'}
             </p>
-            <p className="text-sm text-gray-500">{user.email}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

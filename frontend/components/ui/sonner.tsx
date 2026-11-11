@@ -56,9 +56,9 @@ const CLASS_NAMES = {
   actionButton:
     "shrink-0 rounded-lg bg-[#2d4a35] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#3c5e45]",
   cancelButton:
-    "shrink-0 rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-200",
+    "shrink-0 rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700",
   closeButton:
-    "border border-gray-200 bg-white text-gray-500 hover:text-gray-900 dark:border-white/10 dark:bg-gray-900",
+    "border border-gray-200 bg-white text-gray-500 hover:text-gray-900 dark:border-white/10 dark:bg-gray-900 dark:text-gray-400 dark:hover:text-gray-100",
 }
 
 const Toaster = ({ toastOptions, ...props }: ToasterProps) => {

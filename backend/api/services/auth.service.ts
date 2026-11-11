@@ -10,6 +10,7 @@ import {smsService} from './sms.service';
 import {toInternationalPhone} from '../utils/phone';
 import {resetPasswordEmailTemplate} from '../templates/resetPasswordEmail';
 import {verificationCodeEmailTemplate} from '../templates/verificationCodeEmail';
+import {accountNoticeEmailTemplate} from '../templates/accountNoticeEmail';
 import {
   generateVerificationCode,
   getVerificationExpiry
@@ -447,18 +448,23 @@ export const authService = {
     // Clear the code then update the password on the matching repository.
     if (user === customer) {
       await customerRepository.clearVerificationCode(email);
-      await customerRepository.updateProfile(user.id, {passwordHash} as any);
+      await customerRepository.updateProfile(user.id, {
+        passwordHash,
+        passwordChangedAt: new Date()
+      } as any);
     } else if (user === cashier) {
       await cashierRepository.updateProfile(user.id, {
         verificationCode: null,
         verificationExpiry: null,
-        passwordHash
+        passwordHash,
+        passwordChangedAt: new Date()
       } as any);
     } else {
       await adminRepository.updateProfile(user.id, {
         verificationCode: null,
         verificationExpiry: null,
-        passwordHash
+        passwordHash,
+        passwordChangedAt: new Date()
       } as any);
     }
   },
@@ -559,6 +565,18 @@ export const authService = {
         throw new ApiError(403, 'NOT_VERIFIED', 'Email not verified');
       }
 
+      // A password change signs out every other device: refresh tokens issued
+      // before it no longer work.
+      const changedAt = user.passwordChangedAt as Date | null | undefined;
+      const issuedAt = (payload as {iat?: number}).iat;
+      if (
+        changedAt &&
+        issuedAt &&
+        issuedAt < Math.floor(changedAt.getTime() / 1000)
+      ) {
+        throw new ApiError(401, 'SESSION_REVOKED', 'Session expired. Please sign in again.');
+      }
+
       const accessToken = jwt.sign(
         {userId: user.id, type: userType},
         env.JWT_SECRET,
@@ -597,7 +615,214 @@ export const authService = {
       );
     }
 
+    if (await bcrypt.compare(newPassword, user.passwordHash)) {
+      throw new ApiError(
+        400,
+        'SAME_PASSWORD',
+        'New password must be different from your current password'
+      );
+    }
+
     const passwordHash = await bcrypt.hash(newPassword, 10);
-    await repo.updateProfile(user.id, {passwordHash} as any);
+    const passwordChangedAt = new Date();
+    await repo.updateProfile(user.id, {passwordHash, passwordChangedAt} as any);
+
+    // Let the mailbox owner know, in case someone else made the change.
+    const notice = accountNoticeEmailTemplate({
+      kind: 'password_changed',
+      recipientName: (user as {firstName?: string}).firstName
+    });
+    emailService
+      .sendEmail({to: user.email, ...notice})
+      .catch(err => console.error('[auth] password-changed email failed', err));
+
+    // Fresh tokens for the device that made the change, so only the OTHER
+    // devices are signed out.
+    const accessToken = jwt.sign({userId: user.id, type}, env.JWT_SECRET, {
+      expiresIn: '15m'
+    });
+    const refreshToken = jwt.sign(
+      {userId: user.id, type},
+      env.JWT_REFRESH_SECRET,
+      {expiresIn: '7d'}
+    );
+    return {accessToken, refreshToken};
+  },
+
+  /**
+   * Everything we hold about a customer, in a machine-readable file (right to
+   * data portability). Credentials and one-time codes are never included.
+   */
+  async exportCustomerData(customerId: string) {
+    const [
+      {OrderModel},
+      {ReviewModel},
+      {RewardRedemptionModel},
+      {NotificationModel},
+      {CartModel}
+    ] = await Promise.all([
+      import('../models/Order.model'),
+      import('../models/Review.model'),
+      import('../models/RewardRedemption.model'),
+      import('../models/Notification.model'),
+      import('../models/Cart.model')
+    ]);
+
+    const customer = await customerRepository.findById(customerId);
+    if (!customer) {
+      throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
+    }
+
+    const [orders, reviews, rewardRedemptions, notifications, cart] =
+      await Promise.all([
+        OrderModel.find({customerId}).sort({createdAt: -1}).lean().exec(),
+        ReviewModel.find({customerId})
+          .select('-moderation -isAutoRejected -moderatedBy')
+          .sort({createdAt: -1})
+          .lean()
+          .exec(),
+        RewardRedemptionModel.find({customerId})
+          .sort({createdAt: -1})
+          .lean()
+          .exec(),
+        NotificationModel.find({target: 'customer', customerId})
+          .sort({createdAt: -1})
+          .lean()
+          .exec(),
+        CartModel.findOne({customerId}).lean().exec()
+      ]);
+
+    const {
+      passwordHash: _passwordHash,
+      verificationCode: _verificationCode,
+      verificationExpiry: _verificationExpiry,
+      passwordChangedAt: _passwordChangedAt,
+      __v: _v,
+      ...profile
+    } = customer.toObject() as unknown as Record<string, unknown>;
+
+    return {
+      exportedAt: new Date().toISOString(),
+      format: 'DonClaudios personal data export v1',
+      profile,
+      orders,
+      reviews,
+      rewardRedemptions,
+      notifications,
+      cart
+    };
+  },
+
+  /**
+   * Permanently deletes a customer account after re-checking the password.
+   * Personal data is removed; orders are kept only as anonymous sales records
+   * (the store needs them for accounting), so totals and reports stay right.
+   */
+  async deleteCustomerAccount(customerId: string, password: string) {
+    const customer = await customerRepository.findById(customerId);
+    if (!customer) {
+      throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
+    }
+
+    const match = await bcrypt.compare(password, customer.passwordHash);
+    if (!match) {
+      throw new ApiError(400, 'INVALID_PASSWORD', 'Password is incorrect');
+    }
+
+    const [
+      {OrderModel},
+      {ReviewModel},
+      {RewardRedemptionModel},
+      {NotificationModel},
+      {CartModel},
+      {PushSubscriptionModel},
+      {OrderMessageModel},
+      {SupportConversationModel},
+      {SupportMessageModel}
+    ] = await Promise.all([
+      import('../models/Order.model'),
+      import('../models/Review.model'),
+      import('../models/RewardRedemption.model'),
+      import('../models/Notification.model'),
+      import('../models/Cart.model'),
+      import('../models/PushSubscription.model'),
+      import('../models/OrderMessage.model'),
+      import('../models/SupportConversation.model'),
+      import('../models/SupportMessage.model')
+    ]);
+
+    // An order the kitchen is still working on needs a way to reach the
+    // customer, so it must finish (or be cancelled) first.
+    const activeOrders = await OrderModel.countDocuments({
+      customerId,
+      status: {$in: ['pending', 'confirmed', 'preparing', 'ready', 'on_the_way']}
+    }).exec();
+    if (activeOrders > 0) {
+      throw new ApiError(
+        409,
+        'ACTIVE_ORDERS',
+        'You still have an order in progress. Please wait until it is completed or cancelled before deleting your account.'
+      );
+    }
+
+    const FORMER = 'Former customer';
+    const conversations = await SupportConversationModel.find({customerId})
+      .select('_id')
+      .lean()
+      .exec();
+    const conversationIds = conversations.map(c => c._id);
+
+    // Reviews first: their name fields are matched by customerId.
+    await ReviewModel.updateMany({customerId}, {$set: {customerName: FORMER}}).exec();
+    await ReviewModel.updateMany(
+      {customerId, 'messages.authorType': 'customer'},
+      {$set: {'messages.$[m].senderName': FORMER}},
+      {arrayFilters: [{'m.authorType': 'customer'}]}
+    ).exec();
+
+    await Promise.all([
+      OrderModel.updateMany(
+        {customerId},
+        {
+          $set: {customerId: null},
+          $unset: {
+            'guestInfo.phoneNumber': '',
+            'guestInfo.address': '',
+            'guestInfo.email': ''
+          }
+        }
+      ).exec(),
+      OrderMessageModel.updateMany(
+        {customerId},
+        {$set: {customerId: null, senderName: FORMER}}
+      ).exec(),
+      conversationIds.length
+        ? SupportMessageModel.updateMany(
+            {conversationId: {$in: conversationIds}, senderType: 'customer'},
+            {$set: {senderName: FORMER}}
+          ).exec()
+        : Promise.resolve(),
+      SupportConversationModel.updateMany(
+        {customerId},
+        {$set: {customerId: null, guestName: FORMER, guestContact: null}}
+      ).exec(),
+      RewardRedemptionModel.deleteMany({customerId}).exec(),
+      NotificationModel.deleteMany({target: 'customer', customerId}).exec(),
+      CartModel.deleteMany({customerId}).exec(),
+      PushSubscriptionModel.deleteMany({
+        userId: customerId,
+        userType: 'customer'
+      }).exec()
+    ]);
+
+    await customerRepository.deleteById(customerId);
+
+    const notice = accountNoticeEmailTemplate({
+      kind: 'account_deleted',
+      recipientName: customer.firstName
+    });
+    emailService
+      .sendEmail({to: customer.email, ...notice})
+      .catch(err => console.error('[auth] account-deleted email failed', err));
   }
 };

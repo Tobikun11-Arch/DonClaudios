@@ -11,6 +11,7 @@ import {
   refreshDto,
   updateProfileDto,
   changePasswordDto,
+  deleteAccountDto,
   forgotPasswordDto,
   verifyResetCodeDto,
   resetPasswordDto
@@ -102,7 +103,13 @@ router.get(
   requireAdmin,
   authController.sessions
 );
-router.delete('/account', sessionLimiter, requireAuth, authController.deleteAccount);
+router.delete(
+  '/account',
+  sessionLimiter,
+  requireAuth,
+  validate(deleteAccountDto),
+  authController.deleteAccount
+);
 
 router.get('/me/data', sessionLimiter, requireAuth, authController.downloadData);
 

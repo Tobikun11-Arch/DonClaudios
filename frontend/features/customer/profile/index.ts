@@ -7,3 +7,4 @@ export {PromosCard} from './components/PromosCard';
 export {AccountSection} from './components/AccountSection';
 export {useCustomerProfileData} from './hooks/useCustomerProfileData';
 export * from './types';
+export {AppearanceCard} from './components/AppearanceCard';
