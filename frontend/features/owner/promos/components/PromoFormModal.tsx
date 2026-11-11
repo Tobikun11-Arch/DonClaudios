@@ -152,7 +152,7 @@ export function PromoFormModal({
                 )
               }
               disabled={isDisabled}
-              className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 py-1 text-base shadow-xs outline-none disabled:opacity-50 md:text-sm"
+              className="h-9 w-full rounded-md border border-input bg-transparent dark:bg-gray-900 px-2.5 py-1 text-base shadow-xs outline-none disabled:opacity-50 md:text-sm"
             >
               <option value="percentage">Percentage</option>
               <option value="fixed_amount">Fixed Amount</option>

@@ -135,13 +135,13 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
           hovered && 'sm:pointer-events-auto sm:opacity-100',
           open
             ? 'bg-[#3c5e45] text-white scale-110 sm:pointer-events-auto sm:opacity-100'
-            : 'bg-white/90 dark:bg-gray-900/90 text-[#3c5e45] hover:bg-white dark:bg-gray-900 hover:scale-105'
+            : 'bg-white/90 dark:bg-gray-900/90 text-[#3c5e45] dark:text-[#7ed4a0] hover:bg-white dark:hover:bg-gray-900 hover:scale-105'
         )}
         title={`Customize ${SECTION_LABELS[sectionId]} section`}
       >
         <Paintbrush className="w-4 h-4" />
         {hasCustom && !open && (
-          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-white" />
+          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-white dark:border-gray-900" />
         )}
       </button>
 
@@ -171,7 +171,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
             </h4>
             <button
               onClick={() => setOpen(false)}
-              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"
+              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
             >
               <X className="w-4 h-4" />
             </button>

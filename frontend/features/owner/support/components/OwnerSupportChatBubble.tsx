@@ -31,13 +31,13 @@ function ConversationRow({
     <button
       onClick={onSelect}
       className={`w-full text-left px-4 py-3 border-b border-gray-50 dark:border-gray-700 transition-colors ${
-        active ? 'bg-[#eef4ef]' : 'hover:bg-gray-50'
+        active ? 'bg-[#eef4ef] dark:bg-[#7ed4a0]/10' : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'
       }`}
     >
       <div className="flex items-center justify-between gap-2">
         <span
           className={`truncate text-sm font-semibold ${
-            active ? 'text-[#2d4a35]' : 'text-gray-900'
+            active ? 'text-[#2d4a35] dark:text-[#7ed4a0]' : 'text-gray-900 dark:text-gray-100'
           }`}
         >
           {conversation.displayName || 'Customer'}
@@ -176,7 +176,7 @@ export default function OwnerSupportChatBubble() {
                     className={`rounded-full px-3 py-1 text-xs font-semibold capitalize transition-colors ${
                       filter === f
                         ? 'bg-[#2d4a35] text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
                     }`}
                   >
                     {f}

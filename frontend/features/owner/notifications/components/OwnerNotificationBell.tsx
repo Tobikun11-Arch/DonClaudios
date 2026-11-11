@@ -163,7 +163,7 @@ export default function OwnerNotificationBell({alert = false}: {alert?: boolean}
                   key={notification._id}
                   onClick={() => handleClick(notification)}
                   className={`flex cursor-pointer gap-3 border-b border-gray-50 dark:border-gray-700 px-4 py-3 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60 ${
-                    notification.read ? 'opacity-70' : 'bg-amber-50/40'
+                    notification.read ? 'opacity-70' : 'bg-amber-50/40 dark:bg-amber-500/10'
                   }`}
                 >
                   <div className="shrink-0 w-8 h-8 rounded-full bg-[#a4bbab] flex items-center justify-center">

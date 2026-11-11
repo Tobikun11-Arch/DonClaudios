@@ -82,8 +82,8 @@ export function ValueSplitPanel({summary}: {summary?: ReportSummary}) {
           <div
             key={row.key}
             className={`flex items-center gap-3 px-3.5 py-2.5 ${
-              index > 0 ? 'border-t border-[#EDF1EA]' : ''
-            } ${row.indent ? 'bg-[#FCFDFB]' : ''}`}
+              index > 0 ? 'border-t border-[#EDF1EA] dark:border-gray-800' : ''
+            } ${row.indent ? 'bg-[#FCFDFB] dark:bg-gray-800/40' : ''}`}
           >
             {row.tone === 'good' ? (
               <CheckCircle2 className="h-4 w-4 shrink-0 text-[#4A7C35] dark:text-[#7ed4a0]" />

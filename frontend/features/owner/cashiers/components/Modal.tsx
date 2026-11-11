@@ -16,14 +16,14 @@ export function Modal({open, title, children, onClose}: Props) {
       className="fixed inset-0 z-100"
       onClick={onClose}
     >
-      <div className="absolute inset-0 bg-black/40" aria-hidden="true" />
+      <div className="absolute inset-0 bg-black/40 dark:bg-black/60" aria-hidden="true" />
       <div className="absolute inset-0 flex items-end sm:items-center justify-center p-0 sm:p-6">
         <div
           onClick={e => e.stopPropagation()}
-          className="w-full sm:max-w-2xl bg-white shadow-xl border border-gray-100 rounded-t-2xl sm:rounded-2xl
+          className="w-full sm:max-w-2xl bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-xl border border-gray-100 dark:border-gray-800 rounded-t-2xl sm:rounded-2xl
           h-full max-h-[100dvh] sm:h-auto sm:max-h-[90dvh] flex flex-col"
         >
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-[#e9f5ee] dark:bg-[#7ed4a0]/10 text-[#2d4a35] dark:text-[#7ed4a0] flex items-center justify-center">
                 <Users className="h-5 w-5" />
