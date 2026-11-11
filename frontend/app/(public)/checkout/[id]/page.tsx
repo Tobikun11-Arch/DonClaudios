@@ -27,6 +27,13 @@ import LocationPicker from '@/features/order/components/LocationPicker';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
+import {
+  GUEST_MAX_ORDER_MESSAGE,
+  GUEST_MAX_ORDER_TOTAL,
+  MIN_ORDER_MESSAGE,
+  MIN_ORDER_TOTAL,
+  wouldExceedGuestMax
+} from '@/lib/constants/orderLimits';
 import {getDeliveryMode, STORE_ADDRESS} from '@/lib/orders/deliveryMode';
 import OrderTypeSelector from '@/shared/components/order/OrderTypeSelector';
 import {useCreateGuestOrderMutation} from '@/lib/hooks/orders/useGuestOrder';
@@ -163,6 +170,8 @@ export default function CheckoutGuestPage() {
   );
 
   const total = subtotal;
+  const belowMinimum = items.length > 0 && total < MIN_ORDER_TOTAL;
+  const overGuestMax = total > GUEST_MAX_ORDER_TOTAL;
 
   const createOrderMutation = useCreateGuestOrderMutation();
 
@@ -362,13 +371,13 @@ export default function CheckoutGuestPage() {
       return;
     }
 
-    if (total < 100) {
-      setCheckoutError('Minimum order total is ₱100.00.');
+    if (total < MIN_ORDER_TOTAL) {
+      setCheckoutError(MIN_ORDER_MESSAGE);
       return;
     }
 
-    if (total > 1000) {
-      setCheckoutError('Guest orders have a maximum total of ₱1,000.00. Sign up or log in to your customer account to place larger orders.');
+    if (total > GUEST_MAX_ORDER_TOTAL) {
+      setCheckoutError(GUEST_MAX_ORDER_MESSAGE);
       return;
     }
     const nextErrors: typeof errors = {};
@@ -450,6 +459,8 @@ export default function CheckoutGuestPage() {
         className="w-full h-12 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
         disabled={
           items.length === 0 ||
+          belowMinimum ||
+          overGuestMax ||
           !phoneVerified ||
           isStoreClosed ||
           createOrderMutation.isPending ||
@@ -472,6 +483,14 @@ export default function CheckoutGuestPage() {
       ) : checkoutError ? (
         <p className="text-center text-xs font-medium text-[#c30010]">
           {checkoutError}
+        </p>
+      ) : overGuestMax ? (
+        <p className="text-center text-xs font-medium text-[#c30010]">
+          {GUEST_MAX_ORDER_MESSAGE}
+        </p>
+      ) : belowMinimum ? (
+        <p className="text-center text-xs font-medium text-[#c30010]">
+          {MIN_ORDER_MESSAGE}
         </p>
       ) : !phoneVerified && mobileNumber.trim() ? (
         <p className="text-center text-xs font-medium text-gray-500">
@@ -1092,9 +1111,17 @@ export default function CheckoutGuestPage() {
                             </div>
                             <button
                               type="button"
-                              className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50"
+                              className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                               onClick={() =>
                                 setQty(item.productId, item.qty + 1)
+                              }
+                              // Guests can't go over the order cap: one more
+                              // of this item would cross it.
+                              disabled={wouldExceedGuestMax(total, unitPrice)}
+                              title={
+                                wouldExceedGuestMax(total, unitPrice)
+                                  ? `Guest orders are capped at ₱${GUEST_MAX_ORDER_TOTAL.toLocaleString('en-PH')}.`
+                                  : undefined
                               }
                               aria-label="Increase"
                             >

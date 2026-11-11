@@ -40,6 +40,7 @@ import {getDeliveryMode} from '@/lib/orders/deliveryMode';
 import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 import {Z} from '@/lib/zIndex';
 import CartRemoveConfirmModal from './CartRemoveConfirmModal';
+import {MIN_ORDER_MESSAGE, MIN_ORDER_TOTAL} from '@/lib/constants/orderLimits';
 
 export default function CustomerCartDrawer() {
   const router = useRouter();
@@ -220,8 +221,8 @@ export default function CustomerCartDrawer() {
       return;
     }
 
-    if (total < 100) {
-      toast.error('Minimum order total is ₱100.00.');
+    if (total < MIN_ORDER_TOTAL) {
+      toast.error(MIN_ORDER_MESSAGE);
       return;
     }
 

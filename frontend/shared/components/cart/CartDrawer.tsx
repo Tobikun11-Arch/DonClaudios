@@ -21,6 +21,13 @@ import {getDeliveryMode} from '@/lib/orders/deliveryMode';
 import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
+import {
+  GUEST_MAX_ORDER_MESSAGE,
+  GUEST_MAX_ORDER_TOTAL,
+  MIN_ORDER_MESSAGE,
+  MIN_ORDER_TOTAL,
+  wouldExceedGuestMax
+} from '@/lib/constants/orderLimits';
 import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 import {Z} from '@/lib/zIndex';
 import CartRemoveConfirmModal from './CartRemoveConfirmModal';
@@ -139,13 +146,13 @@ export default function CartDrawer() {
   const goToCheckout = () => {
     if (items.length === 0) return;
 
-    if (total < 100) {
-      toast.error('Minimum order total is ₱100.00.');
+    if (total < MIN_ORDER_TOTAL) {
+      toast.error(MIN_ORDER_MESSAGE);
       return;
     }
 
-    if (total > 1000) {
-      toast.error('Guest orders have a maximum total of ₱1,000.00. Sign up or log in to your customer account to place larger orders.');
+    if (total > GUEST_MAX_ORDER_TOTAL) {
+      toast.error(GUEST_MAX_ORDER_MESSAGE);
       return;
     }
 
@@ -306,14 +313,31 @@ export default function CartDrawer() {
                         <div className="min-w-10 text-center text-sm font-semibold text-gray-900">
                           {item.qty}
                         </div>
+                        {(() => {
+                          const {unitPrice} = getDiscountedUnitPrice({
+                            promos,
+                            productId: item.productId,
+                            basePrice: item.price
+                          });
+                          // One more would push the guest past the cap.
+                          const atCap = wouldExceedGuestMax(total, unitPrice);
+                          return (
                         <button
                           type="button"
-                          className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50"
+                          className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                           onClick={() => setQty(item.productId, item.qty + 1)}
+                          disabled={atCap}
+                          title={
+                            atCap
+                              ? `Guest orders are capped at ₱${GUEST_MAX_ORDER_TOTAL.toLocaleString('en-PH')}.`
+                              : undefined
+                          }
                           aria-label="Increase"
                         >
                           <Plus className="h-4 w-4" />
                         </button>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -346,6 +370,15 @@ export default function CartDrawer() {
           >
             {storeClosed ? 'Store is Closed' : 'Go To Checkout'}
           </Button>
+          {items.length > 0 && total > GUEST_MAX_ORDER_TOTAL ? (
+            <p className="mt-2 text-center text-xs font-medium text-[#c30010]">
+              {GUEST_MAX_ORDER_MESSAGE}
+            </p>
+          ) : items.length > 0 && total < MIN_ORDER_TOTAL ? (
+            <p className="mt-2 text-center text-xs font-medium text-[#c30010]">
+              {MIN_ORDER_MESSAGE}
+            </p>
+          ) : null}
         </div>
       </div>
 

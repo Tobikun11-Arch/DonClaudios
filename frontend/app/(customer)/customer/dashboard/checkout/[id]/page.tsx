@@ -33,6 +33,7 @@ import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 import {cn} from '@/lib/utils';
 import {useQueryClient} from '@tanstack/react-query';
 import {PRODUCTS_QUERY_PREFIX} from '@/lib/hooks/products/useProducts';
+import {MIN_ORDER_MESSAGE, MIN_ORDER_TOTAL} from '@/lib/constants/orderLimits';
 
 const STORE = {
   lat: 14.39092185435405,
@@ -202,8 +203,8 @@ export default function CustomerCheckoutPage() {
       return;
     }
 
-    if (total < 100) {
-      setCheckoutError('Minimum order total is ₱100.00.');
+    if (total < MIN_ORDER_TOTAL) {
+      setCheckoutError(MIN_ORDER_MESSAGE);
       return;
     }
 

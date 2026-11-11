@@ -1,5 +1,6 @@
 import {Request, Response, NextFunction} from 'express';
 import mongoose from 'mongoose';
+import {assertOrderTotalWithinLimits} from '../config/orderLimits';
 import {ApiError} from '../utils/error';
 import {phoneVariants} from '../utils/phone';
 import {orderRepository} from '../repositories/order.repository';
@@ -647,6 +648,7 @@ export const orderController = {
         (sum: number, i: any) => sum + i.price * i.quantity,
         0
       );
+      assertOrderTotalWithinLimits(safeTotalAmount, 'customer');
 
       const customerList = await customerRepository.listByIds([
         req.auth.userId as string
@@ -1011,6 +1013,7 @@ export const orderController = {
         (sum: number, i: any) => sum + i.price * i.quantity,
         0
       );
+      assertOrderTotalWithinLimits(safeTotalAmount, 'guest');
 
       // Reserve stock at placement (like account orders) so two concurrent
       // guest checkouts cannot oversell. Guests never order pre-orders, so the
