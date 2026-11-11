@@ -18,6 +18,10 @@ import {
 import {useCartUiStore} from '@/app/store/cartUiStore';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
+import {useQueryClient} from '@tanstack/react-query';
+import {meQueryKey, useMeQuery} from '@/lib/hooks/auth/useMeQuery';
+import {getMe} from '@/lib/api/authApi';
+import {getDashboardPath} from '@/lib/auth/redirects';
 
 export default function Header() {
   const brand = useBrand();
@@ -27,6 +31,11 @@ export default function Header() {
   const pathname = usePathname();
 
   const isOrderRoute = pathname === '/order' || pathname.startsWith('/order/');
+
+  const queryClient = useQueryClient();
+  const meQuery = useMeQuery();
+  const signedInUser = meQuery.data?.user;
+  const accountHref = signedInUser ? getDashboardPath(signedInUser.type) : '/sign-in';
 
   const cartItems = useCartStore(s => s.items);
   const openCart = useCartUiStore(s => s.open);
@@ -90,10 +99,16 @@ export default function Header() {
   // "Order Now" goes straight to the menu: signing in is optional (there is
   // a Login link right beside it) and is asked for at checkout if needed.
   // On the order page the same button opens the cart.
-  const handleCartClick = () => {
+  const handleCartClick = async () => {
     setMobileMenuOpen(false);
     if (!isOrderRoute) {
-      router.push('/order');
+      // Signed in already? Order from your own dashboard (saved cart,
+      // addresses, free delivery) instead of the guest menu. Ask the server
+      // if we don't know yet, so a fast click doesn't skip the check.
+      const me = await queryClient
+        .fetchQuery({queryKey: meQueryKey, queryFn: getMe, staleTime: 30_000})
+        .catch(() => null);
+      router.push(me?.user ? getDashboardPath(me.user.type) : '/order');
       return;
     }
     openCart();
@@ -151,7 +166,7 @@ export default function Header() {
         </nav>
 
         <div className="hidden lg:flex gap-4 items-center">
-          <Link href="/sign-in">Login</Link>
+          <Link href={accountHref}>{signedInUser ? 'My account' : 'Login'}</Link>
           <Button
             onClick={handleCartClick}
             className="flex items-center gap-2 bg-[#3c5e45]"
@@ -217,10 +232,10 @@ export default function Header() {
 
           <div className="mt-4 flex flex-col gap-3 border-t border-gray-200 pt-4">
             <Link
-              href="/sign-in"
+              href={accountHref}
               className="text-sm font-medium text-gray-700 hover:opacity-80"
             >
-              Login
+              {signedInUser ? 'My account' : 'Login'}
             </Link>
             <Button
               onClick={handleCartClick}
