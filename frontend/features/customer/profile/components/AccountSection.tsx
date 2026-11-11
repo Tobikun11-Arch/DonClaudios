@@ -250,7 +250,7 @@ function DeleteAccountDialog({
         aria-modal="true"
         aria-labelledby="delete-account-title"
         onClick={e => e.stopPropagation()}
-        className="w-full max-w-md rounded-t-2xl border border-gray-100 bg-white p-5 shadow-xl sm:rounded-2xl sm:p-6 dark:border-gray-800 dark:bg-gray-900"
+        className="w-full max-w-md rounded-t-2xl border border-gray-100 bg-white p-5 shadow-xl sm:rounded-2xl sm:p-6 dark:border-gray-700 dark:bg-gray-900"
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -389,7 +389,7 @@ export function AccountSection({user}: {user: MeUser | undefined}) {
   };
 
   return (
-    <div className="space-y-5 rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+    <div className="space-y-5 rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-700 dark:bg-gray-900">
       <h2 className="text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">Account</h2>
 
       <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
@@ -403,11 +403,11 @@ export function AccountSection({user}: {user: MeUser | undefined}) {
         </div>
       </div>
 
-      <div className="border-t border-gray-100 pt-4 dark:border-gray-800">
+      <div className="border-t border-gray-100 pt-4 dark:border-gray-700">
         <ChangePasswordForm email={user?.email} />
       </div>
 
-      <div className="space-y-3 border-t border-gray-100 pt-4 dark:border-gray-800">
+      <div className="space-y-3 border-t border-gray-100 pt-4 dark:border-gray-700">
         <div>
           <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Your data</p>
           <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">

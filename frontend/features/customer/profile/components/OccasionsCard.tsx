@@ -111,7 +111,7 @@ export function OccasionsCard({
   const nudge = nudgeList[0];
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 dark:border-gray-700 dark:bg-gray-900">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-bold text-foreground dark:text-gray-100">Occasions</h2>
         <button
@@ -145,7 +145,7 @@ export function OccasionsCard({
           return (
             <div
               key={occ._id ?? idx}
-              className="rounded-xl border border-border p-4 dark:border-gray-800"
+              className="rounded-xl border border-border p-4 dark:border-gray-700"
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
@@ -171,7 +171,7 @@ export function OccasionsCard({
                 type="button"
                 onClick={() => handleReorder(occ)}
                 disabled={addItem.isPending || !order}
-                className="mt-3 inline-flex min-h-[44px] items-center rounded-lg border border-border px-3 text-xs font-medium disabled:opacity-50 dark:border-gray-800"
+                className="mt-3 inline-flex min-h-[44px] items-center rounded-lg border border-border px-3 text-xs font-medium disabled:opacity-50 dark:border-gray-700"
               >
                 {order ? 'Reserve / Reorder' : 'No past order yet'}
               </button>

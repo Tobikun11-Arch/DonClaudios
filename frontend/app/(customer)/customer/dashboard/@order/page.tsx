@@ -508,7 +508,7 @@ export default function OrderSlot() {
               onChange={e => setQuery(e.target.value)}
               placeholder="Search"
               aria-label="Search"
-              className="pl-11 h-11 rounded-full border-0 bg-[#F5F5F5] text-gray-800 focus-visible:ring-2 focus-visible:ring-[#2d4a35]/40 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+              className="pl-11 h-11 rounded-full border-0 bg-[#F5F5F5] text-gray-800 focus-visible:ring-2 focus-visible:ring-[#2d4a35]/40 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
             />
           </div>
         </div>

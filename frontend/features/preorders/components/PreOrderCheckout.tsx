@@ -50,7 +50,7 @@ function Stepper({
   onChange: (v: number) => void;
 }) {
   return (
-    <div className="flex items-center rounded-full border border-[#d7e3da] bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div className="flex items-center rounded-full border border-[#d7e3da] bg-white dark:border-gray-700 dark:bg-gray-900">
       <button
         type="button"
         aria-label="Less"
@@ -97,7 +97,7 @@ function ProductBlock({
   // Distinct sizes in use: already ordered or picked now.
   const inUse = product.sizes.filter(s => picked.has(s._id) || (heldQty[s._id] ?? 0) > 0).length;
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#e3ece5] bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div className="overflow-hidden rounded-2xl border border-[#e3ece5] bg-white dark:border-gray-700 dark:bg-gray-900">
       <div className="flex gap-4 p-4">
         <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-[#f3f7f4] sm:h-24 sm:w-24 dark:bg-[#7ed4a0]/10">
           {product.imageUrl ? (
@@ -121,7 +121,7 @@ function ProductBlock({
           )}
         </div>
       </div>
-      <div className="divide-y divide-[#eef3ef] border-t border-[#eef3ef] dark:divide-gray-800 dark:border-gray-800">
+      <div className="divide-y divide-[#eef3ef] border-t border-[#eef3ef] dark:divide-gray-700 dark:border-gray-700">
         {product.sizes.map(size => {
           const sel = picked.get(size._id);
           const already = heldQty[size._id] ?? 0;
@@ -217,7 +217,7 @@ function OrderPanel({
 }) {
   const total = items.reduce((n, i) => n + i.size.price * i.quantity, 0);
   return (
-    <div className="rounded-2xl border border-[#e3ece5] bg-white p-5 shadow-[0_8px_30px_rgba(45,74,53,0.06)] dark:border-gray-800 dark:bg-gray-900">
+    <div className="rounded-2xl border border-[#e3ece5] bg-white p-5 shadow-[0_8px_30px_rgba(45,74,53,0.06)] dark:border-gray-700 dark:bg-gray-900">
       <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Your pre-order</p>
       <p className="mt-1 flex items-center gap-2 font-bold text-gray-900 dark:text-gray-100">
         <CalendarDays size={16} className="text-[#2d4a35] dark:text-[#7ed4a0]" />
@@ -230,7 +230,7 @@ function OrderPanel({
         {receive === 'pickup' ? 'Self pick-up' : receive === 'lalamove' ? 'Lalamove' : ''}
       </p>
 
-      <div className="my-4 border-t border-dashed border-gray-200 dark:border-gray-800" />
+      <div className="my-4 border-t border-dashed border-gray-200 dark:border-gray-700" />
 
       {items.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-gray-400">Choose a size to start your pre-order.</p>
@@ -248,7 +248,7 @@ function OrderPanel({
         </ul>
       )}
 
-      <div className="mt-4 flex items-baseline justify-between border-t border-gray-100 pt-3 dark:border-gray-800">
+      <div className="mt-4 flex items-baseline justify-between border-t border-gray-100 pt-3 dark:border-gray-700">
         <span className="font-semibold text-gray-700 dark:text-gray-300">Total</span>
         <span className="text-2xl font-bold text-[#2d4a35] dark:text-[#7ed4a0]">{peso(total)}</span>
       </div>
@@ -353,9 +353,9 @@ export default function PreOrderCheckout({eventId}: {eventId: string}) {
   if (isLoading) {
     return (
       <div className="mx-auto max-w-6xl space-y-4 px-1 py-4">
-        <div className="h-8 w-48 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
-        <div className="h-40 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800" />
-        <div className="h-40 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800" />
+        <div className="h-8 w-48 animate-pulse rounded bg-gray-100 dark:bg-gray-900" />
+        <div className="h-40 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-900" />
+        <div className="h-40 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-900" />
       </div>
     );
   }
@@ -490,7 +490,7 @@ export default function PreOrderCheckout({eventId}: {eventId: string}) {
                     onClick={() => setReceive(opt.key)}
                     aria-pressed={active}
                     className={`flex gap-3 rounded-2xl border-2 p-4 text-left transition-colors ${
-                      active ? 'border-[#2d4a35] bg-[#eef6f0] dark:bg-[#7ed4a0]/10 dark:border-[#7ed4a0]/60' : 'border-[#e3ece5] bg-white hover:border-[#2d4a35]/40 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-[#7ed4a0]/40'
+                      active ? 'border-[#2d4a35] bg-[#eef6f0] dark:bg-[#7ed4a0]/10 dark:border-[#7ed4a0]/60' : 'border-[#e3ece5] bg-white hover:border-[#2d4a35]/40 dark:border-gray-700 dark:bg-gray-900 dark:hover:border-[#7ed4a0]/40'
                     }`}
                   >
                     <span
@@ -535,10 +535,10 @@ export default function PreOrderCheckout({eventId}: {eventId: string}) {
                     aria-pressed={active}
                     className={`rounded-xl border-2 px-3 py-3 text-center transition-colors ${
                       s.full
-                        ? 'cursor-not-allowed border-gray-100 bg-gray-50 text-gray-400 dark:border-gray-800 dark:bg-gray-800/50'
+                        ? 'cursor-not-allowed border-gray-100 bg-gray-50 text-gray-400 dark:border-gray-700 dark:bg-gray-800/50'
                         : active
                           ? 'border-[#2d4a35] bg-[#2d4a35] text-white'
-                          : 'border-[#e3ece5] bg-white text-gray-900 hover:border-[#2d4a35]/40 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100 dark:hover:border-[#7ed4a0]/40'
+                          : 'border-[#e3ece5] bg-white text-gray-900 hover:border-[#2d4a35]/40 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:hover:border-[#7ed4a0]/40'
                     }`}
                   >
                     <span className="block text-sm font-bold">{s.label}</span>

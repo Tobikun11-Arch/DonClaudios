@@ -251,7 +251,7 @@ function OrderCard({
       </button>
 
   {expanded && order.orderStatus !== 'completed' ? (
-    <div className="border-t border-gray-100 p-4 sm:p-5 dark:border-gray-800">
+    <div className="border-t border-gray-100 p-4 sm:p-5 dark:border-gray-700">
       <OrderTracking orderId={order._id} variant={variant} embedded />
       {renderFollowUp ? (
         <div className="mt-4">
@@ -260,7 +260,7 @@ function OrderCard({
       ) : null}
     </div>
   ) : expanded ? (
-        <div className="border-t border-gray-100 p-5 dark:border-gray-800">
+        <div className="border-t border-gray-100 p-5 dark:border-gray-700">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
             <div>
               <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
@@ -279,7 +279,7 @@ function OrderCard({
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-gray-100 p-3 dark:border-gray-800">
+            <div className="rounded-xl border border-gray-100 p-3 dark:border-gray-700">
               <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
                 Order type
               </p>
@@ -287,7 +287,7 @@ function OrderCard({
                 {formatOrderType(order.orderType)}
               </p>
             </div>
-            <div className="rounded-xl border border-gray-100 p-3 dark:border-gray-800">
+            <div className="rounded-xl border border-gray-100 p-3 dark:border-gray-700">
               <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
                 Payment method
               </p>
@@ -295,7 +295,7 @@ function OrderCard({
                 {formatPaymentMethod(order.paymentMethod)}
               </p>
             </div>
-            <div className="rounded-xl border border-gray-100 p-3 dark:border-gray-800">
+            <div className="rounded-xl border border-gray-100 p-3 dark:border-gray-700">
               <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide dark:text-gray-400">
                 Payment status
               </p>
@@ -311,7 +311,7 @@ function OrderCard({
               return (
                 <div
                   key={item._id ?? `${order._id}-${index}`}
-                  className="flex items-start gap-3 rounded-xl border border-gray-100 p-3 dark:border-gray-800"
+                  className="flex items-start gap-3 rounded-xl border border-gray-100 p-3 dark:border-gray-700"
                 >
                   <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-gray-800/50">
                     <Image
@@ -361,7 +361,7 @@ function OrderCard({
                 <span className="font-semibold">₱{deliveryFee}.00</span>
               </div>
             ) : null}
-            <div className="mt-2 h-px bg-gray-200 dark:bg-gray-800" />
+            <div className="mt-2 h-px bg-gray-200 dark:bg-gray-700" />
             <div className="mt-2 flex items-center justify-between">
               <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Total</span>
               <span className="text-base font-extrabold text-gray-900 dark:text-gray-100">

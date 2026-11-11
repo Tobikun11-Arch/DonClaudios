@@ -27,7 +27,7 @@ function RelatedProductCard({
     <Link
       href={linkHref}
       aria-label={`View ${name}`}
-      className="group relative min-h-[240px] w-[200px] shrink-0 rounded-[20px] bg-white border border-gray-200 shadow-sm px-4 pt-28 pb-6 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3c5e45]/20 dark:bg-gray-900 dark:border-gray-800"
+      className="group relative min-h-[240px] w-[200px] shrink-0 rounded-[20px] bg-white border border-gray-200 shadow-sm px-4 pt-28 pb-6 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3c5e45]/20 dark:bg-gray-900 dark:border-gray-700"
       onClick={() => window.scrollTo(0, 0)}
     >
       <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-14 h-[112px] w-[112px]">

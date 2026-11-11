@@ -72,7 +72,7 @@ export function InstallPrompt() {
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 z-50 w-[92%] max-w-md -translate-x-1/2 rounded-lg border bg-white p-4 shadow-lg dark:border-gray-800 dark:bg-gray-900">
+    <div className="fixed bottom-4 left-1/2 z-50 w-[92%] max-w-md -translate-x-1/2 rounded-lg border bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-gray-900">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           <h3 className="font-semibold">Install DonClaudio&apos;s</h3>

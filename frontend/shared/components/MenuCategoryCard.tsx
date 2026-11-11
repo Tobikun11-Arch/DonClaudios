@@ -24,7 +24,7 @@ function MenuCategoryCard({
         'shrink-0 w-[100px] flex flex-col items-center gap-1 px-2 pt-2 pb-2.5 rounded-2xl transition-colors ' +
         (active
           ? 'bg-[#fbd897] ring-2 ring-[#2d4a35]'
-          : 'bg-white border border-gray-200 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-800 dark:hover:bg-gray-800')
+          : 'bg-white border border-gray-200 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-700 dark:hover:bg-gray-800')
       }
     >
       <div className="w-full h-[70px] rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800">

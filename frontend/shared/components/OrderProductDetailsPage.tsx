@@ -365,8 +365,8 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
     <div
       className={
         isCustomerRoute
-          ? 'min-h-screen bg-gray-50 dark:bg-gray-950'
-          : 'min-h-screen bg-gray-50 flex justify-center items-center dark:bg-gray-950'
+          ? 'min-h-screen bg-gray-50 dark:bg-gray-800'
+          : 'min-h-screen bg-gray-50 flex justify-center items-center dark:bg-gray-800'
       }
     >
       <div
@@ -422,7 +422,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
         {product && (
           <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
             <div className="w-full">
-              <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-white border border-gray-100 dark:bg-gray-900 dark:border-gray-800">
+              <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-white border border-gray-100 dark:bg-gray-900 dark:border-gray-700">
                 <Image
                   src={
                     product.imageUrl && product.imageUrl.length > 0
@@ -442,7 +442,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
               {promoState &&
               (promoState.isActive || promoState.isUpcoming) &&
               !isPreOrder ? (
-                <div className="w-full rounded-[20px] overflow-hidden bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-800">
+                <div className="w-full rounded-[20px] overflow-hidden bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700">
                   {/* Hero */}
                   <div className="bg-[#2F4A3A] text-white px-5.5 pt-5 pb-6">
                     <div className="flex justify-between items-center">
@@ -477,8 +477,8 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                   </div>
                   <div className="relative h-0">
                     <div className="absolute inset-x-5 top-0 border-t-2 border-dashed border-gray-300 dark:border-gray-700" />
-                    <div className="absolute -left-3.25 -top-3.25 w-6.5 h-6.5 rounded-full bg-gray-50 dark:bg-gray-950" />
-                    <div className="absolute -right-3.25 -top-3.25 w-6.5 h-6.5 rounded-full bg-gray-50 dark:bg-gray-950" />
+                    <div className="absolute -left-3.25 -top-3.25 w-6.5 h-6.5 rounded-full bg-gray-50 dark:bg-gray-800" />
+                    <div className="absolute -right-3.25 -top-3.25 w-6.5 h-6.5 rounded-full bg-gray-50 dark:bg-gray-800" />
                   </div>
                   <div className="px-5.5 pt-6 pb-5.5">
                     <div className="flex items-center gap-2.5 text-base text-gray-900 dark:text-gray-100">
@@ -657,7 +657,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
 
               {/* Pre-order ticket — replaces the whole right panel */}
               {isPreOrder && preOrderExt && (
-                <div className="w-full rounded-[20px] overflow-hidden bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-800">
+                <div className="w-full rounded-[20px] overflow-hidden bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700">
                   {/* Hero */}
                   <div className="bg-[#2F4A3A] text-white px-[22px] pt-5 pb-6">
                     <div className="flex justify-between items-center">
@@ -742,8 +742,8 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                   </div>
                   <div className="relative h-0">
                     <div className="absolute inset-x-5 top-0 border-t-2 border-dashed border-gray-300 dark:border-gray-700" />
-                    <div className="absolute -left-[13px] -top-[13px] w-[26px] h-[26px] rounded-full bg-gray-50 dark:bg-gray-950" />
-                    <div className="absolute -right-[13px] -top-[13px] w-[26px] h-[26px] rounded-full bg-gray-50 dark:bg-gray-950" />
+                    <div className="absolute -left-[13px] -top-[13px] w-[26px] h-[26px] rounded-full bg-gray-50 dark:bg-gray-800" />
+                    <div className="absolute -right-[13px] -top-[13px] w-[26px] h-[26px] rounded-full bg-gray-50 dark:bg-gray-800" />
                   </div>
                   <div className="px-[22px] pt-6 pb-[22px]">
                     <div className="flex items-center gap-[10px] text-base text-gray-900 dark:text-gray-100">
@@ -769,8 +769,8 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                                     isLive
                                       ? 'border-[#2F4A3A] bg-[#2F4A3A] text-white'
                                       : isDone
-                                        ? 'border-gray-200 bg-gray-50 text-gray-400 dark:border-gray-800 dark:bg-gray-800/50'
-                                        : 'border-gray-200 bg-white text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300'
+                                        ? 'border-gray-200 bg-gray-50 text-gray-400 dark:border-gray-700 dark:bg-gray-800/50'
+                                        : 'border-gray-200 bg-white text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'
                                   }`}
                                 >
                                   <div className="text-[11px] opacity-80">

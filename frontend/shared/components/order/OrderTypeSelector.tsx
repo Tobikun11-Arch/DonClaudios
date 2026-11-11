@@ -50,7 +50,7 @@ export default function OrderTypeSelector({
             role="radio"
             aria-checked={isSelected}
             onClick={() => onChange(type)}
-            className="relative flex flex-1 flex-col items-center gap-2 rounded-2xl border-[1.5px] bg-white px-2 pb-4 pt-5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2 dark:ring-offset-gray-900 dark:border-gray-800 dark:bg-gray-900"
+            className="relative flex flex-1 flex-col items-center gap-2 rounded-2xl border-[1.5px] bg-white px-2 pb-4 pt-5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2 dark:ring-offset-gray-900 dark:border-gray-700 dark:bg-gray-900"
             style={{
               borderColor: isSelected ? 'var(--brand-green)' : 'var(--border)',
               backgroundColor: isSelected ? 'var(--brand-green-tint)' : 'var(--surface-card, white)',

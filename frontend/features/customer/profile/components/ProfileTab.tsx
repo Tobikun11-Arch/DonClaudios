@@ -174,7 +174,7 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-700 dark:bg-gray-900">
       <div className="mb-5 flex items-center justify-between gap-2">
         <h2 className="text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">{title}</h2>
         <button
@@ -206,7 +206,7 @@ export function ProfileTab() {
   if (!user) {
     return (
       <div className="space-y-6">
-        <div className="h-64 rounded-2xl bg-gray-100 animate-pulse dark:bg-gray-800" />
+        <div className="h-64 rounded-2xl bg-gray-100 animate-pulse dark:bg-gray-900" />
       </div>
     );
   }

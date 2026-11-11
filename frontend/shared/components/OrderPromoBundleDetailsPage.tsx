@@ -80,7 +80,7 @@ export default function OrderPromoBundleDetailsPage({id}: {id: string}) {
   const total = unitPrice * qty;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center items-center dark:bg-gray-950">
+    <div className="min-h-screen bg-gray-50 flex justify-center items-center dark:bg-gray-800">
       <div className="w-full max-w-6xl mx-auto px-4 py-6">
         {isCustomerRoute ? (
           <div className="flex justify-end mb-4">
@@ -111,7 +111,7 @@ export default function OrderPromoBundleDetailsPage({id}: {id: string}) {
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
             aria-label="Back"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -134,7 +134,7 @@ export default function OrderPromoBundleDetailsPage({id}: {id: string}) {
           typeof promo.price === 'number' && (
             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
               <div className="w-full">
-                <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-white border border-gray-100 dark:bg-gray-900 dark:border-gray-800">
+                <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-white border border-gray-100 dark:bg-gray-900 dark:border-gray-700">
                   <Image
                     src={
                       promo.imageUrl && promo.imageUrl.length > 0
@@ -179,7 +179,7 @@ export default function OrderPromoBundleDetailsPage({id}: {id: string}) {
                       {includedProducts.map(p => (
                         <div
                           key={p._id}
-                          className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900"
+                          className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900"
                         >
                           <div className="min-w-0">
                             <p className="text-sm font-semibold text-gray-900 line-clamp-1 dark:text-gray-100">

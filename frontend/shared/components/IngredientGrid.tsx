@@ -20,7 +20,7 @@ export function IngredientGrid({
           return (
             <div
               key={`${ingredient.name}-${index}`}
-              className="rounded-xl bg-[#f5f3ee] border border-gray-100 px-2 py-3 flex flex-col items-center gap-1.5 dark:bg-gray-800/50 dark:border-gray-800"
+              className="rounded-xl bg-[#f5f3ee] border border-gray-100 px-2 py-3 flex flex-col items-center gap-1.5 dark:bg-gray-800/50 dark:border-gray-700"
             >
               <Icon className="h-6 w-6 text-[#5b6b5e] shrink-0 dark:text-gray-300" />
               <span className="text-[11px] text-gray-700 text-center leading-tight line-clamp-2 dark:text-gray-300">

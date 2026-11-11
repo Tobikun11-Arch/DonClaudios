@@ -142,7 +142,7 @@ export default function LocationPicker({
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-3xl mx-auto shadow-sm dark:bg-gray-900 dark:border-gray-800">
+    <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-3xl mx-auto shadow-sm dark:bg-gray-900 dark:border-gray-700">
       <h2 className="text-xl font-semibold text-center text-gray-900 mb-1 dark:text-gray-100">
         Enter Location
       </h2>
@@ -151,7 +151,7 @@ export default function LocationPicker({
       </p>
 
       {permissionDenied && (
-        <div className="flex items-start gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4 dark:bg-gray-800/50 dark:border-gray-800">
+        <div className="flex items-start gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4 dark:bg-gray-800/50 dark:border-gray-700">
           <svg
             className="w-4 h-4 mt-0.5 shrink-0 text-gray-400"
             viewBox="0 0 24 24"
@@ -231,7 +231,7 @@ export default function LocationPicker({
         Move/drag the map below if the pinned location is incorrect.
       </p>
 
-      <div className="w-full h-72 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800">
+      <div className="w-full h-72 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
         <iframe
           src={mapSrc}
           className="w-full h-full"

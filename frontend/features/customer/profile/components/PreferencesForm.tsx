@@ -35,7 +35,7 @@ export function PreferencesForm({
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 dark:border-gray-700 dark:bg-gray-900">
       <h2 className="text-lg font-bold text-foreground dark:text-gray-100">Preferences</h2>
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="space-y-1.5 text-sm">

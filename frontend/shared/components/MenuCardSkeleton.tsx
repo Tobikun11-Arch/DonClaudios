@@ -1,6 +1,6 @@
 function MenuCardSkeleton() {
   return (
-    <div className="relative min-h-[240px] rounded-[20px] bg-white border border-gray-200 shadow-sm px-4 pt-28 pb-6 dark:bg-gray-900 dark:border-gray-800">
+    <div className="relative min-h-[240px] rounded-[20px] bg-white border border-gray-200 shadow-sm px-4 pt-28 pb-6 dark:bg-gray-900 dark:border-gray-700">
       <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-1/4 h-[112px] w-[112px] rounded-full ring-4 ring-white dark:ring-gray-900 bg-gray-200 animate-pulse dark:bg-gray-800" />
       <div className="pointer-events-none text-center">
         <div className="mx-auto h-[18px] w-3/4 rounded-full bg-gray-200 animate-pulse dark:bg-gray-800" />

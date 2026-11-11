@@ -22,7 +22,7 @@ export function AppearanceCard() {
   );
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-700 dark:bg-gray-900">
       <h2 className="text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">Appearance</h2>
       <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
         Choose light or dark, or follow your device setting.
