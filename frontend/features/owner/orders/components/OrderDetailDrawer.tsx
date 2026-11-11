@@ -2,12 +2,13 @@
 
 import {useEffect} from 'react';
 import {X} from 'lucide-react';
-import {OrderStatusPill, OrderTypePill, formatStatus} from './OrderPills';
+import {OrderStatusPill, OrderTypePill} from './OrderPills';
 import {itemName, orderCustomerName} from '../hooks/useOwnerOrders';
-import {formatPeso, titleCaseStatus} from '../../dashboard/components/reports/reportPrimitives';
+import {formatPeso} from '../../dashboard/components/reports/reportPrimitives';
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
 import {OrderPaymentPanel} from '@/features/cashier/orders/components/CashierOrders';
 import {PreOrderBadge, withSize} from '@/shared/components/PreOrderBadge';
+import {fulfillmentLabel, statusFlow, staffStatusLabel} from '@/lib/orders/orderFlow';
 
 function formatDateTime(iso?: string) {
   if (!iso) return '—';
@@ -21,11 +22,14 @@ function formatDateTime(iso?: string) {
   });
 }
 
-function nextStatuses(order: OrderHistoryEntry) {
+/** Remaining steps of this order's own flow (the backend rejects any other). */
+function nextStatuses(order: OrderHistoryEntry): string[] {
   if (order.orderStatus === 'cancelled' || order.orderStatus === 'completed') return [];
-  const flow = ['pending', 'confirmed', 'preparing', 'ready', 'on_the_way', 'completed'];
-  const index = flow.indexOf(order.orderStatus);
-  return index >= 0 ? flow.slice(index + 1) : [];
+  const flow = statusFlow(order);
+  const index = flow.indexOf(order.orderStatus as (typeof flow)[number]);
+  // A step outside the flow (e.g. an older courier delivery left "on the way")
+  // can still be finished.
+  return index >= 0 ? flow.slice(index + 1) : ['completed'];
 }
 
 export function OrderDetailDrawer({
@@ -95,14 +99,12 @@ export function OrderDetailDrawer({
 
         <div className="space-y-5 px-5 py-4">
           <div className="flex flex-wrap items-center gap-2">
-            <OrderStatusPill status={order.orderStatus} />
+            <OrderStatusPill status={order.orderStatus} order={order} />
             <OrderTypePill type={order.orderType} />
             <PreOrderBadge order={order} />
-            {order.deliveryMode ? (
+            {order.orderType === 'delivery' ? (
               <span className="rounded-md bg-gray-50 dark:bg-gray-800/60 px-2 py-0.5 text-[0.7rem] font-semibold text-gray-600 dark:text-gray-300">
-                {order.deliveryMode === 'DONCLAUDIO'
-                  ? 'DonClaudio delivery'
-                  : 'Lalamove (customer-booked)'}
+                {fulfillmentLabel(order)}
               </span>
             ) : null}
             {order.paymentMethod && (
@@ -147,7 +149,7 @@ export function OrderDetailDrawer({
                     onClick={() => onUpdateStatus(order._id, status)}
                     className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-1.5 text-[0.78rem] font-semibold text-gray-700 dark:text-gray-200 transition-colors hover:border-[#2d4a35] dark:hover:border-[#7ed4a0]/60 hover:bg-[#E8F0E3] dark:hover:bg-[#7ed4a0]/10 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {formatStatus(status)}
+                    {staffStatusLabel(order, status)}
                   </button>
                 ))}
                 <button
@@ -200,6 +202,18 @@ export function OrderDetailDrawer({
                 {order.guestInfo.address}
               </p>
             )}
+            {order.deliveryLocation &&
+              Number.isFinite(order.deliveryLocation.lat) &&
+              Number.isFinite(order.deliveryLocation.lng) && (
+                <a
+                  href={`https://www.google.com/maps?q=${order.deliveryLocation.lat},${order.deliveryLocation.lng}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1 inline-block text-[0.82rem] font-semibold text-[#2d4a35] dark:text-[#7ed4a0] underline-offset-2 hover:underline"
+                >
+                  Open pinned location
+                </a>
+              )}
             {order.riderNotes && (
               <p className="mt-2 rounded-lg bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-[0.8rem] text-amber-800 dark:text-amber-200">
                 Note: {order.riderNotes}
@@ -284,7 +298,7 @@ export function OrderDetailDrawer({
                 {order.statusHistory.map((entry, index) => (
                   <li key={`${entry.status}-${index}`} className="text-[0.8rem]">
                     <span className="font-semibold text-[#1A1A1A] dark:text-gray-100">
-                      {titleCaseStatus(entry.status)}
+                      {staffStatusLabel(order, entry.status)}
                     </span>
                     <span className="ml-2 text-[#6B7280] dark:text-gray-400">{formatDateTime(entry.at)}</span>
                   </li>

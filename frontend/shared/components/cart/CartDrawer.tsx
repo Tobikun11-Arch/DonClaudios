@@ -17,10 +17,18 @@ import {Button} from '@/components/ui/button';
 import {getCartSubtotal, useCartStore} from '@/app/store/cartStore';
 import {useCartUiStore} from '@/app/store/cartUiStore';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
-import {getDeliveryMode} from '@/lib/orders/deliveryMode';
+import {useFreeDeliveryStatus} from '@/lib/orders/useFreeDeliveryStatus';
+import FreeDeliveryHint from '@/features/order/components/FreeDeliveryHint';
 import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
+import {
+  GUEST_MAX_ORDER_MESSAGE,
+  GUEST_MAX_ORDER_TOTAL,
+  MIN_ORDER_MESSAGE,
+  MIN_ORDER_TOTAL,
+  wouldExceedGuestMax
+} from '@/lib/constants/orderLimits';
 import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 import {Z} from '@/lib/zIndex';
 import CartRemoveConfirmModal from './CartRemoveConfirmModal';
@@ -98,17 +106,17 @@ export default function CartDrawer() {
     return map;
   }, [productsQuery.data]);
 
-  const deliveryMode = useMemo(
+  const deliveryItems = useMemo(
     () =>
-      getDeliveryMode(
-        items.map(i => ({
-          category: productCategoryById.get(i.productId),
-          price: i.price,
-          quantity: i.qty
-        }))
-      ),
+      items.map(i => ({
+        category: productCategoryById.get(i.productId),
+        price: i.price,
+        quantity: i.qty
+      })),
     [items, productCategoryById]
   );
+  // Guest cart: always a self-booked courier (free delivery needs an account).
+  const freeDelivery = useFreeDeliveryStatus(deliveryItems, 'guest', null);
 
   const total = subtotal;
 
@@ -139,13 +147,13 @@ export default function CartDrawer() {
   const goToCheckout = () => {
     if (items.length === 0) return;
 
-    if (total < 100) {
-      toast.error('Minimum order total is ₱100.00.');
+    if (total < MIN_ORDER_TOTAL) {
+      toast.error(MIN_ORDER_MESSAGE);
       return;
     }
 
-    if (total > 1000) {
-      toast.error('Guest orders have a maximum total of ₱1,000.00. Sign up or log in to your customer account to place larger orders.');
+    if (total > GUEST_MAX_ORDER_TOTAL) {
+      toast.error(GUEST_MAX_ORDER_MESSAGE);
       return;
     }
 
@@ -203,11 +211,13 @@ export default function CartDrawer() {
               <ChevronDown className="h-4 w-4 shrink-0" />
             </button>
             {orderType === 'Delivery' && items.length > 0 ? (
-              <p className="mt-1 text-[11px] font-medium text-gray-600">
-                {deliveryMode === 'LALAMOVE'
-                  ? "You'll book your own Lalamove courier for this order. Courier fee is paid by you directly to Lalamove."
-                  : "Free delivery by DonClaudio's 🎉"}
-              </p>
+              <>
+                <p className="mt-1 text-[11px] font-medium text-gray-600">
+                  You&apos;ll book your own courier (Lalamove, Grab Express, Move It or
+                  another). The courier fee is paid by you directly to them.
+                </p>
+                <FreeDeliveryHint status={freeDelivery} className="mt-2" />
+              </>
             ) : null}
           </div>
 
@@ -306,14 +316,31 @@ export default function CartDrawer() {
                         <div className="min-w-10 text-center text-sm font-semibold text-gray-900">
                           {item.qty}
                         </div>
+                        {(() => {
+                          const {unitPrice} = getDiscountedUnitPrice({
+                            promos,
+                            productId: item.productId,
+                            basePrice: item.price
+                          });
+                          // One more would push the guest past the cap.
+                          const atCap = wouldExceedGuestMax(total, unitPrice);
+                          return (
                         <button
                           type="button"
-                          className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50"
+                          className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                           onClick={() => setQty(item.productId, item.qty + 1)}
+                          disabled={atCap}
+                          title={
+                            atCap
+                              ? `Guest orders are capped at ₱${GUEST_MAX_ORDER_TOTAL.toLocaleString('en-PH')}.`
+                              : undefined
+                          }
                           aria-label="Increase"
                         >
                           <Plus className="h-4 w-4" />
                         </button>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -346,6 +373,15 @@ export default function CartDrawer() {
           >
             {storeClosed ? 'Store is Closed' : 'Go To Checkout'}
           </Button>
+          {items.length > 0 && total > GUEST_MAX_ORDER_TOTAL ? (
+            <p className="mt-2 text-center text-xs font-medium text-[#c30010]">
+              {GUEST_MAX_ORDER_MESSAGE}
+            </p>
+          ) : items.length > 0 && total < MIN_ORDER_TOTAL ? (
+            <p className="mt-2 text-center text-xs font-medium text-[#c30010]">
+              {MIN_ORDER_MESSAGE}
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -484,9 +520,7 @@ export default function CartDrawer() {
                       style={{color: 'var(--text-muted)'}}
                     >
                       {type === 'Delivery'
-                        ? deliveryMode === 'LALAMOVE'
-                          ? 'Book your own Lalamove courier'
-                          : "Free delivery by DonClaudio's"
+                        ? 'Book your own courier'
                         : type === 'Pick-up'
                           ? 'Grab it at the shop'
                           : 'Book a table'}

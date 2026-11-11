@@ -16,6 +16,7 @@ export const orderMessageRepository = {
           lastMessageAt: {$last: '$createdAt'},
           lastMessage: {$last: '$body'},
           lastSender: {$last: '$senderName'},
+          lastAuthorType: {$last: '$authorType'},
           count: {$sum: 1}
         }
       },

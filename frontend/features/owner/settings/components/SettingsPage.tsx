@@ -12,6 +12,7 @@ import {SecurityTab} from './SecurityTab';
 import {CashierTab} from './CashierTab';
 import {StoreStatusTab} from './StoreStatusTab';
 import {MenuCategoriesTab} from './MenuCategoriesTab';
+import {DeliveryTab} from './DeliveryTab';
 import AppearancePreview from '@/features/owner/appearance/components/AppearancePreview';
 import {
   UserRound,
@@ -28,7 +29,8 @@ import {
   Users,
   BarChart3,
   ChevronDown,
-  Search
+  Search,
+  Truck
 } from 'lucide-react';
 
 type TabId =
@@ -41,6 +43,7 @@ type TabId =
   | 'notificationsReports'
   | 'notificationsAccount'
   | 'store'
+  | 'delivery'
   | 'categories'
   | 'security'
   | 'cashier';
@@ -59,6 +62,7 @@ const TOP_ITEMS: TopItem[] = [
   {id: 'notifications', label: 'Notifications', icon: Bell, group: 1, hasChildren: true},
   {id: 'cashier', label: 'Cashier', icon: UsersRound, group: 1},
   {id: 'store', label: 'Store Status', icon: Clock, group: 1},
+  {id: 'delivery', label: 'Delivery', icon: Truck, group: 1},
   {id: 'categories', label: 'Menu Categories', icon: Tags, group: 1},
   {id: 'security', label: 'Security', icon: ShieldCheck, group: 1}
 ];
@@ -87,6 +91,7 @@ const TAB_INFO: Record<TabId, {label: string; subtitle: string}> = {
   notificationsReports: {label: 'Reports', subtitle: 'Reports and performance notifications.'},
   notificationsAccount: {label: 'Account', subtitle: 'Account security notifications.'},
   store: {label: 'Store Status', subtitle: 'Opening hours and manual close controls.'},
+  delivery: {label: 'Delivery', subtitle: 'Free delivery minimum and area.'},
   categories: {label: 'Menu Categories', subtitle: 'Organize how products are grouped.'},
   security: {label: 'Security', subtitle: 'Password and active sessions.'},
   cashier: {label: 'Cashier', subtitle: 'Manage cashier accounts.'}
@@ -146,6 +151,8 @@ export function SettingsPage() {
         return <ProfileTab />;
       case 'store':
         return <StoreStatusTab />;
+      case 'delivery':
+        return <DeliveryTab />;
       case 'categories':
         return <MenuCategoriesTab />;
       case 'security':

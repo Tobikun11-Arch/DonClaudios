@@ -25,3 +25,21 @@ export async function updateNotificationPreferences(preferences: NotificationPre
   const res = await httpClient.put<{preferences: NotificationPreferences}>('/settings/notification-preferences', preferences);
   return res.data.preferences;
 }
+
+export type FreeDeliveryResponse = {
+  freeDelivery: import('@/lib/orders/deliveryMode').FreeDeliverySettings;
+  /** The built-in defaults, for "reset to default" in Settings. */
+  defaults: import('@/lib/orders/deliveryMode').FreeDeliverySettings;
+};
+
+export async function getFreeDeliverySettings() {
+  const res = await httpClient.get<FreeDeliveryResponse>('/settings/free-delivery');
+  return res.data;
+}
+
+export async function updateFreeDeliverySettings(
+  body: import('@/lib/orders/deliveryMode').FreeDeliverySettings
+) {
+  const res = await httpClient.put<FreeDeliveryResponse>('/settings/free-delivery', body);
+  return res.data;
+}

@@ -27,7 +27,20 @@ import LocationPicker from '@/features/order/components/LocationPicker';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
-import {getDeliveryMode, STORE_ADDRESS} from '@/lib/orders/deliveryMode';
+import {
+  GUEST_MAX_ORDER_MESSAGE,
+  GUEST_MAX_ORDER_TOTAL,
+  MIN_ORDER_MESSAGE,
+  MIN_ORDER_TOTAL,
+  wouldExceedGuestMax
+} from '@/lib/constants/orderLimits';
+import {STORE_ADDRESS} from '@/lib/orders/deliveryMode';
+import {useFreeDeliveryStatus} from '@/lib/orders/useFreeDeliveryStatus';
+import FreeDeliveryHint from '@/features/order/components/FreeDeliveryHint';
+import CourierPicker, {
+  isCourierChoiceComplete,
+  type CourierChoice
+} from '@/features/order/components/CourierPicker';
 import OrderTypeSelector from '@/shared/components/order/OrderTypeSelector';
 import {useCreateGuestOrderMutation} from '@/lib/hooks/orders/useGuestOrder';
 import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
@@ -150,19 +163,35 @@ export default function CheckoutGuestPage() {
     return map;
   }, [productsQuery.data]);
 
-  const deliveryMode = useMemo(
+  const deliveryItems = useMemo(
     () =>
-      getDeliveryMode(
-        items.map(i => ({
-          category: productCategoryById.get(i.productId),
-          price: i.price,
-          quantity: i.qty
-        }))
-      ),
+      items.map(i => ({
+        category: productCategoryById.get(i.productId),
+        price: i.price,
+        quantity: i.qty
+      })),
     [items, productCategoryById]
   );
+  // Guests always book their own courier: free delivery is for customers with an
+  // account (inside Tanza). The hint below tells them so.
+  const freeDelivery = useFreeDeliveryStatus(deliveryItems, 'guest', null);
+  const deliveryMode = freeDelivery.mode;
+  const [courier, setCourier] = useState<CourierChoice>({provider: null, name: ''});
+  // A delivery the customer books themself needs to say which courier, so
+  // the store knows which rider to expect.
+  const needsCourier = orderType === 'Delivery' && deliveryMode === 'LALAMOVE';
+  const courierMissing = needsCourier && !isCourierChoiceComplete(courier);
+  const courierPayload =
+    needsCourier && courier.provider
+      ? {
+          provider: courier.provider,
+          name: courier.provider === 'other' ? courier.name.trim() : undefined
+        }
+      : undefined;
 
   const total = subtotal;
+  const belowMinimum = items.length > 0 && total < MIN_ORDER_TOTAL;
+  const overGuestMax = total > GUEST_MAX_ORDER_TOTAL;
 
   const createOrderMutation = useCreateGuestOrderMutation();
 
@@ -362,13 +391,13 @@ export default function CheckoutGuestPage() {
       return;
     }
 
-    if (total < 100) {
-      setCheckoutError('Minimum order total is ₱100.00.');
+    if (total < MIN_ORDER_TOTAL) {
+      setCheckoutError(MIN_ORDER_MESSAGE);
       return;
     }
 
-    if (total > 1000) {
-      setCheckoutError('Guest orders have a maximum total of ₱1,000.00. Sign up or log in to your customer account to place larger orders.');
+    if (total > GUEST_MAX_ORDER_TOTAL) {
+      setCheckoutError(GUEST_MAX_ORDER_MESSAGE);
       return;
     }
     const nextErrors: typeof errors = {};
@@ -424,7 +453,8 @@ export default function CheckoutGuestPage() {
               : 'reservation',
         items: orderItems,
         totalAmount: total,
-        riderNotes: notesToRider.trim().length ? notesToRider.trim() : undefined
+        riderNotes: notesToRider.trim().length ? notesToRider.trim() : undefined,
+        courier: courierPayload
       });
     } catch (error) {
       setCheckoutError(
@@ -450,6 +480,9 @@ export default function CheckoutGuestPage() {
         className="w-full h-12 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
         disabled={
           items.length === 0 ||
+          belowMinimum ||
+          overGuestMax ||
+          courierMissing ||
           !phoneVerified ||
           isStoreClosed ||
           createOrderMutation.isPending ||
@@ -472,6 +505,14 @@ export default function CheckoutGuestPage() {
       ) : checkoutError ? (
         <p className="text-center text-xs font-medium text-[#c30010]">
           {checkoutError}
+        </p>
+      ) : overGuestMax ? (
+        <p className="text-center text-xs font-medium text-[#c30010]">
+          {GUEST_MAX_ORDER_MESSAGE}
+        </p>
+      ) : belowMinimum ? (
+        <p className="text-center text-xs font-medium text-[#c30010]">
+          {MIN_ORDER_MESSAGE}
         </p>
       ) : !phoneVerified && mobileNumber.trim() ? (
         <p className="text-center text-xs font-medium text-gray-500">
@@ -522,7 +563,7 @@ export default function CheckoutGuestPage() {
                     onChange={setOrderType}
                     deliverySubtitle={
                       deliveryMode === 'LALAMOVE'
-                        ? 'Book your own Lalamove courier'
+                        ? 'Book your own courier'
                         : "Free delivery by DonClaudio's"
                     }
                   />
@@ -538,10 +579,16 @@ export default function CheckoutGuestPage() {
                   >
                     {deliveryMode === 'LALAMOVE' ? (
                       <>
+                        <div className="mb-3 rounded-xl bg-white/70 p-3 dark:bg-gray-900/60">
+                          <CourierPicker value={courier} onChange={setCourier} />
+                          {courierMissing ? (
+                            <p className="mt-2 text-[11px] font-medium text-amber-800 dark:text-amber-300">
+                              Choose a courier to place your order.
+                            </p>
+                          ) : null}
+                        </div>
                         <p className="font-semibold">
-                          This order will be delivered via Lalamove. You will
-                          book and pay for the courier yourself. Use the pick-up
-                          address below when booking.
+                          You&apos;ll book and pay for your own courier. Use the pick-up address below when booking.
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           <button
@@ -583,6 +630,10 @@ export default function CheckoutGuestPage() {
                       </p>
                     )}
                   </div>
+                ) : null}
+
+                {orderType === 'Delivery' ? (
+                  <FreeDeliveryHint status={freeDelivery} />
                 ) : null}
 
                 {orderType === 'Pick-up' ? (
@@ -1092,9 +1143,17 @@ export default function CheckoutGuestPage() {
                             </div>
                             <button
                               type="button"
-                              className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50"
+                              className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                               onClick={() =>
                                 setQty(item.productId, item.qty + 1)
+                              }
+                              // Guests can't go over the order cap: one more
+                              // of this item would cross it.
+                              disabled={wouldExceedGuestMax(total, unitPrice)}
+                              title={
+                                wouldExceedGuestMax(total, unitPrice)
+                                  ? `Guest orders are capped at ₱${GUEST_MAX_ORDER_TOTAL.toLocaleString('en-PH')}.`
+                                  : undefined
                               }
                               aria-label="Increase"
                             >
@@ -1124,7 +1183,7 @@ export default function CheckoutGuestPage() {
                 </div>
                 {orderType === 'Delivery' && deliveryMode === 'LALAMOVE' ? (
                   <p className="text-xs text-amber-700">
-                    Courier fee not included, paid by you to Lalamove.
+                    Courier fee not included, paid by you to your courier.
                   </p>
                 ) : null}
 

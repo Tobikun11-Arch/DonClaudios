@@ -15,11 +15,20 @@ import type {DateRange} from './OrderDateFilter';
 import {OrderPrepBadge, OrderEstimateLabel} from './OrderPrepBadge';
 import {useAllOrdersQuery, useUpdateOrderStatusMutation, useSendCashierOrderMessageMutation, useMarkOnlineOrderPaidMutation} from '@/lib/hooks/orders/useCashierOrder';
 import {useCounterOrdersQuery} from '@/lib/hooks/orders/useCashierCounterOrder';
-import {useAdminOrderMessagesQuery} from '@/lib/hooks/orders/useOrderMessage';
+import {
+  useAdminOrderMessagesQuery,
+  useFollowUpOrdersQuery
+} from '@/lib/hooks/orders/useOrderMessage';
 import type {OrderHistoryEntry, OrderHistoryItem} from '@/lib/api/orderApi';
 import {cn} from '@/lib/utils';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {PreOrderBadge, withSize} from '@/shared/components/PreOrderBadge';
+import {
+  fulfillmentKind,
+  fulfillmentLabel,
+  nextStatus as nextFlowStatus,
+  staffStatusLabel
+} from '@/lib/orders/orderFlow';
 
 export const ORDER_STATUSES = [
   'pending',
@@ -31,20 +40,6 @@ export const ORDER_STATUSES = [
   'cancelled'
 ] as const;
 
-export const STATUS_FLOW = [
-  'pending',
-  'confirmed',
-  'preparing',
-  'on_the_way',
-  'completed'
-] as const;
-export const COUNTER_PICKUP_FLOW = [
-  'pending',
-  'confirmed',
-  'preparing',
-  'ready',
-  'completed'
-] as const;
 const ACTIVE_STATUSES = [
   'pending',
   'confirmed',
@@ -59,33 +54,46 @@ export const STATUS_LABELS: Record<string, string> = {
   confirmed: 'Confirmed',
   preparing: 'Preparing',
   ready: 'Ready',
-  on_the_way: 'On the Way',
+  on_the_way: 'Out for delivery',
   completed: 'Completed',
   cancelled: 'Cancelled'
 };
 
-export function statusFlowFor(orderType: string): readonly string[] {
-  return orderType === 'delivery' ? STATUS_FLOW : COUNTER_PICKUP_FLOW;
+/**
+ * The status the advance button moves this order to, following the order's
+ * own flow (store delivery, customer-booked courier, pick-up, reservation).
+ * See `lib/orders/orderFlow.ts`; the backend rejects steps outside the flow.
+ */
+export function nextStatusFor(order: OrderHistoryEntry): string | null {
+  return nextFlowStatus(order);
 }
 
-export function nextStatusFor(
-  orderType: string,
-  orderStatus: string
-): string | null {
-  const flow = statusFlowFor(orderType);
-  const idx = flow.indexOf(orderStatus);
-  if (idx < 0 || idx >= flow.length - 1) return null;
-  return flow[idx + 1];
-}
-
+/** Generic label (no order known), e.g. for the status filter. */
 export function formatStatus(status: string) {
   return STATUS_LABELS[status] ?? status;
+}
+
+/** Label for this order's status ("Ready for courier", "Delivered", ...). */
+export function orderStatusLabel(order: OrderHistoryEntry, status: string = order.orderStatus) {
+  return staffStatusLabel(order, status);
 }
 
 export function orderTypeLabel(orderType: string) {
   if (orderType === 'pickup') return 'Pickup';
   if (orderType === 'delivery') return 'Delivery';
   return 'Reservation';
+}
+
+/**
+ * Order type for the card, with who delivers it so the cashier knows which
+ * rider to expect: "Free delivery (our rider)" or
+ * "Delivery · Grab Express (customer-booked)".
+ */
+export function orderKindLabel(order: OrderHistoryEntry) {
+  const kind = fulfillmentKind(order);
+  if (kind === 'store_delivery') return 'Free delivery (our rider)';
+  if (kind === 'courier_delivery') return fulfillmentLabel(order);
+  return orderTypeLabel(order.orderType);
 }
 
 export function customerDisplay(order: OrderHistoryEntry) {
@@ -279,6 +287,18 @@ export function CashierOrders() {
 
   // Filter orders by source (already source-specific; kept for compatibility)
   const filteredBySource = orders;
+  // Message count + "awaiting reply" per order, for the Follow-up button.
+  const followUpQuery = useFollowUpOrdersQuery();
+  const followUpByOrder = useMemo(() => {
+    const map = new Map<string, {count: number; awaitingReply: boolean}>();
+    for (const f of followUpQuery.data?.orders ?? []) {
+      map.set(f.orderId, {
+        count: f.messageCount,
+        awaitingReply: f.lastAuthorType === 'customer'
+      });
+    }
+    return map;
+  }, [followUpQuery.data]);
   const {highlightId, isOpenChat} = useScrollToHighlight();
   const [expandedId, setExpandedId] = useState<string | null>(
     isOpenChat ? highlightId : null
@@ -343,11 +363,11 @@ export function CashierOrders() {
   }, [ordersInRange, statusFilter, orderTypeFilter, orderSourceTab]);
 
   const handleNextStatus = async (order: OrderHistoryEntry) => {
-    const next = nextStatusFor(order.orderType, order.orderStatus);
+    const next = nextStatusFor(order);
     if (!next) return;
     try {
       await updateStatusMutation.mutateAsync({orderId: order._id, status: next});
-      toast.success(`Order marked as ${formatStatus(next)}.`);
+      toast.success(`Order marked as ${orderStatusLabel(order, next)}.`);
     } catch (error) {
       toast.error(
         getFriendlyErrorMessage(error, 'Failed to update status.')
@@ -549,6 +569,7 @@ export function CashierOrders() {
             <div key={order._id} id={`order-${order._id}`}>
               <OrderCard
                 order={order}
+                followUp={followUpByOrder.get(order._id)}
                 expanded={expandedId === order._id}
                 onToggle={() =>
                   setExpandedId(expandedId === order._id ? null : order._id)
@@ -620,6 +641,7 @@ export function CashierOrders() {
 
 function OrderCard({
   order,
+  followUp,
   expanded,
   onToggle,
   onNextStatus,
@@ -628,6 +650,8 @@ function OrderCard({
   cancelUpdating
 }: {
   order: OrderHistoryEntry;
+  /** Messages on this order, if any (from the follow-up summary). */
+  followUp?: {count: number; awaitingReply: boolean};
   expanded: boolean;
   onToggle: () => void;
   onNextStatus: () => void;
@@ -640,7 +664,7 @@ function OrderCard({
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   const isWalkIn = order.orderSource === 'in-store';
-  const nextStatus = nextStatusFor(order.orderType, order.orderStatus);
+  const nextStatus = nextStatusFor(order);
   const canAdvance = nextStatus !== null;
   const paymentReason = paymentGateReason(order, nextStatus);
   const paymentBlocked = paymentReason !== null;
@@ -709,7 +733,7 @@ function OrderCard({
                 <span
                   className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-bold ${statusChipClass(order.orderStatus)}`}
                 >
-                  {formatStatus(order.orderStatus)}
+                  {orderStatusLabel(order)}
                 </span>
               )}
               {!isWalkIn && (
@@ -734,7 +758,7 @@ function OrderCard({
               {isWalkIn && order.orderNumber
                 ? `Order ${order.orderNumber}`
                 : `Order #${String(order._id).slice(-6).toUpperCase()}`}
-              {!isWalkIn && ` • ${orderTypeLabel(order.orderType)}`}
+              {!isWalkIn && ` • ${orderKindLabel(order)}`}
               {' • '}₱{order.totalAmount}.00
               <PreOrderBadge order={order} className="ml-2" />
               {order.isGuest && (
@@ -760,17 +784,39 @@ function OrderCard({
           </div>
 
           <div className="flex w-full items-center justify-end gap-2 sm:w-auto sm:shrink-0">
-            {!isWalkIn && !order.isGuest && (
+            {!isWalkIn && (
               <button
                 type="button"
                 onClick={e => {
                   e.stopPropagation();
                   onToggle();
                 }}
-                className="flex min-h-[40px] items-center gap-1.5 rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                aria-label={
+                  followUp?.awaitingReply
+                    ? `Follow-up: customer is waiting for a reply (${followUp.count} messages)`
+                    : 'Follow-up messages'
+                }
+                className={cn(
+                  'relative flex min-h-[40px] items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-semibold transition-colors',
+                  followUp?.awaitingReply
+                    ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20'
+                    : 'border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800/60'
+                )}
               >
                 <MessageCircle size={14} />
-                Follow-up
+                {followUp?.awaitingReply ? 'Reply' : 'Follow-up'}
+                {followUp?.count ? (
+                  <span
+                    className={cn(
+                      'grid h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-bold',
+                      followUp.awaitingReply
+                        ? 'bg-[#c30010] text-white'
+                        : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
+                    )}
+                  >
+                    {followUp.count}
+                  </span>
+                ) : null}
                 <ChevronRight
                   size={14}
                   className={`transition-transform ${expanded ? 'rotate-90' : ''}`}
@@ -940,7 +986,7 @@ function OrderCard({
             >
               {statusUpdating
                 ? 'Updating...'
-                : `Mark ${formatStatus(nextStatus)}`}
+                : `Mark ${orderStatusLabel(order, nextStatus)}`}
             </button>
             {paymentBlocked ? (
               <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
@@ -966,7 +1012,7 @@ function OrderCard({
         )}
       </div>
 
-      {expanded && !isWalkIn && !order.isGuest && (
+      {expanded && !isWalkIn && (
         <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4">
           <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
             Conversation with {customerDisplay(order)}

@@ -1,6 +1,7 @@
 'use client';
 
 import {cn} from '@/lib/utils';
+import {staffStatusLabel, type FlowOrder} from '@/lib/orders/orderFlow';
 
 const STATUS_STYLES: Record<string, string> = {
   pending: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30',
@@ -34,11 +35,13 @@ export const ALL_STATUSES = 'all';
 /** Options for the filter dropdown: `All` first, then each real status. */
 export const ORDER_STATUS_FILTERS = [ALL_STATUSES, ...ORDER_STATUSES] as const;
 
+/** Generic label (no order known), e.g. for filters. */
 export function formatStatus(status: string) {
-  return status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  return staffStatusLabel(null, status);
 }
 
-export function OrderStatusPill({status}: {status: string}) {
+/** Pass `order` to label the status for that order's flow ("Ready for courier", "Delivered"…). */
+export function OrderStatusPill({status, order}: {status: string; order?: FlowOrder | null}) {
   return (
     <span
       className={cn(
@@ -46,7 +49,7 @@ export function OrderStatusPill({status}: {status: string}) {
         STATUS_STYLES[status] ?? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 text-gray-600 dark:text-gray-300'
       )}
     >
-      {formatStatus(status)}
+      {staffStatusLabel(order ?? null, status)}
     </span>
   );
 }

@@ -18,16 +18,24 @@ import {
 import {useCartUiStore} from '@/app/store/cartUiStore';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
+import {useQueryClient} from '@tanstack/react-query';
+import {meQueryKey, useMeQuery} from '@/lib/hooks/auth/useMeQuery';
+import {getMe} from '@/lib/api/authApi';
+import {getDashboardPath} from '@/lib/auth/redirects';
 
 export default function Header() {
   const brand = useBrand();
   const [activeSection, setActiveSection] = useState('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [orderModalOpen, setOrderModalOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
   const isOrderRoute = pathname === '/order' || pathname.startsWith('/order/');
+
+  const queryClient = useQueryClient();
+  const meQuery = useMeQuery();
+  const signedInUser = meQuery.data?.user;
+  const accountHref = signedInUser ? getDashboardPath(signedInUser.type) : '/sign-in';
 
   const cartItems = useCartStore(s => s.items);
   const openCart = useCartUiStore(s => s.open);
@@ -88,36 +96,22 @@ export default function Header() {
     setMobileMenuOpen(false);
   };
 
-  const handleCartClick = () => {
-    if (!isOrderRoute) {
-      setOrderModalOpen(true);
-      setMobileMenuOpen(false);
-      return;
-    }
-
-    if (cartUniqueCount > 0) {
-      openCart();
-      setMobileMenuOpen(false);
-      return;
-    }
-
-    setOrderModalOpen(true);
+  // "Order Now" goes straight to the menu: signing in is optional (there is
+  // a Login link right beside it) and is asked for at checkout if needed.
+  // On the order page the same button opens the cart.
+  const handleCartClick = async () => {
     setMobileMenuOpen(false);
-  };
-
-  const handleContinueAsGuest = () => {
-    setOrderModalOpen(false);
-    router.push('/order');
-  };
-
-  const handleGoToSignIn = () => {
-    setOrderModalOpen(false);
-    router.push('/sign-in');
-  };
-
-  const handleGoToSignUp = () => {
-    setOrderModalOpen(false);
-    router.push('/sign-up');
+    if (!isOrderRoute) {
+      // Signed in already? Order from your own dashboard (saved cart,
+      // addresses, free delivery) instead of the guest menu. Ask the server
+      // if we don't know yet, so a fast click doesn't skip the check.
+      const me = await queryClient
+        .fetchQuery({queryKey: meQueryKey, queryFn: getMe, staleTime: 30_000})
+        .catch(() => null);
+      router.push(me?.user ? getDashboardPath(me.user.type) : '/order');
+      return;
+    }
+    openCart();
   };
 
   return (
@@ -172,7 +166,7 @@ export default function Header() {
         </nav>
 
         <div className="hidden lg:flex gap-4 items-center">
-          <Link href="/sign-in">Login</Link>
+          <Link href={accountHref}>{signedInUser ? 'My account' : 'Login'}</Link>
           <Button
             onClick={handleCartClick}
             className="flex items-center gap-2 bg-[#3c5e45]"
@@ -238,10 +232,10 @@ export default function Header() {
 
           <div className="mt-4 flex flex-col gap-3 border-t border-gray-200 pt-4">
             <Link
-              href="/sign-in"
+              href={accountHref}
               className="text-sm font-medium text-gray-700 hover:opacity-80"
             >
-              Login
+              {signedInUser ? 'My account' : 'Login'}
             </Link>
             <Button
               onClick={handleCartClick}
@@ -265,91 +259,6 @@ export default function Header() {
         </div>
       )}
 
-      {orderModalOpen && (
-        <div
-          className="fixed inset-0 z-60 h-dvh flex items-center justify-center bg-black/50 px-4"
-          onClick={() => setOrderModalOpen(false)}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="relative w-full max-w-130 rounded-xl bg-white shadow-xl"
-            onClick={e => e.stopPropagation()}
-          >
-            <Button
-              type="button"
-              onClick={() => setOrderModalOpen(false)}
-              variant="ghost"
-              size="icon"
-              className="absolute right-4 top-4 text-gray-500 hover:bg-gray-100"
-              aria-label="Close"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-
-            <div className="px-8 pb-8 pt-12 text-center">
-              <div className="flex items-center justify-center gap-3">
-                <Image
-                  src={brand.logo}
-                  alt="DonClaudio's Logo"
-                  width={56}
-                  height={56}
-                />
-                <span className="text-2xl font-extrabold text-[#3c5e45]">
-                  {brand.name}
-                </span>
-              </div>
-
-              <h2 className="mt-6 text-2xl font-bold text-gray-900">
-                Sign up / Log in
-              </h2>
-              <p className="mt-2 text-sm text-gray-500">
-                Welcome to {brand.name}! Log in or create an account to
-                start ordering.
-              </p>
-
-              <div className="mt-8 space-y-3">
-                <Button
-                  onClick={handleGoToSignUp}
-                  size="lg"
-                  className="w-full bg-[#3c5e45]"
-                >
-                  Sign up
-                </Button>
-
-                <Button
-                  type="button"
-                  onClick={handleGoToSignIn}
-                  variant="link"
-                  className="w-full text-sm font-semibold text-[#3c5e45]"
-                >
-                  Log in
-                </Button>
-
-                <div className="flex items-center gap-3 pt-2">
-                  <div className="h-px flex-1 bg-gray-200" />
-                  <span className="text-xs text-gray-400">or</span>
-                  <div className="h-px flex-1 bg-gray-200" />
-                </div>
-
-                <Button
-                  type="button"
-                  onClick={handleContinueAsGuest}
-                  variant="link"
-                  className="w-full text-sm font-semibold text-gray-700"
-                >
-                  Continue as Guest
-                </Button>
-              </div>
-
-              <p className="mt-6 text-xs text-gray-500">
-                By continuing, you agree to our Terms &amp; Conditions and
-                Privacy Notice.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   );
 }
