@@ -67,6 +67,12 @@ export interface SiteSettingDocument extends mongoose.Document {
     textColor: string;
     fontFamily: string;
   }>;
+  /** Free delivery by the store's own rider (see config/delivery.ts). */
+  freeDelivery?: {
+    enabled: boolean;
+    minSubtotal: number;
+    zone: {lat: number; lng: number}[];
+  };
 }
 
 const StatItemSchema = new Schema<StatItem>(
@@ -100,6 +106,14 @@ const SectionStyleSchema = new Schema(
     backgroundColor: {type: String, default: ''},
     textColor: {type: String, default: ''},
     fontFamily: {type: String, default: ''}
+  },
+  {_id: false}
+);
+
+const LatLngSchema = new Schema(
+  {
+    lat: {type: Number, required: true},
+    lng: {type: Number, required: true}
   },
   {_id: false}
 );
@@ -160,6 +174,13 @@ const SiteSettingSchema = new Schema<SiteSettingDocument>(
       of: SectionStyleSchema,
       default: () => ({})
     },
+    // No defaults here: an unset value means "use DEFAULT_FREE_DELIVERY_SETTINGS",
+    // so changing the default in code reaches stores that never edited it.
+    freeDelivery: {
+      enabled: {type: Boolean},
+      minSubtotal: {type: Number, min: 0},
+      zone: {type: [LatLngSchema], default: undefined}
+    }
   },
   {timestamps: true}
 );

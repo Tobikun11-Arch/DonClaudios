@@ -33,6 +33,30 @@ export const settingsController = {
     }
   },
 
+  async getFreeDelivery(_req: Request, res: Response, next: NextFunction) {
+    try {
+      const freeDelivery = await settingsService.getFreeDelivery();
+      res.status(200).json({
+        freeDelivery,
+        defaults: settingsService.defaultFreeDelivery()
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateFreeDelivery(req: Request, res: Response, next: NextFunction) {
+    try {
+      const freeDelivery = await settingsService.updateFreeDelivery(req.body);
+      res.status(200).json({
+        freeDelivery,
+        defaults: settingsService.defaultFreeDelivery()
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async getNotificationPreferences(req: Request, res: Response, next: NextFunction) {
     try {
       if (!req.auth) {

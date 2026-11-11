@@ -36,7 +36,9 @@ import {
 } from '@/lib/preOrder/preOrder';
 import {type Product} from '@/lib/types/product';
 import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
-import {getDeliveryMode} from '@/lib/orders/deliveryMode';
+import {useFreeDeliveryStatus} from '@/lib/orders/useFreeDeliveryStatus';
+import FreeDeliveryHint from '@/features/order/components/FreeDeliveryHint';
+import {useLocationStore} from '@/app/store/locationStore';
 import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 import {Z} from '@/lib/zIndex';
 import CartRemoveConfirmModal from './CartRemoveConfirmModal';
@@ -138,17 +140,24 @@ export default function CustomerCartDrawer() {
     return map;
   }, [productsQuery.data]);
 
-  const deliveryMode = useMemo(
+  // Uses the pin saved from checkout (if any): free delivery needs a pinned
+  // drop-off inside the Tanza area.
+  const savedLocation = useLocationStore(st => st.location);
+  const deliveryItems = useMemo(
     () =>
-      getDeliveryMode(
-        items.map(i => ({
-          category: productCategoryById.get(i.productId),
-          price: i.price,
-          quantity: i.quantity
-        }))
-      ),
-    [items, productCategoryById]
+      items.map(i => ({
+        category: productCategoryById.get(i.productId),
+        price: getDiscountedUnitPrice({
+          promos,
+          productId: i.productId,
+          basePrice: i.price
+        }).unitPrice,
+        quantity: i.quantity
+      })),
+    [items, productCategoryById, promos]
   );
+  const freeDelivery = useFreeDeliveryStatus(deliveryItems, 'customer', savedLocation);
+  const deliveryMode = freeDelivery.mode;
 
   const total = subtotal;
 
@@ -367,6 +376,9 @@ export default function CustomerCartDrawer() {
                   ? "You'll book your own Lalamove courier for this order. Courier fee is paid by you directly to Lalamove."
                   : "Free delivery by DonClaudio's 🎉"}
               </p>
+            ) : null}
+            {orderType === 'Delivery' && items.length > 0 && freeDelivery.reason !== 'free' ? (
+              <FreeDeliveryHint status={freeDelivery} className="mt-2" />
             ) : null}
           </div>
 

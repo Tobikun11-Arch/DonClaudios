@@ -34,7 +34,9 @@ import {
   MIN_ORDER_TOTAL,
   wouldExceedGuestMax
 } from '@/lib/constants/orderLimits';
-import {getDeliveryMode, STORE_ADDRESS} from '@/lib/orders/deliveryMode';
+import {STORE_ADDRESS} from '@/lib/orders/deliveryMode';
+import {useFreeDeliveryStatus} from '@/lib/orders/useFreeDeliveryStatus';
+import FreeDeliveryHint from '@/features/order/components/FreeDeliveryHint';
 import OrderTypeSelector from '@/shared/components/order/OrderTypeSelector';
 import {useCreateGuestOrderMutation} from '@/lib/hooks/orders/useGuestOrder';
 import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
@@ -157,17 +159,19 @@ export default function CheckoutGuestPage() {
     return map;
   }, [productsQuery.data]);
 
-  const deliveryMode = useMemo(
+  const deliveryItems = useMemo(
     () =>
-      getDeliveryMode(
-        items.map(i => ({
-          category: productCategoryById.get(i.productId),
-          price: i.price,
-          quantity: i.qty
-        }))
-      ),
+      items.map(i => ({
+        category: productCategoryById.get(i.productId),
+        price: i.price,
+        quantity: i.qty
+      })),
     [items, productCategoryById]
   );
+  // Guests always book Lalamove: free delivery is for customers with an
+  // account (inside Tanza). The hint below tells them so.
+  const freeDelivery = useFreeDeliveryStatus(deliveryItems, 'guest', null);
+  const deliveryMode = freeDelivery.mode;
 
   const total = subtotal;
   const belowMinimum = items.length > 0 && total < MIN_ORDER_TOTAL;
@@ -602,6 +606,10 @@ export default function CheckoutGuestPage() {
                       </p>
                     )}
                   </div>
+                ) : null}
+
+                {orderType === 'Delivery' ? (
+                  <FreeDeliveryHint status={freeDelivery} />
                 ) : null}
 
                 {orderType === 'Pick-up' ? (

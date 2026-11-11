@@ -20,7 +20,10 @@ import LocationPicker from '@/features/order/components/LocationPicker';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
-import {getDeliveryMode, STORE_ADDRESS} from '@/lib/orders/deliveryMode';
+import {STORE_ADDRESS, STORE_LOCATION} from '@/lib/orders/deliveryMode';
+import {useFreeDeliveryStatus} from '@/lib/orders/useFreeDeliveryStatus';
+import DeliveryZoneMap from '@/features/order/components/DeliveryZoneMap';
+import FreeDeliveryHint from '@/features/order/components/FreeDeliveryHint';
 import OrderTypeSelector from '@/shared/components/order/OrderTypeSelector';
 import {
   useClearCustomerCartMutation,
@@ -46,21 +49,6 @@ const NOTE_SUGGESTIONS = [
   'Leave at gate',
   'Ring the doorbell'
 ];
-
-function buildMapPreviewSrc(userLat: number, userLng: number) {
-  const midLat = (userLat + STORE.lat) / 2;
-  const midLng = (userLng + STORE.lng) / 2;
-  const spread = Math.abs(userLat - STORE.lat) + Math.abs(userLng - STORE.lng);
-  const zoom = Math.max(5000, Math.round(spread * 80000 + 5000));
-
-  return (
-    `https://www.google.com/maps/embed?pb=!1m28!1m12!1m3!1d${zoom}` +
-    `!2d${midLng}!3d${midLat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1` +
-    `!4m13!3e0!4m5!1s0x0%3A0x0!2sYour+Location!3m2!1d${userLat}!2d${userLng}` +
-    `!4m5!1s0x33962d2a919119a5%3A0xe5f912eb02ffd2f9!2sDon%20Claudio%E2%80%99s%20Lechon%20House` +
-    `!3m2!1d${STORE.lat}!2d${STORE.lng}!5e0!3m2!1sen!2sus!4v1`
-  );
-}
 
 function getProductId(value: unknown) {
   if (typeof value === 'string') return value;
@@ -144,24 +132,30 @@ export default function CustomerCheckoutPage() {
     return map;
   }, [productsQuery.data]);
 
-  const deliveryMode = useMemo(
+  // Discounted prices, as charged: the free-delivery minimum is checked
+  // against what the customer actually pays.
+  const deliveryItems = useMemo(
     () =>
-      getDeliveryMode(
-        items.map(i => ({
-          category: productCategoryById.get(getProductId(i.productId)),
-          price: i.price,
-          quantity: i.quantity
-        }))
-      ),
-    [items, productCategoryById]
+      items.map(i => ({
+        category: productCategoryById.get(getProductId(i.productId)),
+        price: getDiscountedUnitPrice({
+          promos,
+          productId: getProductId(i.productId),
+          basePrice: i.price
+        }).unitPrice,
+        quantity: i.quantity
+      })),
+    [items, productCategoryById, promos]
   );
+  const freeDelivery = useFreeDeliveryStatus(deliveryItems, 'customer', location);
+  const deliveryMode = freeDelivery.mode;
+  const pinnedLocation =
+    location && location.lat != null && location.lng != null
+      ? {lat: location.lat, lng: location.lng}
+      : null;
 
   const total = subtotal;
 
-  const mapPreviewSrc =
-    location && location.lat != null && location.lng != null
-      ? buildMapPreviewSrc(location.lat, location.lng)
-      : null;
 
   const toggleNoteSuggestion = (suggestion: string) => {
     const value = suggestion.trim();
@@ -247,7 +241,9 @@ export default function CustomerCheckoutPage() {
           lastName: customer?.lastName,
           phoneNumber: customer?.phoneNumber,
           address: address.trim().length ? address.trim() : undefined
-        }
+        },
+        deliveryLocation:
+          orderType === 'Delivery' && pinnedLocation ? pinnedLocation : undefined
       });
 
       const orderId = created?.order?._id;
@@ -444,6 +440,10 @@ export default function CustomerCheckoutPage() {
                 </div>
               ) : null}
 
+              {orderType === 'Delivery' && freeDelivery.reason !== 'free' ? (
+                <FreeDeliveryHint status={freeDelivery} />
+              ) : null}
+
               {orderType === 'Pick-up' ? (
                 <div className="space-y-3">
                   <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-800/50">
@@ -518,15 +518,30 @@ export default function CustomerCheckoutPage() {
                     </div>
                   </div>
 
-                  {orderType === 'Delivery' && mapPreviewSrc ? (
-                    <div className="h-40 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
-                      <iframe
-                        src={mapPreviewSrc}
-                        className="w-full h-full"
-                        allowFullScreen
-                        loading="lazy"
-                        referrerPolicy="no-referrer-when-downgrade"
-                        title="Delivery location map preview"
+                  {orderType === 'Delivery' ? (
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                          Free delivery area
+                        </p>
+                        <p className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
+                          <span className="inline-block h-2.5 w-2.5 rounded-sm border border-[#3c5e45] bg-[#3c5e45]/20" />
+                          Tanza area · tap the map or drag your pin to adjust
+                        </p>
+                      </div>
+                      <DeliveryZoneMap
+                        zone={freeDelivery.settings.zone}
+                        store={STORE_LOCATION}
+                        pin={pinnedLocation}
+                        pinInside={freeDelivery.pinInside ?? undefined}
+                        onPinChange={p =>
+                          setLocation({
+                            lat: p.lat,
+                            lng: p.lng,
+                            address: address || location?.address || ''
+                          })
+                        }
+                        className="h-80 sm:h-[26rem] border border-gray-200 dark:border-gray-800"
                       />
                     </div>
                   ) : null}

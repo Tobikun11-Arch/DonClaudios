@@ -37,7 +37,8 @@ import type {
 import type {CashierDocument} from '../models/Cashier.model';
 import {resolveRange} from '../utils/dateRange';
 import {pointsEarnedForOrder} from '../config/rewards';
-import {getDeliveryMode} from '../config/delivery';
+import {getDeliveryMode, isValidLatLng} from '../config/delivery';
+import {settingsService} from '../services/settings.service';
 import {assertPreOrderItemsOrderable} from '../services/cart.service';
 import {isPositiveInteger, reserveOrderStock} from '../services/preOrder.service';
 import type {ListAllOrdersQuery} from '../dtos/order.dto';
@@ -581,8 +582,21 @@ export const orderController = {
 
       await assertStoreOpen();
 
-      const {orderType, items, totalAmount, riderNotes, contactInfo, changeFor} =
-        req.body;
+      const {
+        orderType,
+        items,
+        totalAmount,
+        riderNotes,
+        contactInfo,
+        changeFor,
+        deliveryLocation: rawDeliveryLocation
+      } = req.body;
+      // The pinned drop-off decides free delivery (Tanza zone). Ignore a
+      // malformed pin rather than failing the order: it just means Lalamove.
+      const deliveryLocation =
+        orderType === 'delivery' && isValidLatLng(rawDeliveryLocation)
+          ? {lat: rawDeliveryLocation.lat, lng: rawDeliveryLocation.lng}
+          : null;
 
       const validOrderTypes = ['pickup', 'delivery', 'reservation'] as const;
       if (!validOrderTypes.includes(orderType)) {
@@ -637,12 +651,18 @@ export const orderController = {
       const deliveryProductById = new Map(
         deliveryProducts.map(p => [String(p._id), p])
       );
+      const freeDeliverySettings = await settingsService.getFreeDelivery();
       const deliveryMode = getDeliveryMode(
         normalizedItems.map(i => ({
           category: deliveryProductById.get(String(i.productId))?.category,
           price: i.price,
           quantity: i.quantity
-        }))
+        })),
+        {
+          buyer: 'customer',
+          location: deliveryLocation,
+          settings: freeDeliverySettings
+        }
       );
       safeTotalAmount = normalizedItems.reduce(
         (sum: number, i: any) => sum + i.price * i.quantity,
@@ -707,6 +727,7 @@ export const orderController = {
                 totalAmount: safeTotalAmount,
                 deliveryFee: 0,
                 deliveryMode,
+                deliveryLocation,
                 riderNotes: isNonEmptyString(riderNotes)
                   ? riderNotes
                   : undefined,
@@ -758,6 +779,7 @@ export const orderController = {
             totalAmount: safeTotalAmount,
             deliveryFee: 0,
             deliveryMode,
+            deliveryLocation,
             riderNotes: isNonEmptyString(riderNotes) ? riderNotes : undefined,
             changeFor: normalizeChangeFor(changeFor),
             statusHistory: [{status: 'pending', at: new Date()}],
@@ -1002,12 +1024,17 @@ export const orderController = {
       const guestDeliveryProductById = new Map(
         guestDeliveryProducts.map(p => [String(p._id), p])
       );
+      // Guests never get free delivery: it is for customers with an account.
       const deliveryMode = getDeliveryMode(
         normalizedItems.map(i => ({
           category: guestDeliveryProductById.get(String(i.productId))?.category,
           price: i.price,
           quantity: i.quantity
-        }))
+        })),
+        {
+          buyer: 'guest',
+          settings: await settingsService.getFreeDelivery()
+        }
       );
       safeTotalAmount = normalizedItems.reduce(
         (sum: number, i: any) => sum + i.price * i.quantity,

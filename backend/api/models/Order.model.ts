@@ -88,6 +88,8 @@ export interface OrderDocument extends mongoose.Document {
   guestInfo?: GuestInfo;
   orderType: OrderType;
   deliveryMode?: DeliveryMode;
+  /** Pinned drop-off for delivery orders (used for the free-delivery zone). */
+  deliveryLocation?: {lat: number; lng: number} | null;
   orderSource: 'online' | 'in-store';
   totalAmount: number;
   deliveryFee: number;
@@ -194,6 +196,10 @@ const OrderSchema = new Schema<OrderDocument>(
       type: String,
       enum: ['DONCLAUDIO', 'LALAMOVE'],
       default: 'LALAMOVE'
+    },
+    deliveryLocation: {
+      type: new Schema({lat: Number, lng: Number}, {_id: false}),
+      default: null
     },
     orderSource: {
       type: String,

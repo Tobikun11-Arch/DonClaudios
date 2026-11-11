@@ -33,6 +33,8 @@ export type CreateCustomerOrderInput = {
     phoneNumber?: string;
     address?: string;
   };
+  /** Pinned drop-off; the server uses it to check the free-delivery zone. */
+  deliveryLocation?: {lat: number; lng: number};
 };
 
 export type CreatedGuestOrderResponse = {
@@ -100,6 +102,7 @@ export type OrderHistoryEntry = {
   sizeKg?: number | null;
   occasionId?: string | null;
   deliveryMode?: 'DONCLAUDIO' | 'LALAMOVE';
+  deliveryLocation?: {lat: number; lng: number} | null;
   paymentMethod?: string | null;
   riderNotes?: string;
   orderStatus: string;

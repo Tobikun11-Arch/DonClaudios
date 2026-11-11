@@ -17,7 +17,8 @@ import {Button} from '@/components/ui/button';
 import {getCartSubtotal, useCartStore} from '@/app/store/cartStore';
 import {useCartUiStore} from '@/app/store/cartUiStore';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
-import {getDeliveryMode} from '@/lib/orders/deliveryMode';
+import {useFreeDeliveryStatus} from '@/lib/orders/useFreeDeliveryStatus';
+import FreeDeliveryHint from '@/features/order/components/FreeDeliveryHint';
 import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
@@ -105,17 +106,17 @@ export default function CartDrawer() {
     return map;
   }, [productsQuery.data]);
 
-  const deliveryMode = useMemo(
+  const deliveryItems = useMemo(
     () =>
-      getDeliveryMode(
-        items.map(i => ({
-          category: productCategoryById.get(i.productId),
-          price: i.price,
-          quantity: i.qty
-        }))
-      ),
+      items.map(i => ({
+        category: productCategoryById.get(i.productId),
+        price: i.price,
+        quantity: i.qty
+      })),
     [items, productCategoryById]
   );
+  // Guest cart: always Lalamove (free delivery needs an account).
+  const freeDelivery = useFreeDeliveryStatus(deliveryItems, 'guest', null);
 
   const total = subtotal;
 
@@ -210,11 +211,13 @@ export default function CartDrawer() {
               <ChevronDown className="h-4 w-4 shrink-0" />
             </button>
             {orderType === 'Delivery' && items.length > 0 ? (
-              <p className="mt-1 text-[11px] font-medium text-gray-600">
-                {deliveryMode === 'LALAMOVE'
-                  ? "You'll book your own Lalamove courier for this order. Courier fee is paid by you directly to Lalamove."
-                  : "Free delivery by DonClaudio's 🎉"}
-              </p>
+              <>
+                <p className="mt-1 text-[11px] font-medium text-gray-600">
+                  You&apos;ll book your own Lalamove courier for this order.
+                  Courier fee is paid by you directly to Lalamove.
+                </p>
+                <FreeDeliveryHint status={freeDelivery} className="mt-2" />
+              </>
             ) : null}
           </div>
 
@@ -517,9 +520,7 @@ export default function CartDrawer() {
                       style={{color: 'var(--text-muted)'}}
                     >
                       {type === 'Delivery'
-                        ? deliveryMode === 'LALAMOVE'
-                          ? 'Book your own Lalamove courier'
-                          : "Free delivery by DonClaudio's"
+                        ? 'Book your own Lalamove courier'
                         : type === 'Pick-up'
                           ? 'Grab it at the shop'
                           : 'Book a table'}
