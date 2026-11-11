@@ -158,9 +158,11 @@ export function buildMenu(input: {
     if (!item.badge && promoCategoryName && item.category === promoCategoryName) item.badge = 'PROMO';
   }
   const productItemById = new Map(productItems.map(i => [i.id, i]));
+  // Pre-orders are sold through the Holiday Pre-orders strip and their own
+  // category, so they never fill Featured or Promos.
   const bestSellers = input.bestSellerIds
     .map(id => productItemById.get(id))
-    .filter((i): i is MenuItem => !!i)
+    .filter((i): i is MenuItem => !!i && !i.isPreOrder)
     .slice(0, FEATURED_SECTION_LIMIT);
 
   const bundles = promos
@@ -188,7 +190,9 @@ export function buildMenu(input: {
 
   const promoItems = [
     ...productItems.filter(
-      i => i.displayPrice < i.price || (promoCategory !== null && i.category === promoCategory)
+      i =>
+        !i.isPreOrder &&
+        (i.displayPrice < i.price || (promoCategory !== null && i.category === promoCategory))
     ),
     ...bundles
   ];
