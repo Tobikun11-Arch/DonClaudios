@@ -51,13 +51,13 @@ function DashboardPageContent() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-[1.5rem] font-bold text-[#1A1A1A] dark:text-gray-100">Dashboard</h1>
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">Dashboard</h1>
           <p className="text-[0.875rem] text-[#6B7280] dark:text-gray-400">Welcome back, {user?.firstName}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex gap-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-0.5">
+        <div className="order-last flex w-full items-center gap-2 sm:order-none sm:w-auto">
+          <div className="grid w-full grid-cols-2 gap-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-0.5 sm:flex sm:w-auto">
             {(
               [
                 {key: 'overview', label: 'Home', icon: LayoutGrid},
@@ -73,7 +73,7 @@ function DashboardPageContent() {
                   onClick={() => setMode(item.key)}
                   aria-pressed={active}
                   className={cn(
-                    'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[0.8rem] font-semibold transition-colors',
+                    'flex items-center justify-center gap-1.5 rounded-full px-3.5 py-1.5 text-[0.8rem] font-semibold transition-colors',
                     active
                       ? 'bg-[#2d4a35] text-white'
                       : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
@@ -85,8 +85,8 @@ function DashboardPageContent() {
               );
             })}
           </div>
-          <OwnerNotificationBell />
         </div>
+        <OwnerNotificationBell />
       </div>
 
       {mode === 'reports' ? (

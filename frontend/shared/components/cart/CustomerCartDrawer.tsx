@@ -357,7 +357,7 @@ export default function CustomerCartDrawer() {
         role="dialog"
         aria-modal="true"
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b dark:border-gray-800">
+        <div className="flex items-center justify-between px-5 py-4 border-b dark:border-gray-700">
           <div className="min-w-0">
             <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
               My Cart ({items.length} {items.length === 1 ? 'item' : 'items'})
@@ -418,7 +418,7 @@ export default function CustomerCartDrawer() {
               {items.map(item => (
                 <div
                   key={item.productId}
-                  className="flex items-start gap-3 rounded-2xl border border-gray-100 bg-white p-3 dark:border-gray-800 dark:bg-gray-900"
+                  className="flex items-start gap-3 rounded-2xl border border-gray-100 bg-white p-3 dark:border-gray-700 dark:bg-gray-900"
                 >
                   <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-gray-800/50">
                     <Image
@@ -498,7 +498,7 @@ export default function CustomerCartDrawer() {
                     </div>
 
                     <div className="mt-3 flex items-center justify-end">
-                      <div className="inline-flex items-center rounded-full border border-gray-200 overflow-hidden dark:border-gray-800">
+                      <div className="inline-flex items-center rounded-full border border-gray-200 overflow-hidden dark:border-gray-700">
                         <button
                           type="button"
                           className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800"
@@ -551,7 +551,7 @@ export default function CustomerCartDrawer() {
           )}
         </div>
 
-        <div className="border-t px-5 py-4 bg-white dark:border-gray-800 dark:bg-gray-900">
+        <div className="border-t px-5 py-4 bg-white dark:border-gray-700 dark:bg-gray-900">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Total</p>
             <p className="text-lg font-extrabold text-gray-900 dark:text-gray-100">
@@ -735,7 +735,7 @@ export default function CustomerCartDrawer() {
                       Pick up at
                     </span>
                     <div
-                      className="flex items-center gap-3 rounded-xl border-[1.5px] p-3.5 dark:border-gray-800"
+                      className="flex items-center gap-3 rounded-xl border-[1.5px] p-3.5 dark:border-gray-700"
                       style={{
                         borderColor: 'var(--border)',
                         backgroundColor: 'var(--surface-soft)'
@@ -837,7 +837,7 @@ export default function CustomerCartDrawer() {
                       <button
                         type="button"
                         aria-label="Fewer guests"
-                        className="flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] bg-white transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2 dark:bg-gray-900 dark:ring-offset-gray-900 dark:hover:bg-gray-800 dark:border-gray-800"
+                        className="flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] bg-white transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2 dark:bg-gray-900 dark:ring-offset-gray-900 dark:hover:bg-gray-800 dark:border-gray-700"
                         style={{borderColor: 'var(--border)', minHeight: 44}}
                         onClick={() =>
                           setDraftReservationGuests(
@@ -853,7 +853,7 @@ export default function CustomerCartDrawer() {
                       <button
                         type="button"
                         aria-label="More guests"
-                        className="flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] bg-white transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2 dark:bg-gray-900 dark:ring-offset-gray-900 dark:hover:bg-gray-800 dark:border-gray-800"
+                        className="flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] bg-white transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-green)] focus-visible:ring-offset-2 dark:bg-gray-900 dark:ring-offset-gray-900 dark:hover:bg-gray-800 dark:border-gray-700"
                         style={{borderColor: 'var(--border)', minHeight: 44}}
                         onClick={() =>
                           setDraftReservationGuests(
@@ -876,14 +876,14 @@ export default function CustomerCartDrawer() {
             </div>
 
             <div
-              className="mt-2 flex items-center justify-end gap-2.5 border-t px-[28px] py-[28px] dark:border-gray-800!"
+              className="mt-2 flex items-center justify-end gap-2.5 border-t px-[28px] py-[28px] dark:border-gray-700!"
               style={{borderColor: '#eee'}}
             >
               <Button
                 type="button"
                 variant="outline"
                 onClick={cancelOrderDetails}
-                className="h-12 rounded-xl border-[1.5px] px-6 text-[15px] font-bold dark:border-gray-800"
+                className="h-12 rounded-xl border-[1.5px] px-6 text-[15px] font-bold dark:border-gray-700"
                 style={{borderColor: 'var(--border)'}}
               >
                 Cancel

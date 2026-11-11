@@ -193,7 +193,7 @@ function PaymentBody({
   // Waiting for Xendit's webhook after the redirect back.
   if (returned === 'success' && summary.pendingPayment) {
     return (
-      <div className="mt-4 flex items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-800/50">
+      <div className="mt-4 flex items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-800/50">
         <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin text-[#3c5e45] dark:text-[#7ed4a0]" />
         <div className="text-sm text-gray-700 dark:text-gray-300">
           <p className="font-semibold text-gray-900 dark:text-gray-100">Confirming your payment…</p>
@@ -224,7 +224,7 @@ function PaymentBody({
     return (
       <div className="mt-4 space-y-4">
         {returnedFailed}
-        <div className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-gray-800">
+        <div className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-gray-700">
           <Row label="Order total" value={peso(summary.totalAmount)} />
           <Row label="Down payment paid" value={peso(summary.amountPaid)} />
           <Row label="Balance due" value={peso(summary.balanceDue)} bold />
@@ -259,7 +259,7 @@ function PaymentBody({
   // Unpaid.
   if (summary.paymentChoice === 'cash_on_pickup' && !changing) {
     return (
-      <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 dark:border-gray-800 dark:bg-gray-800/50 dark:text-gray-300">
+      <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-300">
         <p className="font-semibold text-gray-900 dark:text-gray-100">
           Pay {peso(summary.totalAmount)} in cash when you pick up your order.
         </p>
@@ -323,7 +323,7 @@ function PaidDetails({summary}: {summary: PaymentSummary}) {
   return (
     <div className="mt-4 space-y-2 text-sm">
       <p className="text-gray-600 dark:text-gray-300">Your payment is complete. Thank you!</p>
-      <div className="rounded-xl border border-gray-200 px-4 py-3 dark:border-gray-800">
+      <div className="rounded-xl border border-gray-200 px-4 py-3 dark:border-gray-700">
         {paidOnline.map(p => (
           <Row
             key={p.id}
@@ -605,7 +605,7 @@ function PlanOption({
       onClick={onClick}
       disabled={disabled}
       className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-        active ? 'border-[#3c5e45]/40 bg-[#3c5e45]/5 dark:border-[#7ed4a0]/30 dark:bg-[#7ed4a0]/10' : 'border-gray-200 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800'
+        active ? 'border-[#3c5e45]/40 bg-[#3c5e45]/5 dark:border-[#7ed4a0]/30 dark:bg-[#7ed4a0]/10' : 'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800'
       }`}
     >
       <span
@@ -649,7 +649,7 @@ function ChannelPicker({
             className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
               channel === c.id
                 ? 'border-[#3c5e45] bg-[#3c5e45]/5 font-bold text-gray-900 dark:bg-[#7ed4a0]/10 dark:text-gray-100 dark:border-[#7ed4a0]/60'
-                : 'border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800'
+                : 'border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800'
             }`}
           >
             {c.label}
@@ -657,10 +657,10 @@ function ChannelPicker({
         ))}
       </div>
       {q ? (
-        <div className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-gray-800">
+        <div className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-gray-700">
           <Row label="Order amount" value={peso(q.amount)} />
           <Row label="Transaction fee" value={peso(q.transactionFee)} />
-          <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
+          <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
           <Row label="Total to pay" value={peso(q.charge)} bold />
           <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
             The transaction fee is charged by our payment provider (Xendit) for{' '}

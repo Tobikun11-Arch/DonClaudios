@@ -22,22 +22,17 @@ export function CustomizeTab() {
 
   return (
     <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">
-      <h2 className="mb-1 text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">Customize</h2>
-      <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">
-        Choose how the dashboard appears on this browser. The storefront and cashier pages always stay light. Current:{' '}
-        <span className="font-medium text-gray-700 dark:text-gray-300">
-          {mounted ? resolvedTheme : '…'}
-        </span>
-      </p>
-
       <div className="divide-y divide-gray-100 dark:divide-gray-700">
-        <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+        <div className="flex flex-col gap-3 pb-1 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
           <div className="min-w-0 flex-1">
             <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               Color theme
             </div>
             <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-              Switch between light, dark, or follow your system setting.
+              Light, dark, or follow your device. Showing:{' '}
+              <span className="font-medium text-gray-700 dark:text-gray-300">
+                {mounted ? resolvedTheme : '…'}
+              </span>
             </div>
           </div>
           <div className="flex shrink-0 gap-2">

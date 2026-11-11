@@ -343,8 +343,8 @@ export default function InventoryPage() {
     <div className="space-y-5 pb-24 md:pb-28">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-[1.75rem] font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">
-            Inventory Management
+          <h1 className="text-2xl font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">
+            Inventory
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Track stock levels, restock products, and view movement history.

@@ -19,8 +19,8 @@ function DateCard({event, href, signedIn}: {event: PreOrderEvent; href: string; 
       href={href}
       className={`group relative flex w-[17rem] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border bg-white transition-all md:w-auto dark:bg-gray-900 ${
         event.soldOut
-          ? 'border-gray-200 opacity-70 dark:border-gray-800'
-          : 'border-[#e3ece5] hover:-translate-y-0.5 hover:border-[#2d4a35]/40 hover:shadow-lg dark:border-gray-800 dark:hover:border-[#7ed4a0]/40'
+          ? 'border-gray-200 opacity-70 dark:border-gray-700'
+          : 'border-[#e3ece5] hover:-translate-y-0.5 hover:border-[#2d4a35]/40 hover:shadow-lg dark:border-gray-700 dark:hover:border-[#7ed4a0]/40'
       }`}
     >
       <div className="flex items-start gap-3 p-4">
@@ -37,7 +37,7 @@ function DateCard({event, href, signedIn}: {event: PreOrderEvent; href: string; 
         </div>
       </div>
 
-      <div className="mt-auto flex items-center justify-between border-t border-[#eef3ef] bg-[#f7faf6] px-4 py-2.5 dark:border-gray-800 dark:bg-gray-800/50">
+      <div className="mt-auto flex items-center justify-between border-t border-[#eef3ef] bg-[#f7faf6] px-4 py-2.5 dark:border-gray-700 dark:bg-gray-800/50">
         <div className="flex -space-x-2">
           {photos.map((src, i) => (
             <span key={i} className="relative h-7 w-7 overflow-hidden rounded-full border-2 border-white bg-gray-100 dark:border-gray-800 dark:bg-gray-800">

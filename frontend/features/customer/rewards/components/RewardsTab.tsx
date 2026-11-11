@@ -6,10 +6,12 @@ import {Coins, Gift, History, Loader2, Sparkles, X, CheckCircle2, Store, QrCode}
 import {QRCodeSVG} from 'qrcode.react';
 import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
+import {FilterPills} from '@/shared/components/FilterPills';
 import {
   useRewardsQuery,
   useRedeemRewardMutation
 } from '@/lib/hooks/rewards/useRewards';
+import {useRewardsEarnQuery} from '@/lib/hooks/useRewardsEarn';
 import type {RewardProduct, RewardRedemption} from '@/lib/api/rewardsApi';
 import {formatPoints} from '@/lib/utils/formatPoints';
 import {
@@ -27,6 +29,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default function RewardsTab() {
   const rewardsQuery = useRewardsQuery();
   const redeemMutation = useRedeemRewardMutation();
+  const {rule: earnRule} = useRewardsEarnQuery();
   const [selected, setSelected] = useState<RewardProduct | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -118,7 +121,7 @@ export default function RewardsTab() {
               </span>
             </p>
             <p className="mt-2 text-sm text-[#b8d4c0]">
-              {buildEarnBannerText()}
+              {buildEarnBannerText(earnRule.rewardsEarnPoints, earnRule.rewardsEarnPesos)}
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:items-end">
@@ -151,22 +154,13 @@ export default function RewardsTab() {
         </p>
 
         {categories.length > 1 && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setCategory(cat)}
-                className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
-                  category === cat
-                    ? 'bg-[#2d4a35] text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+          <FilterPills
+            items={categories.map(cat => ({key: cat, label: cat}))}
+            value={category}
+            onChange={setCategory}
+            ariaLabel="Filter rewards by category"
+            className="mt-4"
+          />
         )}
 
         {rewardsQuery.isLoading ? (
@@ -193,7 +187,7 @@ export default function RewardsTab() {
               return (
                 <div
                   key={product._id}
-                  className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 transition-shadow hover:shadow-md dark:bg-gray-900 dark:ring-gray-800"
+                  className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 transition-shadow hover:shadow-md dark:bg-gray-900 dark:ring-gray-700"
                 >
                   <div className="relative h-40 w-full bg-gray-100 dark:bg-gray-800">
                     {product.imageUrl ? (
@@ -364,7 +358,7 @@ export default function RewardsTab() {
                   </p>
                 </div>
               ) : (
-                <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+                <ul className="divide-y divide-gray-100 dark:divide-gray-700">
                   {redemptions.map(redemption => (
                     <li key={redemption._id} className="flex items-center gap-3 py-3">
                       <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800">

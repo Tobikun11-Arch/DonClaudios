@@ -73,6 +73,9 @@ export interface SiteSettingDocument extends mongoose.Document {
     minSubtotal: number;
     zone: {lat: number; lng: number}[];
   };
+  /** Loyalty earn rule: rewardsEarnPoints points per rewardsEarnPesos pesos (see config/rewards.ts). */
+  rewardsEarnPoints?: number;
+  rewardsEarnPesos?: number;
 }
 
 const StatItemSchema = new Schema<StatItem>(
@@ -180,7 +183,10 @@ const SiteSettingSchema = new Schema<SiteSettingDocument>(
       enabled: {type: Boolean},
       minSubtotal: {type: Number, min: 0},
       zone: {type: [LatLngSchema], default: undefined}
-    }
+    },
+    // No defaults: unset means "use DEFAULT_REWARDS_EARN_RULE" (config/rewards.ts).
+    rewardsEarnPoints: {type: Number, min: 1},
+    rewardsEarnPesos: {type: Number, min: 1}
   },
   {timestamps: true}
 );

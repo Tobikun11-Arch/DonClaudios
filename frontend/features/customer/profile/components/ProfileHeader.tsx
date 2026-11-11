@@ -42,7 +42,7 @@ export function ProfileHeader({
   if (last) summaryParts.push(last);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 dark:border-gray-700 dark:bg-gray-900">
       <div className="flex items-center gap-4">
         {user?.profilePhoto ? (
           <Image

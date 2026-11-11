@@ -235,7 +235,7 @@ export default function SupportChatPanel({
           Send a message to reopen.
         </div>
       ) : (
-        <div className="flex justify-end border-t border-gray-100 px-3 py-1.5 dark:border-gray-800">
+        <div className="flex justify-end border-t border-gray-100 px-3 py-1.5 dark:border-gray-700">
           <button
             onClick={handleCloseChat}
             disabled={closeMutation.isPending}
@@ -246,7 +246,7 @@ export default function SupportChatPanel({
         </div>
       )}
 
-      <div className="flex items-end gap-2 border-t border-gray-100 p-3 dark:border-gray-800">
+      <div className="flex items-end gap-2 border-t border-gray-100 p-3 dark:border-gray-700">
         <textarea
           value={draft}
           onChange={e => setDraft(e.target.value)}

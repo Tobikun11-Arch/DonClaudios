@@ -144,7 +144,7 @@ function RelatedProductsCarousel({
               onClick={() => scroll('left')}
               disabled={!canScrollLeft}
               aria-label="Scroll left"
-              className="h-10 w-10 rounded-full border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800"
+              className="h-10 w-10 rounded-full border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
             >
               <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-300" />
             </button>
@@ -153,7 +153,7 @@ function RelatedProductsCarousel({
               onClick={() => scroll('right')}
               disabled={!canScrollRight}
               aria-label="Scroll right"
-              className="h-10 w-10 rounded-full border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800"
+              className="h-10 w-10 rounded-full border border-gray-200 bg-white flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
             >
               <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-300" />
             </button>

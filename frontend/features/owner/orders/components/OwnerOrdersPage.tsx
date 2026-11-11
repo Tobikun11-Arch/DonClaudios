@@ -354,7 +354,7 @@ export default function OwnerOrdersPage() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-[1.5rem] font-bold text-[#1A1A1A] dark:text-gray-100">Orders</h1>
+          <h1 className="text-2xl font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">Orders</h1>
           <p className="text-[0.875rem] text-[#6B7280] dark:text-gray-400">
             {showSkeleton
               ? 'Loading orders…'

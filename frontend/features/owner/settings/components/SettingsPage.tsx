@@ -13,6 +13,7 @@ import {CashierTab} from './CashierTab';
 import {StoreStatusTab} from './StoreStatusTab';
 import {MenuCategoriesTab} from './MenuCategoriesTab';
 import {DeliveryTab} from './DeliveryTab';
+import {RewardsTab} from './RewardsTab';
 import AppearancePreview from '@/features/owner/appearance/components/AppearancePreview';
 import {
   UserRound,
@@ -30,7 +31,8 @@ import {
   BarChart3,
   ChevronDown,
   Search,
-  Truck
+  Truck,
+  Gift
 } from 'lucide-react';
 
 type TabId =
@@ -44,6 +46,7 @@ type TabId =
   | 'notificationsAccount'
   | 'store'
   | 'delivery'
+  | 'rewards'
   | 'categories'
   | 'security'
   | 'cashier';
@@ -63,6 +66,7 @@ const TOP_ITEMS: TopItem[] = [
   {id: 'cashier', label: 'Cashier', icon: UsersRound, group: 1},
   {id: 'store', label: 'Store Status', icon: Clock, group: 1},
   {id: 'delivery', label: 'Delivery', icon: Truck, group: 1},
+  {id: 'rewards', label: 'Rewards', icon: Gift, group: 1},
   {id: 'categories', label: 'Menu Categories', icon: Tags, group: 1},
   {id: 'security', label: 'Security', icon: ShieldCheck, group: 1}
 ];
@@ -83,7 +87,7 @@ const CHILDREN: Record<string, {id: TabId; label: string; icon: typeof Sun}[]> =
 
 const TAB_INFO: Record<TabId, {label: string; subtitle: string}> = {
   profile: {label: 'Profile & Business Info', subtitle: 'Manage your account, business details, and prep times.'},
-  appearanceCustomize: {label: 'Customize', subtitle: 'Light and dark mode.'},
+  appearanceCustomize: {label: 'Customize', subtitle: 'How the dashboard looks on this browser. The storefront and cashier pages always stay light.'},
   appearanceHomepage: {label: 'Homepage', subtitle: 'Customize storefront content, colors, and layout.'},
   notificationsPreorders: {label: 'Pre-orders', subtitle: 'Pre-order batch notifications.'},
   notificationsInventory: {label: 'Inventory', subtitle: 'Stock and inventory notifications.'},
@@ -92,6 +96,7 @@ const TAB_INFO: Record<TabId, {label: string; subtitle: string}> = {
   notificationsAccount: {label: 'Account', subtitle: 'Account security notifications.'},
   store: {label: 'Store Status', subtitle: 'Opening hours and manual close controls.'},
   delivery: {label: 'Delivery', subtitle: 'Free delivery minimum and area.'},
+  rewards: {label: 'Rewards', subtitle: 'How customers earn loyalty points.'},
   categories: {label: 'Menu Categories', subtitle: 'Organize how products are grouped.'},
   security: {label: 'Security', subtitle: 'Password and active sessions.'},
   cashier: {label: 'Cashier', subtitle: 'Manage cashier accounts.'}
@@ -153,6 +158,8 @@ export function SettingsPage() {
         return <StoreStatusTab />;
       case 'delivery':
         return <DeliveryTab />;
+      case 'rewards':
+        return <RewardsTab />;
       case 'categories':
         return <MenuCategoriesTab />;
       case 'security':
@@ -186,8 +193,8 @@ export function SettingsPage() {
 
   return (
     <div>
-      <div className="mx-auto mb-6 flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+      <div className="mx-auto mb-6 flex max-w-6xl items-start justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-2xl font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">Settings</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Manage your profile, business, security, and cashier.

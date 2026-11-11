@@ -58,7 +58,7 @@ export default function CustomerNotifications() {
     <div className="w-full max-w-6xl mx-auto">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Notifications</h2>
+          <h1 className="text-2xl font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">Notifications</h1>
           <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
             Replies and updates from the DonClaudio&apos;s team.
           </p>

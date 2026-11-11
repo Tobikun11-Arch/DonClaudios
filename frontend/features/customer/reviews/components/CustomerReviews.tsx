@@ -304,7 +304,7 @@ export default function CustomerReviews() {
     <div className="w-full max-w-6xl mx-auto">
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Reviews</h2>
+          <h1 className="text-2xl font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">My Reviews</h1>
           <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
             Share your experience with DonClaudio&apos;s. Reviews appear on the
             homepage once approved.
@@ -331,7 +331,7 @@ export default function CustomerReviews() {
         )}
 
         {!eligibilityLoading && !canReview ? (
-          <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 text-sm text-gray-500 dark:bg-gray-800/50 dark:border-gray-800 dark:text-gray-400">
+          <div className="rounded-xl bg-gray-50 border border-gray-200 p-4 text-sm text-gray-500 dark:bg-gray-800/50 dark:border-gray-700 dark:text-gray-400">
             You&apos;ve already left a review for all of your completed orders.
           </div>
         ) : (
@@ -385,7 +385,7 @@ export default function CustomerReviews() {
                 {images.map((image, index) => (
                   <div
                     key={image.previewUrl}
-                    className="relative h-24 w-24 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800"
+                    className="relative h-24 w-24 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700"
                   >
                     <Image
                       src={image.previewUrl}
@@ -485,7 +485,7 @@ export default function CustomerReviews() {
                         alt={image.alt || 'Review photo'}
                         width={96}
                         height={96}
-                        className="h-24 w-24 rounded-lg object-cover border border-gray-200 dark:border-gray-800"
+                        className="h-24 w-24 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
                       />
                     ))}
                   </div>
@@ -540,7 +540,7 @@ export default function CustomerReviews() {
                   </div>
                 )}
 
-                <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-800">
+                <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-700">
                   {!isReplying ? (
                     <Button
                       onClick={() => setReplyingId(review._id)}

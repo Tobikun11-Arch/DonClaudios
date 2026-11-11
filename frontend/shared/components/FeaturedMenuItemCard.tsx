@@ -62,7 +62,7 @@ function FeaturedMenuItemCard({
     allowanceReached;
 
   return (
-    <div className="group relative min-h-[240px] rounded-[20px] bg-white border border-gray-200 shadow-sm px-4 pt-28 pb-6 transition-colors duration-200 hover:bg-[#2d4a35] active:bg-[#2d4a35] dark:bg-gray-900 dark:border-gray-800 dark:hover:bg-[#2d4a35] dark:active:bg-[#2d4a35]">
+    <div className="group relative min-h-[240px] rounded-[20px] bg-white border border-gray-200 shadow-sm px-4 pt-28 pb-6 transition-colors duration-200 hover:bg-[#2d4a35] active:bg-[#2d4a35] dark:bg-gray-900 dark:border-gray-700 dark:hover:bg-[#2d4a35] dark:active:bg-[#2d4a35]">
       <Link
         href={linkHref}
         aria-label={name}

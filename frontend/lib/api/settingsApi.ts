@@ -43,3 +43,21 @@ export async function updateFreeDeliverySettings(
   const res = await httpClient.put<FreeDeliveryResponse>('/settings/free-delivery', body);
   return res.data;
 }
+
+export type RewardsEarnResponse = {
+  rewardsEarn: import('@/config/rewards').RewardsEarnRule;
+  /** The built-in defaults (1 point per ₱1). */
+  defaults: import('@/config/rewards').RewardsEarnRule;
+};
+
+export async function getRewardsEarnSettings() {
+  const res = await httpClient.get<RewardsEarnResponse>('/settings/rewards-earn');
+  return res.data;
+}
+
+export async function updateRewardsEarnSettings(
+  body: import('@/config/rewards').RewardsEarnRule
+) {
+  const res = await httpClient.put<RewardsEarnResponse>('/settings/rewards-earn', body);
+  return res.data;
+}

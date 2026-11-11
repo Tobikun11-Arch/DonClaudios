@@ -64,7 +64,7 @@ export function AddressList({
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 dark:border-gray-700 dark:bg-gray-900">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-bold text-foreground dark:text-gray-100">Addresses</h2>
         <Button
@@ -89,7 +89,7 @@ export function AddressList({
         {items.map((a, idx) => (
           <div
             key={a._id ?? idx}
-            className="rounded-xl border border-border p-4 space-y-3 dark:border-gray-800"
+            className="rounded-xl border border-border p-4 space-y-3 dark:border-gray-700"
           >
             <div className="flex items-center justify-between gap-2">
               <Input
@@ -141,7 +141,7 @@ export function AddressList({
       </div>
 
       {adding && (
-        <div className="mt-4 rounded-xl border border-dashed border-border p-4 space-y-3 dark:border-gray-800">
+        <div className="mt-4 rounded-xl border border-dashed border-border p-4 space-y-3 dark:border-gray-700">
           <Input
             value={draft.label}
             onChange={e => setDraft({...draft, label: e.target.value})}

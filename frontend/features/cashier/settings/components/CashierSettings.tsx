@@ -92,8 +92,8 @@ export function CashierSettings() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-2xl font-extrabold text-[#2d4a35]">Settings</h1>
           <p className="text-sm text-gray-500">
             Manage your profile photo and account details.

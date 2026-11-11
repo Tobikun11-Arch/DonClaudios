@@ -342,7 +342,7 @@ export default function CustomerCheckoutPage() {
               <button
                 type="button"
                 aria-label="Edit account details"
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                 onClick={() => router.push('/customer/dashboard?tab=profile')}
               >
                 <Pencil className="h-3.5 w-3.5" />
@@ -470,7 +470,7 @@ export default function CustomerCheckoutPage() {
 
               {orderType === 'Pick-up' ? (
                 <div className="space-y-3">
-                  <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-800/50">
+                  <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
                     <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                       Pick up at
                     </p>
@@ -518,7 +518,7 @@ export default function CustomerCheckoutPage() {
 
               {orderType === 'Delivery' ? (
                 <>
-                  <div className="h-px bg-gray-100 dark:bg-gray-800" />
+                  <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
                   <div className="flex items-start gap-3">
                     <div className="h-9 w-9 rounded-full bg-[#3c5e45]/10 inline-flex items-center justify-center shrink-0 dark:bg-[#7ed4a0]/10">
@@ -565,13 +565,13 @@ export default function CustomerCheckoutPage() {
                             address: address || location?.address || ''
                           })
                         }
-                        className="h-80 sm:h-[26rem] border border-gray-200 dark:border-gray-800"
+                        className="h-80 sm:h-[26rem] border border-gray-200 dark:border-gray-700"
                       />
                     </div>
                   ) : null}
 
                   {orderType === 'Delivery' && !location?.lat ? (
-                    <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-800/50">
+                    <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
                       <p className="mb-3 text-xs font-semibold text-gray-700 dark:text-gray-300">
                         Set your delivery location
                       </p>
@@ -598,7 +598,7 @@ export default function CustomerCheckoutPage() {
                             'flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3c5e45]/30',
                             addressType === type
                               ? 'border-[#3c5e45]/30 bg-[#3c5e45]/10 text-[#3c5e45] dark:border-[#7ed4a0]/30 dark:bg-[#7ed4a0]/10 dark:text-[#7ed4a0]'
-                              : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800'
+                              : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800'
                           )}
                         >
                           <span
@@ -621,7 +621,7 @@ export default function CustomerCheckoutPage() {
                 </>
               ) : null}
 
-              <div className="h-px bg-gray-100 dark:bg-gray-800" />
+              <div className="h-px bg-gray-100 dark:bg-gray-700" />
 
               <div>
                 <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
@@ -642,7 +642,7 @@ export default function CustomerCheckoutPage() {
                         'rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3c5e45]/30',
                         isNoteActive(suggestion)
                           ? 'border-[#3c5e45]/30 bg-[#3c5e45]/10 text-[#3c5e45] dark:border-[#7ed4a0]/30 dark:bg-[#7ed4a0]/10 dark:text-[#7ed4a0]'
-                          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800'
+                          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800'
                       )}
                     >
                       {suggestion}
@@ -716,7 +716,7 @@ export default function CustomerCheckoutPage() {
                   return (
                     <div
                       key={getProductId(item.productId)}
-                      className="flex items-start gap-3 border-b border-gray-100 pb-4 last:border-0 last:pb-0 dark:border-gray-800"
+                      className="flex items-start gap-3 border-b border-gray-100 pb-4 last:border-0 last:pb-0 dark:border-gray-700"
                     >
                       <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-gray-800/50">
                         <Image
@@ -759,7 +759,7 @@ export default function CustomerCheckoutPage() {
                           </p>
                         ) : null}
 
-                        <div className="mt-2 inline-flex items-center rounded-full border border-gray-200 overflow-hidden dark:border-gray-800">
+                        <div className="mt-2 inline-flex items-center rounded-full border border-gray-200 overflow-hidden dark:border-gray-700">
                           <button
                             type="button"
                             className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800"
@@ -805,7 +805,7 @@ export default function CustomerCheckoutPage() {
                 </div>
               </div>
 
-              <div className="h-px bg-gray-200 dark:bg-gray-800" />
+              <div className="h-px bg-gray-200 dark:bg-gray-700" />
 
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Total</span>
@@ -865,7 +865,7 @@ export default function CustomerCheckoutPage() {
                 keeps the action in the thumb zone; at `lg` the order summary
                 card sits beside the form and the CTA stays in-flow inside it.
               */}
-              <div className="lg:hidden sticky bottom-0 z-10 -mx-6 mb-6 border-t border-gray-100 bg-white px-6 py-4 space-y-3 dark:border-gray-800 dark:bg-gray-900">
+              <div className="lg:hidden sticky bottom-0 z-10 -mx-6 mb-6 border-t border-gray-100 bg-white px-6 py-4 space-y-3 dark:border-gray-700 dark:bg-gray-900">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Total</span>
                   <span className="text-2xl font-extrabold text-gray-900 dark:text-gray-100">

@@ -174,18 +174,14 @@ export function NotificationsTab({section}: {section: string}) {
 
   return (
     <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">
-      <h2 className="mb-1 text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">
-        {cfg.title}
-      </h2>
       {cfg.subtitle && (
-        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">{cfg.subtitle}</p>
+        <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">{cfg.subtitle}</p>
       )}
-      {!cfg.subtitle && <div className="mb-5" />}
       <div className="divide-y divide-gray-100 dark:divide-gray-700">
         {cfg.items.map(item => (
           <div
             key={item.label}
-            className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+            className="flex flex-col gap-2 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
           >
             <div className="min-w-0 flex-1">
               <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">

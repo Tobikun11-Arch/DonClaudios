@@ -126,7 +126,7 @@ export default function DashboardLayout({
       : (order ?? children);
 
   return (
-    <div className="flex h-screen cursor-default bg-gray-50 dark:bg-gray-950">
+    <div className="flex h-screen cursor-default bg-gray-50 dark:bg-gray-800">
       <aside
         onMouseEnter={handleSidebarEnter}
         onMouseLeave={handleSidebarLeave}
@@ -272,26 +272,56 @@ export default function DashboardLayout({
         </div>
       </aside>
 
-      <main className="relative flex-1 overflow-y-auto overflow-x-hidden bg-gray-50 dark:bg-gray-950">
+      <main className="relative flex-1 overflow-y-auto overflow-x-hidden bg-gray-50 dark:bg-gray-800">
         {/*
           `Z.floating` (60) keeps the bell under the cart drawer overlay and
           its modals (1000+), so an open drawer dims it and eats its clicks
           instead of the bell painting on top of the drawer header.
         */}
-        <div className={`pointer-events-none absolute top-3 right-4 ${Z.floating}`}>
-          <div className="pointer-events-auto">
-            <CustomerNotificationBell />
-          </div>
-        </div>
+        {/*
+          Below `md` this is a slim sticky app bar (logo left, bell right), the
+          usual mobile pattern: the bell gets a real row that also carries the
+          brand, instead of floating over an empty `pt-16` strip at the top of
+          every tab. From `md` up the sidebar carries the brand, so the bar
+          collapses to just the bell pinned top-right as before. One element
+          for both keeps a single bell (and a single dropdown) mounted.
+          No `backdrop-blur` here: a backdrop filter makes this header the
+          containing block for the bell's `fixed` mobile sheet and backdrop,
+          pinning them inside the 56px bar instead of the viewport.
+        */}
+        <header
+          className={`
+            sticky top-0 ${Z.floating} flex h-14 items-center justify-between
+            border-b border-gray-200 bg-gray-50 px-4
+            dark:border-gray-700 dark:bg-gray-800 sm:px-6
+            md:absolute md:top-3 md:right-4 md:h-auto md:border-0
+            md:bg-transparent md:p-0 md:dark:bg-transparent
+          `}
+        >
+          {/* Logo only: the Order tab's banner already spells out the name. */}
+          <Link
+            href="/customer/dashboard"
+            aria-label={`${brand.name} home`}
+            className="flex items-center md:hidden"
+          >
+            <Image
+              src={brand.logo}
+              alt=""
+              width={36}
+              height={36}
+              className="h-9 w-9 shrink-0 object-contain"
+            />
+          </Link>
+          <CustomerNotificationBell />
+        </header>
         {/*
           The fixed bottom nav is `md:hidden`, so the clearance for it lives
           here rather than on `main`, which otherwise stacked `pb-24` on top
           of this element's own `py-10` for ~136px of dead space at the foot
-          of every phone page. `pt-16` clears the absolutely-positioned
-          notification bell, which spans y=12..52 on mobile and would
-          otherwise sit on top of the first line of page content.
+          of every phone page. On desktop `pt-10` clears the bell pinned
+          top-right (y=12..52).
         */}
-        <div className="px-4 pt-16 pb-24 sm:px-6 sm:pt-10 md:pb-8">
+        <div className="px-4 pt-4 pb-24 sm:px-6 sm:pt-6 md:pt-10 md:pb-8">
           {content}
         </div>
       </main>

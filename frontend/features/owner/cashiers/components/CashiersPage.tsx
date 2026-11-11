@@ -20,7 +20,7 @@ import {Button} from '@/components/ui/button';
 import {Plus} from 'lucide-react';
 import {toast} from 'sonner';
 
-export default function CashiersPage() {
+export default function CashiersPage({embedded = false}: {embedded?: boolean} = {}) {
   const cashiersQuery = useCashiersQuery();
   const createMutation = useCreateCashierMutation();
   const updateMutation = useUpdateCashierMutation();
@@ -158,6 +158,7 @@ export default function CashiersPage() {
   return (
     <div className="space-y-5">
       <CashiersHeader
+        hideTitle={embedded}
         showButton={visibleCashiers.length > 0}
         onAdd={openCreate}
       />

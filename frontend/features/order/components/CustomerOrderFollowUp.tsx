@@ -95,7 +95,7 @@ export default function CustomerOrderFollowUp({
 
   if (variant === 'card') {
     return (
-      <section className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+      <section className="rounded-2xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
         <button
           type="button"
           onClick={() => setOpen(v => !v)}
@@ -121,14 +121,14 @@ export default function CustomerOrderFollowUp({
           />
         </button>
         {open ? (
-          <div className="border-t border-gray-100 p-4 sm:p-5 dark:border-gray-800">{body}</div>
+          <div className="border-t border-gray-100 p-4 sm:p-5 dark:border-gray-700">{body}</div>
         ) : null}
       </section>
     );
   }
 
   return (
-    <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-800">
+    <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-700">
       <button
         type="button"
         onClick={() => setOpen(prev => !prev)}

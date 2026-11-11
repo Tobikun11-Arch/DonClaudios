@@ -2,7 +2,7 @@ import {Router} from 'express';
 import {settingsController} from '../controllers/settings.controller';
 import {requireAdmin, requireAuth} from '../middleware/auth';
 import {validate} from '../middleware/validation';
-import {freeDeliveryDto} from '../dtos/settings.dto';
+import {freeDeliveryDto, rewardsEarnDto} from '../dtos/settings.dto';
 
 const router = Router();
 
@@ -20,6 +20,18 @@ router.put(
   requireAdmin,
   validate(freeDeliveryDto),
   settingsController.updateFreeDelivery
+);
+
+// Loyalty earn rule (points per pesos). Public read so the customer Rewards
+// tab can show the live rate; only the owner can change it.
+router.get('/rewards-earn', settingsController.getRewardsEarn);
+
+router.put(
+  '/rewards-earn',
+  requireAuth,
+  requireAdmin,
+  validate(rewardsEarnDto),
+  settingsController.updateRewardsEarn
 );
 
 router.get('/notification-preferences', requireAuth, requireAdmin, settingsController.getNotificationPreferences);

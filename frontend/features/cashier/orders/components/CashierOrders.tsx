@@ -447,26 +447,25 @@ export function CashierOrders() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-2xl font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">Orders</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Live queue of all orders. Update status as orders progress, and reply
-            to customer follow-ups.
+            Update orders as they progress and reply to follow-ups.
           </p>
         </div>
         <CashierNotificationBell />
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative w-full sm:w-auto">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap">
+          <div className={cn('relative w-full sm:w-auto', orderSourceTab !== 'online' && 'col-span-2')}>
             <select
               id="order-status-filter"
               aria-label="Filter by status"
               value={statusFilter}
               onChange={e => handleStatusFilterChange(e.target.value)}
-              className="min-h-[40px] w-full appearance-none rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-2 pl-4 pr-10 text-sm font-semibold text-[#2d4a35] dark:text-[#7ed4a0] transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60 focus:border-[#2d4a35] dark:focus:border-[#7ed4a0]/60 focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20 sm:w-auto"
+              className="min-h-[44px] w-full appearance-none rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-2 pl-4 pr-10 text-sm font-semibold text-[#2d4a35] dark:text-[#7ed4a0] transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60 focus:border-[#2d4a35] dark:focus:border-[#7ed4a0]/60 focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20 sm:w-auto"
             >
               {statusFilterOptions.map(f => (
                 <option key={f} value={f}>
@@ -485,7 +484,7 @@ export function CashierOrders() {
                 aria-label="Filter by order type"
                 value={orderTypeFilter}
                 onChange={e => setOrderTypeFilter(e.target.value)}
-                className="min-h-[40px] w-full appearance-none rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-2 pl-4 pr-10 text-sm font-semibold text-[#2d4a35] dark:text-[#7ed4a0] transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60 focus:border-[#2d4a35] dark:focus:border-[#7ed4a0]/60 focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20 sm:w-auto"
+                className="min-h-[44px] w-full appearance-none rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-2 pl-4 pr-10 text-sm font-semibold text-[#2d4a35] dark:text-[#7ed4a0] transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60 focus:border-[#2d4a35] dark:focus:border-[#7ed4a0]/60 focus:outline-none focus:ring-2 focus:ring-[#2d4a35]/20 sm:w-auto"
               >
                 <option value="all">All types ({typeCountFor('all')})</option>
                 {ORDER_TYPES.map(t => (
@@ -499,13 +498,15 @@ export function CashierOrders() {
               />
             </div>
           )}
-          <OrderDateFilter value={dateRange} onChange={setDateRange} />
+          <div className="col-span-2 sm:col-span-1">
+            <OrderDateFilter value={dateRange} onChange={setDateRange} />
+          </div>
         </div>
 
         <div
           role="tablist"
           aria-label="Order source"
-          className="flex shrink-0 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-1"
+          className="order-first grid w-full shrink-0 grid-cols-2 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-1 sm:order-none sm:flex sm:w-auto"
         >
           <button
             type="button"
@@ -514,14 +515,14 @@ export function CashierOrders() {
             aria-controls="orders-list"
             onClick={() => handleTabChange('online')}
             className={cn(
-              'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
+              'flex min-h-[40px] items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors sm:min-h-0',
               orderSourceTab === 'online'
                 ? 'bg-[#2d4a35] text-white'
                 : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
             )}
           >
             <Globe size={14} />
-            Online Orders
+            Online
             <span className="ml-0.5 opacity-70">({onlineCount})</span>
           </button>
           <button
@@ -531,14 +532,14 @@ export function CashierOrders() {
             aria-controls="orders-list"
             onClick={() => handleTabChange('walk-in')}
             className={cn(
-              'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
+              'flex min-h-[40px] items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors sm:min-h-0',
               orderSourceTab === 'walk-in'
                 ? 'bg-[#2d4a35] text-white'
                 : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
             )}
           >
             <Store size={14} />
-            Walk-in Orders
+            Walk-in
             <span className="ml-0.5 opacity-70">({walkInCount})</span>
           </button>
         </div>

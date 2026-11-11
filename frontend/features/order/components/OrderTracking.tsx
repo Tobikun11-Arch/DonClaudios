@@ -59,7 +59,7 @@ function PreOrderPickupCard({order}: {order: OrderHistoryEntry}) {
   const open = order.orderStatus !== 'cancelled' && order.orderStatus !== 'completed';
   const canCancel = canCustomerCancel(order);
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#d7e3da] bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div className="overflow-hidden rounded-2xl border border-[#d7e3da] bg-white dark:border-gray-700 dark:bg-gray-900">
       <div className="flex items-center gap-4 bg-[#3c5e45] px-5 py-4 text-white">
         <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-white/10">
           <span className="text-[0.65rem] font-semibold uppercase tracking-wider text-[#fbd897]">
@@ -356,7 +356,7 @@ function CustomerEtaPanel({order}: {order: OrderHistoryEntry}) {
 
   if (order.orderStatus === 'cancelled' || order.orderStatus === 'completed') {
     return (
-      <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-800/50">
+      <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-800/50">
         <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           This order took about {formatMinutes(estimate as number)} to prepare.
         </p>
@@ -400,7 +400,7 @@ function CustomerEtaPanel({order}: {order: OrderHistoryEntry}) {
   }
 
   return (
-    <div className="mt-5 rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
+    <div className="mt-5 rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900">
       <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
         Estimated prep time: {formatMinutes(estimate as number)}
       </p>
@@ -550,7 +550,7 @@ function StatusTrackerCard({order}: {order: OrderHistoryEntry}) {
                     className={
                       isPast || isCurrent
                         ? 'w-0.5 flex-1 min-h-8 bg-[#3c5e45]'
-                        : 'w-0.5 flex-1 min-h-8 bg-gray-200 dark:bg-gray-800'
+                        : 'w-0.5 flex-1 min-h-8 bg-gray-200 dark:bg-gray-700'
                     }
                   />
                 )}
@@ -581,7 +581,7 @@ function StatusTrackerCard({order}: {order: OrderHistoryEntry}) {
         <CourierPickupCallout order={order} />
       ) : null}
 
-      <div className="mt-4 pt-5 border-t border-gray-100 flex items-center gap-2 text-sm text-gray-600 dark:border-gray-800 dark:text-gray-300">
+      <div className="mt-4 pt-5 border-t border-gray-100 flex items-center gap-2 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300">
         <Clock className="h-4 w-4 text-gray-400" />
         <span className="font-semibold text-gray-900 dark:text-gray-100">Estimated time </span>
         <span>
@@ -687,7 +687,7 @@ function OrderSummaryCard({order}: {order: OrderHistoryEntry}) {
             <span className="font-semibold">{fmtMoney(deliveryFee)}</span>
           </div>
         ) : null}
-        <div className="mt-2 h-px bg-gray-200 dark:bg-gray-800" />
+        <div className="mt-2 h-px bg-gray-200 dark:bg-gray-700" />
         <div className="mt-2 flex items-center justify-between">
           <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Total</span>
           <span className="text-xl font-extrabold text-gray-900 dark:text-gray-100">
@@ -799,7 +799,7 @@ function CancelOrderButton({
           <div className="absolute inset-0 flex items-end sm:items-center justify-center p-0 sm:p-6">
             <div
               onClick={e => e.stopPropagation()}
-              className="w-full sm:max-w-md bg-white shadow-xl border border-gray-100 rounded-t-2xl sm:rounded-2xl p-6 dark:bg-gray-900 dark:border-gray-800"
+              className="w-full sm:max-w-md bg-white shadow-xl border border-gray-100 rounded-t-2xl sm:rounded-2xl p-6 dark:bg-gray-900 dark:border-gray-700"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -826,7 +826,7 @@ function CancelOrderButton({
                 {CANCEL_REASONS.map(option => (
                   <label
                     key={option}
-                    className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 cursor-pointer has-[:checked]:border-[#3c5e45] has-[:checked]:bg-[#3c5e45]/5 dark:border-gray-800 dark:has-[:checked]:border-[#7ed4a0]/60 dark:has-[:checked]:bg-[#7ed4a0]/10"
+                    className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 cursor-pointer has-[:checked]:border-[#3c5e45] has-[:checked]:bg-[#3c5e45]/5 dark:border-gray-700 dark:has-[:checked]:border-[#7ed4a0]/60 dark:has-[:checked]:bg-[#7ed4a0]/10"
                   >
                     <input
                       type="radio"

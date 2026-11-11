@@ -113,7 +113,7 @@ export default function CustomerNotificationBell() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={handleOpen}
-        className="relative flex items-center justify-center rounded-xl border border-gray-200 bg-white p-2.5 text-gray-600 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+        className="relative flex items-center justify-center rounded-xl border border-gray-200 bg-white p-2.5 text-gray-600 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
         aria-label="Notifications"
       >
         {unreadCount > 0 ? (
@@ -144,9 +144,9 @@ export default function CustomerNotificationBell() {
           <div
             role="dialog"
             aria-label="Notifications"
-            className="fixed inset-x-3 bottom-24 z-[120] max-h-[70vh] overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 bg-white shadow-xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-12 sm:w-96 sm:max-h-none sm:overflow-y-visible sm:overscroll-auto dark:border-gray-800 dark:bg-gray-900"
+            className="fixed inset-x-3 bottom-24 z-[120] max-h-[70vh] overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 bg-white shadow-xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-12 sm:w-96 sm:max-h-none sm:overflow-y-visible sm:overscroll-auto dark:border-gray-700 dark:bg-gray-900"
           >
-          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-700">
             <div>
               <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Notifications</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -183,7 +183,7 @@ export default function CustomerNotificationBell() {
                 <div
                   key={notification._id}
                   onClick={() => handleClick(notification)}
-                  className={`flex cursor-pointer gap-3 border-b border-gray-50 px-4 py-3 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800 ${
+                  className={`flex cursor-pointer gap-3 border-b border-gray-50 px-4 py-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800 ${
                     notification.read ? 'opacity-70' : 'bg-amber-50/40 dark:bg-amber-500/5'
                   }`}
                 >
@@ -225,7 +225,7 @@ export default function CustomerNotificationBell() {
             was unreachable UI. This is the entry point; it sits outside the
             scrolling list so it stays reachable at every viewport size.
           */}
-          <div className="shrink-0 border-t border-gray-100 px-4 py-2 dark:border-gray-800">
+          <div className="shrink-0 border-t border-gray-100 px-4 py-2 dark:border-gray-700">
             <Link
               href="/customer/dashboard?tab=notification"
               onClick={() => setOpen(false)}

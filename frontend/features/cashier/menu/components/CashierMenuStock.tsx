@@ -1,6 +1,6 @@
 'use client';
 
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {
   Package,
   Ticket,
@@ -34,7 +34,7 @@ function ProductDetails({product}: {product: Product}) {
   const allergens = product.allergens ?? [];
 
   return (
-    <div className="mt-3 border-t border-gray-100 pt-3 space-y-3">
+    <div className="space-y-3">
       <div>
         <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400">
           Ingredients
@@ -92,13 +92,37 @@ function CashierProductCard({
   menuCategories: Category[];
 }) {
   const [expanded, setExpanded] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Details float over the cards below, so close them like any dropdown:
+  // a click elsewhere or Escape.
+  useEffect(() => {
+    if (!expanded) return;
+    const onPointer = (event: PointerEvent) => {
+      if (!cardRef.current?.contains(event.target as Node)) setExpanded(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setExpanded(false);
+    };
+    document.addEventListener('pointerdown', onPointer);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onPointer);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [expanded]);
   const unitLabel = stockUnitLabel(
     product.stockUnit ||
       getCategoryByName(menuCategories, product.category)?.stockUnit
   );
 
   return (
-    <div className="flex flex-col rounded-2xl border border-gray-200 bg-white p-4">
+    <div
+      ref={cardRef}
+      className={`relative flex h-full flex-col rounded-2xl border bg-white p-4 transition-shadow ${
+        expanded ? 'z-10 border-[#2d4a35]/30 shadow-lg' : 'border-gray-200'
+      }`}
+    >
       <div className="flex items-start justify-between gap-2">
         {product.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -138,7 +162,8 @@ function CashierProductCard({
           NOT AVAILABLE
         </p>
       )}
-      <div className="mt-3">
+      {/* mt-auto pins the button to the bottom so every card in a row lines up. */}
+      <div className="mt-auto pt-3">
         <button
           type="button"
           onClick={() => setExpanded(v => !v)}
@@ -157,8 +182,18 @@ function CashierProductCard({
             </>
           )}
         </button>
-        {expanded && <ProductDetails product={product} />}
       </div>
+      {/*
+        Absolute so opening details never makes the whole grid row taller;
+        the panel drops over the cards below like a dropdown.
+      */}
+      {expanded && (
+        <div className="absolute inset-x-0 top-full z-10 -mt-3 rounded-b-2xl border border-t-0 border-[#2d4a35]/30 bg-white px-4 pt-3 pb-4 shadow-lg">
+          <div className="border-t border-gray-100 pt-3">
+            <ProductDetails product={product} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -203,8 +238,8 @@ export function CashierMenuStock() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-extrabold text-[#2d4a35]">
             Menu &amp; Stock
           </h1>
@@ -213,12 +248,12 @@ export function CashierMenuStock() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex rounded-xl border border-gray-200 bg-white p-1">
+        <div className="order-last flex w-full items-center gap-2 sm:order-none sm:w-auto">
+          <div className="grid w-full grid-cols-2 rounded-xl border border-gray-200 bg-white p-1 sm:flex sm:w-auto">
             <button
               type="button"
               onClick={() => setView('products')}
-              className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+              className={`flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                 view === 'products' ? 'bg-[#2d4a35] text-white' : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
@@ -228,7 +263,7 @@ export function CashierMenuStock() {
             <button
               type="button"
               onClick={() => setView('promos')}
-              className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+              className={`flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                 view === 'promos' ? 'bg-[#2d4a35] text-white' : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
@@ -236,8 +271,8 @@ export function CashierMenuStock() {
               Promos
             </button>
           </div>
-          <CashierNotificationBell />
         </div>
+        <CashierNotificationBell />
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -279,7 +314,7 @@ export function CashierMenuStock() {
             <p className="text-sm text-gray-500">No products found.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 items-start sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 pb-40 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {visibleProducts.map(product => (
               <CashierProductCard
                 key={product._id}

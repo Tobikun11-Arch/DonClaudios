@@ -99,9 +99,9 @@ export default function SupportChatBubble() {
     <div className={supportBubbleClass}>
       {open && (
         <div
-          className={`${supportPanelHeightCustomerClass} mb-3 flex w-[calc(100vw-2.5rem)] max-w-[360px] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-gray-900`}
+          className={`${supportPanelHeightCustomerClass} mb-3 flex w-[calc(100vw-2.5rem)] max-w-[360px] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900`}
         >
-          <div className="flex shrink-0 items-center justify-between border-b border-gray-100 bg-[#2d4a35] px-4 py-3 text-white dark:border-gray-800">
+          <div className="flex shrink-0 items-center justify-between border-b border-gray-100 bg-[#2d4a35] px-4 py-3 text-white dark:border-gray-700">
             <div>
               <p className="text-sm font-bold leading-tight">
                 Chat with DonClaudio&apos;s

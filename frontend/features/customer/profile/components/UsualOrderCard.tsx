@@ -31,7 +31,7 @@ export function UsualOrderCard({orders}: {orders: OrderHistoryEntry[]}) {
 
   if (!order) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-700 dark:bg-gray-900">
         <h2 className="text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">Your usual order</h2>
         <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
           No orders yet. Once you place one, your go-to lechon setup shows up
@@ -50,7 +50,7 @@ export function UsualOrderCard({orders}: {orders: OrderHistoryEntry[]}) {
     : null;
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-700 dark:bg-gray-900">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 className="text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">Your usual order</h2>
         <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -60,13 +60,13 @@ export function UsualOrderCard({orders}: {orders: OrderHistoryEntry[]}) {
 
       {/* Capped height so a long order scrolls inside the card instead of
           stretching the whole profile page. */}
-      <ul className="subtle-scrollbar mt-4 max-h-80 divide-y divide-gray-100 overflow-y-auto pr-1 dark:divide-gray-800">
+      <ul className="subtle-scrollbar mt-4 max-h-80 divide-y divide-gray-100 overflow-y-auto pr-1 dark:divide-gray-700">
         {order.items.map((item, i) => {
           const name = itemName(item);
           const img = itemImage(item);
           return (
             <li key={item._id ?? `${name}-${i}`} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-gray-800">
+              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
                 {img ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={img} alt={name} loading="lazy" className="h-full w-full object-cover" />

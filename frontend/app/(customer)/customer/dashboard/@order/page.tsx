@@ -489,7 +489,7 @@ export default function OrderSlot() {
 
       <PreOrderDatesStrip signedIn />
 
-      <h1 className="text-2xl font-bold mb-2">DonClaudios Menu</h1>
+      <h2 className="mb-3 text-xl font-bold text-gray-900 dark:text-gray-100">Menu</h2>
 
       <section className="mb-10">
         <div className="flex items-center gap-3">
@@ -508,7 +508,7 @@ export default function OrderSlot() {
               onChange={e => setQuery(e.target.value)}
               placeholder="Search"
               aria-label="Search"
-              className="pl-11 h-11 rounded-full border-0 bg-[#F5F5F5] text-gray-800 focus-visible:ring-2 focus-visible:ring-[#2d4a35]/40 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+              className="pl-11 h-11 rounded-full border-0 bg-[#F5F5F5] text-gray-800 focus-visible:ring-2 focus-visible:ring-[#2d4a35]/40 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
             />
           </div>
         </div>
@@ -534,7 +534,8 @@ export default function OrderSlot() {
             {tabs.find(t => t.id === resolvedActiveTab)?.label ?? 'Products'}
           </h2>
 
-          <p className="text-sm text-gray-500 mt-0.5 mb-24 dark:text-gray-400">Browse items</p>
+          {/* Spacer: menu cards float their round photo above the card top. */}
+          <div className="mb-24" aria-hidden="true" />
 
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

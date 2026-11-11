@@ -42,7 +42,7 @@ function PromoImage({promo}: {promo: Promo}) {
 
 function PromoCardSkeleton() {
   return (
-    <div className="border rounded-2xl bg-white overflow-hidden dark:bg-gray-900 dark:border-gray-800">
+    <div className="border rounded-2xl bg-white overflow-hidden dark:bg-gray-900 dark:border-gray-700">
       <div className="aspect-video bg-gray-100 animate-pulse dark:bg-gray-800" />
       <div className="p-4 space-y-3">
         <div className="h-5 w-2/3 bg-gray-100 animate-pulse rounded dark:bg-gray-800" />
@@ -86,7 +86,7 @@ export default function PromoPage() {
           {promos.map((promo: Promo) => (
             <div
               key={promo._id}
-              className="border rounded-2xl bg-white overflow-hidden dark:bg-gray-900 dark:border-gray-800"
+              className="border rounded-2xl bg-white overflow-hidden dark:bg-gray-900 dark:border-gray-700"
             >
               <PromoImage promo={promo} />
               <div className="p-4">
