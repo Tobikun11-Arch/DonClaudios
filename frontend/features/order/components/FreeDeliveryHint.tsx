@@ -30,7 +30,7 @@ export default function FreeDeliveryHint({
         : reason === 'no_pin'
           ? `Pin your location on the map to check free delivery (Tanza area, lechon orders or ${min}+).`
           : reason === 'outside_zone'
-            ? 'Your pin is outside our free-delivery area (Tanza only), so this order goes by Lalamove.'
+            ? "Your pin is outside our free-delivery area (Tanza only), so you'll book your own courier."
             : `Add ${peso(remaining)} more (or a lechon) for free delivery inside Tanza.`;
 
   const good = reason === 'free';

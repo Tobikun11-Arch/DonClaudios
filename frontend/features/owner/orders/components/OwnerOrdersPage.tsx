@@ -588,7 +588,7 @@ export default function OwnerOrdersPage() {
                       </td>
                       <td className="px-4 py-3">
                         {order.orderSource !== 'in-store' && (
-                          <OrderStatusPill status={order.orderStatus} />
+                          <OrderStatusPill status={order.orderStatus} order={order} />
                         )}
                         {order.orderSource === 'in-store' && order.paymentStatus && (
                           <span
@@ -656,7 +656,7 @@ export default function OwnerOrdersPage() {
                       </span>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      {order.orderSource !== 'in-store' && <OrderStatusPill status={order.orderStatus} />}
+                      {order.orderSource !== 'in-store' && <OrderStatusPill status={order.orderStatus} order={order} />}
                       {order.orderSource !== 'in-store' && <OrderTypePill type={order.orderType} />}
                       <PreOrderBadge order={order} />
                       {order.orderSource === 'in-store' && order.paymentStatus && (

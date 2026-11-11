@@ -115,7 +115,7 @@ export default function CartDrawer() {
       })),
     [items, productCategoryById]
   );
-  // Guest cart: always Lalamove (free delivery needs an account).
+  // Guest cart: always a self-booked courier (free delivery needs an account).
   const freeDelivery = useFreeDeliveryStatus(deliveryItems, 'guest', null);
 
   const total = subtotal;
@@ -213,8 +213,8 @@ export default function CartDrawer() {
             {orderType === 'Delivery' && items.length > 0 ? (
               <>
                 <p className="mt-1 text-[11px] font-medium text-gray-600">
-                  You&apos;ll book your own Lalamove courier for this order.
-                  Courier fee is paid by you directly to Lalamove.
+                  You&apos;ll book your own courier (Lalamove, Grab Express, Move It or
+                  another). The courier fee is paid by you directly to them.
                 </p>
                 <FreeDeliveryHint status={freeDelivery} className="mt-2" />
               </>
@@ -520,7 +520,7 @@ export default function CartDrawer() {
                       style={{color: 'var(--text-muted)'}}
                     >
                       {type === 'Delivery'
-                        ? 'Book your own Lalamove courier'
+                        ? 'Book your own courier'
                         : type === 'Pick-up'
                           ? 'Grab it at the shop'
                           : 'Book a table'}

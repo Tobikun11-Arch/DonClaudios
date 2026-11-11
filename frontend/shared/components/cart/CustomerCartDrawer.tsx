@@ -373,7 +373,7 @@ export default function CustomerCartDrawer() {
             {orderType === 'Delivery' && items.length > 0 ? (
               <p className="mt-1 text-[11px] font-medium text-gray-600 dark:text-gray-300">
                 {deliveryMode === 'LALAMOVE'
-                  ? "You'll book your own Lalamove courier for this order. Courier fee is paid by you directly to Lalamove."
+                  ? "You'll book your own courier (Lalamove, Grab Express, Move It or another). The courier fee is paid by you directly to them."
                   : "Free delivery by DonClaudio's 🎉"}
               </p>
             ) : null}
@@ -710,7 +710,7 @@ export default function CustomerCartDrawer() {
                     >
                       {type === 'Delivery'
                         ? deliveryMode === 'LALAMOVE'
-                          ? 'Book your own Lalamove courier'
+                          ? 'Book your own courier'
                           : "Free delivery by DonClaudio's"
                         : type === 'Pick-up'
                           ? 'Grab it at the shop'

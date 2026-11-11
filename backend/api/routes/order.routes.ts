@@ -10,7 +10,7 @@ import {
 } from '../middleware/auth';
 import {ApiError} from '../utils/error';
 import {validate, validateQuery} from '../middleware/validation';
-import {guestOtpLimiter} from '../middleware/rateLimit';
+import {guestOtpLimiter, guestMessageLimiter} from '../middleware/rateLimit';
 import {
   guestOtpSendDto,
   guestOtpVerifyDto,
@@ -178,6 +178,13 @@ router.get(
   requireAuth,
   requireCustomer,
   orderMessageController.listForCustomer
+);
+// Guest follow-up on their order page (no account; guest orders only).
+router.get('/:id/messages/guest', orderMessageController.listForGuest);
+router.post(
+  '/:id/messages/guest',
+  guestMessageLimiter,
+  orderMessageController.sendByGuest
 );
 router.get(
   '/:id/messages/admin',

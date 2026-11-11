@@ -18,8 +18,8 @@ import type {OrderHistoryItem, OrderHistoryEntry} from '@/lib/api/orderApi';
 import {
   nextStatusFor,
   CANCELLABLE,
-  formatStatus,
-  orderTypeLabel,
+  orderStatusLabel,
+  orderKindLabel,
   customerDisplay,
   statusChipClass,
   paymentGateReason,
@@ -69,7 +69,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
   }
 
   const order: OrderHistoryEntry = data.order;
-  const nextStatus = nextStatusFor(order.orderType, order.orderStatus);
+  const nextStatus = nextStatusFor(order);
   const canAdvance = nextStatus !== null;
   const paymentReason = paymentGateReason(order, nextStatus);
   const paymentBlocked = paymentReason !== null;
@@ -80,7 +80,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
     const next = nextStatus;
     try {
       await updateStatusMutation.mutateAsync({orderId, status: next});
-      toast.success(`Order marked as ${formatStatus(next)}.`);
+      toast.success(`Order marked as ${orderStatusLabel(order, next)}.`);
     } catch (error) {
       toast.error(getFriendlyErrorMessage(error, 'Failed to update status.'));
     }
@@ -126,11 +126,11 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-gray-900">{customer}</h2>
               <span className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${statusChipClass(order.orderStatus)}`}>
-                {formatStatus(order.orderStatus)}
+                {orderStatusLabel(order)}
               </span>
             </div>
             <p className="text-xs text-gray-400 mt-1">
-              Order #{orderNo} • {orderTypeLabel(order.orderType)} • ₱{order.totalAmount}.00
+              Order #{orderNo} • {orderKindLabel(order)} • ₱{order.totalAmount}.00
               <PreOrderBadge order={order} className="ml-2" />
               {order.isGuest && (
                 <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
@@ -153,7 +153,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
                 title={paymentReason ?? undefined}
                 className="min-h-[40px] rounded-xl bg-[#2d4a35] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#3a5c44] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isUpdating ? 'Updating...' : `Mark ${formatStatus(nextStatus)}`}
+                {isUpdating ? 'Updating...' : `Mark ${orderStatusLabel(order, nextStatus)}`}
               </button>
             )}
             {canAdvance && paymentBlocked ? (

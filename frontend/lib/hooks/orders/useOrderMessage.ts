@@ -17,10 +17,11 @@ const orderMessagesKey = (orderId: string) =>
   ['orders', orderId, 'messages'] as const;
 const followUpOrdersKey = ['orders', 'follow-up'] as const;
 
-export function useOrderMessagesQuery(orderId: string, enabled: boolean) {
+/** `asGuest`: a guest following up from their order page (no account). */
+export function useOrderMessagesQuery(orderId: string, enabled: boolean, asGuest = false) {
   return useQuery({
     queryKey: orderMessagesKey(orderId),
-    queryFn: () => listOrderMessages(orderId),
+    queryFn: () => listOrderMessages(orderId, asGuest),
     enabled,
     refetchOnWindowFocus: false,
     refetchInterval: 5000,
@@ -42,8 +43,8 @@ export function useAdminOrderMessagesQuery(orderId: string, enabled: boolean) {
 export function useSendOrderMessageMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({orderId, body}: {orderId: string; body: string}) =>
-      sendOrderMessage(orderId, body),
+    mutationFn: ({orderId, body, asGuest}: {orderId: string; body: string; asGuest?: boolean}) =>
+      sendOrderMessage(orderId, body, asGuest),
     onSuccess: async ({message}) => {
       await queryClient.invalidateQueries({queryKey: orderMessagesKey(message.orderId)});
       await queryClient.invalidateQueries({queryKey: adminNotificationsQueryKey});

@@ -152,7 +152,7 @@ export function DeliveryTab() {
               <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                 {form.enabled
                   ? 'On. Qualifying orders inside the area are delivered free.'
-                  : 'Off. Every delivery is booked through Lalamove.'}
+                  : 'Off. Customers book their own courier (Lalamove, Grab Express, Move It) for every delivery.'}
               </div>
             </div>
             <Toggle
@@ -172,7 +172,7 @@ export function DeliveryTab() {
               </label>
               <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                 Lechon de Leche, Traditional Lechon, Cochinillo and Lechon Belly orders
-                are always free inside the area. Guests always book Lalamove.
+                are always free inside the area. Guests always book their own courier.
               </div>
             </div>
             <div className="shrink-0 sm:w-[200px]">

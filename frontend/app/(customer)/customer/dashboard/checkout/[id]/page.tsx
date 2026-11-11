@@ -24,6 +24,10 @@ import {STORE_ADDRESS, STORE_LOCATION} from '@/lib/orders/deliveryMode';
 import {useFreeDeliveryStatus} from '@/lib/orders/useFreeDeliveryStatus';
 import DeliveryZoneMap from '@/features/order/components/DeliveryZoneMap';
 import FreeDeliveryHint from '@/features/order/components/FreeDeliveryHint';
+import CourierPicker, {
+  isCourierChoiceComplete,
+  type CourierChoice
+} from '@/features/order/components/CourierPicker';
 import OrderTypeSelector from '@/shared/components/order/OrderTypeSelector';
 import {
   useClearCustomerCartMutation,
@@ -149,6 +153,18 @@ export default function CustomerCheckoutPage() {
   );
   const freeDelivery = useFreeDeliveryStatus(deliveryItems, 'customer', location);
   const deliveryMode = freeDelivery.mode;
+  const [courier, setCourier] = useState<CourierChoice>({provider: null, name: ''});
+  // A delivery the customer books themself needs to say which courier, so
+  // the store knows which rider to expect.
+  const needsCourier = orderType === 'Delivery' && deliveryMode === 'LALAMOVE';
+  const courierMissing = needsCourier && !isCourierChoiceComplete(courier);
+  const courierPayload =
+    needsCourier && courier.provider
+      ? {
+          provider: courier.provider,
+          name: courier.provider === 'other' ? courier.name.trim() : undefined
+        }
+      : undefined;
   const pinnedLocation =
     location && location.lat != null && location.lng != null
       ? {lat: location.lat, lng: location.lng}
@@ -243,7 +259,8 @@ export default function CustomerCheckoutPage() {
           address: address.trim().length ? address.trim() : undefined
         },
         deliveryLocation:
-          orderType === 'Delivery' && pinnedLocation ? pinnedLocation : undefined
+          orderType === 'Delivery' && pinnedLocation ? pinnedLocation : undefined,
+        courier: courierPayload
       });
 
       const orderId = created?.order?._id;
@@ -279,6 +296,7 @@ export default function CustomerCheckoutPage() {
         createOrderMutation.isPending ||
         clearCartMutation.isPending ||
         !agreedToTerms ||
+        courierMissing ||
         (orderType === 'Delivery' && !address.trim())
       }
       onClick={handleCheckout}
@@ -378,7 +396,7 @@ export default function CustomerCheckoutPage() {
                   onChange={setOrderType}
                   deliverySubtitle={
                     deliveryMode === 'LALAMOVE'
-                      ? 'Book your own Lalamove courier'
+                      ? 'Book your own courier'
                       : "Free delivery by DonClaudio's"
                   }
                 />
@@ -394,10 +412,16 @@ export default function CustomerCheckoutPage() {
                 >
                   {deliveryMode === 'LALAMOVE' ? (
                     <>
+                      <div className="mb-3 rounded-xl bg-white/70 p-3 dark:bg-gray-900/60">
+                        <CourierPicker value={courier} onChange={setCourier} />
+                        {courierMissing ? (
+                          <p className="mt-2 text-[11px] font-medium text-amber-800 dark:text-amber-300">
+                            Choose a courier to place your order.
+                          </p>
+                        ) : null}
+                      </div>
                       <p className="font-semibold">
-                        This order will be delivered via Lalamove. You will book
-                        and pay for the courier yourself. Use the pick-up
-                        address below when booking.
+                        You&apos;ll book and pay for your own courier. Use the pick-up address below when booking.
                       </p>
                       <p className="mt-2 text-xs font-medium">
                         Pick-up address for rider: {STORE_ADDRESS}
@@ -791,7 +815,7 @@ export default function CustomerCheckoutPage() {
               </div>
               {orderType === 'Delivery' && deliveryMode === 'LALAMOVE' ? (
                 <p className="text-xs text-amber-700 dark:text-amber-300">
-                  Courier fee not included, paid by you to Lalamove.
+                  Courier fee not included, paid by you to your courier.
                 </p>
               ) : null}
 

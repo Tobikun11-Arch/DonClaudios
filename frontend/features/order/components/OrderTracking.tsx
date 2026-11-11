@@ -23,7 +23,9 @@ import {
   type OrderHistoryEntry,
   type OrderHistoryItem
 } from '@/lib/api/orderApi';
+import {toast} from 'sonner';
 import CustomerOrderFollowUp from '@/features/order/components/CustomerOrderFollowUp';
+import {courierLabel, customerStep, fulfillmentKind, fulfillmentLabel, statusFlow} from '@/lib/orders/orderFlow';
 import OrderPaymentCard from '@/features/order/components/OrderPaymentCard';
 import {
   formatMinutes,
@@ -106,33 +108,16 @@ const CANCEL_REASONS = [
   'Others'
 ];
 
-type OrderType = 'pickup' | 'delivery' | 'reservation';
+type Step = {status: string; label: string; detail: string};
 
-type Step = {status: string; label: string};
-
-function getSteps(orderType: OrderType): Step[] {
-  if (orderType === 'delivery') {
-    return [
-      {status: 'confirmed', label: 'Order Confirmed'},
-      {status: 'preparing', label: 'Preparing your order'},
-      {status: 'on_the_way', label: 'On the Way'},
-      {status: 'completed', label: 'Order Completed'}
-    ];
-  }
-  if (orderType === 'reservation') {
-    return [
-      {status: 'confirmed', label: 'Order Confirmed'},
-      {status: 'preparing', label: 'Preparing your order'},
-      {status: 'ready', label: 'Food Ready'},
-      {status: 'completed', label: 'Order Completed'}
-    ];
-  }
-  return [
-    {status: 'confirmed', label: 'Order Confirmed'},
-    {status: 'preparing', label: 'Preparing your order'},
-    {status: 'ready', label: 'Ready for Pick-up'},
-    {status: 'completed', label: 'Order Completed'}
-  ];
+/** Steps for this kind of order (see lib/orders/orderFlow.ts). */
+function getSteps(order: OrderHistoryEntry): Step[] {
+  return statusFlow(order)
+    .filter(st => st !== 'pending')
+    .map(st => {
+      const {title, detail} = customerStep(order, st);
+      return {status: st, label: title, detail};
+    });
 }
 
 function getItemName(item: OrderHistoryItem) {
@@ -206,6 +191,7 @@ function typeDisplay(order: OrderHistoryEntry) {
       ? 'Pre-order · Lalamove (you book)'
       : 'Pre-order · Self pick-up';
   }
+  if (order.orderType === 'delivery') return fulfillmentLabel(order);
   return orderTypeDisplay(order.orderType);
 }
 
@@ -225,11 +211,14 @@ function deliveryAddress(order: OrderHistoryEntry) {
 export default function OrderTracking({
   orderId,
   variant,
-  embedded = false
+  embedded = false,
+  showTrackingNumber = true
 }: {
   orderId: string;
   variant: 'guest' | 'customer';
   embedded?: boolean;
+  /** Guests: show the copyable tracking number so they can track later. */
+  showTrackingNumber?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -307,6 +296,9 @@ export default function OrderTracking({
           </div>
         ) : (
           <>
+            {variant === 'guest' && !embedded && showTrackingNumber ? (
+              <TrackingNumberBar orderId={order._id} />
+            ) : null}
             {order.orderStatus === 'pending' ? (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
                 <p className="font-semibold">Awaiting confirmation call</p>
@@ -327,8 +319,13 @@ export default function OrderTracking({
               <StatusTrackerCard order={order} />
             )}
             <OrderSummaryCard order={order} />
-            {!embedded && variant === 'customer' ? (
-              <CustomerOrderFollowUp order={order} />
+            {!embedded ? (
+              <CustomerOrderFollowUp
+                order={order}
+                variant="card"
+                defaultOpen
+                asGuest={variant === 'guest'}
+              />
             ) : null}
             <OrderPaymentCard order={order} phone={resolvedPhone} />
             <PaymentsDetailsCard order={order} />
@@ -414,10 +411,92 @@ function CustomerEtaPanel({order}: {order: OrderHistoryEntry}) {
   );
 }
 
+/** Guests have no account: give them the number to track this order later. */
+function TrackingNumberBar({orderId}: {orderId: string}) {
+  const copy = () => {
+    navigator.clipboard
+      ?.writeText(orderId)
+      .then(() => toast.success('Tracking number copied.'))
+      .catch(() => toast.error('Couldn’t copy. Select and copy it instead.'));
+  };
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#3c5e45]/20 bg-[#e9f5ee] px-4 py-3">
+      <div className="min-w-0">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-[#3c5e45]">
+          Tracking number · save it to check this order later
+        </p>
+        <p className="mt-0.5 break-all font-mono text-sm font-bold text-gray-900 select-all">{orderId}</p>
+      </div>
+      <div className="flex shrink-0 gap-2">
+        <button
+          type="button"
+          onClick={copy}
+          className="rounded-full bg-[#3c5e45] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#2d4a35]"
+        >
+          Copy
+        </button>
+        <a
+          href={`/track?id=${orderId}`}
+          className="rounded-full border border-[#3c5e45]/40 px-3 py-1.5 text-xs font-semibold text-[#2d4a35] hover:bg-white/60"
+        >
+          Tracking page
+        </a>
+      </div>
+    </div>
+  );
+}
+
+/** Self-booked delivery: where to send the rider, and when. */
+function CourierPickupCallout({order}: {order: OrderHistoryEntry}) {
+  const courier = courierLabel(order.courier);
+  const ready = order.orderStatus === 'ready';
+  return (
+    <div
+      className={
+        ready
+          ? 'mt-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
+          : 'mt-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200'
+      }
+    >
+      <p className="font-semibold">
+        {ready
+          ? `Your food is ready — book your ${courier} rider now.`
+          : `You'll book your own ${courier} rider. We'll tell you here when the food is ready.`}
+      </p>
+      <p className="mt-1 text-xs">Pick-up address for the rider: {STORE_ADDRESS}</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            navigator.clipboard?.writeText(STORE_ADDRESS);
+            toast.success('Store address copied.');
+          }}
+          className="rounded-full bg-[#3c5e45] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#2d4a35]"
+        >
+          Copy address
+        </button>
+        <a
+          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(STORE_ADDRESS)}`}
+          target="_blank"
+          rel="noreferrer"
+          className="rounded-full border border-[#3c5e45]/40 px-3 py-1.5 text-xs font-semibold text-[#2d4a35] hover:bg-white/60 dark:border-[#7ed4a0]/40 dark:text-[#7ed4a0]"
+        >
+          Open in Google Maps
+        </a>
+      </div>
+    </div>
+  );
+}
+
 function StatusTrackerCard({order}: {order: OrderHistoryEntry}) {
   const brand = useBrand();
-  const steps = getSteps(order.orderType as OrderType);
-  const statusIndex = steps.findIndex(s => s.status === order.orderStatus);
+  const steps = getSteps(order);
+  const kind = fulfillmentKind(order);
+  let statusIndex = steps.findIndex(s => s.status === order.orderStatus);
+  // An older courier delivery left "on the way" sits between ready and done.
+  if (statusIndex < 0 && order.orderStatus === 'on_the_way') {
+    statusIndex = Math.max(0, steps.length - 2);
+  }
   const currentIndex = order.orderStatus === 'pending' ? -1 : statusIndex;
 
   return (
@@ -488,11 +567,19 @@ function StatusTrackerCard({order}: {order: OrderHistoryEntry}) {
                 >
                   {step.label}
                 </p>
+                {isCurrent && step.detail ? (
+                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{step.detail}</p>
+                ) : null}
               </div>
             </div>
           );
         })}
       </div>
+
+      {kind === 'courier_delivery' &&
+      ['confirmed', 'preparing', 'ready'].includes(order.orderStatus) ? (
+        <CourierPickupCallout order={order} />
+      ) : null}
 
       <div className="mt-4 pt-5 border-t border-gray-100 flex items-center gap-2 text-sm text-gray-600 dark:border-gray-800 dark:text-gray-300">
         <Clock className="h-4 w-4 text-gray-400" />

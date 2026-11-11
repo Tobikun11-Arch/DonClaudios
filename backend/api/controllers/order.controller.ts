@@ -38,6 +38,7 @@ import type {CashierDocument} from '../models/Cashier.model';
 import {resolveRange} from '../utils/dateRange';
 import {pointsEarnedForOrder} from '../config/rewards';
 import {getDeliveryMode, isValidLatLng} from '../config/delivery';
+import {customerStatusLabel, isStatusAllowed, parseCourier, staffFlowError} from '../config/orderFlow';
 import {settingsService} from '../services/settings.service';
 import {assertPreOrderItemsOrderable} from '../services/cart.service';
 import {isPositiveInteger, reserveOrderStock} from '../services/preOrder.service';
@@ -198,15 +199,22 @@ async function assertStoreOpen() {
   }
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'Pending',
-  confirmed: 'Confirmed',
-  preparing: 'Preparing',
-  ready: 'Ready for Pickup',
-  on_the_way: 'On the Way',
-  completed: 'Completed',
-  cancelled: 'Cancelled'
-};
+/**
+ * The courier a customer will book for a self-booked delivery. Required for
+ * those orders (so the store knows which rider to expect); null otherwise.
+ */
+function resolveCourier(orderType: string, deliveryMode: string, raw: unknown) {
+  if (orderType !== 'delivery' || deliveryMode === 'DONCLAUDIO') return null;
+  const courier = parseCourier(raw);
+  if (!courier) {
+    throw new ApiError(
+      400,
+      'COURIER_REQUIRED',
+      'Choose which courier you will book (Lalamove, Grab Express, Move It, or type another one).'
+    );
+  }
+  return courier;
+}
 
 export const orderController = {
   async listAllOrders(req: Request, res: Response, next: NextFunction) {
@@ -589,7 +597,8 @@ export const orderController = {
         riderNotes,
         contactInfo,
         changeFor,
-        deliveryLocation: rawDeliveryLocation
+        deliveryLocation: rawDeliveryLocation,
+        courier: rawCourier
       } = req.body;
       // The pinned drop-off decides free delivery (Tanza zone). Ignore a
       // malformed pin rather than failing the order: it just means Lalamove.
@@ -669,6 +678,7 @@ export const orderController = {
         0
       );
       assertOrderTotalWithinLimits(safeTotalAmount, 'customer');
+      const courier = resolveCourier(orderType, deliveryMode, rawCourier);
 
       const customerList = await customerRepository.listByIds([
         req.auth.userId as string
@@ -728,6 +738,7 @@ export const orderController = {
                 deliveryFee: 0,
                 deliveryMode,
                 deliveryLocation,
+                courier,
                 riderNotes: isNonEmptyString(riderNotes)
                   ? riderNotes
                   : undefined,
@@ -780,6 +791,7 @@ export const orderController = {
             deliveryFee: 0,
             deliveryMode,
             deliveryLocation,
+            courier,
             riderNotes: isNonEmptyString(riderNotes) ? riderNotes : undefined,
             changeFor: normalizeChangeFor(changeFor),
             statusHistory: [{status: 'pending', at: new Date()}],
@@ -919,7 +931,8 @@ export const orderController = {
         items,
         totalAmount,
         riderNotes,
-        changeFor
+        changeFor,
+        courier: rawCourier
       } = req.body;
 
       if (!guestInfo || typeof guestInfo !== 'object') {
@@ -1041,6 +1054,7 @@ export const orderController = {
         0
       );
       assertOrderTotalWithinLimits(safeTotalAmount, 'guest');
+      const courier = resolveCourier(orderType, deliveryMode, rawCourier);
 
       // Reserve stock at placement (like account orders) so two concurrent
       // guest checkouts cannot oversell. Guests never order pre-orders, so the
@@ -1075,6 +1089,7 @@ export const orderController = {
                 totalAmount: safeTotalAmount,
                 deliveryFee: 0,
                 deliveryMode,
+                courier,
                 riderNotes: isNonEmptyString(riderNotes)
                   ? riderNotes
                   : undefined,
@@ -1127,6 +1142,7 @@ export const orderController = {
             totalAmount: safeTotalAmount,
             deliveryFee: 0,
             deliveryMode,
+            courier,
             riderNotes: isNonEmptyString(riderNotes) ? riderNotes : undefined,
             changeFor: normalizeChangeFor(changeFor),
             statusHistory: [{status: 'pending', at: new Date()}],
@@ -1892,20 +1908,11 @@ export const orderController = {
       }
       assertCashierMayHandle(req.auth, order);
 
-      if (status === 'ready' && order.orderType === 'delivery') {
-        throw new ApiError(
-          400,
-          'VALIDATION_ERROR',
-          'Delivery orders use "on_the_way" instead of "ready"'
-        );
-      }
-
-      if (status === 'on_the_way' && order.orderType !== 'delivery') {
-        throw new ApiError(
-          400,
-          'VALIDATION_ERROR',
-          'Only delivery orders can be marked as on the way'
-        );
+      // Each kind of order has its own steps (see config/orderFlow.ts): only
+      // the store's own rider goes "on the way"; pick-up, reservation and
+      // customer-booked couriers use "ready" instead.
+      if (!isStatusAllowed(order, status)) {
+        throw new ApiError(400, 'VALIDATION_ERROR', staffFlowError(order, status));
       }
 
       // PAYMENT gate (Xendit): the kitchen may only start once the order is
@@ -2093,7 +2100,7 @@ export const orderController = {
           customerId: String(order.customerId),
           type: 'order_status',
           title: 'Order Status Update',
-          message: `Your order (#${String(order._id).slice(-6).toUpperCase()}) is now ${STATUS_LABELS[status] ?? status}.`,
+          message: `Your order (#${String(order._id).slice(-6).toUpperCase()}) is now ${customerStatusLabel(order, status)}.`,
           orderId: String(order._id),
           link: '/customer/dashboard?tab=history'
         });

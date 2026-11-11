@@ -20,6 +20,8 @@ export type CreateGuestOrderInput = {
   items: GuestOrderItemInput[];
   totalAmount: number;
   riderNotes?: string;
+  /** Courier the guest will book (deliveries are always self-booked for guests). */
+  courier?: {provider: 'lalamove' | 'grab_express' | 'move_it' | 'other'; name?: string};
 };
 
 export type CreateCustomerOrderInput = {
@@ -35,6 +37,8 @@ export type CreateCustomerOrderInput = {
   };
   /** Pinned drop-off; the server uses it to check the free-delivery zone. */
   deliveryLocation?: {lat: number; lng: number};
+  /** Courier the customer will book when delivery is not free. */
+  courier?: {provider: 'lalamove' | 'grab_express' | 'move_it' | 'other'; name?: string};
 };
 
 export type CreatedGuestOrderResponse = {
@@ -102,6 +106,7 @@ export type OrderHistoryEntry = {
   sizeKg?: number | null;
   occasionId?: string | null;
   deliveryMode?: 'DONCLAUDIO' | 'LALAMOVE';
+  courier?: {provider: 'lalamove' | 'grab_express' | 'move_it' | 'other'; name?: string | null} | null;
   deliveryLocation?: {lat: number; lng: number} | null;
   paymentMethod?: string | null;
   riderNotes?: string;
@@ -204,6 +209,8 @@ export type FollowUpOrder = {
   lastMessageAt: string;
   lastMessage: string;
   lastSender: string;
+  /** Who wrote last: 'customer' means the store still has to reply. */
+  lastAuthorType?: 'customer' | 'admin';
   messageCount: number;
 };
 
@@ -250,9 +257,9 @@ export async function updateOrderStatus(orderId: string, status: string) {
   return res.data;
 }
 
-export async function listOrderMessages(orderId: string) {
+export async function listOrderMessages(orderId: string, asGuest = false) {
   const res = await httpClient.get<ListOrderMessagesResponse>(
-    `/orders/${orderId}/messages`
+    asGuest ? `/orders/${orderId}/messages/guest` : `/orders/${orderId}/messages`
   );
   return res.data;
 }
@@ -338,9 +345,9 @@ export async function updateCounterOrder(
   return res.data;
 }
 
-export async function sendOrderMessage(orderId: string, body: string) {
+export async function sendOrderMessage(orderId: string, body: string, asGuest = false) {
   const res = await httpClient.post<{message: OrderMessage}>(
-    `/orders/${orderId}/messages`,
+    asGuest ? `/orders/${orderId}/messages/guest` : `/orders/${orderId}/messages`,
     {body}
   );
   return res.data;

@@ -36,6 +36,27 @@ export const orderMessageController = {
     }
   },
 
+  async listForGuest(req: Request, res: Response, next: NextFunction) {
+    try {
+      const messages = await orderMessageService.listForGuest(req.params.id);
+      res.status(200).json({messages});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async sendByGuest(req: Request, res: Response, next: NextFunction) {
+    try {
+      const message = await orderMessageService.sendByGuest(
+        req.params.id,
+        typeof req.body?.body === 'string' ? req.body.body : ''
+      );
+      res.status(201).json({message});
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async listForAdmin(_req: Request, res: Response, next: NextFunction) {
     try {
       if (!_req.auth) {

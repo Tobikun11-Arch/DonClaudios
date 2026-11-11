@@ -37,3 +37,12 @@ export const reviewLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false
 });
+
+// Guests sending follow-up messages on their order page (no login). Enough for
+// a real conversation, low enough to stop spam.
+export const guestMessageLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false
+});

@@ -37,6 +37,10 @@ import {
 import {STORE_ADDRESS} from '@/lib/orders/deliveryMode';
 import {useFreeDeliveryStatus} from '@/lib/orders/useFreeDeliveryStatus';
 import FreeDeliveryHint from '@/features/order/components/FreeDeliveryHint';
+import CourierPicker, {
+  isCourierChoiceComplete,
+  type CourierChoice
+} from '@/features/order/components/CourierPicker';
 import OrderTypeSelector from '@/shared/components/order/OrderTypeSelector';
 import {useCreateGuestOrderMutation} from '@/lib/hooks/orders/useGuestOrder';
 import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
@@ -168,10 +172,22 @@ export default function CheckoutGuestPage() {
       })),
     [items, productCategoryById]
   );
-  // Guests always book Lalamove: free delivery is for customers with an
+  // Guests always book their own courier: free delivery is for customers with an
   // account (inside Tanza). The hint below tells them so.
   const freeDelivery = useFreeDeliveryStatus(deliveryItems, 'guest', null);
   const deliveryMode = freeDelivery.mode;
+  const [courier, setCourier] = useState<CourierChoice>({provider: null, name: ''});
+  // A delivery the customer books themself needs to say which courier, so
+  // the store knows which rider to expect.
+  const needsCourier = orderType === 'Delivery' && deliveryMode === 'LALAMOVE';
+  const courierMissing = needsCourier && !isCourierChoiceComplete(courier);
+  const courierPayload =
+    needsCourier && courier.provider
+      ? {
+          provider: courier.provider,
+          name: courier.provider === 'other' ? courier.name.trim() : undefined
+        }
+      : undefined;
 
   const total = subtotal;
   const belowMinimum = items.length > 0 && total < MIN_ORDER_TOTAL;
@@ -437,7 +453,8 @@ export default function CheckoutGuestPage() {
               : 'reservation',
         items: orderItems,
         totalAmount: total,
-        riderNotes: notesToRider.trim().length ? notesToRider.trim() : undefined
+        riderNotes: notesToRider.trim().length ? notesToRider.trim() : undefined,
+        courier: courierPayload
       });
     } catch (error) {
       setCheckoutError(
@@ -465,6 +482,7 @@ export default function CheckoutGuestPage() {
           items.length === 0 ||
           belowMinimum ||
           overGuestMax ||
+          courierMissing ||
           !phoneVerified ||
           isStoreClosed ||
           createOrderMutation.isPending ||
@@ -545,7 +563,7 @@ export default function CheckoutGuestPage() {
                     onChange={setOrderType}
                     deliverySubtitle={
                       deliveryMode === 'LALAMOVE'
-                        ? 'Book your own Lalamove courier'
+                        ? 'Book your own courier'
                         : "Free delivery by DonClaudio's"
                     }
                   />
@@ -561,10 +579,16 @@ export default function CheckoutGuestPage() {
                   >
                     {deliveryMode === 'LALAMOVE' ? (
                       <>
+                        <div className="mb-3 rounded-xl bg-white/70 p-3 dark:bg-gray-900/60">
+                          <CourierPicker value={courier} onChange={setCourier} />
+                          {courierMissing ? (
+                            <p className="mt-2 text-[11px] font-medium text-amber-800 dark:text-amber-300">
+                              Choose a courier to place your order.
+                            </p>
+                          ) : null}
+                        </div>
                         <p className="font-semibold">
-                          This order will be delivered via Lalamove. You will
-                          book and pay for the courier yourself. Use the pick-up
-                          address below when booking.
+                          You&apos;ll book and pay for your own courier. Use the pick-up address below when booking.
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           <button
@@ -1159,7 +1183,7 @@ export default function CheckoutGuestPage() {
                 </div>
                 {orderType === 'Delivery' && deliveryMode === 'LALAMOVE' ? (
                   <p className="text-xs text-amber-700">
-                    Courier fee not included, paid by you to Lalamove.
+                    Courier fee not included, paid by you to your courier.
                   </p>
                 ) : null}
 

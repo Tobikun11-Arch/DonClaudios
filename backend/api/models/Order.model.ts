@@ -90,6 +90,11 @@ export interface OrderDocument extends mongoose.Document {
   deliveryMode?: DeliveryMode;
   /** Pinned drop-off for delivery orders (used for the free-delivery zone). */
   deliveryLocation?: {lat: number; lng: number} | null;
+  /** Courier the customer books themself (self-booked delivery only). */
+  courier?: {
+    provider: 'lalamove' | 'grab_express' | 'move_it' | 'other';
+    name?: string | null;
+  } | null;
   orderSource: 'online' | 'in-store';
   totalAmount: number;
   deliveryFee: number;
@@ -199,6 +204,20 @@ const OrderSchema = new Schema<OrderDocument>(
     },
     deliveryLocation: {
       type: new Schema({lat: Number, lng: Number}, {_id: false}),
+      default: null
+    },
+    courier: {
+      type: new Schema(
+        {
+          provider: {
+            type: String,
+            enum: ['lalamove', 'grab_express', 'move_it', 'other'],
+            required: true
+          },
+          name: {type: String, trim: true, maxlength: 60, default: null}
+        },
+        {_id: false}
+      ),
       default: null
     },
     orderSource: {
