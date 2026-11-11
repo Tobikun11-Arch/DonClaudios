@@ -6,6 +6,7 @@ import {Coins, Gift, History, Loader2, Sparkles, X, CheckCircle2, Store, QrCode}
 import {QRCodeSVG} from 'qrcode.react';
 import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
+import {FilterPills} from '@/shared/components/FilterPills';
 import {
   useRewardsQuery,
   useRedeemRewardMutation
@@ -151,22 +152,13 @@ export default function RewardsTab() {
         </p>
 
         {categories.length > 1 && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setCategory(cat)}
-                className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
-                  category === cat
-                    ? 'bg-[#2d4a35] text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-900 dark:hover:bg-gray-700 dark:text-gray-300'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+          <FilterPills
+            items={categories.map(cat => ({key: cat, label: cat}))}
+            value={category}
+            onChange={setCategory}
+            ariaLabel="Filter rewards by category"
+            className="mt-4"
+          />
         )}
 
         {rewardsQuery.isLoading ? (

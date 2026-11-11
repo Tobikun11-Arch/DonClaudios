@@ -1,7 +1,10 @@
 'use client';
 
 import {toast} from 'sonner';
+import {useRouter} from 'next/navigation';
+import {LogOut} from 'lucide-react';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
+import {useLogout} from '@/lib/hooks/auth/useLogout';
 import {ProfileHeader, UsualOrderCard, AddressList, OccasionsCard, PreferencesForm, PromosCard, AccountSection, AppearanceCard, useCustomerProfileData} from '@/features/customer/profile';
 
 export default function ProfileSlot() {
@@ -12,6 +15,13 @@ export default function ProfileSlot() {
     meQuery,
     updateProfileMutation
   } = useCustomerProfileData();
+  const router = useRouter();
+  const logoutMutation = useLogout();
+
+  const handleLogout = async () => {
+    await logoutMutation.mutateAsync();
+    router.replace('/sign-in');
+  };
 
   if (meQuery.isLoading && !user) {
     return (
@@ -63,6 +73,21 @@ export default function ProfileSlot() {
         <PreferencesForm preferences={preferences} onSave={savePreferences} />
         <AppearanceCard />
         <PromosCard promos={promos} />
+      </div>
+      {/*
+        Phones have no sidebar, so this is their only way to log out. Desktop
+        keeps the sidebar's Logout and hides this one.
+      */}
+      <div className="md:hidden">
+        <button
+          type="button"
+          onClick={handleLogout}
+          disabled={logoutMutation.isPending}
+          className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-white text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-500/30 dark:bg-gray-900 dark:text-red-300 dark:hover:bg-red-500/10"
+        >
+          <LogOut className="h-4 w-4" />
+          {logoutMutation.isPending ? 'Logging out…' : 'Log out'}
+        </button>
       </div>
     </div>
   );
