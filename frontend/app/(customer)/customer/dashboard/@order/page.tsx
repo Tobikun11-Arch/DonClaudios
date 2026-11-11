@@ -1,66 +1,32 @@
 'use client';
 
-import {useMemo, useState} from 'react';
-import {useBrand} from '@/lib/hooks/useBrand';
-
+import {useMemo} from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-
-import {Input} from '@/components/ui/input';
-
-import {History, Search, ShoppingCart, SlidersHorizontal} from 'lucide-react';
-
-import {useProductsQuery} from '@/lib/hooks/products/useProducts';
-
-import MenuCategoryCard from '@/shared/components/MenuCategoryCard';
-
-import FeaturedMenuItemCard from '@/shared/components/FeaturedMenuItemCard';
-
-import MenuCardSkeleton from '@/shared/components/MenuCardSkeleton';
-
-import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
-
-import {usePublicCategoriesQuery} from '@/lib/hooks/categories/useCategories';
-
-import type {Promo} from '@/lib/types/promo';
-
-import {
-  getBundleBadge,
-  getPromoBadgeForProduct
-} from '@/lib/utils/promoPricing';
-
-import {useCartUiStore} from '@/app/store/cartUiStore';
-
-import {useCustomerCartQuery} from '@/lib/hooks/cart/useCustomerCart';
-
-import {useAddCustomerCartItemMutation} from '@/lib/hooks/cart/useCustomerCart';
-
-import {useMyOrdersQuery} from '@/lib/hooks/orders/useCustomerOrder';
-
-import {Button} from '@/components/ui/button';
-
-import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
-
-import StoreClosedModal from '@/shared/components/StoreClosedModal';
-
+import {History, ShoppingCart} from 'lucide-react';
 import {toast} from 'sonner';
+import {useBrand} from '@/lib/hooks/useBrand';
+import {useProductsQuery} from '@/lib/hooks/products/useProducts';
+import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
+import {usePublicCategoriesQuery} from '@/lib/hooks/categories/useCategories';
+import {useCartUiStore} from '@/app/store/cartUiStore';
+import {
+  useAddCustomerCartItemMutation,
+  useCustomerCartQuery
+} from '@/lib/hooks/cart/useCustomerCart';
+import {useMyOrdersQuery} from '@/lib/hooks/orders/useCustomerOrder';
+import {Button} from '@/components/ui/button';
+import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
+import StoreClosedModal from '@/shared/components/StoreClosedModal';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
-
 import {
   isPreOrderProduct,
   preOrderClosedMessage,
   preOrderDisplay,
-  preOrderLimitMessage,
-  preOrderRemainingAllowance
+  preOrderLimitMessage
 } from '@/lib/preOrder/preOrder';
-
-import {
-  buildFeaturedMenuItems,
-  FEATURED_TAB_ID,
-  FEATURED_TAB_IMAGE,
-  FEATURED_TAB_LABEL
-} from '@/lib/menu/featured';
 import PreOrderDatesStrip from '@/features/preorders/components/PreOrderDatesStrip';
+import {MenuBrowser} from '@/features/menu/components/MenuBrowser';
 
 export default function OrderSlot() {
   const brand = useBrand();
@@ -138,203 +104,11 @@ export default function OrderSlot() {
     );
   }, [products]);
 
-  const promoBundles = useMemo(() => {
-    return promos.filter(
-      (p): p is Promo & {price: number} =>
-        p.promoType === 'bundle' && typeof p.price === 'number'
-    );
-  }, [promos]);
-
-  // Open pre-orders plus active bundles. Empty for guests, and while the
-  // session is still resolving.
-  const featuredItems = useMemo(
-    () =>
-      buildFeaturedMenuItems({
-        products: availableProducts,
-        promos,
-        basePath: 'customer/dashboard'
-      }),
-    [availableProducts, promos]
-  );
-
-  const tabs = useMemo(() => {
-    const categories = Array.from(
-      new Set(
-        availableProducts
-
-          .map(p => p.category)
-
-          .filter(
-            (c): c is string => typeof c === 'string' && c.trim().length > 0
-          )
-      )
-    ).sort((a, b) => a.localeCompare(b));
-
-    const rice = categories.find(c => /rice/i.test(c)) ?? null;
-
-    return [
-      // Featured leads: it is the only place open pre-orders are surfaced
-      // outside their own category, and it is time-limited.
-      ...(featuredItems.length > 0
-        ? [{id: FEATURED_TAB_ID, label: FEATURED_TAB_LABEL, category: null}]
-        : []),
-      ...(rice
-        ? [
-            {
-              id: rice.toLowerCase().replace(/\s+/g, ''),
-
-              label: rice,
-
-              category: rice
-            }
-          ]
-        : []),
-
-      ...(promoBundles.length > 0
-        ? [{id: 'promoBundles', label: 'Promo Bundles', category: null}]
-        : []),
-
-      ...categories
-        .filter(c => c !== rice)
-        .map(category => ({
-          id: category.toLowerCase().replace(/\s+/g, ''),
-
-          label: category,
-
-          category
-        }))
-    ];
-  }, [availableProducts, featuredItems.length, promoBundles.length]);
-
-  const defaultTabId = useMemo(() => {
-    // Prefer Featured when there is something to feature, so an open
-    // pre-order is what the customer lands on.
-    if (featuredItems.length > 0) return FEATURED_TAB_ID;
-
-    return (
-      tabs.find(t => t.category && /rice/i.test(t.category))?.id ??
-
-      tabs.find(t => t.category)?.id ??
-
-      tabs[0]?.id ??
-
-      ''
-    );
-  }, [featuredItems.length, tabs]);
-
-  const [activeTab, setActiveTab] = useState('');
-
-  const [query, setQuery] = useState('');
-
-  const resolvedActiveTab = tabs.some(t => t.id === activeTab)
-    ? activeTab
-    : defaultTabId;
-
-  const activeCategory = useMemo(() => {
-    if (resolvedActiveTab === 'promoBundles') return null;
-    if (resolvedActiveTab === FEATURED_TAB_ID) return null;
-
-    return tabs.find(t => t.id === resolvedActiveTab)?.category ?? null;
-  }, [resolvedActiveTab, tabs]);
-
-  const visibleItems = useMemo(() => {
-    if (resolvedActiveTab === FEATURED_TAB_ID) {
-      const normalizedQuery = query.trim().toLowerCase();
-
-      if (!normalizedQuery) return featuredItems;
-
-      return featuredItems
-        .filter(item => item.name.toLowerCase().includes(normalizedQuery))
-        .slice(0, 5);
-    }
-
-    if (resolvedActiveTab === 'promoBundles') {
-      const normalizedQuery = query.trim().toLowerCase();
-
-      const filtered = normalizedQuery
-        ? promoBundles.filter(p =>
-            p.title.toLowerCase().includes(normalizedQuery)
-          )
-        : promoBundles;
-
-      return filtered.slice(0, 5).map(p => ({
-        id: p._id,
-        name: p.title,
-        price: p.price,
-        imageUrl: p.imageUrl,
-        note: p.description,
-        href: `/customer/dashboard/promo/${encodeURIComponent(p._id)}`,
-        // Bundles are never pre-orders.
-        isPreOrder: false,
-        preOrderClosed: false,
-        preOrderOrderable: true,
-        preOrderLimit: null,
-        preOrderAllowance: null,
-        preOrderOrderedToday: 0,
-        preOrderStatusLine: '',
-        preOrderSubLine: ''
-      }));
-    }
-
-    const sourceItems = availableProducts.filter(
-      p => p.category === activeCategory
-    );
-
-    const normalizedQuery = query.trim().toLowerCase();
-
-    const filtered = normalizedQuery
-      ? sourceItems.filter(item =>
-          item.name.toLowerCase().includes(normalizedQuery)
-        )
-      : sourceItems;
-
-    return filtered.slice(0, 5).map(item => {
-      const display = preOrderDisplay(item);
-      return {
-        id: item._id,
-
-        name: item.name,
-
-        price: item.price,
-
-        imageUrl: item.imageUrl,
-
-        note: item.description,
-
-        href: undefined as string | undefined,
-
-        isPreOrder: isPreOrderProduct(item),
-
-        preOrderClosed: display.closed,
-
-        preOrderOrderable: display.orderable,
-
-        preOrderLimit:
-          typeof item.preOrderPurchaseLimit === 'number' &&
-          item.preOrderPurchaseLimit >= 1
-            ? item.preOrderPurchaseLimit
-            : null,
-
-        preOrderAllowance: preOrderRemainingAllowance(item),
-
-        preOrderOrderedToday:
-          typeof item.preOrderOrderedToday === 'number'
-            ? item.preOrderOrderedToday
-            : 0,
-
-        preOrderStatusLine: display.statusLine,
-
-        preOrderSubLine: display.subLine
-      };
-    });
-  }, [
-    activeCategory,
-    availableProducts,
-    featuredItems,
-    promoBundles,
-    query,
-    resolvedActiveTab
-  ]);
+  const cartQtyById = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const i of cartItems) map[i.productId] = (map[i.productId] ?? 0) + i.quantity;
+    return map;
+  }, [cartItems]);
 
   const addCustomerCartItem = useAddCustomerCartItemMutation();
 
@@ -489,108 +263,18 @@ export default function OrderSlot() {
 
       <PreOrderDatesStrip signedIn />
 
-      <h2 className="mb-3 text-xl font-bold text-gray-900 dark:text-gray-100">Menu</h2>
-
-      <section className="mb-10">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            aria-label="Filters"
-            className="shrink-0 grid place-items-center w-11 h-11 rounded-xl bg-[#2d4a35] text-white hover:bg-[#3c5e45] transition-colors"
-          >
-            <SlidersHorizontal size={20} />
-          </button>
-
-          <div className="relative flex-1 md:max-w-md">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#999999] dark:text-gray-400" />
-            <Input
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Search"
-              aria-label="Search"
-              className="pl-11 h-11 rounded-full border-0 bg-[#F5F5F5] text-gray-800 focus-visible:ring-2 focus-visible:ring-[#2d4a35]/40 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700"
-            />
-          </div>
-        </div>
-
-        <div className="mt-4 flex gap-4 overflow-x-auto scrollbar-hide -mx-4 px-4 py-1 md:mt-5 md:flex-wrap md:overflow-visible md:mx-0 md:px-0 md:py-0">
-          {tabs.map(tab => (
-            <MenuCategoryCard
-              key={tab.id}
-              label={tab.label}
-              imageUrl={
-                tab.id === FEATURED_TAB_ID
-                  ? FEATURED_TAB_IMAGE
-                  : categoryImageMap[tab.label]
-              }
-              active={tab.id === resolvedActiveTab}
-              onClick={() => setActiveTab(tab.id)}
-            />
-          ))}
-        </div>
-
-        <div className="mt-8">
-          <h2 className="text-[22px] font-bold text-gray-900 dark:text-gray-100">
-            {tabs.find(t => t.id === resolvedActiveTab)?.label ?? 'Products'}
-          </h2>
-
-          {/* Spacer: menu cards float their round photo above the card top. */}
-          <div className="mb-24" aria-hidden="true" />
-
-          {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {Array.from({length: 5}).map((_, i) => (
-                <MenuCardSkeleton key={i} />
-              ))}
-            </div>
-          ) : isError ? (
-            <div className="text-sm text-gray-500 dark:text-gray-400">Failed to load products.</div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {visibleItems.map(item => (
-                <FeaturedMenuItemCard
-                  key={item.id}
-                  id={item.id}
-                  name={item.name}
-                  price={item.price}
-                  imageUrl={item.imageUrl}
-                  note={item.note}
-                  basePath="customer/dashboard"
-                  href={item.href}
-                  isPreOrder={item.isPreOrder}
-                  preOrderClosed={item.preOrderClosed}
-                  preOrderOrderable={item.preOrderOrderable}
-                  preOrderLimit={item.preOrderLimit}
-                  preOrderAllowance={item.preOrderAllowance}
-                  preOrderStatusLine={item.preOrderStatusLine}
-                  preOrderSubLine={item.preOrderSubLine}
-                  badge={
-                    resolvedActiveTab === 'promoBundles' ||
-                    (resolvedActiveTab === FEATURED_TAB_ID && !item.isPreOrder)
-                      ? {
-                          label: getBundleBadge()?.label ?? 'BUNDLE',
-
-                          variant: 'bundle'
-                        }
-                      : (() => {
-                          const b = getPromoBadgeForProduct({
-                            promos,
-
-                            productId: item.id
-                          });
-
-                          return b
-                            ? {label: b.label, variant: 'promo'}
-                            : undefined;
-                        })()
-                  }
-                  onAdd={() => handleAdd(item)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+      <MenuBrowser
+        products={availableProducts}
+        promos={promos}
+        categoryImages={categoryImageMap}
+        basePath="customer/dashboard"
+        isLoading={isLoading}
+        isError={isError}
+        signedIn
+        cartQtyById={cartQtyById}
+        onAdd={handleAdd}
+        stickyClassName="top-14 -mx-4 bg-gray-50 px-4 sm:-mx-6 sm:px-6 md:top-0 dark:bg-gray-800"
+      />
     </div>
   );
 }

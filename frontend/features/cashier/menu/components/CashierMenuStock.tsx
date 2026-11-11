@@ -15,7 +15,7 @@ import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {useCategoriesQuery} from '@/lib/hooks/categories/useCategories';
 import {getCategoryByName, stockUnitLabel} from '@/lib/categories/categoryUtils';
-import {ALLERGEN_LABELS} from '@/lib/ingredients/allergens';
+import {useAllergenCatalog} from '@/lib/hooks/useAllergens';
 import {ingredientIconByKey} from '@/lib/ingredients/ingredientIcons';
 import type {Product} from '@/lib/types/product';
 import type {Category} from '@/lib/types/category';
@@ -30,8 +30,9 @@ function stockClass(stock: number) {
 }
 
 function ProductDetails({product}: {product: Product}) {
+  const catalog = useAllergenCatalog();
   const ingredients = product.ingredients ?? [];
-  const allergens = product.allergens ?? [];
+  const allergens = catalog.sort(product.allergens ?? []);
 
   return (
     <div className="space-y-3">
@@ -74,7 +75,7 @@ function ProductDetails({product}: {product: Product}) {
                 className="inline-flex items-center gap-1 rounded-full border border-red-300 bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-[#c30010]"
               >
                 <AlertTriangle className="h-3 w-3 shrink-0" />
-                Contains: {ALLERGEN_LABELS[allergen]}
+                {catalog.isDietary(allergen) ? catalog.label(allergen) : `Contains: ${catalog.label(allergen)}`}
               </span>
             ))
           )}

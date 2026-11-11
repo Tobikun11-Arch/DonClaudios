@@ -4,8 +4,10 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Horizontal overflow is clipped by `overflow-x-clip` on <html> and <body> in
+   app/layout.tsx. Not `hidden`: that turns body into a scroll container and
+   breaks position: sticky on every page. */
 html, body {
-  overflow-x: hidden;
   max-width: 100%;
 }
 

@@ -5,22 +5,11 @@ export type ProductIngredient = {
   iconKey: string;
 };
 
-export const ALLERGEN_VALUES = [
-  'peanut',
-  'tree_nut',
-  'shellfish',
-  'fish',
-  'egg',
-  'dairy',
-  'soy',
-  'gluten',
-  'sesame',
-  'pork',
-  'beef',
-  'spicy'
-] as const;
-
-export type ProductAllergen = (typeof ALLERGEN_VALUES)[number];
+/**
+ * An allergen key: a built-in ("peanut", "pork"…) or one the owner added.
+ * Labels and icons come from `useAllergenCatalog()`.
+ */
+export type ProductAllergen = string;
 
 export type Product = {
   _id: string;

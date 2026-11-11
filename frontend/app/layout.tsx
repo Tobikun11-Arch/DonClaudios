@@ -70,7 +70,7 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
       className={cn(
-        'h-full antialiased overflow-x-hidden',
+        'h-full antialiased overflow-x-clip',
         geistSans.variable,
         geistMono.variable,
         'font-sans',
@@ -81,7 +81,7 @@ export default function RootLayout({
           data-gr-* attributes into <body> before React hydrates. This suppresses
           attribute mismatch warnings on this node only, not descendants. */}
       <body
-        className="min-h-full flex flex-col overflow-x-hidden"
+        className="min-h-full flex flex-col overflow-x-clip"
         suppressHydrationWarning
       >
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}

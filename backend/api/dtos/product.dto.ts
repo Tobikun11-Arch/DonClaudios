@@ -1,22 +1,8 @@
 import {z} from 'zod';
 import {STOCK_UNITS} from '../models/Category.model';
 
-export const ALLERGEN_VALUES = [
-  'peanut',
-  'tree_nut',
-  'shellfish',
-  'fish',
-  'egg',
-  'dairy',
-  'soy',
-  'gluten',
-  'sesame',
-  'pork',
-  'beef',
-  'spicy'
-] as const;
-
-export type ProductAllergen = (typeof ALLERGEN_VALUES)[number];
+/** Allergen keys; product.service checks each one against the catalog. */
+export type ProductAllergen = string;
 
 export const productIngredient = z.object({
   name: z.string().min(1).max(80),
@@ -43,10 +29,7 @@ export const createProductDto = z.object({
   imageUrl: z.string().url().optional(),
   prepTimeMinutes: z.coerce.number().int().min(0).max(1440).optional(),
   ingredients: z.array(productIngredient).max(50).optional(),
-  allergens: z
-    .array(z.enum(ALLERGEN_VALUES))
-    .max(ALLERGEN_VALUES.length)
-    .optional(),
+  allergens: z.array(z.string().trim().min(1).max(40)).max(40).optional(),
   isAvailable: z.coerce.boolean().optional(),
   pointsCost: z.preprocess(
     value => (value === '' || value === null ? null : value),
