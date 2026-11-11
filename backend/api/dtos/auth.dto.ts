@@ -118,9 +118,21 @@ export const updateProfileDto = z.object({
   manualOverride: z.string().optional()
 });
 
-export const changePasswordDto = z.object({
-  currentPassword: z.string().min(1),
-  newPassword: passwordSchema
+export const changePasswordDto = z
+  .object({
+    currentPassword: z.string().min(1),
+    newPassword: passwordSchema
+  })
+  .refine(d => d.currentPassword !== d.newPassword, {
+    message: 'New password must be different from your current password',
+    path: ['newPassword']
+  });
+
+export const deleteAccountDto = z.object({
+  password: z.string().min(1, 'Enter your password to confirm'),
+  confirmation: z.literal('DELETE', {
+    errorMap: () => ({message: 'Type DELETE to confirm'})
+  })
 });
 
 export type RegisterDto = z.infer<typeof registerDto>;
@@ -133,3 +145,4 @@ export type VerifyResetCodeDto = z.infer<typeof verifyResetCodeDto>;
 export type ResetPasswordDto = z.infer<typeof resetPasswordDto>;
 export type UpdateProfileDto = z.infer<typeof updateProfileDto>;
 export type ChangePasswordDto = z.infer<typeof changePasswordDto>;
+export type DeleteAccountDto = z.infer<typeof deleteAccountDto>;

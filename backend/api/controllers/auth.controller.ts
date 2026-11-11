@@ -274,12 +274,23 @@ export const authController = {
         throw new ApiError(403, 'FORBIDDEN', 'Permission denied');
       }
 
-      await authService.changePassword(
+      const tokens = await authService.changePassword(
         req.auth.userId,
         req.auth.type,
         req.body.currentPassword,
         req.body.newPassword
       );
+
+      // Other devices are signed out; this one gets fresh cookies.
+      const opts = getCookieOptions();
+      res.cookie(ACCESS_COOKIE, tokens.accessToken, {
+        ...opts,
+        maxAge: 15 * 60 * 1000
+      });
+      res.cookie(REFRESH_COOKIE, tokens.refreshToken, {
+        ...opts,
+        maxAge: 7 * 24 * 60 * 60 * 1000
+      });
 
       res.status(200).json({message: 'Password updated'});
     } catch (error) {
@@ -461,7 +472,12 @@ export const authController = {
       if (!req.auth || req.auth.type !== 'customer') {
         throw new ApiError(403, 'FORBIDDEN', 'Permission denied');
       }
-      await customerRepository.deleteById(req.auth.userId);
+      await authService.deleteCustomerAccount(req.auth.userId, req.body.password);
+
+      // The account is gone: end this session too.
+      const opts = getCookieOptions();
+      res.clearCookie(ACCESS_COOKIE, opts);
+      res.clearCookie(REFRESH_COOKIE, opts);
       res.status(200).json({message: 'Account deleted'});
     } catch (error) {
       next(error);
@@ -473,10 +489,14 @@ export const authController = {
       if (!req.auth || req.auth.type !== 'customer') {
         throw new ApiError(403, 'FORBIDDEN', 'Permission denied');
       }
-      const user = await customerRepository.findById(req.auth.userId);
-      const {OrderModel} = await import('../models/Order.model');
-      const orders = await OrderModel.find({customerId: req.auth.userId}).exec();
-      res.status(200).json({user, orders});
+      const data = await authService.exportCustomerData(req.auth.userId);
+      const stamp = new Date().toISOString().slice(0, 10);
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="donclaudios-my-data-${stamp}.json"`
+      );
+      res.status(200).json(data);
     } catch (error) {
       next(error);
     }

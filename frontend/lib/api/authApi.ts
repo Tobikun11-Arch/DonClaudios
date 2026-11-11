@@ -215,14 +215,15 @@ export async function getSessions() {
   return res.data;
 }
 
-export async function deleteAccount() {
-  const res = await httpClient.delete<{message: string}>('/auth/account');
+/** Permanently deletes the signed-in customer's account (password re-checked). */
+export async function deleteAccount(body: {password: string; confirmation: 'DELETE'}) {
+  const res = await httpClient.delete<{message: string}>('/auth/account', {
+    data: body
+  });
   return res.data;
 }
 
 export async function downloadMyData() {
-  const res = await httpClient.get<{user: unknown; orders: unknown[]}>(
-    '/auth/me/data'
-  );
+  const res = await httpClient.get<Record<string, unknown>>('/auth/me/data');
   return res.data;
 }
