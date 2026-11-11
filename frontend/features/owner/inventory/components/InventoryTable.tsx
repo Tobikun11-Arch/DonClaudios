@@ -14,8 +14,7 @@ import {Button} from '@/components/ui/button';
 import {cn} from '@/lib/utils';
 import {getStockStatus, stockStatusConfig, type StockStatus} from '../utils/stockStatus';
 import {stockUnitLabel} from '@/lib/categories/categoryUtils';
-import {ALLERGEN_LABELS} from '@/lib/ingredients/allergens';
-import {allergenIcon} from '@/lib/ingredients/allergenIcons';
+import {useAllergenCatalog} from '@/lib/hooks/useAllergens';
 import {relativeTime, exactDateTime} from '@/lib/utils/relativeTime';
 import {InventoryToolbar, type SortOption} from './InventoryToolbar';
 import {MenuToggle} from './MenuToggle';
@@ -78,6 +77,7 @@ function StatusPill({stock}: {stock: number}) {
 }
 
 function AllergenMinis({allergens}: {allergens?: ProductAllergen[]}) {
+  const catalog = useAllergenCatalog();
   const list = allergens ?? [];
   if (list.length === 0) {
     return <span className="text-lg font-light text-gray-300">–</span>;
@@ -87,11 +87,11 @@ function AllergenMinis({allergens}: {allergens?: ProductAllergen[]}) {
   return (
     <div className="flex items-center justify-center gap-1">
       {shown.map(allergen => {
-        const Icon = allergenIcon(allergen);
+        const Icon = catalog.icon(allergen);
         return (
           <span
             key={allergen}
-            title={ALLERGEN_LABELS[allergen]}
+            title={catalog.label(allergen)}
             className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300"
           >
             <Icon className="h-3.5 w-3.5" />

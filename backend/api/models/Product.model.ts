@@ -1,22 +1,11 @@
 import mongoose, {Schema} from 'mongoose';
 import {STOCK_UNITS, type StockUnit} from './Category.model';
 
-export const ALLERGEN_VALUES = [
-  'peanut',
-  'tree_nut',
-  'shellfish',
-  'fish',
-  'egg',
-  'dairy',
-  'soy',
-  'gluten',
-  'sesame',
-  'pork',
-  'beef',
-  'spicy'
-] as const;
-
-export type ProductAllergen = (typeof ALLERGEN_VALUES)[number];
+/**
+ * An allergen key: one of the built-ins (see BUILT_IN_ALLERGENS in
+ * Allergen.model) or one the owner added. Checked by allergenService on save.
+ */
+export type ProductAllergen = string;
 
 export interface ProductIngredient {
   name: string;
@@ -117,7 +106,7 @@ const ProductSchema = new Schema<ProductDocument>(
     imageUrl: {type: String},
     prepTimeMinutes: {type: Number, min: 0, max: 1440, default: null},
     ingredients: {type: [ProductIngredientSchema], default: []},
-    allergens: {type: [String], enum: [...ALLERGEN_VALUES], default: []},
+    allergens: {type: [String], default: []},
     isAvailable: {type: Boolean, default: true},
     pointsCost: {type: Number, min: 0, default: null},
     isPreOrder: {type: Boolean, default: false},

@@ -8,6 +8,7 @@ import {
   type ProductIngredient
 } from '../models/Product.model';
 import {initialPointsCostForPrice} from '../config/rewards';
+import {allergenService} from './allergen.service';
 import {
   type PreOrderBatchInput,
   type PreOrderBatchStored,
@@ -245,6 +246,9 @@ export const productService = {
       preOrderBatches?: PreOrderBatchInput[] | null;
     }
   ) {
+    if (data.allergens) {
+      data = {...data, allergens: await allergenService.assertKnown(data.allergens)};
+    }
     const category = await resolveCategory(data.category);
     const preOrder = resolvePreOrderFields({
       category: data.category,
@@ -315,6 +319,10 @@ export const productService = {
     const existing = await productRepository.findById(id);
     if (!existing) {
       throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Product not found');
+    }
+
+    if (data.allergens) {
+      data = {...data, allergens: await allergenService.assertKnown(data.allergens)};
     }
 
     if (data.category) {

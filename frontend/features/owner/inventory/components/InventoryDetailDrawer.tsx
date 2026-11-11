@@ -7,8 +7,7 @@ import {Button} from '@/components/ui/button';
 import {cn} from '@/lib/utils';
 import {formatPeso} from '@/features/owner/products/utils/formatPeso';
 import {stockUnitLabel} from '@/lib/categories/categoryUtils';
-import {ALLERGEN_LABELS} from '@/lib/ingredients/allergens';
-import {allergenIcon} from '@/lib/ingredients/allergenIcons';
+import {useAllergenCatalog} from '@/lib/hooks/useAllergens';
 import {ingredientIconByKey} from '@/lib/ingredients/ingredientIcons';
 import {getStockStatus, stockStatusConfig} from '../utils/stockStatus';
 import {exactDateTime} from '@/lib/utils/relativeTime';
@@ -47,6 +46,7 @@ function creatorName(p: Product): string | null {
 }
 
 function AllergenChips({allergens}: {allergens?: ProductAllergen[]}) {
+  const catalog = useAllergenCatalog();
   const list = allergens ?? [];
   if (list.length === 0) {
     return <p className="text-sm text-gray-400">No allergens listed</p>;
@@ -54,14 +54,14 @@ function AllergenChips({allergens}: {allergens?: ProductAllergen[]}) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {list.map(allergen => {
-        const Icon = allergenIcon(allergen);
+        const Icon = catalog.icon(allergen);
         return (
           <span
             key={allergen}
             className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 dark:bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-800 dark:text-amber-200"
           >
             <Icon className="h-3.5 w-3.5" />
-            {ALLERGEN_LABELS[allergen]}
+            {catalog.label(allergen)}
           </span>
         );
       })}

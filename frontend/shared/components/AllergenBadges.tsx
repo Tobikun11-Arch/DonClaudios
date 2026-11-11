@@ -1,5 +1,7 @@
+'use client';
+
 import {Label} from '@/components/ui/label';
-import {ALLERGEN_LABELS} from '@/lib/ingredients/allergens';
+import {useAllergenCatalog} from '@/lib/hooks/useAllergens';
 import {type ProductAllergen} from '@/lib/types/product';
 
 export function AllergenBadges({
@@ -7,7 +9,8 @@ export function AllergenBadges({
 }: {
   allergens: ProductAllergen[];
 }) {
-  const list = allergens ?? [];
+  const catalog = useAllergenCatalog();
+  const list = catalog.sort(allergens ?? []);
 
   return (
     <div className="mt-6">
@@ -21,9 +24,13 @@ export function AllergenBadges({
           list.map(allergen => (
             <span
               key={allergen}
-              className="inline-flex items-center rounded-full border border-red-300 bg-red-50 text-[#c30010] px-3 py-1 text-xs font-semibold dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400"
+              className={
+                catalog.isDietary(allergen)
+                  ? 'inline-flex items-center rounded-full border border-gray-200 bg-gray-100 text-gray-700 px-3 py-1 text-xs font-semibold dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200'
+                  : 'inline-flex items-center rounded-full border border-red-300 bg-red-50 text-[#c30010] px-3 py-1 text-xs font-semibold dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400'
+              }
             >
-              Contains: {ALLERGEN_LABELS[allergen]}
+              {catalog.isDietary(allergen) ? catalog.label(allergen) : `Contains: ${catalog.label(allergen)}`}
             </span>
           ))
         )}

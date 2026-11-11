@@ -1,35 +1,15 @@
 /**
- * The hardcoded "Featured" menu category.
- *
- * A curated view of what is happening right now: open pre-orders plus active
- * promo bundles. It is not backed by a Category row — the tab is synthesised
- * here so it always exists and cannot be renamed or deleted by the owner.
- *
- * Shown to everyone — guests included — so the menu advertises its limited
- * pre-orders. Guests still cannot add them to a cart; only signed-in
- * customers pass the cart/order services.
+ * The hardcoded "Featured" menu tab: the menu's default view. It is not
+ * backed by a Category row, so it always exists and cannot be renamed or
+ * deleted by the owner. Its sections (pre-orders, best sellers, order again,
+ * promos and bundles) are built in `features/menu/menuItems.ts`.
  */
-
-import {
-  preOrderDisplay,
-  isPreOrderProduct,
-  preOrderRemainingAllowance
-} from '@/lib/preOrder/preOrder';
-import {type Product} from '@/lib/types/product';
-import {type Promo} from '@/lib/types/promo';
 
 export const FEATURED_TAB_ID = 'featured';
 export const FEATURED_TAB_LABEL = 'Featured';
 
 /** Static art, since this tab has no Category record to pull an image from. */
 export const FEATURED_TAB_IMAGE = '/assets/Highlights1.png';
-
-/**
- * Cap so a long-running pre-order list cannot bury the rest of the menu.
- * The open window is what needs advertising; the tail is still reachable
- * through each item's own category tab.
- */
-export const FEATURED_ITEM_LIMIT = 10;
 
 export type FeaturedMenuItem = {
   id: string;
@@ -52,84 +32,3 @@ export type FeaturedMenuItem = {
   /** Gray second line: remaining stock and/or "Max N per customer". */
   preOrderSubLine: string;
 };
-
-/**
- * Build the Featured item list.
- *
- * @param products the products the viewer sees. Pre-order products are now
- *   part of the public menu for everyone, so the tab renders for guests and
- *   signed-in customers alike. Their "add" actions are still blocked for
- *   guests by the caller (the card/order services also enforce it).
- * @param promos active promos only (`GET /promos` already filters by date and
- *   isActive, so anything handed in here is live).
- * @param basePath route prefix for product and promo detail pages, e.g.
- *   `'order'` or `'customer/dashboard'`.
- */
-export function buildFeaturedMenuItems(input: {
-  products: Product[];
-  promos: Promo[];
-  basePath: string;
-}): FeaturedMenuItem[] {
-  const openPreOrders = input.products
-    // A pre-order that is unavailable or out of stock is not "featured", and
-    // one with no batch left today must not be advertised. Between batches it
-    // stays visible so customers can see when the next window opens.
-    .filter(p => {
-      if (!isPreOrderProduct(p) || !p.isAvailable || p.stock <= 0) return false;
-      return !preOrderDisplay(p).closed;
-    })
-    .map<FeaturedMenuItem>(p => {
-      const display = preOrderDisplay(p);
-      return {
-        id: p._id,
-        name: p.name,
-        price: p.price,
-        imageUrl: p.imageUrl,
-        note: p.description,
-        href: `/${input.basePath}/${encodeURIComponent(p._id)}`,
-        isPreOrder: true,
-        preOrderClosed: display.closed,
-        preOrderOrderable: display.orderable,
-        preOrderLimit:
-          typeof p.preOrderPurchaseLimit === 'number' &&
-          p.preOrderPurchaseLimit >= 1
-            ? p.preOrderPurchaseLimit
-            : null,
-        preOrderAllowance: preOrderRemainingAllowance(p),
-        preOrderOrderedToday:
-          typeof p.preOrderOrderedToday === 'number'
-            ? p.preOrderOrderedToday
-            : 0,
-        preOrderStatusLine: display.statusLine,
-        preOrderSubLine: display.subLine
-      };
-    });
-
-  // Bundle promos only. Percentage and fixed-amount promos are discounts on
-  // ordinary dishes, which already carry a badge on their own category tab —
-  // listing them again here would just be noise.
-  const bundles = input.promos
-    .filter(
-      (p): p is Promo & {price: number} =>
-        p.promoType === 'bundle' && typeof p.price === 'number'
-    )
-    .map<FeaturedMenuItem>(p => ({
-      id: p._id,
-      name: p.title,
-      price: p.price,
-      imageUrl: p.imageUrl,
-      note: p.description,
-      href: `/${input.basePath}/promo/${encodeURIComponent(p._id)}`,
-      isPreOrder: false,
-      preOrderClosed: false,
-      preOrderOrderable: true,
-      preOrderLimit: null,
-      preOrderAllowance: null,
-      preOrderOrderedToday: 0,
-      preOrderStatusLine: '',
-      preOrderSubLine: ''
-    }));
-
-  // Pre-orders lead: they are time-limited, so they are the reason to look.
-  return [...openPreOrders, ...bundles].slice(0, FEATURED_ITEM_LIMIT);
-}

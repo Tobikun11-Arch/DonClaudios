@@ -9,6 +9,8 @@ const router = Router();
 // optionalAuth (not requireAuth) so the handler can tell a guest from a
 // signed-in customer and hide pre-order products from guests.
 router.get('/', optionalAuth, productController.list);
+// Before '/:id' so "best-sellers" is not read as a product id.
+router.get('/best-sellers', productController.bestSellers);
 router.get('/:id', optionalAuth, productController.getById);
 
 router.post('/', requireAuth, requireAdmin, validate(createProductDto), productController.create);

@@ -14,6 +14,14 @@ export async function listProducts() {
   return res.data;
 }
 
+/** Ids of the most-sold products (completed orders, last 30 days). */
+export async function listBestSellerIds(limit = 6) {
+  const res = await httpClient.get<{productIds: string[]}>('/products/best-sellers', {
+    params: {limit}
+  });
+  return res.data.productIds;
+}
+
 export async function getProduct(id: string) {
   const res = await httpClient.get<GetProductResponse>(`/products/${id}`);
   return res.data;

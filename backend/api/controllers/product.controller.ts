@@ -1,5 +1,6 @@
 import {Request, Response, NextFunction} from 'express';
 import {productService} from '../services/product.service';
+import {bestSellerService} from '../services/bestSeller.service';
 import {ApiError} from '../utils/error';
 
 /**
@@ -8,6 +9,17 @@ import {ApiError} from '../utils/error';
  * The cart and guest-order services enforce that server-side.
  */
 export const productController = {
+  /** Public: ids of the most-sold products, for the menu's Best sellers. */
+  async bestSellers(req: Request, res: Response, next: NextFunction) {
+    try {
+      const limit = Number(req.query.limit) || 6;
+      const productIds = await bestSellerService.productIds(limit);
+      res.status(200).json({productIds});
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async list(req: Request, res: Response, next: NextFunction) {
     try {
       const customerId =
