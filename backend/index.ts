@@ -10,6 +10,10 @@ import {sanitize} from './api/middleware/sanitize';
 
 const app = express();
 
+// Behind Vercel's proxy: trust the first hop so req.ip is the real client IP
+// (needed for per-IP rate limits and guest checkout spam protection).
+app.set('trust proxy', 1);
+
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
     if (!origin) {

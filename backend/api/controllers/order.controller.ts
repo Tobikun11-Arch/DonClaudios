@@ -21,6 +21,7 @@ import {settingsRepository} from '../repositories/settings.repository';
 import {env} from '../config/env';
 import {storeStatusService} from '../services/storeStatus.service';
 import {guestOtpService} from '../services/guestOtp.service';
+import {guestOrderGuardService} from '../services/guestOrderGuard.service';
 import {paymentService} from '../services/payment.service';
 import {preOrderEventService} from '../services/preOrderEvent.service';
 import {assertCashierMayHandle, notifyOwners} from '../services/ownerNotify.service';
@@ -952,6 +953,19 @@ export const orderController = {
         throw new ApiError(400, 'VALIDATION_ERROR', 'email is required');
       }
 
+      // Spam protection layer 1: honeypot + form timer (no DB needed).
+      const guardCtx = guestOrderGuardService.buildContext(
+        req,
+        guestInfo,
+        Array.isArray(items)
+          ? items.map((i: any) => ({
+              productId: String(i?.productId ?? ''),
+              quantity: Number(i?.quantity ?? i?.qty ?? 1)
+            }))
+          : []
+      );
+      await guestOrderGuardService.assertNotBot(guardCtx, req.body);
+
       let guestVerified = false;
       if (isNonEmptyString(guestInfo.phoneNumber)) {
         guestVerified = await guestOtpService.isPhoneVerified(
@@ -1055,6 +1069,9 @@ export const orderController = {
       );
       assertOrderTotalWithinLimits(safeTotalAmount, 'guest');
       const courier = resolveCourier(orderType, deliveryMode, rawCourier);
+
+      // Spam protection layer 2: per-IP / per-contact / duplicate limits.
+      await guestOrderGuardService.assertWithinLimits(guardCtx);
 
       // Reserve stock at placement (like account orders) so two concurrent
       // guest checkouts cannot oversell. Guests never order pre-orders, so the
@@ -1179,6 +1196,8 @@ export const orderController = {
         totalAmount: safeTotalAmount,
         isOnline: true
       });
+
+      await guestOrderGuardService.recordPlaced(guardCtx, order._id);
 
       notifyCashiersOfNewOrder(String(order._id), safeTotalAmount);
 

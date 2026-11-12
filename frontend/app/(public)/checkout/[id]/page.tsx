@@ -118,6 +118,10 @@ export default function CheckoutGuestPage() {
   // phone number at checkout, so security is slightly weaker for this group.
   const [mobileNumber, setMobileNumber] = useState('');
   const [email, setEmail] = useState('');
+  // Anti-spam: a hidden honeypot field bots tend to fill, and the time the
+  // form was opened (the server rejects instant, script-speed submissions).
+  const [honeypot, setHoneypot] = useState('');
+  const [formStartedAt] = useState(() => Date.now());
   const normalizedPhone = normalizePH(mobileNumber);
   const detectedCarrier = normalizedPhone
     ? detectCarrier(normalizedPhone)
@@ -454,7 +458,9 @@ export default function CheckoutGuestPage() {
         items: orderItems,
         totalAmount: total,
         riderNotes: notesToRider.trim().length ? notesToRider.trim() : undefined,
-        courier: courierPayload
+        courier: courierPayload,
+        website: honeypot,
+        formStartedAt
       });
     } catch (error) {
       setCheckoutError(
@@ -882,6 +888,24 @@ export default function CheckoutGuestPage() {
                 </div>
               </div>
 
+
+              {/* Honeypot: invisible to people and screen readers. Bots that
+                  auto-fill every input will fill this and get rejected. */}
+              <div
+                aria-hidden="true"
+                style={{position: 'absolute', left: '-10000px', width: 1, height: 1, overflow: 'hidden'}}
+              >
+                <label htmlFor="website">Website</label>
+                <input
+                  id="website"
+                  name="website"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={e => setHoneypot(e.target.value)}
+                />
+              </div>
 
               <div className="mt-4">
                 <p className="text-xs font-semibold text-gray-700">Email</p>

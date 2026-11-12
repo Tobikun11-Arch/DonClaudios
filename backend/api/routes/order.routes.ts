@@ -10,7 +10,11 @@ import {
 } from '../middleware/auth';
 import {ApiError} from '../utils/error';
 import {validate, validateQuery} from '../middleware/validation';
-import {guestOtpLimiter, guestMessageLimiter} from '../middleware/rateLimit';
+import {
+  guestOtpLimiter,
+  guestMessageLimiter,
+  guestOrderLimiter
+} from '../middleware/rateLimit';
 import {
   guestOtpSendDto,
   guestOtpVerifyDto,
@@ -43,7 +47,7 @@ function requireStaff(req: Request, _res: Response, next: NextFunction) {
 
 router.post('/me', requireAuth, orderController.createCustomerOrder);
 router.get('/me', requireAuth, orderController.listMyOrders);
-router.post('/guest', orderController.createGuestOrder);
+router.post('/guest', guestOrderLimiter, orderController.createGuestOrder);
 
 router.get(
   '/guest/otp/status',

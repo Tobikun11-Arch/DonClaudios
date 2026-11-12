@@ -22,6 +22,10 @@ export type CreateGuestOrderInput = {
   riderNotes?: string;
   /** Courier the guest will book (deliveries are always self-booked for guests). */
   courier?: {provider: 'lalamove' | 'grab_express' | 'move_it' | 'other'; name?: string};
+  /** Anti-spam honeypot: hidden field, must stay empty. */
+  website?: string;
+  /** Anti-spam: epoch ms when the checkout form was opened. */
+  formStartedAt?: number;
 };
 
 export type CreateCustomerOrderInput = {
