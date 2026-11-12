@@ -55,14 +55,20 @@ export default function SignInPage() {
   return (
     <div className="mx-auto w-full max-w-[400px]">
       <div className="mb-8 flex flex-col items-center text-center">
-        <Image
-          src="/assets/logo.png"
-          alt="DonClaudio's logo"
-          width={128}
-          height={128}
-          className="h-auto w-[128px] max-[819px]:w-[104px]"
-          style={{filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.18))'}}
-        />
+        <Link
+          href="/"
+          aria-label="Go to the DonClaudio's home page"
+          className="rounded-full transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <Image
+            src="/assets/logo.png"
+            alt="DonClaudio's logo"
+            width={128}
+            height={128}
+            className="h-auto w-[128px] max-[819px]:w-[104px]"
+            style={{filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.18))'}}
+          />
+        </Link>
         <h2
           className="mt-5 text-[32px] font-bold leading-[1.15] text-[#1D211E] max-[819px]:text-[28px]"
         >
