@@ -61,6 +61,8 @@ type MeResponse = {
   addresses?: CustomerAddress[];
   preferences?: CustomerPreferences;
   occasions?: CustomerOccasion[];
+  /** Customers only: false until the first-login dashboard guide is done. */
+  onboardingTourDone?: boolean;
   businessName?: string;
     businessLogo?: string;
     storeAddress?: string;
@@ -162,6 +164,16 @@ export async function login(params: {email: string; password: string}) {
 
 export async function logout() {
   const res = await httpClient.post<LogoutResponse>('/auth/logout');
+  return res.data;
+}
+
+export async function completeOnboardingTour(
+  outcome: 'completed' | 'skipped'
+) {
+  const res = await httpClient.post<{onboardingTourDone: boolean}>(
+    '/auth/me/onboarding-tour',
+    {outcome}
+  );
   return res.data;
 }
 

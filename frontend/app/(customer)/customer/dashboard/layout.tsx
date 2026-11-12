@@ -12,6 +12,7 @@ import SupportChatBubble from '@/features/support/components/SupportChatBubble';
 import {Z} from '@/lib/zIndex';
 import {useBrand} from '@/lib/hooks/useBrand';
 import {Toaster} from '@/components/ui/sonner';
+import CustomerOnboardingTour from '@/features/customer/onboarding/components/CustomerOnboardingTour';
 
 const TABS = [
   {
@@ -186,6 +187,7 @@ export default function DashboardLayout({
               <div key={item.label} className="relative group/nav">
                 <Link
                   href={item.href}
+                  data-tour={`nav-${item.label.toLowerCase()}`}
                   className={`
                     relative flex items-center py-3 rounded-xl
                     ${sidebarExpanded ? 'gap-3 px-3' : 'gap-0 px-0 justify-center'}
@@ -312,7 +314,9 @@ export default function DashboardLayout({
               className="h-9 w-9 shrink-0 object-contain"
             />
           </Link>
-          <CustomerNotificationBell />
+          <div data-tour="notifications">
+            <CustomerNotificationBell />
+          </div>
         </header>
         {/*
           The fixed bottom nav is `md:hidden`, so the clearance for it lives
@@ -345,6 +349,7 @@ export default function DashboardLayout({
             <Link
               key={item.label}
               href={item.href}
+              data-tour={`nav-${item.label.toLowerCase()}`}
               className="relative flex flex-col items-center gap-1 px-3 py-1 min-w-15 transition-all duration-200"
             >
               <div className="relative">
@@ -383,6 +388,7 @@ export default function DashboardLayout({
       <CustomerCartDrawer />
       <Toaster duration={2500} />
       <SupportChatBubble />
+      <CustomerOnboardingTour />
     </div>
   );
 }

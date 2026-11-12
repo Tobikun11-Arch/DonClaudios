@@ -194,6 +194,7 @@ export default function OrderSlot() {
           variant="ghost"
           className="relative rounded-full"
           aria-label="Order history"
+          data-tour="order-history"
         >
           <Link href="/customer/dashboard?tab=history">
             <span className="relative">
@@ -213,6 +214,7 @@ export default function OrderSlot() {
           variant="ghost"
           className="relative rounded-full"
           aria-label="Open cart"
+          data-tour="cart"
         >
           <span className="relative">
             <ShoppingCart className="h-8 w-8 text-[#2d4a35] dark:text-[#7ed4a0]" />

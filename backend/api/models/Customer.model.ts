@@ -29,6 +29,9 @@ export interface CustomerDocument extends BaseUserDocument {
   addresses?: CustomerAddress[];
   preferences?: CustomerPreferences;
   occasions?: CustomerOccasion[];
+  /** When the first-login dashboard guide was finished or skipped. */
+  onboardingTourDoneAt?: Date | null;
+  onboardingTourOutcome?: 'completed' | 'skipped' | null;
 }
 
 const BaseSchema = createBaseUserSchema<CustomerDocument>();
@@ -70,7 +73,13 @@ const CustomerSchema = new Schema<CustomerDocument>(
       },
       sauceCount: {type: Number, min: 0}
     },
-    occasions: {type: [OccasionSchema], default: []}
+    occasions: {type: [OccasionSchema], default: []},
+    onboardingTourDoneAt: {type: Date, default: null},
+    onboardingTourOutcome: {
+      type: String,
+      enum: ['completed', 'skipped', null],
+      default: null
+    }
   },
   {timestamps: true}
 );

@@ -6,7 +6,7 @@ import {ApiError} from '../utils/error';
 import {customerRepository} from '../repositories/customer.repository';
 import {adminRepository} from '../repositories/admin.repository';
 import {cashierRepository} from '../repositories/cashier.repository';
-import type {CustomerDocument} from '../models/Customer.model';
+import {CustomerModel, type CustomerDocument} from '../models/Customer.model';
 import type {CashierDocument} from '../models/Cashier.model';
 
 const ACCESS_COOKIE = 'dc_access_token';
@@ -82,6 +82,8 @@ export const authController = {
           addresses: customer?.addresses ?? [],
           preferences: customer?.preferences ?? {},
           occasions: customer?.occasions ?? [],
+          // First-login dashboard guide: shown until finished or skipped once.
+          onboardingTourDone: customer ? !!customer.onboardingTourDoneAt : true,
           businessName: admin?.businessName,
           businessLogo: admin?.businessLogo,
           storeAddress: admin?.storeAddress,
@@ -96,6 +98,28 @@ export const authController = {
           isManuallyOpen: admin?.isManuallyOpen,
         }
       });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** Customer finished or skipped the dashboard guide: never auto-show again. */
+  async completeOnboardingTour(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      if (!req.auth || req.auth.type !== 'customer') {
+        throw new ApiError(403, 'FORBIDDEN', 'Customer access required');
+      }
+      const outcome =
+        req.body?.outcome === 'skipped' ? 'skipped' : 'completed';
+      await CustomerModel.updateOne(
+        {_id: req.auth.userId},
+        {onboardingTourDoneAt: new Date(), onboardingTourOutcome: outcome}
+      );
+      res.status(200).json({onboardingTourDone: true, outcome});
     } catch (error) {
       next(error);
     }

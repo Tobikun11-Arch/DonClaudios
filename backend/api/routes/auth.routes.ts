@@ -82,6 +82,12 @@ router.post(
 );
 router.post('/logout', sessionLimiter, authController.logout);
 router.get('/me', sessionLimiter, requireAuth, authController.me);
+router.post(
+  '/me/onboarding-tour',
+  sessionLimiter,
+  requireAuth,
+  authController.completeOnboardingTour
+);
 
 router.put(
   '/profile',
