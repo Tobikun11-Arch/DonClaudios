@@ -16,6 +16,7 @@ import {
   supportPanelHeightCustomerClass
 } from '@/lib/support/supportBubblePosition';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
+import {useChatSoundOnIncrease} from '@/lib/hooks/support/useChatSound';
 
 export default function SupportChatBubble() {
   const [open, setOpen] = useState(false);
@@ -40,6 +41,8 @@ export default function SupportChatBubble() {
     localConversationId ?? queryConversation?._id ?? null;
   const unreadCount =
     !open && queryConversation ? (myQuery.data?.unreadCount ?? 0) : 0;
+  // Chat closed: pop when a new reply arrives (open chat: the panel plays it).
+  useChatSoundOnIncrease(unreadCount);
 
   useEffect(() => {
     if (
@@ -72,6 +75,22 @@ export default function SupportChatBubble() {
     setLocalConversationId(null);
   };
 
+  // Click / tap anywhere outside the chat window (and its bubble) closes it.
+  // Toasts are ignored so dismissing an error toast keeps the chat open.
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Element | null;
+      if (!target || rootRef.current?.contains(target)) return;
+      if (target.closest('[data-sonner-toaster]')) return;
+      setOpen(false);
+      setLocalConversationId(null);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [open]);
+
   const handleConversationCreated = (id: string) => {
     setLocalConversationId(id);
     setCreateFailed(false);
@@ -96,7 +115,7 @@ export default function SupportChatBubble() {
     : null;
 
   return (
-    <div className={supportBubbleClass}>
+    <div ref={rootRef} className={supportBubbleClass}>
       {open && (
         <div
           className={`${supportPanelHeightCustomerClass} mb-3 flex w-[calc(100vw-2.5rem)] max-w-[360px] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900`}
@@ -139,6 +158,7 @@ export default function SupportChatBubble() {
         onClick={() => (open ? handleClose() : handleOpen())}
         className="relative flex h-14 w-14 items-center justify-center rounded-full bg-[#2d4a35] text-white shadow-lg transition-transform hover:scale-105"
         aria-label="Open support chat"
+        data-tour="support"
       >
         {open ? (
           <Image

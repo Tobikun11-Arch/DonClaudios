@@ -1,6 +1,7 @@
 import {Request, Response, NextFunction} from 'express';
 import {ApiError} from '../utils/error';
 import {supportService} from '../services/support.service';
+import {getClientIp} from '../utils/clientIp';
 
 function authCustomerId(req: Request): string | undefined {
   return req.auth?.type === 'customer' ? req.auth.userId : undefined;
@@ -44,7 +45,9 @@ export const supportController = {
         guestContact:
           typeof req.body?.guestContact === 'string'
             ? req.body.guestContact
-            : undefined
+            : undefined,
+        honeypot: req.body?.website,
+        ip: getClientIp(req)
       });
       res.status(200).json({conversation});
     } catch (error) {
@@ -66,15 +69,88 @@ export const supportController = {
 
   async sendMessage(req: Request, res: Response, next: NextFunction) {
     try {
-      const message = await supportService.sendByCustomer(
+      const {message, autoReply} = await supportService.sendByCustomer(
         req.params.id,
         req.body?.body ?? '',
         {
           customerId: authCustomerId(req),
-          guestSessionId: guestSessionId(req)
-        }
+          guestSessionId: guestSessionId(req),
+          ip: getClientIp(req)
+        },
+        req.body?.category
+      );
+      res.status(201).json({message, autoReply});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async listInquiryLog(req: Request, res: Response, next: NextFunction) {
+    try {
+      const inquiries = await supportService.listInquiryLog({
+        status: req.query.status,
+        category: req.query.category,
+        priority: req.query.priority,
+        limit: req.query.limit
+      });
+      res.status(200).json({inquiries});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getQueueStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const days = Math.min(Math.max(Number(req.query.days) || 7, 1), 90);
+      const stats = await supportService.getQueueStats(days);
+      res.status(200).json({stats});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async listUrgentForCashier(req: Request, res: Response, next: NextFunction) {
+    try {
+      const conversations = await supportService.listUrgentForCashier();
+      res.status(200).json({conversations});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async listMessagesCashier(req: Request, res: Response, next: NextFunction) {
+    try {
+      const messages = await supportService.listMessagesForCashier(
+        req.params.id
+      );
+      res.status(200).json({messages});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async sendMessageCashier(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+      }
+      const message = await supportService.sendByCashier(
+        req.auth.userId,
+        req.params.id,
+        req.body?.body ?? ''
       );
       res.status(201).json({message});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async markAnswered(req: Request, res: Response, next: NextFunction) {
+    try {
+      const conversation = await supportService.markAnsweredByOwner(
+        req.params.id
+      );
+      res.status(200).json({conversation});
     } catch (error) {
       next(error);
     }

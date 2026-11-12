@@ -30,6 +30,9 @@ export const supportConversationRepository = {
   listAll: () =>
     SupportConversationModel.find({}).sort({lastMessageAt: -1}).exec(),
 
+  listByIds: (ids: string[]) =>
+    SupportConversationModel.find({_id: {$in: ids}}).exec(),
+
   create: (data: Partial<SupportConversationDocument>) =>
     SupportConversationModel.create(data),
 
@@ -46,6 +49,21 @@ export const supportConversationRepository = {
       {status},
       {new: true}
     ).exec(),
+
+  setInquirySummary: (
+    id: string,
+    data: Partial<
+      Pick<
+        SupportConversationDocument,
+        | 'category'
+        | 'priority'
+        | 'inquiryStatus'
+        | 'pendingSince'
+        | 'pendingCount'
+      >
+    >
+  ) =>
+    SupportConversationModel.findByIdAndUpdate(id, data, {new: true}).exec(),
 
   close: (id: string, closedBy: 'owner' | 'customer') =>
     SupportConversationModel.findByIdAndUpdate(

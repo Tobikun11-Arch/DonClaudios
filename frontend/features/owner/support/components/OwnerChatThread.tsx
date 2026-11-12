@@ -5,8 +5,11 @@ import {Send, Loader2, Clock, RotateCw} from 'lucide-react';
 import SupportMessageBubble from '@/features/support/components/SupportMessageBubble';
 import {
   useAdminSupportMessagesQuery,
-  useSendAdminSupportMessageMutation
+  useCashierSupportMessagesQuery,
+  useSendAdminSupportMessageMutation,
+  useSendCashierSupportMessageMutation
 } from '@/lib/hooks/support/useSupport';
+import {useChatSoundOnNewIds} from '@/lib/hooks/support/useChatSound';
 
 type PendingItem = {
   id: string;
@@ -18,22 +21,38 @@ type PendingItem = {
 export default function OwnerChatThread({
   conversationId,
   conversationStatus,
-  closedBy
+  closedBy,
+  role = 'owner'
 }: {
   conversationId: string;
   conversationStatus?: 'open' | 'closed';
   closedBy?: 'owner' | 'customer' | null;
+  /** 'cashier' uses the cashier endpoints (urgent chats only). */
+  role?: 'owner' | 'cashier';
 }) {
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState<PendingItem[]>([]);
   const tempCounter = useRef(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const messagesQuery = useAdminSupportMessagesQuery(conversationId, true);
-  const sendMutation = useSendAdminSupportMessageMutation(conversationId);
+  const ownerMessages = useAdminSupportMessagesQuery(
+    conversationId,
+    role === 'owner'
+  );
+  const cashierMessages = useCashierSupportMessagesQuery(
+    conversationId,
+    role === 'cashier'
+  );
+  const ownerSend = useSendAdminSupportMessageMutation(conversationId);
+  const cashierSend = useSendCashierSupportMessageMutation(conversationId);
+  const messagesQuery = role === 'cashier' ? cashierMessages : ownerMessages;
+  const sendMutation = role === 'cashier' ? cashierSend : ownerSend;
 
   const messages = useMemo(() => messagesQuery.data?.messages ?? [], [messagesQuery.data?.messages]);
   const sending = sendMutation.isPending;
+  useChatSoundOnNewIds(
+    messages.filter(m => m.senderType === 'customer').map(m => m._id)
+  );
   const confirmedBodies = new Set(messages.map(m => m.body));
   const visiblePending = pending.filter(
     p => p.failed || !confirmedBodies.has(p.body)

@@ -75,7 +75,6 @@ const SECTIONS: Record<string, {title: string; subtitle?: string; items: Item[]}
       {label: 'New reviews', description: 'A review needs approval (Pending)', defaultOn: true},
       {label: 'Flagged reviews', description: 'A review was flagged', defaultOn: true},
       {label: 'Customer replies', description: 'A customer replies in a review conversation', defaultOn: true},
-      {label: 'New chat messages', description: 'A customer sends a chat message', defaultOn: true},
       {label: 'New sign-ups', description: 'A new customer registers', defaultOn: false}
     ]
   },

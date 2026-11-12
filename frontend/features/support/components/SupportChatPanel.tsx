@@ -1,8 +1,78 @@
 'use client';
 
 import {useEffect, useRef, useState} from 'react';
-import {Send, Loader2, Clock, RotateCw} from 'lucide-react';
+import {Send, Loader2, Clock, RotateCw, HelpCircle, ChevronDown} from 'lucide-react';
 import SupportMessageBubble from './SupportMessageBubble';
+import {
+  INQUIRY_CATEGORIES,
+  INQUIRY_META,
+  type InquiryCategory
+} from '@/lib/support/inquiry';
+import {SUPPORT_FAQS} from '@/lib/support/faq';
+import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
+import {useChatSoundOnNewIds} from '@/lib/hooks/support/useChatSound';
+
+/** Server rejections that retrying unchanged will not fix. */
+const BLOCKED_CODES = new Set([
+  'PROFANITY_DETECTED',
+  'SUPPORT_LINK_BLOCKED',
+  'SUPPORT_DUPLICATE_MESSAGE',
+  'SUPPORT_RATE_LIMIT',
+  'VALIDATION_ERROR'
+]);
+
+/** Common questions with instant answers (no waiting in the queue). */
+function FaqList({
+  openId,
+  onToggle,
+  onAsk
+}: {
+  openId: string | null;
+  onToggle: (id: string) => void;
+  onAsk: (category: InquiryCategory) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        Quick answers
+      </p>
+      {SUPPORT_FAQS.map(f => {
+        const open = openId === f.id;
+        return (
+          <div
+            key={f.id}
+            className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800/60"
+          >
+            <button
+              onClick={() => onToggle(f.id)}
+              className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs font-semibold text-gray-800 dark:text-gray-100"
+              aria-expanded={open}
+            >
+              {f.question}
+              <ChevronDown
+                size={14}
+                className={`shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
+              />
+            </button>
+            {open && (
+              <div className="border-t border-gray-100 px-3 py-2 dark:border-gray-700">
+                <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-300">
+                  {f.answer}
+                </p>
+                <button
+                  onClick={() => onAsk(f.category)}
+                  className="mt-1.5 text-[11px] font-semibold text-[#2d4a35] underline-offset-2 hover:underline dark:text-[#7ed4a0]"
+                >
+                  Still need help? Message us
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 import GuestIdentityForm from './GuestIdentityForm';
 import {
   useCustomerCloseSupportConversationMutation,
@@ -17,6 +87,7 @@ type PendingItem = {
   body: string;
   failed: boolean;
   sent?: boolean;
+  category?: InquiryCategory;
 };
 
 export default function SupportChatPanel({
@@ -50,7 +121,24 @@ export default function SupportChatPanel({
   );
   const tempCounter = useRef(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const displayName = senderName ?? viewerName ?? null;
+  // Inquiry type the customer picks before sending (logged with the message).
+  // What the customer picked in this visit (null = use today's default).
+  const [pickedCategory, setCategory] = useState<InquiryCategory | null>(null);
+  const [categoryHint, setCategoryHint] = useState(false);
+  const [showFaq, setShowFaq] = useState(false);
+  const [openFaqId, setOpenFaqId] = useState<string | null>(null);
+
+  const [sendError, setSendError] = useState<string | null>(null);
+
+  const askFromFaq = (c: InquiryCategory) => {
+    setCategory(c);
+    setCategoryHint(false);
+    setShowFaq(false);
+    setOpenFaqId(null);
+    inputRef.current?.focus();
+  };
 
   const getOrCreateMutation = useGetOrCreateSupportConversationMutation();
   const sendMutation = useSendSupportMessageMutation(
@@ -72,19 +160,52 @@ export default function SupportChatPanel({
   }, [conversationId, messagesQuery.data?.messages, pending]);
 
   const allMessages = messagesQuery.data?.messages ?? [];
+
+  // Default message type = the type of the customer's latest message TODAY,
+  // so they don't have to pick again after reopening or refreshing the chat.
+  // Urgent is not carried over (a later "thank you" must not jump the queue);
+  // it falls back to General. A new day starts with no default.
+  const todaysDefaultCategory = (() => {
+    const today = new Date().toDateString();
+    for (let i = allMessages.length - 1; i >= 0; i--) {
+      const m = allMessages[i];
+      if (m.senderType !== 'customer' || !m.category) continue;
+      if (new Date(m.createdAt).toDateString() !== today) return null;
+      return m.category === 'urgent' ? 'general' : m.category;
+    }
+    return null;
+  })();
+  const category: InquiryCategory | null =
+    pickedCategory ?? todaysDefaultCategory;
+
   const sending = sendMutation.isPending;
+  // Pop for new store replies only (not your own messages or auto-replies).
+  useChatSoundOnNewIds(
+    allMessages.filter(m => m.senderType === 'owner').map(m => m._id)
+  );
+  const hasUrgentPending = allMessages.some(
+    m =>
+      m.senderType === 'customer' &&
+      m.inquiryStatus === 'pending' &&
+      m.priority === 'urgent'
+  );
   const confirmedBodies = new Set(allMessages.map(m => m.body));
   const visiblePending = pending.filter(
     p => p.failed || !confirmedBodies.has(p.body)
   );
 
-  const handleGuestSubmit = async (data: {name: string; contact: string}) => {
+  const handleGuestSubmit = async (data: {
+    name: string;
+    contact: string;
+    website: string;
+  }) => {
     const sid = guestSessionIdState ?? ensureGuestSessionId();
     try {
       const res = await getOrCreateMutation.mutateAsync({
         guestSessionId: sid,
         guestName: data.name,
-        guestContact: data.contact
+        guestContact: data.contact,
+        website: data.website
       });
       setSenderName(data.name);
       onConversationCreated(res.conversation._id);
@@ -96,19 +217,41 @@ export default function SupportChatPanel({
   const handleSend = async () => {
     const text = draft.trim();
     if (!text || !conversationId || sending) return;
+    if (!category) {
+      setCategoryHint(true);
+      return;
+    }
     const id = `temp-${++tempCounter.current}`;
-    setPending(prev => [...prev, {id, body: text, failed: false}]);
+    setPending(prev => [...prev, {id, body: text, failed: false, category}]);
     setDraft('');
+    setShowFaq(false);
+    setSendError(null);
     try {
-      await sendMutation.mutateAsync({body: text});
+      await sendMutation.mutateAsync({body: text, category});
       setPending(prev =>
         prev.map(p => (p.id === id ? {...p, sent: true} : p))
       );
-    } catch {
-      setPending(prev =>
-        prev.map(p => (p.id === id ? {...p, failed: true} : p))
-      );
+    } catch (error) {
+      handleSendError(id, text, error);
     }
+  };
+
+  /**
+   * Messages the spam guard rejects (bad words, links, duplicates, too fast)
+   * are removed and explained; the text goes back in the box so the customer
+   * can edit it. Network failures keep the retry button.
+   */
+  const handleSendError = (id: string, text: string, error: unknown) => {
+    const code = (error as {code?: string} | null)?.code;
+    setSendError(getFriendlyErrorMessage(error, 'Message not sent. Please try again.'));
+    if (code && BLOCKED_CODES.has(code)) {
+      setPending(prev => prev.filter(p => p.id !== id));
+      if (code !== 'SUPPORT_DUPLICATE_MESSAGE') setDraft(text);
+      return;
+    }
+    setPending(prev =>
+      prev.map(p => (p.id === id ? {...p, failed: true} : p))
+    );
   };
 
   const handleRetry = async (id: string) => {
@@ -118,14 +261,16 @@ export default function SupportChatPanel({
       prev.map(p => (p.id === id ? {...p, failed: false, sent: false} : p))
     );
     try {
-      await sendMutation.mutateAsync({body: item.body});
+      await sendMutation.mutateAsync({
+        body: item.body,
+        category: item.category ?? category ?? 'general'
+      });
       setPending(prev =>
         prev.map(p => (p.id === id ? {...p, sent: true} : p))
       );
-    } catch {
-      setPending(prev =>
-        prev.map(p => (p.id === id ? {...p, failed: true} : p))
-      );
+      setSendError(null);
+    } catch (error) {
+      handleSendError(id, item.body, error);
     }
   };
 
@@ -185,9 +330,23 @@ export default function SupportChatPanel({
             Loading conversation...
           </div>
         ) : allMessages.length === 0 && visiblePending.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-8">
-            No messages yet. Ask us anything!
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-gray-500 text-center dark:text-gray-400">
+              Hi! Check the quick answers below, or pick a message type and
+              send us a message. Urgent concerns go to the top of our queue.
+            </p>
+            <FaqList
+              openId={openFaqId}
+              onToggle={id => setOpenFaqId(cur => (cur === id ? null : id))}
+              onAsk={askFromFaq}
+            />
+          </div>
+        ) : showFaq ? (
+          <FaqList
+            openId={openFaqId}
+            onToggle={id => setOpenFaqId(cur => (cur === id ? null : id))}
+            onAsk={askFromFaq}
+          />
         ) : (
           <>
             {allMessages.map(m => (
@@ -230,24 +389,88 @@ export default function SupportChatPanel({
       {conversationStatus === 'closed' ? (
         <div className="border-t border-amber-100 bg-amber-50 px-3 py-2 text-[11px] leading-snug text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
           {closedBy === 'customer'
-            ? 'You marked this conversation as resolved.'
+            ? hasUrgentPending
+              ? 'You closed this chat. Your urgent message is still in our queue and our staff will still get back to you.'
+              : 'You closed this chat.'
             : "DonClaudio's marked this conversation as resolved."}{' '}
           Send a message to reopen.
         </div>
       ) : (
-        <div className="flex justify-end border-t border-gray-100 px-3 py-1.5 dark:border-gray-700">
+        <div className="flex justify-between border-t border-gray-100 px-3 py-1.5 dark:border-gray-700">
+          <button
+            onClick={() => setShowFaq(v => !v)}
+            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-gray-500 transition-colors hover:bg-gray-100 hover:text-[#2d4a35] dark:hover:bg-gray-800 dark:hover:text-[#7ed4a0]"
+          >
+            <HelpCircle size={12} />
+            {showFaq ? 'Back to chat' : 'FAQs'}
+          </button>
           <button
             onClick={handleCloseChat}
-            disabled={closeMutation.isPending}
+            disabled={closeMutation.isPending || allMessages.length === 0}
+            title="Close this chat if you no longer need help"
             className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-gray-400 transition-colors hover:bg-gray-100 hover:text-[#2d4a35] disabled:opacity-50 dark:hover:bg-gray-800 dark:hover:text-[#7ed4a0]"
           >
-            {closeMutation.isPending ? 'Marking...' : 'Mark as resolved'}
+            {closeMutation.isPending ? 'Closing...' : "I'm all set"}
           </button>
         </div>
       )}
 
-      <div className="flex items-end gap-2 border-t border-gray-100 p-3 dark:border-gray-700">
+      <div className="border-t border-gray-100 px-3 pt-2 dark:border-gray-700">
+        <p
+          className={`text-[11px] font-semibold ${
+            categoryHint && !category
+              ? 'text-red-600 dark:text-red-400'
+              : 'text-gray-500 dark:text-gray-400'
+          }`}
+        >
+          {categoryHint && !category
+            ? 'Please choose what your message is about first:'
+            : 'What is this about?'}
+        </p>
+        {/* Wraps instead of scrolling sideways: a scroll container clips the
+            selected chip's ring and shows a scrollbar. */}
+        <div className="mt-1 flex flex-wrap gap-1.5 p-0.5">
+          {INQUIRY_CATEGORIES.map(c => {
+            const meta = INQUIRY_META[c];
+            const active = category === c;
+            return (
+              <button
+                key={c}
+                type="button"
+                title={meta.hint}
+                onClick={() => {
+                  setCategory(c);
+                  setCategoryHint(false);
+                }}
+                aria-pressed={active}
+                className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                  active
+                    ? `${meta.chip} ring-2 ring-offset-1 ring-[#6b8a6e] dark:ring-offset-gray-900`
+                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                }`}
+              >
+                {meta.emoji} {meta.label}
+              </button>
+            );
+          })}
+        </div>
+        {category && (
+          <p className="text-[10px] text-gray-400">{INQUIRY_META[category].hint}</p>
+        )}
+        {sendError && (
+          <p
+            role="alert"
+            className="mt-1 rounded-md bg-red-50 px-2 py-1 text-[11px] text-red-700 dark:bg-red-500/10 dark:text-red-300"
+          >
+            {sendError}
+          </p>
+        )}
+      </div>
+
+      <div className="flex items-end gap-2 p-3 pt-2">
         <textarea
+          ref={inputRef}
+          maxLength={1000}
           value={draft}
           onChange={e => setDraft(e.target.value)}
           onKeyDown={handleKeyDown}

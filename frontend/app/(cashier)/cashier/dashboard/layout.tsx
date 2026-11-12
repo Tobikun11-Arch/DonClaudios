@@ -16,6 +16,7 @@ import {
   Store
 } from 'lucide-react';
 import {Toaster} from '@/components/ui/sonner';
+import CashierUrgentSupportBubble from '@/features/cashier/support/components/CashierUrgentSupportBubble';
 import {useBrand} from '@/lib/hooks/useBrand';
 
 const PRIMARY_TABS = [
@@ -429,6 +430,7 @@ export default function DashboardLayout({
         </div>
       </div>
 
+      <CashierUrgentSupportBubble />
       <Toaster duration={2500} />
     </div>
   );
