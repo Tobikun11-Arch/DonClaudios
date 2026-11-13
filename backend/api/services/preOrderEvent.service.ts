@@ -555,9 +555,11 @@ export const preOrderEventService = {
 
   async remove(id: string) {
     const event = await this.findOrThrow(id);
-    const hasOrders = await OrderModel.exists({'preOrder.eventId': event._id});
-    if (hasOrders) {
-      throw new ApiError(409, 'DATE_HAS_ORDERS', 'This date has orders. Close it instead of deleting it.');
+    // Cancelled orders keep their own snapshot of the event, so only active
+    // orders block deletion.
+    const hasActiveOrders = await OrderModel.exists({'preOrder.eventId': event._id, orderStatus: {$ne: 'cancelled'}});
+    if (hasActiveOrders) {
+      throw new ApiError(409, 'DATE_HAS_ORDERS', 'This date has active orders. Close it instead of deleting it.');
     }
     await event.deleteOne();
   },
