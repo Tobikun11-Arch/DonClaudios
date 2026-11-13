@@ -48,6 +48,7 @@ const hexColor = z
   .regex(/^(#[0-9a-fA-F]{6})?$/, 'Colors must be a hex value like #2d4a35');
 
 export const dashboardThemeDto = z.object({
+  target: z.enum(['owner', 'cashier', 'customer']),
   sidebarBg: hexColor,
   accent: hexColor
 });

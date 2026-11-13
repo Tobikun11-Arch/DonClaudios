@@ -10,8 +10,7 @@ export const settingsController = {
       const settings = await settingsService.get();
       // Expose the admin's business identity publicly so any tenant's branding
       // (name + logo) shows on customer-facing pages without authentication.
-      const admins = await adminRepository.listAll();
-      const admin = admins[0];
+      const admin = await adminRepository.findBrand();
       const plain = (settings as any).toJSON ? (settings as any).toJSON() : settings;
       const merged = {
         ...plain,

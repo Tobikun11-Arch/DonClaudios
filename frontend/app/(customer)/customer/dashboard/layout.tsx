@@ -10,6 +10,7 @@ import CustomerNotificationBell from '@/features/customer/notifications/componen
 import SupportChatBubble from '@/features/support/components/SupportChatBubble';
 import {Z} from '@/lib/zIndex';
 import {useBrand} from '@/lib/hooks/useBrand';
+import {useDashboardThemeStyle} from '@/lib/hooks/useSettings';
 import {Toaster} from '@/components/ui/sonner';
 import CustomerOnboardingTour from '@/features/customer/onboarding/components/CustomerOnboardingTour';
 import {BrandLogo} from '@/shared/components/BrandLogo';
@@ -62,6 +63,7 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   const searchParams = useSearchParams();
   const brand = useBrand();
+  const dashboardStyle = useDashboardThemeStyle('customer');
   const pathname = usePathname();
   const tab = searchParams.get('tab');
   const router = useRouter();
@@ -127,20 +129,20 @@ export default function DashboardLayout({
       : (order ?? children);
 
   return (
-    <div className="flex h-screen cursor-default bg-gray-50 dark:bg-gray-800">
+    <div className="flex h-screen cursor-default bg-gray-50 dark:bg-gray-800" style={dashboardStyle}>
       <aside
         onMouseEnter={handleSidebarEnter}
         onMouseLeave={handleSidebarLeave}
         className={`
           hidden md:flex flex-col flex-shrink-0 overflow-hidden
-          min-h-screen bg-[#2d4a35] z-40
+          min-h-screen bg-(--dash-sidebar) z-40
           transition-[width,box-shadow] duration-200 ease-out
           ${sidebarExpanded ? 'w-64 shadow-2xl' : 'w-[72px] shadow-xl'}
         `}
       >
         {/* Logo Area */}
         <div
-          className={`relative flex items-center justify-center px-4 border-b border-[#3a5c44] transition-[height,padding] duration-200 ease-out ${sidebarExpanded ? 'h-[178px] py-6' : 'h-24 py-2'}`}
+          className={`relative flex items-center justify-center px-4 border-b border-(--dash-hover) transition-[height,padding] duration-200 ease-out ${sidebarExpanded ? 'h-[178px] py-6' : 'h-24 py-2'}`}
         >
           <div
             className={`absolute transition-[opacity,transform] duration-150 ease-out ${
@@ -196,11 +198,11 @@ export default function DashboardLayout({
                     ${
                       sidebarExpanded
                         ? active
-                          ? 'bg-[#4a7c59] text-white shadow-md shadow-[#2d4a35]/50'
-                          : 'text-[#b8d4c0] hover:bg-[#3a5c44] hover:text-white'
+                          ? 'bg-(--dash-accent) text-(--dash-accent-text) shadow-md shadow-black/25'
+                          : 'text-(--dash-text) hover:bg-(--dash-hover) hover:text-(--dash-text-strong)'
                         : active
-                          ? 'text-white'
-                          : 'text-[#b8d4c0] hover:bg-[#3a5c44] hover:text-white'
+                          ? 'text-(--dash-text-strong)'
+                          : 'text-(--dash-text) hover:bg-(--dash-hover) hover:text-(--dash-text-strong)'
                     }
                   `}
                 >
@@ -241,7 +243,7 @@ export default function DashboardLayout({
 
         {/* Logout */}
         <div
-          className={`${sidebarExpanded ? 'px-2' : 'px-0'} pb-5 pt-2 border-t border-[#3a5c44]`}
+          className={`${sidebarExpanded ? 'px-2' : 'px-0'} pb-5 pt-2 border-t border-(--dash-hover)`}
         >
           <div className="relative group/nav">
             <button
@@ -251,7 +253,7 @@ export default function DashboardLayout({
                 w-full flex items-center py-3 rounded-xl
                 ${sidebarExpanded ? 'gap-3 px-3' : 'gap-0 px-0 justify-center'}
                 text-sm font-semibold tracking-wide
-                text-[#f08080] hover:bg-[#3a1a1a] hover:text-red-300
+                text-(--dash-danger) hover:bg-(--dash-danger-hover-bg) hover:text-(--dash-danger-hover)
                 transition-[padding,gap] duration-200 ease-out
                 disabled:opacity-50 disabled:cursor-not-allowed
               `}
@@ -333,7 +335,7 @@ export default function DashboardLayout({
       <nav
         className="
           md:hidden fixed bottom-0 left-0 right-0 z-50
-          bg-[#2d4a35] border-t border-[#3a5c44]
+          bg-(--dash-sidebar) border-t border-(--dash-hover)
           flex items-center justify-around
           px-2 pt-3 pb-[env(safe-area-inset-bottom,10px)]
         "
@@ -356,7 +358,7 @@ export default function DashboardLayout({
                 <Icon
                   size={22}
                   className={`transition-colors duration-200 ${
-                    active ? 'text-[#7ed4a0]' : 'text-[#5a8a6a]'
+                    active ? 'text-(--dash-highlight)' : 'text-(--dash-text-dim)'
                   }`}
                 />
                 {badgeCount > 0 && (
@@ -367,7 +369,7 @@ export default function DashboardLayout({
               </div>
               <span
                 className={`text-[10px] font-bold leading-none transition-colors duration-200 ${
-                  active ? 'text-[#7ed4a0]' : 'text-[#5a8a6a]'
+                  active ? 'text-(--dash-highlight)' : 'text-(--dash-text-dim)'
                 }`}
               >
                 {label}
@@ -375,7 +377,7 @@ export default function DashboardLayout({
 
               <span
                 className={`
-                  mt-1 h-0.5 w-6 rounded-full bg-[#7ed4a0]
+                  mt-1 h-0.5 w-6 rounded-full bg-(--dash-highlight)
                   transition-all duration-300 ease-out
                   ${active ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}
                 `}

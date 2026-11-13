@@ -1,5 +1,5 @@
 import {settingsRepository} from '../repositories/settings.repository';
-import type {SiteSettingDocument} from '../models/SiteSetting.model';
+import {DASHBOARD_TARGETS, type SiteSettingDocument} from '../models/SiteSetting.model';
 import type {DashboardThemeDto} from '../dtos/settings.dto';
 import {
   DEFAULT_FREE_DELIVERY_SETTINGS,
@@ -116,17 +116,21 @@ export const settingsService = {
     return DEFAULT_REWARDS_EARN_RULE;
   },
 
-  /** Saves the dashboard colors; '' resets a color to the default. */
+  /** Saves one dashboard's colors; '' resets a color to the default. */
   async updateDashboardTheme(input: DashboardThemeDto) {
     const doc = await settingsRepository.update({
-      dashboardTheme: {
+      // Dot path: only this dashboard changes, the others are kept.
+      [`dashboardTheme.${input.target}`]: {
         sidebarBg: input.sidebarBg.trim().toLowerCase(),
         accent: input.accent.trim().toLowerCase()
       }
     } as Partial<SiteSettingDocument>);
-    return {
-      sidebarBg: doc?.dashboardTheme?.sidebarBg || '',
-      accent: doc?.dashboardTheme?.accent || ''
-    };
+    const saved = doc?.dashboardTheme ?? {};
+    return Object.fromEntries(
+      DASHBOARD_TARGETS.map(t => [
+        t,
+        {sidebarBg: saved[t]?.sidebarBg || '', accent: saved[t]?.accent || ''}
+      ])
+    );
   }
 };

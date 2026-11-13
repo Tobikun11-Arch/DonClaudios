@@ -72,7 +72,7 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   const searchParams = useSearchParams();
   const brand = useBrand();
-  const dashboardStyle = useDashboardThemeStyle();
+  const dashboardStyle = useDashboardThemeStyle('cashier');
   const tab = searchParams.get('tab');
   const router = useRouter();
   const logoutMutation = useLogout();

@@ -2,11 +2,12 @@
 
 import {useState} from 'react';
 import {toast} from 'sonner';
-import {Check, LayoutDashboard, LogOut, Package, Settings} from 'lucide-react';
+import {Check, Gift, LayoutDashboard, LogOut, Package, ShoppingCart, Star, Store} from 'lucide-react';
 import {cn} from '@/lib/utils';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {useSettingsQuery, useUpdateDashboardThemeMutation} from '@/lib/hooks/useSettings';
+import {usePublicBrand} from '@/lib/hooks/useBrand';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {
   DASHBOARD_THEME_PRESETS,
@@ -16,50 +17,156 @@ import {
   dashboardThemeStyle,
   isHexColor
 } from '@/lib/dashboardTheme';
-import type {DashboardTheme} from '@/lib/types/settings';
+import type {DashboardTarget, DashboardTheme, DashboardThemes} from '@/lib/types/settings';
 
 const EMPTY: DashboardTheme = {sidebarBg: '', accent: ''};
 
-const same = (a: DashboardTheme, b: DashboardTheme) =>
-  a.sidebarBg.toLowerCase() === b.sidebarBg.toLowerCase() &&
-  a.accent.toLowerCase() === b.accent.toLowerCase();
+const TARGETS: {id: DashboardTarget; label: string; who: string}[] = [
+  {id: 'owner', label: 'Owner', who: 'your dashboard'},
+  {id: 'cashier', label: 'Cashier', who: 'every cashier account'},
+  {id: 'customer', label: 'Customer', who: 'every customer account'}
+];
 
-/** Owner-picked sidebar and accent colors for the owner and cashier dashboards. */
+const PREVIEW_ITEMS: Record<DashboardTarget, {icon: typeof Package; label: string}[]> = {
+  owner: [
+    {icon: LayoutDashboard, label: 'Dashboard'},
+    {icon: Package, label: 'Products'},
+    {icon: Star, label: 'Reviews'}
+  ],
+  cashier: [
+    {icon: Store, label: 'Counter'},
+    {icon: ShoppingCart, label: 'Orders'},
+    {icon: Package, label: 'Products'}
+  ],
+  customer: [
+    {icon: ShoppingCart, label: 'Order'},
+    {icon: Gift, label: 'Rewards'},
+    {icon: Star, label: 'Reviews'}
+  ]
+};
+
+const same = (a?: Partial<DashboardTheme>, b?: Partial<DashboardTheme>) =>
+  (a?.sidebarBg ?? '').toLowerCase() === (b?.sidebarBg ?? '').toLowerCase() &&
+  (a?.accent ?? '').toLowerCase() === (b?.accent ?? '').toLowerCase();
+
+/** Every dashboard present, even if the data is partial or in an older shape. */
+const normalize = (raw?: Partial<Record<DashboardTarget, Partial<DashboardTheme>>>): DashboardThemes => {
+  const pick = (t: DashboardTarget): DashboardTheme => ({
+    sidebarBg: raw?.[t]?.sidebarBg ?? '',
+    accent: raw?.[t]?.accent ?? ''
+  });
+  return {owner: pick('owner'), cashier: pick('cashier'), customer: pick('customer')};
+};
+
+const sameAll = (a: DashboardThemes, b: DashboardThemes) =>
+  TARGETS.every(t => same(a[t.id], b[t.id]));
+
+/** Owner-picked sidebar and accent colors for the owner, cashier and customer dashboards. */
 export function DashboardColorsCard() {
   const settingsQuery = useSettingsQuery();
-  const saved = settingsQuery.data?.dashboardTheme ?? EMPTY;
+  const brand = usePublicBrand();
+  const saved = normalize(settingsQuery.data?.dashboardTheme);
   const mutation = useUpdateDashboardThemeMutation();
 
-  const [draft, setDraft] = useState<DashboardTheme>(saved);
-  // Follow the saved value when it changes (first load, save, other tab).
+  const [target, setTarget] = useState<DashboardTarget>('owner');
+  const [drafts, setDrafts] = useState<DashboardThemes>(saved);
+  const [savingAll, setSavingAll] = useState(false);
+  // Follow the saved values when they change (first load, save, other tab).
   const [prevSaved, setPrevSaved] = useState(saved);
-  if (!same(prevSaved, saved)) {
+  if (!sameAll(prevSaved, saved)) {
     setPrevSaved(saved);
-    setDraft(saved);
+    setDrafts(saved);
   }
 
+  const draft = drafts[target] ?? EMPTY;
+  const setDraft = (update: (d: DashboardTheme) => DashboardTheme) =>
+    setDrafts(all => ({...normalize(all), [target]: update(all[target] ?? EMPTY)}));
+
   const palette = dashboardPalette(draft);
-  const dirty = !same(draft, saved);
+  const dirty = !same(draft, saved[target]);
   const lowContrast = contrastRatio(palette.accent, palette.sidebar) < 1.5;
   const invalid =
     (draft.sidebarBg !== '' && !isHexColor(draft.sidebarBg)) ||
     (draft.accent !== '' && !isHexColor(draft.accent));
+  const busy = mutation.isPending || savingAll;
+  const targetInfo = TARGETS.find(t => t.id === target)!;
 
   const save = (theme: DashboardTheme, message: string) => {
-    mutation.mutate(theme, {
-      onSuccess: () => toast.success(message),
-      onError: err => toast.error(getFriendlyErrorMessage(err, 'Failed to save colors'))
-    });
+    mutation.mutate(
+      {target, ...theme},
+      {
+        onSuccess: () => toast.success(message),
+        onError: err => toast.error(getFriendlyErrorMessage(err, 'Failed to save colors'))
+      }
+    );
+  };
+
+  const saveToAll = async () => {
+    setSavingAll(true);
+    try {
+      for (const t of TARGETS) {
+        await mutation.mutateAsync({target: t.id, ...draft});
+      }
+      toast.success('Colors applied to all dashboards.');
+    } catch (err) {
+      toast.error(getFriendlyErrorMessage(err, 'Failed to save colors'));
+    } finally {
+      setSavingAll(false);
+    }
   };
 
   return (
     <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">
-      <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-        Dashboard colors
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            Dashboard colors
+          </div>
+          <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+            Brand each dashboard. Menu text color is picked automatically so it
+            stays readable.
+          </div>
+        </div>
+
+        {/* Which dashboard */}
+        <div
+          role="tablist"
+          aria-label="Dashboard to customize"
+          className="flex shrink-0 rounded-xl border border-gray-200 p-1 dark:border-gray-700"
+        >
+          {TARGETS.map(t => {
+            const active = t.id === target;
+            const changed = !same(drafts[t.id], saved[t.id]);
+            return (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTarget(t.id)}
+                className={cn(
+                  'relative rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
+                  active
+                    ? 'bg-[#2d4a35] text-white'
+                    : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'
+                )}
+              >
+                {t.label}
+                {changed && (
+                  <span
+                    className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-amber-500"
+                    aria-label="unsaved changes"
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
-      <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-        Brand the owner and cashier dashboards. Menu text color is picked
-        automatically so it stays readable.
+
+      <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+        Editing the <span className="font-semibold text-gray-700 dark:text-gray-200">{targetInfo.label}</span>{' '}
+        dashboard. Changes apply to {targetInfo.who}.
       </div>
 
       {/* Presets */}
@@ -71,7 +178,7 @@ export function DashboardColorsCard() {
             <button
               key={preset.name}
               type="button"
-              onClick={() => setDraft({sidebarBg: preset.sidebarBg, accent: preset.accent})}
+              onClick={() => setDraft(() => ({sidebarBg: preset.sidebarBg, accent: preset.accent}))}
               aria-pressed={active}
               className={cn(
                 'flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
@@ -124,7 +231,7 @@ export function DashboardColorsCard() {
         {/* Live preview, styled with the same variables as the real sidebar */}
         <div>
           <div className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
-            Preview
+            Preview: {targetInfo.label}
           </div>
           <div
             style={dashboardThemeStyle(draft)}
@@ -132,13 +239,15 @@ export function DashboardColorsCard() {
             aria-hidden
           >
             <div className="mb-3 flex items-center gap-2 border-b border-(--dash-hover) pb-3">
-              <span className="h-7 w-7 rounded-full bg-(--dash-accent)" />
-              <span className="text-xs font-bold text-(--dash-text-strong)">Your Store</span>
+              <span className="h-7 w-7 shrink-0 rounded-full bg-(--dash-accent)" />
+              <span className="truncate text-xs font-bold text-(--dash-text-strong)">
+                {brand.name}
+              </span>
             </div>
             <div className="space-y-1">
-              <PreviewItem icon={LayoutDashboard} label="Dashboard" active />
-              <PreviewItem icon={Package} label="Products" />
-              <PreviewItem icon={Settings} label="Settings" />
+              {PREVIEW_ITEMS[target].map((item, i) => (
+                <PreviewItem key={item.label} icon={item.icon} label={item.label} active={i === 0} />
+              ))}
             </div>
             <div className="mt-3 flex items-center gap-2 border-t border-(--dash-hover) px-2 pt-3 text-xs font-semibold text-(--dash-danger)">
               <LogOut className="h-4 w-4" /> Logout
@@ -152,22 +261,31 @@ export function DashboardColorsCard() {
           type="button"
           variant="outline"
           size="sm"
-          disabled={mutation.isPending || same(saved, EMPTY)}
+          disabled={busy || same(saved[target], EMPTY)}
           onClick={() => {
-            setDraft(EMPTY);
-            save(EMPTY, 'Dashboard colors reset to default.');
+            setDraft(() => EMPTY);
+            save(EMPTY, `${targetInfo.label} dashboard colors reset to default.`);
           }}
         >
           Reset to default
         </Button>
         <Button
           type="button"
+          variant="outline"
           size="sm"
-          disabled={!dirty || invalid || mutation.isPending}
-          onClick={() => save(draft, 'Dashboard colors saved.')}
+          disabled={invalid || busy || TARGETS.every(t => same(saved[t.id], draft))}
+          onClick={saveToAll}
+        >
+          {savingAll ? 'Applying…' : 'Use on all dashboards'}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          disabled={!dirty || invalid || busy}
+          onClick={() => save(draft, `${targetInfo.label} dashboard colors saved.`)}
           className="bg-[#2d4a35] text-white hover:bg-[#3c5e45]"
         >
-          {mutation.isPending ? 'Saving…' : 'Save colors'}
+          {mutation.isPending && !savingAll ? 'Saving…' : `Save ${targetInfo.label.toLowerCase()} colors`}
         </Button>
       </div>
     </div>
@@ -187,9 +305,7 @@ function PreviewItem({
     <div
       className={cn(
         'flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold',
-        active
-          ? 'bg-(--dash-accent) text-(--dash-accent-text)'
-          : 'text-(--dash-text)'
+        active ? 'bg-(--dash-accent) text-(--dash-accent-text)' : 'text-(--dash-text)'
       )}
     >
       <Icon className="h-4 w-4" />

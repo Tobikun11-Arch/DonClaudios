@@ -105,7 +105,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const logoutMutation = useLogout();
   const brand = useBrand();
-  const dashboardStyle = useDashboardThemeStyle();
+  const dashboardStyle = useDashboardThemeStyle('owner');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const expandTimeoutRef = useRef<NodeJS.Timeout | null>(null);

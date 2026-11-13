@@ -4,7 +4,9 @@ import type {
   SiteSetting,
   UpdateSettingsResponse,
   NotificationPreferences,
-  DashboardTheme
+  DashboardTheme,
+  DashboardTarget,
+  DashboardThemes
 } from '@/lib/types/settings';
 
 export async function getSettings() {
@@ -17,8 +19,10 @@ export async function updateSettings(body: Partial<SiteSetting>) {
   return res.data;
 }
 
-export async function updateDashboardTheme(body: DashboardTheme) {
-  const res = await httpClient.put<{dashboardTheme: DashboardTheme}>(
+export async function updateDashboardTheme(
+  body: DashboardTheme & {target: DashboardTarget}
+) {
+  const res = await httpClient.put<{dashboardTheme: DashboardThemes}>(
     '/settings/dashboard-theme',
     body
   );

@@ -34,7 +34,7 @@ router.put(
   settingsController.updateRewardsEarn
 );
 
-// Owner/cashier dashboard colors. Read through GET /settings (dashboardTheme),
+// Owner, cashier and customer dashboard colors. Read through GET /settings (dashboardTheme),
 // so dashboards need no extra request; only the owner can change them.
 router.put(
   '/dashboard-theme',
