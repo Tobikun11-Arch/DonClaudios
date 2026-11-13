@@ -73,13 +73,13 @@ export function useChatSoundOnNewIds(ids: string[], urgent = false) {
 }
 
 /** Pop when a count goes up (ignores the value on mount). */
-export function useChatSoundOnIncrease(count: number, urgent = false) {
+export function useChatSoundOnIncrease(count: number, urgent = false, enabled = true) {
   const prev = useRef<number | null>(null);
 
   useEffect(() => {
-    if (prev.current !== null && count > prev.current) {
+    if (enabled && prev.current !== null && count > prev.current) {
       playChatMessageSound(urgent);
     }
     prev.current = count;
-  }, [count, urgent]);
+  }, [count, urgent, enabled]);
 }

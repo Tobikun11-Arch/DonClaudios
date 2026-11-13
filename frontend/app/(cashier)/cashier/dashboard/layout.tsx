@@ -7,7 +7,7 @@ import {useState, useRef, useCallback, useEffect} from 'react';
 import {
   ClipboardList,
   Package,
-  User,
+  Settings,
   LogOut,
   MoreHorizontal,
   X,
@@ -48,7 +48,7 @@ const DRAWER_ITEMS = [
   {
     label: 'Settings',
     tab: 'settings',
-    icon: User,
+    icon: Settings,
     href: '/cashier/dashboard?tab=settings'
   }
 ];

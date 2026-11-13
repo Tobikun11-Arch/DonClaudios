@@ -47,7 +47,7 @@ export function playNotificationSound() {
   tone(1174.66, now + 0.12, 0.3);
 }
 
-export function useNotificationSound(notifications: Notification[]) {
+export function useNotificationSound(notifications: Notification[], enabled = true) {
   const seenRef = useRef<Set<string>>(new Set());
   const firstRunRef = useRef(true);
 
@@ -63,7 +63,7 @@ export function useNotificationSound(notifications: Notification[]) {
     if (seenRef.current.size === 0 && ids.length === 0) return;
     const newIds = ids.filter(id => !seenRef.current.has(id));
     if (newIds.length > 0) {
-      playNotificationSound();
+      if (enabled) playNotificationSound();
       seenRef.current = new Set(ids);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
