@@ -2,7 +2,6 @@
 import {useSearchParams} from 'next/navigation';
 import {usePathname} from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import {useRouter} from 'next/navigation';
 import {useLogout} from '@/lib/hooks/auth/useLogout';
 import {useState, useRef, useCallback, useEffect} from 'react';
@@ -22,6 +21,7 @@ import {
 import {Toaster} from '@/components/ui/sonner';
 import OwnerSupportChatBubble from '@/features/owner/support/components/OwnerSupportChatBubble';
 import {useBrand} from '@/lib/hooks/useBrand';
+import {BrandLogo} from '@/shared/components/BrandLogo';
 
 const PRIMARY_TABS = [
   {
@@ -186,7 +186,7 @@ export default function DashboardLayout({
                 : 'opacity-100 scale-100'
             }`}
           >
-            <Image
+            <BrandLogo
               src={brand.logo}
               alt={brand.name}
               width={36}
@@ -202,7 +202,7 @@ export default function DashboardLayout({
                 : 'opacity-0 scale-90 pointer-events-none'
             }`}
           >
-            <Image
+            <BrandLogo
               src={brand.logo}
               alt={brand.name}
               width={130}

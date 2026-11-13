@@ -4,6 +4,7 @@ import {useEffect} from 'react';
 import Image from 'next/image';
 import {useRouter} from 'next/navigation';
 import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
+import {usePublicBrand} from '@/lib/hooks/useBrand';
 import {getDashboardPath} from '@/lib/auth/redirects';
 import Loading from '../loading';
 
@@ -14,6 +15,7 @@ interface AuthLayoutProps {
 const AuthLayout = ({children}: AuthLayoutProps) => {
   const router = useRouter();
   const {data, isLoading, isFetching, isSuccess} = useMeQuery();
+  const brand = usePublicBrand();
 
   useEffect(() => {
     if (!isSuccess) return;
@@ -28,14 +30,14 @@ const AuthLayout = ({children}: AuthLayoutProps) => {
         <Image
           src="/assets/auth_img2.JPG"
           loading="eager"
-          alt="DonClaudio's Lechon"
+          alt={brand.name}
           className="absolute inset-0 w-full h-full object-cover"
           width={800}
           height={1200}
         />
         <div className="absolute inset-0 bg-primary/78" />
         <div className="relative z-10 flex flex-col justify-end p-12 text-primary-foreground">
-          <h1 className="text-4xl font-bold mb-3">DonClaudio&apos;s Lechon House</h1>
+          <h1 className="text-4xl font-bold mb-3">{brand.name}</h1>
           <p className="text-lg opacity-90">
             Authentic Filipino Lechon, slow-roasted to perfection since day
             one.

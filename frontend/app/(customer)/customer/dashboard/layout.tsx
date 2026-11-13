@@ -1,7 +1,6 @@
 'use client';
 import {usePathname, useSearchParams} from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import {useRouter} from 'next/navigation';
 import {useLogout} from '@/lib/hooks/auth/useLogout';
 import {useState, useRef, useCallback, useEffect} from 'react';
@@ -13,6 +12,7 @@ import {Z} from '@/lib/zIndex';
 import {useBrand} from '@/lib/hooks/useBrand';
 import {Toaster} from '@/components/ui/sonner';
 import CustomerOnboardingTour from '@/features/customer/onboarding/components/CustomerOnboardingTour';
+import {BrandLogo} from '@/shared/components/BrandLogo';
 
 const TABS = [
   {
@@ -149,7 +149,7 @@ export default function DashboardLayout({
                 : 'opacity-100 scale-100'
             }`}
           >
-            <Image
+            <BrandLogo
               src={brand.logo}
               alt="DC"
               width={36}
@@ -165,7 +165,7 @@ export default function DashboardLayout({
                 : 'opacity-0 scale-90 pointer-events-none'
             }`}
           >
-            <Image
+            <BrandLogo
               src={brand.logo}
               alt="Don Claudio's Lechon House"
               width={130}
@@ -306,7 +306,7 @@ export default function DashboardLayout({
             aria-label={`${brand.name} home`}
             className="flex items-center md:hidden"
           >
-            <Image
+            <BrandLogo
               src={brand.logo}
               alt=""
               width={36}
