@@ -146,6 +146,12 @@ export interface OrderDocument extends mongoose.Document {
    * show a stable, human-friendly reference.
    */
   orderNumber?: string;
+  /**
+   * Id the mobile POS generated for a walk-in sale (possibly made offline).
+   * Sent on every retry so a sale that reached the server once is never
+   * created twice.
+   */
+  clientRef?: string;
   /** Timestamp the walk-in order was marked as paid. */
   paidAt?: Date | null;
   /** Cashier/admin id that marked the walk-in order as paid. */
@@ -280,6 +286,7 @@ const OrderSchema = new Schema<OrderDocument>(
       default: null
     },
     orderNumber: {type: String},
+    clientRef: {type: String},
     paidAt: {type: Date, default: null},
     paidBy: {type: String, default: null},
     isOnline: {type: Boolean, default: true},
@@ -310,6 +317,7 @@ OrderSchema.index({orderStatus: 1, createdAt: -1});
 OrderSchema.index({orderStatus: 1, overdueNotifiedAt: 1});
 OrderSchema.index({orderSource: 1, createdAt: -1});
 OrderSchema.index({orderNumber: 1}, {unique: true, sparse: true});
+OrderSchema.index({clientRef: 1}, {unique: true, sparse: true});
 OrderSchema.index({orderType: 1, createdAt: -1});
 OrderSchema.index({'preOrder.eventId': 1, createdAt: -1});
 // Change-check poll (GET /changes): latest-updated order.
