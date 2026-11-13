@@ -8,6 +8,7 @@ import {
   type UpdateProfileBody
 } from '@/lib/api/authApi';
 import {meQueryKey} from './useMeQuery';
+import {settingsQueryKey} from '../useSettings';
 
 export function useUpdateProfileMutation() {
   const queryClient = useQueryClient();
@@ -15,6 +16,8 @@ export function useUpdateProfileMutation() {
     mutationFn: (body: UpdateProfileBody) => updateProfile(body),
     onSuccess: () => {
       queryClient.invalidateQueries({queryKey: meQueryKey});
+      // Business name/logo are served publicly via /settings (brandName/brandLogo).
+      queryClient.invalidateQueries({queryKey: settingsQueryKey});
     }
   });
 }

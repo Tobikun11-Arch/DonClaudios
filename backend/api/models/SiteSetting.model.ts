@@ -12,6 +12,14 @@ export interface ReviewItem {
   tag: string;
 }
 
+export const DASHBOARD_TARGETS = ['owner', 'cashier', 'customer'] as const;
+export type DashboardTarget = (typeof DASHBOARD_TARGETS)[number];
+
+export interface DashboardColors {
+  sidebarBg?: string;
+  accent?: string;
+}
+
 export interface SiteSettingDocument extends mongoose.Document {
   hero: {
     title: string;
@@ -76,6 +84,8 @@ export interface SiteSettingDocument extends mongoose.Document {
   /** Loyalty earn rule: rewardsEarnPoints points per rewardsEarnPesos pesos (see config/rewards.ts). */
   rewardsEarnPoints?: number;
   rewardsEarnPesos?: number;
+  /** Per-dashboard colors (hex). Empty/unset means the default green. */
+  dashboardTheme?: Partial<Record<DashboardTarget, DashboardColors>>;
 }
 
 const StatItemSchema = new Schema<StatItem>(
@@ -109,6 +119,14 @@ const SectionStyleSchema = new Schema(
     backgroundColor: {type: String, default: ''},
     textColor: {type: String, default: ''},
     fontFamily: {type: String, default: ''}
+  },
+  {_id: false}
+);
+
+const DashboardColorsSchema = new Schema(
+  {
+    sidebarBg: {type: String},
+    accent: {type: String}
   },
   {_id: false}
 );
@@ -186,7 +204,13 @@ const SiteSettingSchema = new Schema<SiteSettingDocument>(
     },
     // No defaults: unset means "use DEFAULT_REWARDS_EARN_RULE" (config/rewards.ts).
     rewardsEarnPoints: {type: Number, min: 1},
-    rewardsEarnPesos: {type: Number, min: 1}
+    rewardsEarnPesos: {type: Number, min: 1},
+    // No defaults: unset means "use the built-in DonClaudio's green".
+    dashboardTheme: {
+      owner: {type: DashboardColorsSchema, default: undefined},
+      cashier: {type: DashboardColorsSchema, default: undefined},
+      customer: {type: DashboardColorsSchema, default: undefined}
+    }
   },
   {timestamps: true}
 );

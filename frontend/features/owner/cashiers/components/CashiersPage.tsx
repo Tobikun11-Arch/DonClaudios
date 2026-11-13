@@ -157,13 +157,24 @@ export default function CashiersPage({embedded = false}: {embedded?: boolean} = 
 
   return (
     <div className="space-y-5">
-      <CashiersHeader
-        hideTitle={embedded}
-        showButton={visibleCashiers.length > 0}
-        onAdd={openCreate}
-      />
+      {!embedded && (
+        <CashiersHeader showButton={visibleCashiers.length > 0} onAdd={openCreate} />
+      )}
 
-      <CashiersFilters query={query} onQueryChange={setQuery} />
+      <CashiersFilters
+        query={query}
+        onQueryChange={setQuery}
+        // Inside Settings the page title is already shown, so the button
+        // shares the search row instead of floating on a row of its own.
+        action={
+          embedded && visibleCashiers.length > 0 ? (
+            <Button onClick={openCreate} className="bg-[#2d4a35] hover:bg-[#24402c] dark:text-white">
+              <Plus className="h-4 w-4" />
+              Add Cashier
+            </Button>
+          ) : undefined
+        }
+      />
 
       {cashiersQuery.isLoading && (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 md:gap-5">

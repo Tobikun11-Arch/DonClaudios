@@ -2,7 +2,6 @@
 
 import {useState} from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import {Eye, EyeOff, LogIn} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
@@ -12,6 +11,8 @@ import {useQueryClient} from '@tanstack/react-query';
 import {login} from '@/lib/api/authApi';
 import {meQueryKey} from '@/lib/hooks/auth/useMeQuery';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
+import {BrandLogo} from '@/shared/components/BrandLogo';
+import {usePublicBrand} from '@/lib/hooks/useBrand';
 
 export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -21,6 +22,7 @@ export default function SignInPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const brand = usePublicBrand();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,12 +59,13 @@ export default function SignInPage() {
       <div className="mb-8 flex flex-col items-center text-center">
         <Link
           href="/"
-          aria-label="Go to the DonClaudio's home page"
+          aria-label={`Go to the ${brand.name} home page`}
           className="rounded-full transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
-          <Image
-            src="/assets/logo.png"
-            alt="DonClaudio's logo"
+          <BrandLogo
+            src={brand.logo}
+            alt={`${brand.name} logo`}
+            hidden={brand.isPending}
             width={128}
             height={128}
             className="h-auto w-[128px] max-[819px]:w-[104px]"

@@ -135,7 +135,18 @@ export interface SiteSetting {
   footer: FooterSection;
   colors: Colors;
   sectionStyles: SectionStyles;
+  /** Per-dashboard colors; '' means the default green. */
+  dashboardTheme?: DashboardThemes;
 }
+
+export interface DashboardTheme {
+  sidebarBg: string;
+  accent: string;
+}
+
+export type DashboardTarget = 'owner' | 'cashier' | 'customer';
+
+export type DashboardThemes = Record<DashboardTarget, DashboardTheme>;
 
 export interface GetSettingsResponse {
   settings: SiteSetting;

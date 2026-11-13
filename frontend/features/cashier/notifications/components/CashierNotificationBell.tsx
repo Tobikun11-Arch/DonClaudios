@@ -12,6 +12,7 @@ import {
   useMarkCashierNotificationReadMutation
 } from '@/lib/hooks/notifications/useNotifications';
 import {useNotificationSound} from '@/lib/hooks/notifications/useNotificationSound';
+import {useCashierPrefs} from '@/lib/cashier/cashierPrefs';
 import type {Notification} from '@/lib/types/notification';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
@@ -27,7 +28,8 @@ export default function CashierNotificationBell() {
 
   const notifications = data?.notifications ?? [];
   const unreadCount = data?.unreadCount ?? 0;
-  useNotificationSound(notifications);
+  const prefs = useCashierPrefs();
+  useNotificationSound(notifications, prefs.orderSound);
 
   useEffect(() => {
     if (!open) return;

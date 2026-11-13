@@ -5,6 +5,7 @@ import {AlertTriangle, ArrowLeft, CheckCheck, X} from 'lucide-react';
 import OwnerChatThread from '@/features/owner/support/components/OwnerChatThread';
 import {useCashierUrgentSupportQuery} from '@/lib/hooks/support/useSupport';
 import {useChatSoundOnIncrease} from '@/lib/hooks/support/useChatSound';
+import {useCashierPrefs} from '@/lib/cashier/cashierPrefs';
 import {supportBubbleClass, supportPanelHeightOwnerClass} from '@/lib/support/supportBubblePosition';
 import {formatWait, inquiryLabel} from '@/lib/support/inquiry';
 import type {SupportConversation} from '@/lib/api/supportApi';
@@ -48,7 +49,8 @@ export default function CashierUrgentSupportBubble() {
   );
 
   // Double pop whenever a new urgent inquiry starts waiting.
-  useChatSoundOnIncrease(waitingCount, true);
+  const prefs = useCashierPrefs();
+  useChatSoundOnIncrease(waitingCount, true, prefs.chatSound);
 
   useEffect(() => {
     if (!open) return;
