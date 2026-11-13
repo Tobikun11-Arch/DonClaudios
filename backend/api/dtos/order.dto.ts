@@ -39,7 +39,11 @@ export const listAllOrdersQueryDto = z.object({
     .optional(),
   from: isoDay.optional(),
   to: isoDay.optional(),
-  withCounts: z.string().optional()
+  withCounts: z.string().optional(),
+  // `queue`: with no date range, return only active orders (any age) plus
+  // orders from the last few days, instead of the whole order history. Used
+  // by the cashier's polled list so its cost stays flat as history grows.
+  scope: z.enum(['queue']).optional()
 });
 
 export type ListAllOrdersQuery = z.infer<typeof listAllOrdersQueryDto>;

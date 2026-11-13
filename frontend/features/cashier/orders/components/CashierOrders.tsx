@@ -256,7 +256,10 @@ export function statusChipClass(status: string) {
 export function CashierOrders() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const {data: allData, isLoading: allLoading, isError: allError} = useAllOrdersQuery();
+  const [dateRange, setDateRange] = useState<DateRange>(() => ({from: null, to: null}));
+  // No date range: the server sends only the live queue (active orders + last
+  // 7 days). Picking a range fetches that range, so older orders stay reachable.
+  const {data: allData, isLoading: allLoading, isError: allError} = useAllOrdersQuery(dateRange);
   const {data: counterData, isLoading: counterLoading, isError: counterError} = useCounterOrdersQuery();
   const updateStatusMutation = useUpdateOrderStatusMutation();
   const [manualFilter, setManualFilter] = useState<{key: string | null; value: string}>({
@@ -265,7 +268,6 @@ export function CashierOrders() {
   });
   const [orderTypeFilter, setOrderTypeFilter] = useState<string>('all');
   const [cancellingOrder, setCancellingOrder] = useState<OrderHistoryEntry | null>(null);
-  const [dateRange, setDateRange] = useState<DateRange>(() => ({from: null, to: null}));
   const orderSourceTab: 'online' | 'walk-in' =
     searchParams.get('source') === 'walk-in' ? 'walk-in' : 'online';
 
@@ -563,6 +565,11 @@ export function CashierOrders() {
                 ? 'No orders match these filters within the selected date range.'
                 : 'No orders match these filters.'}
           </p>
+          {orderSourceTab === 'online' && dateRange.from === null && dateRange.to === null && (
+            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+              Showing active orders and the last 7 days. Pick a date range to see older orders.
+            </p>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
@@ -589,6 +596,11 @@ export function CashierOrders() {
               />
             </div>
           ))}
+          {orderSourceTab === 'online' && dateRange.from === null && dateRange.to === null && (
+            <p className="pt-1 text-center text-xs text-gray-400 dark:text-gray-500">
+              Showing active orders and the last 7 days. Pick a date range to see older orders.
+            </p>
+          )}
         </div>
       )}
 

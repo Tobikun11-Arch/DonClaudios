@@ -40,6 +40,16 @@ export const supportAdminConversationsKey = [
 const supportAdminMessagesKey = (conversationId: string) =>
   ['support', 'admin', 'messages', conversationId] as const;
 
+/**
+ * The visitor's own support conversation. The bubble sits on every public
+ * page, so it must not poll for visitors who never chat:
+ * - no open conversation: no polling (refetched on tab focus, and right after
+ *   the visitor starts a chat or sends a message, via invalidation)
+ * - open conversation, chat closed: slow poll for the unread badge
+ * - chat open: the panel polls its messages itself, so a slow poll is enough
+ */
+const SUPPORT_MY_POLL_MS = 30_000;
+
 export function useSupportMyQuery(
   guestSessionId?: string | null,
   enabled = true
@@ -48,9 +58,10 @@ export function useSupportMyQuery(
     queryKey: [...supportMyKey, guestSessionId ?? ''],
     queryFn: () => getMySupportConversation(guestSessionId),
     enabled,
-    refetchOnWindowFocus: false,
-    refetchInterval: 5000,
-    staleTime: 1000
+    refetchOnWindowFocus: true,
+    refetchInterval: query =>
+      query.state.data?.conversation?.status === 'open' ? SUPPORT_MY_POLL_MS : false,
+    staleTime: 10_000
   });
 }
 

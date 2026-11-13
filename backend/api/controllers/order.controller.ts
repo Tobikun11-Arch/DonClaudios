@@ -217,6 +217,12 @@ function resolveCourier(orderType: string, deliveryMode: string, raw: unknown) {
   return courier;
 }
 
+// `scope=queue` (the cashier's polled list): unfinished orders of any age, plus
+// everything from the last 7 days. Older history is fetched only when the
+// cashier picks a date range.
+const QUEUE_ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready', 'on_the_way'];
+const QUEUE_RECENT_MS = 7 * 24 * 60 * 60 * 1000;
+
 export const orderController = {
   async listAllOrders(req: Request, res: Response, next: NextFunction) {
     try {
@@ -243,6 +249,12 @@ export const orderController = {
       if (range) filter.createdAt = {$gte: range.from, $lt: range.to};
       if (query.status) filter.orderStatus = query.status;
       if (query.type) filter.orderType = query.type;
+      if (query.scope === 'queue' && !range) {
+        filter.$or = [
+          {orderStatus: {$in: QUEUE_ACTIVE_STATUSES}},
+          {createdAt: {$gte: new Date(Date.now() - QUEUE_RECENT_MS)}}
+        ];
+      }
 
       const paginated = query.page !== undefined && query.limit !== undefined;
       const page = paginated ? query.page! : 1;
