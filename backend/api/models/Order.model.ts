@@ -312,6 +312,8 @@ OrderSchema.index({orderSource: 1, createdAt: -1});
 OrderSchema.index({orderNumber: 1}, {unique: true, sparse: true});
 OrderSchema.index({orderType: 1, createdAt: -1});
 OrderSchema.index({'preOrder.eventId': 1, createdAt: -1});
+// Change-check poll (GET /changes): latest-updated order.
+OrderSchema.index({updatedAt: -1});
 
 export const OrderModel = mongoose.model<OrderDocument>(
   'Order',

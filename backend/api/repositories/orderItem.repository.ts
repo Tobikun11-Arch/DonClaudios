@@ -11,6 +11,17 @@ export const orderItemRepository = {
       .exec(),
 
   /**
+   * Same result as listByOrderIds but as plain objects (no Mongoose document
+   * hydration). Used by the order list endpoints that are polled, where the
+   * items are only serialised to JSON.
+   */
+  listByOrderIdsLean: (orderIds: string[]) =>
+    OrderItemModel.find({orderId: {$in: orderIds}})
+      .populate('productId', 'name imageUrl category isPreOrder')
+      .lean()
+      .exec(),
+
+  /**
    * Lean items (only the fields the allowance math needs) for use inside the
    * reservation transaction, where a populate would just add round-trips.
    */

@@ -9,16 +9,19 @@ export const notificationRepository = {
   listByCustomerId: (customerId: string) =>
     NotificationModel.find({target: 'customer', customerId})
       .sort({createdAt: -1})
+      .lean()
       .exec(),
 
   listByAdminId: (adminId: string) =>
     NotificationModel.find({target: 'admin', adminId})
       .sort({createdAt: -1})
+      .lean()
       .exec(),
 
   listByCashierId: (cashierId: string) =>
     NotificationModel.find({target: 'cashier', cashierId})
       .sort({createdAt: -1})
+      .lean()
       .exec(),
 
   findById: (id: string) => NotificationModel.findById(id).exec(),

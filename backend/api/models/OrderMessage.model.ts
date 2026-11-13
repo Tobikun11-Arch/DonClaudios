@@ -30,6 +30,8 @@ const OrderMessageSchema = new Schema<OrderMessageDocument>(
 );
 
 OrderMessageSchema.index({orderId: 1, createdAt: 1});
+// Change-check poll (GET /changes): newest follow-up message.
+OrderMessageSchema.index({createdAt: -1});
 
 export const OrderMessageModel = mongoose.model<OrderMessageDocument>(
   'OrderMessage',

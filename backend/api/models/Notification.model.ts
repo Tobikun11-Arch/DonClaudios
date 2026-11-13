@@ -73,6 +73,10 @@ NotificationSchema.index({target: 1, customerId: 1, read: 1});
 NotificationSchema.index({target: 1, adminId: 1, read: 1});
 NotificationSchema.index({target: 1, cashierId: 1, read: 1});
 NotificationSchema.index({createdAt: -1});
+// Change-check poll (GET /changes): latest change per recipient.
+NotificationSchema.index({target: 1, customerId: 1, updatedAt: -1});
+NotificationSchema.index({target: 1, adminId: 1, updatedAt: -1});
+NotificationSchema.index({target: 1, cashierId: 1, updatedAt: -1});
 
 export const NotificationModel = mongoose.model<NotificationDocument>(
   'Notification',

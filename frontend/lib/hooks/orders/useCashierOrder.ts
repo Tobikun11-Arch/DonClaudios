@@ -10,6 +10,7 @@ import {sendAdminOrderMessage} from '@/lib/api/orderApi';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {cashierNotificationsQueryKey} from '@/lib/hooks/notifications/useNotifications';
 import {counterOrdersQueryKey} from './useCashierCounterOrder';
+import {SAFETY_REFETCH_MS, useRefetchOnChange} from '@/lib/hooks/sync/useRefetchOnChange';
 
 export const allOrdersQueryKey = ['orders', 'all'] as const;
 const orderDetailKey = (orderId: string) => ['orders', orderId] as const;
@@ -18,24 +19,24 @@ const orderMessagesKey = (orderId: string) =>
   ['orders', orderId, 'messages'] as const;
 
 export function useOrderDetailQuery(orderId: string) {
+  useRefetchOnChange('orders', orderDetailKey(orderId), !!orderId);
   return useQuery({
     queryKey: orderDetailKey(orderId),
     queryFn: () => getOrderById(orderId),
     enabled: !!orderId,
     refetchOnWindowFocus: false,
-    refetchInterval: 5000,
-    refetchIntervalInBackground: true,
+    refetchInterval: SAFETY_REFETCH_MS,
     staleTime: 1000
   });
 }
 
 export function useAllOrdersQuery() {
+  useRefetchOnChange('orders', allOrdersQueryKey);
   return useQuery({
     queryKey: allOrdersQueryKey,
     queryFn: () => listAllOrders(),
     refetchOnWindowFocus: false,
-    refetchInterval: 5000,
-    refetchIntervalInBackground: true,
+    refetchInterval: SAFETY_REFETCH_MS,
     staleTime: 1000
   });
 }

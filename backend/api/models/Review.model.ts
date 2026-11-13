@@ -93,6 +93,9 @@ const ReviewSchema = new Schema<ReviewDocument>(
 ReviewSchema.index({status: 1, createdAt: -1});
 ReviewSchema.index({status: 1, isAutoRejected: 1, createdAt: -1});
 ReviewSchema.index({customerId: 1, createdAt: -1});
+// Change-check poll (GET /changes).
+ReviewSchema.index({updatedAt: -1});
+ReviewSchema.index({customerId: 1, updatedAt: -1});
 ReviewSchema.index(
   {customerId: 1, orderId: 1},
   {unique: true, partialFilterExpression: {orderId: {$ne: null}}}

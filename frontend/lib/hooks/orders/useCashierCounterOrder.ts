@@ -11,6 +11,7 @@ import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import type {CreateCounterOrderInput} from '@/lib/api/orderApi';
 import {allOrdersQueryKey} from './useCashierOrder';
 import type {ReportPreset} from '@/lib/types/report';
+import {SAFETY_REFETCH_MS, useRefetchOnChange} from '@/lib/hooks/sync/useRefetchOnChange';
 
 export const counterOrdersQueryKey = ['orders', 'counter'] as const;
 
@@ -29,11 +30,12 @@ export function useCounterOrdersQuery(params?: {
   from?: string;
   to?: string;
 }) {
+  useRefetchOnChange('orders', counterOrdersQueryKeyFor(params));
   return useQuery({
     queryKey: counterOrdersQueryKeyFor(params),
     queryFn: () => listCounterOrders(params),
     refetchOnWindowFocus: false,
-    refetchInterval: 5000,
+    refetchInterval: SAFETY_REFETCH_MS,
     staleTime: 1000
   });
 }

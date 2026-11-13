@@ -15,17 +15,19 @@ import {
   markNotificationRead
 } from '@/lib/api/notificationsApi';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {SAFETY_REFETCH_MS, useRefetchOnChange} from '@/lib/hooks/sync/useRefetchOnChange';
 
 export const notificationsQueryKey = ['notifications'] as const;
 export const adminNotificationsQueryKey = ['notifications', 'admin'] as const;
 export const cashierNotificationsQueryKey = ['notifications', 'cashier'] as const;
 
 export function useMyNotificationsQuery() {
+  useRefetchOnChange('notifications', notificationsQueryKey);
   return useQuery({
     queryKey: notificationsQueryKey,
     queryFn: listMyNotifications,
     refetchOnWindowFocus: false,
-    refetchInterval: 5000,
+    refetchInterval: SAFETY_REFETCH_MS,
     staleTime: 1000
   });
 }
@@ -67,11 +69,12 @@ export function useDeleteNotificationMutation() {
 }
 
 export function useAdminNotificationsQuery() {
+  useRefetchOnChange('notifications', adminNotificationsQueryKey);
   return useQuery({
     queryKey: adminNotificationsQueryKey,
     queryFn: listAdminNotifications,
     refetchOnWindowFocus: false,
-    refetchInterval: 5000,
+    refetchInterval: SAFETY_REFETCH_MS,
     staleTime: 1000
   });
 }
@@ -113,11 +116,12 @@ export function useDeleteAdminNotificationMutation() {
 }
 
 export function useCashierNotificationsQuery() {
+  useRefetchOnChange('notifications', cashierNotificationsQueryKey);
   return useQuery({
     queryKey: cashierNotificationsQueryKey,
     queryFn: listCashierNotifications,
     refetchOnWindowFocus: false,
-    refetchInterval: 5000,
+    refetchInterval: SAFETY_REFETCH_MS,
     staleTime: 1000
   });
 }

@@ -9,6 +9,13 @@ export const transactionRepository = {
   listByOrderIds: (orderIds: string[]) =>
     TransactionModel.find({orderId: {$in: orderIds}}).exec(),
 
+  /** Lean orderId + paymentMethod pairs, for the polled order list endpoints. */
+  listPaymentMethodsByOrderIds: (orderIds: string[]) =>
+    TransactionModel.find({orderId: {$in: orderIds}})
+      .select('orderId paymentMethod')
+      .lean()
+      .exec(),
+
   listByCashierId: (cashierId: string) =>
     TransactionModel.find({cashierId}).sort({timestamp: -1}).exec(),
 

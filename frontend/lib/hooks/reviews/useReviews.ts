@@ -12,6 +12,7 @@ import {
 } from '@/lib/api/reviewsApi';
 import {adminNotificationsQueryKey} from '@/lib/hooks/notifications/useNotifications';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {SAFETY_REFETCH_MS, useRefetchOnChange} from '@/lib/hooks/sync/useRefetchOnChange';
 
 export const publicReviewsQueryKey = ['reviews', 'public'] as const;
 export const myReviewsQueryKey = ['reviews', 'my'] as const;
@@ -28,31 +29,35 @@ export function usePublicReviewsQuery() {
 }
 
 export function useMyReviewsQuery() {
+  useRefetchOnChange('reviews', myReviewsQueryKey);
   return useQuery({
     queryKey: myReviewsQueryKey,
     queryFn: listMyReviews,
     refetchOnWindowFocus: false,
-    refetchInterval: 5000,
+    refetchInterval: SAFETY_REFETCH_MS,
     staleTime: 1000
   });
 }
 
 export function useAdminReviewsQuery() {
+  useRefetchOnChange('reviews', adminReviewsQueryKey);
   return useQuery({
     queryKey: adminReviewsQueryKey,
     queryFn: listAdminReviews,
     refetchOnWindowFocus: false,
-    refetchInterval: 5000,
+    refetchInterval: SAFETY_REFETCH_MS,
     staleTime: 1000
   });
 }
 
 export function useReviewEligibilityQuery() {
+  useRefetchOnChange('orders', reviewEligibilityQueryKey);
+  useRefetchOnChange('reviews', reviewEligibilityQueryKey);
   return useQuery({
     queryKey: reviewEligibilityQueryKey,
     queryFn: getReviewEligibility,
     refetchOnWindowFocus: false,
-    refetchInterval: 5000,
+    refetchInterval: SAFETY_REFETCH_MS,
     staleTime: 1000
   });
 }

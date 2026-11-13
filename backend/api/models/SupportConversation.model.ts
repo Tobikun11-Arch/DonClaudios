@@ -72,6 +72,8 @@ SupportConversationSchema.index({customerId: 1});
 SupportConversationSchema.index({createdIp: 1, customerType: 1, createdAt: -1});
 SupportConversationSchema.index({status: 1, lastMessageAt: -1});
 SupportConversationSchema.index({inquiryStatus: 1, priority: 1, pendingSince: 1});
+// Change-check poll (GET /changes).
+SupportConversationSchema.index({updatedAt: -1});
 
 export const SupportConversationModel = mongoose.model<SupportConversationDocument>(
   'SupportConversation',

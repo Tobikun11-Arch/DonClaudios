@@ -12,6 +12,7 @@ import {
   notificationsQueryKey
 } from '@/lib/hooks/notifications/useNotifications';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {SAFETY_REFETCH_MS, useRefetchOnChange} from '@/lib/hooks/sync/useRefetchOnChange';
 
 const orderMessagesKey = (orderId: string) =>
   ['orders', orderId, 'messages'] as const;
@@ -30,12 +31,13 @@ export function useOrderMessagesQuery(orderId: string, enabled: boolean, asGuest
 }
 
 export function useAdminOrderMessagesQuery(orderId: string, enabled: boolean) {
+  useRefetchOnChange('orderMessages', orderMessagesKey(orderId), enabled);
   return useQuery({
     queryKey: orderMessagesKey(orderId),
     queryFn: () => listAdminOrderMessages(orderId),
     enabled,
     refetchOnWindowFocus: false,
-    refetchInterval: 5000,
+    refetchInterval: SAFETY_REFETCH_MS,
     staleTime: 1000
   });
 }
@@ -67,11 +69,12 @@ export function useSendAdminOrderMessageMutation() {
 }
 
 export function useFollowUpOrdersQuery() {
+  useRefetchOnChange('orderMessages', followUpOrdersKey);
   return useQuery({
     queryKey: followUpOrdersKey,
     queryFn: listFollowUpOrders,
     refetchOnWindowFocus: false,
-    refetchInterval: 5000,
+    refetchInterval: SAFETY_REFETCH_MS,
     staleTime: 1000
   });
 }

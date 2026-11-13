@@ -272,7 +272,7 @@ export const orderController = {
         : undefined;
 
       const orderIds = orders.map(order => String(order._id));
-      const items = await orderItemRepository.listByOrderIds(orderIds);
+      const items = await orderItemRepository.listByOrderIdsLean(orderIds);
       const itemsByOrderId = items.reduce<Record<string, typeof items>>(
         (acc, item) => {
           const orderId = String(item.orderId);
@@ -294,7 +294,7 @@ export const orderController = {
         ])
       );
 
-      const transactions = await transactionRepository.listByOrderIds(orderIds);
+      const transactions = await transactionRepository.listPaymentMethodsByOrderIds(orderIds);
       const paymentMethodByOrderId = new Map(
         transactions.map(t => [String(t.orderId), t.paymentMethod])
       );
@@ -553,7 +553,7 @@ export const orderController = {
 
       const orders = await orderRepository.listByCustomerId(req.auth.userId);
       const orderIds = orders.map(order => String(order._id));
-      const items = await orderItemRepository.listByOrderIds(orderIds);
+      const items = await orderItemRepository.listByOrderIdsLean(orderIds);
       const itemsByOrderId = items.reduce<Record<string, typeof items>>(
         (acc, item) => {
           const orderId = String(item.orderId);
@@ -564,7 +564,7 @@ export const orderController = {
         {}
       );
 
-      const transactions = await transactionRepository.listByOrderIds(orderIds);
+      const transactions = await transactionRepository.listPaymentMethodsByOrderIds(orderIds);
       const paymentMethodByOrderId = new Map(
         transactions.map(t => [String(t.orderId), t.paymentMethod])
       );
@@ -1252,21 +1252,8 @@ export const orderController = {
 
   async checkOverdueOrders(_req: Request, res: Response, next: NextFunction) {
     try {
-      const now = new Date();
-      const preparing = await orderRepository.listPaginated(
-        {orderStatus: 'preparing', orderSource: {$ne: 'in-store'}},
-        1,
-        0
-      );
-      for (const order of preparing) {
-        const timing = evaluateOrderTiming(order as OrderDocument, now);
-        if (timing.isOverdue) {
-          notifyOverdueOrder(order as OrderDocument, timing).catch(error =>
-            console.error('Failed to process overdue order', error)
-          );
-        }
-      }
-      res.status(200).json({checked: preparing.length});
+      const checked = await runOverdueCheck();
+      res.status(200).json({checked});
     } catch (error) {
       next(error);
     }
@@ -1290,7 +1277,7 @@ export const orderController = {
       if (query.status) filter.orderStatus = query.status;
       const orders = await orderRepository.listInStore(filter);
       const orderIds = orders.map(order => String(order._id));
-      const items = await orderItemRepository.listByOrderIds(orderIds);
+      const items = await orderItemRepository.listByOrderIdsLean(orderIds);
       const itemsByOrderId = items.reduce<Record<string, typeof items>>(
         (acc, item) => {
           const orderId = String(item.orderId);
@@ -1301,7 +1288,7 @@ export const orderController = {
         {}
       );
 
-      const transactions = await transactionRepository.listByOrderIds(orderIds);
+      const transactions = await transactionRepository.listPaymentMethodsByOrderIds(orderIds);
       const paymentMethodByOrderId = new Map(
         transactions.map(t => [String(t.orderId), t.paymentMethod])
       );
@@ -2194,3 +2181,28 @@ export const orderController = {
     }
   }
 };
+
+/**
+ * Sends overdue alerts for online orders still "preparing" past their prep
+ * time. Used by GET /orders/overdue-check and by the staff change-check poll
+ * (GET /changes), so alerts keep firing even though the full order list is no
+ * longer refetched every 5 seconds. The atomic latch in notifyOverdueOrder
+ * keeps it to one alert per overdue run.
+ */
+export async function runOverdueCheck(): Promise<number> {
+  const now = new Date();
+  const preparing = await orderRepository.listPaginated(
+    {orderStatus: 'preparing', orderSource: {$ne: 'in-store'}},
+    1,
+    0
+  );
+  for (const order of preparing) {
+    const timing = evaluateOrderTiming(order as OrderDocument, now);
+    if (timing.isOverdue) {
+      notifyOverdueOrder(order as OrderDocument, timing).catch(error =>
+        console.error('Failed to process overdue order', error)
+      );
+    }
+  }
+  return preparing.length;
+}
