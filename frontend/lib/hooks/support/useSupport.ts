@@ -27,6 +27,7 @@ import {
   notificationsQueryKey
 } from '@/lib/hooks/notifications/useNotifications';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {SAFETY_REFETCH_MS, useRefetchOnChange} from '@/lib/hooks/sync/useRefetchOnChange';
 
 export const supportMyKey = ['support', 'my'] as const;
 const supportMessagesKey = (conversationId: string) =>
@@ -104,12 +105,13 @@ export function useSendSupportMessageMutation(
 }
 
 export function useAdminSupportConversationsQuery(enabled = true) {
+  useRefetchOnChange('support', supportAdminConversationsKey, enabled);
   return useQuery({
     queryKey: supportAdminConversationsKey,
     queryFn: listAdminSupportConversations,
     enabled,
     refetchOnWindowFocus: false,
-    refetchInterval: 5000,
+    refetchInterval: SAFETY_REFETCH_MS,
     staleTime: 1000
   });
 }
@@ -118,12 +120,13 @@ export function useAdminSupportMessagesQuery(
   conversationId: string | null,
   enabled = true
 ) {
+  useRefetchOnChange('support', supportAdminMessagesKey(conversationId ?? ''), enabled && !!conversationId);
   return useQuery({
     queryKey: supportAdminMessagesKey(conversationId ?? ''),
     queryFn: () => listAdminSupportMessages(conversationId as string),
     enabled: enabled && !!conversationId,
     refetchOnWindowFocus: false,
-    refetchInterval: 5000,
+    refetchInterval: SAFETY_REFETCH_MS,
     staleTime: 1000
   });
 }
@@ -152,23 +155,25 @@ export function useAdminSupportInquiriesQuery(
   status?: InquiryStatus,
   enabled = true
 ) {
+  useRefetchOnChange('support', ['support', 'admin', 'inquiries', status ?? 'all'], enabled);
   return useQuery({
     queryKey: ['support', 'admin', 'inquiries', status ?? 'all'],
     queryFn: () => listAdminSupportInquiries(status ? {status} : {}),
     enabled,
     refetchOnWindowFocus: false,
-    refetchInterval: 10000,
+    refetchInterval: SAFETY_REFETCH_MS,
     staleTime: 2000
   });
 }
 
 export function useAdminSupportQueueStatsQuery(enabled = true) {
+  useRefetchOnChange('support', ['support', 'admin', 'queue-stats'], enabled);
   return useQuery({
     queryKey: ['support', 'admin', 'queue-stats'],
     queryFn: () => getAdminSupportQueueStats(7),
     enabled,
     refetchOnWindowFocus: false,
-    refetchInterval: 15000,
+    refetchInterval: SAFETY_REFETCH_MS,
     staleTime: 5000
   });
 }
@@ -224,12 +229,13 @@ const cashierMessagesKey = (conversationId: string) =>
   ['support', 'cashier', 'messages', conversationId] as const;
 
 export function useCashierUrgentSupportQuery(enabled = true) {
+  useRefetchOnChange('support', cashierUrgentKey, enabled);
   return useQuery({
     queryKey: cashierUrgentKey,
     queryFn: listCashierUrgentSupport,
     enabled,
     refetchOnWindowFocus: false,
-    refetchInterval: 5000,
+    refetchInterval: SAFETY_REFETCH_MS,
     staleTime: 1000
   });
 }
@@ -238,12 +244,13 @@ export function useCashierSupportMessagesQuery(
   conversationId: string | null,
   enabled = true
 ) {
+  useRefetchOnChange('support', cashierMessagesKey(conversationId ?? ''), enabled && !!conversationId);
   return useQuery({
     queryKey: cashierMessagesKey(conversationId ?? ''),
     queryFn: () => listCashierSupportMessages(conversationId as string),
     enabled: enabled && !!conversationId,
     refetchOnWindowFocus: false,
-    refetchInterval: 5000,
+    refetchInterval: SAFETY_REFETCH_MS,
     staleTime: 1000
   });
 }

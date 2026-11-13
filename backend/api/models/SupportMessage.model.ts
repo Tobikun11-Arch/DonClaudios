@@ -60,6 +60,8 @@ const SupportMessageSchema = new Schema<SupportMessageDocument>(
 
 SupportMessageSchema.index({conversationId: 1, createdAt: 1});
 SupportMessageSchema.index({senderType: 1, inquiryStatus: 1, createdAt: -1});
+// Change-check poll (GET /changes).
+SupportMessageSchema.index({updatedAt: -1});
 
 export const SupportMessageModel = mongoose.model<SupportMessageDocument>(
   'SupportMessage',

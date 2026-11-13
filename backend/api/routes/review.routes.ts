@@ -3,6 +3,7 @@ import {reviewController} from '../controllers/review.controller';
 import {requireAdmin, requireAuth, requireCustomer} from '../middleware/auth';
 import {reviewLimiter} from '../middleware/rateLimit';
 import {validate} from '../middleware/validation';
+import {publicCache} from '../middleware/publicCache';
 import {
   createReviewDto,
   replyReviewDto,
@@ -11,7 +12,7 @@ import {
 
 const router = Router();
 
-router.get('/', reviewController.listPublic);
+router.get('/', publicCache(60), reviewController.listPublic);
 
 router.get('/my', requireAuth, requireCustomer, reviewController.listMyReviews);
 

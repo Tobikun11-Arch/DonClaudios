@@ -21,6 +21,7 @@ import categoryRoutes from './category.routes';
 import pushRoutes from './push.routes';
 import webhookRoutes from './webhook.routes';
 import preOrderEventRoutes from './preOrderEvent.routes';
+import changesRoutes from './changes.routes';
 
 const router = Router();
 
@@ -46,5 +47,6 @@ router.use('/categories', categoryRoutes);
 router.use('/push', pushRoutes);
 router.use('/webhooks', webhookRoutes);
 router.use('/preorders', preOrderEventRoutes);
+router.use('/changes', changesRoutes);
 
 export default router;

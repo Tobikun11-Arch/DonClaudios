@@ -2,13 +2,14 @@ import {Router} from 'express';
 import {categoryController} from '../controllers/category.controller';
 import {requireAdmin, requireAuth} from '../middleware/auth';
 import {validate} from '../middleware/validation';
+import {publicCache} from '../middleware/publicCache';
 import {createCategoryDto, updateCategoryDto} from '../dtos/category.dto';
 
 const router = Router();
 
 router.get('/', requireAuth, categoryController.list);
 
-router.get('/public', categoryController.list);
+router.get('/public', publicCache(60), categoryController.list);
 
 router.post(
   '/',

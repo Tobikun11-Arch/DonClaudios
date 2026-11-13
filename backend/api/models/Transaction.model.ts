@@ -39,6 +39,8 @@ const TransactionSchema = new Schema<TransactionDocument>(
 
 TransactionSchema.index({cashierId: 1, timestamp: -1});
 TransactionSchema.index({orderId: 1}, {unique: true});
+// Change-check poll (GET /changes).
+TransactionSchema.index({updatedAt: -1});
 
 export const TransactionModel = mongoose.model<TransactionDocument>(
   'Transaction',
