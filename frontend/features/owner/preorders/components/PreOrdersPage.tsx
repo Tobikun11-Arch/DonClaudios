@@ -192,7 +192,7 @@ function EventCard({
             type="button"
             onClick={onDelete}
             disabled={orderCount > 0}
-            title={orderCount > 0 ? 'Dates with orders cannot be deleted. Close it instead.' : 'Delete'}
+            title={orderCount > 0 ? 'Dates with active orders cannot be deleted. Close it instead.' : 'Delete'}
             className="rounded-lg p-2 text-gray-500 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30 dark:text-gray-400 dark:hover:bg-red-500/10"
           >
             <Trash2 size={15} />
