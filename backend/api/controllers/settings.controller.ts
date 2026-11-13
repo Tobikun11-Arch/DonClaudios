@@ -81,6 +81,15 @@ export const settingsController = {
     }
   },
 
+  async updateDashboardTheme(req: Request, res: Response, next: NextFunction) {
+    try {
+      const dashboardTheme = await settingsService.updateDashboardTheme(req.body);
+      res.status(200).json({dashboardTheme});
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async getNotificationPreferences(req: Request, res: Response, next: NextFunction) {
     try {
       if (!req.auth) {

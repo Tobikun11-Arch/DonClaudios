@@ -87,7 +87,7 @@ const CHILDREN: Record<string, {id: TabId; label: string; icon: typeof Sun}[]> =
 
 const TAB_INFO: Record<TabId, {label: string; subtitle: string}> = {
   profile: {label: 'Profile & Business Info', subtitle: 'Manage your account, business details, and prep times.'},
-  appearanceCustomize: {label: 'Customize', subtitle: 'How the dashboard looks on this browser. The storefront and cashier pages always stay light.'},
+  appearanceCustomize: {label: 'Customize', subtitle: 'Light or dark mode for this browser, and brand colors for the owner and cashier dashboards.'},
   appearanceHomepage: {label: 'Homepage', subtitle: 'Customize storefront content, colors, and layout.'},
   notificationsPreorders: {label: 'Pre-orders', subtitle: 'Pre-order batch notifications.'},
   notificationsInventory: {label: 'Inventory', subtitle: 'Stock and inventory notifications.'},

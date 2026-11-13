@@ -40,3 +40,16 @@ export const rewardsEarnDto = z.object({
 });
 
 export type RewardsEarnDto = z.infer<typeof rewardsEarnDto>;
+
+// '' clears a color back to the default.
+const hexColor = z
+  .string()
+  .trim()
+  .regex(/^(#[0-9a-fA-F]{6})?$/, 'Colors must be a hex value like #2d4a35');
+
+export const dashboardThemeDto = z.object({
+  sidebarBg: hexColor,
+  accent: hexColor
+});
+
+export type DashboardThemeDto = z.infer<typeof dashboardThemeDto>;

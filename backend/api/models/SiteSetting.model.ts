@@ -76,6 +76,11 @@ export interface SiteSettingDocument extends mongoose.Document {
   /** Loyalty earn rule: rewardsEarnPoints points per rewardsEarnPesos pesos (see config/rewards.ts). */
   rewardsEarnPoints?: number;
   rewardsEarnPesos?: number;
+  /** Owner/cashier dashboard colors (hex). Empty/unset means the default green. */
+  dashboardTheme?: {
+    sidebarBg?: string;
+    accent?: string;
+  };
 }
 
 const StatItemSchema = new Schema<StatItem>(
@@ -186,7 +191,12 @@ const SiteSettingSchema = new Schema<SiteSettingDocument>(
     },
     // No defaults: unset means "use DEFAULT_REWARDS_EARN_RULE" (config/rewards.ts).
     rewardsEarnPoints: {type: Number, min: 1},
-    rewardsEarnPesos: {type: Number, min: 1}
+    rewardsEarnPesos: {type: Number, min: 1},
+    // No defaults: unset means "use the built-in DonClaudio's green".
+    dashboardTheme: {
+      sidebarBg: {type: String},
+      accent: {type: String}
+    }
   },
   {timestamps: true}
 );

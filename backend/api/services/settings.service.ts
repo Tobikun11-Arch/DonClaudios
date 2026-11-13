@@ -1,5 +1,6 @@
 import {settingsRepository} from '../repositories/settings.repository';
 import type {SiteSettingDocument} from '../models/SiteSetting.model';
+import type {DashboardThemeDto} from '../dtos/settings.dto';
 import {
   DEFAULT_FREE_DELIVERY_SETTINGS,
   isValidLatLng,
@@ -66,11 +67,13 @@ export const settingsService = {
       freeDelivery: _ignored,
       rewardsEarnPoints: _ignoredPoints,
       rewardsEarnPesos: _ignoredPesos,
+      dashboardTheme: _ignoredTheme,
       ...rest
     } = data as Partial<SiteSettingDocument> & {
       freeDelivery?: unknown;
       rewardsEarnPoints?: unknown;
       rewardsEarnPesos?: unknown;
+      dashboardTheme?: unknown;
     };
     return settingsRepository.update(rest);
   },
@@ -111,5 +114,19 @@ export const settingsService = {
 
   defaultRewardsEarn(): RewardsEarnRule {
     return DEFAULT_REWARDS_EARN_RULE;
+  },
+
+  /** Saves the dashboard colors; '' resets a color to the default. */
+  async updateDashboardTheme(input: DashboardThemeDto) {
+    const doc = await settingsRepository.update({
+      dashboardTheme: {
+        sidebarBg: input.sidebarBg.trim().toLowerCase(),
+        accent: input.accent.trim().toLowerCase()
+      }
+    } as Partial<SiteSettingDocument>);
+    return {
+      sidebarBg: doc?.dashboardTheme?.sidebarBg || '',
+      accent: doc?.dashboardTheme?.accent || ''
+    };
   }
 };

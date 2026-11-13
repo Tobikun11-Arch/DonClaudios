@@ -1,8 +1,9 @@
 'use client';
 
-import {getSettings, updateSettings} from '@/lib/api/settingsApi';
+import {getSettings, updateDashboardTheme, updateSettings} from '@/lib/api/settingsApi';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
-import type {SiteSetting, SectionId, SectionStyle} from '@/lib/types/settings';
+import type {SiteSetting, SectionId, SectionStyle, DashboardTheme} from '@/lib/types/settings';
+import {dashboardThemeStyle} from '@/lib/dashboardTheme';
 import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
 
 export const settingsQueryKey = ['settings'] as const;
@@ -12,6 +13,10 @@ function mergeWithDefaults(raw: Partial<SiteSetting>): SiteSetting {
   return {
     brandName: raw.brandName || raw.footer?.brandName || d.footer.brandName,
     brandLogo: raw.brandLogo || '',
+    dashboardTheme: {
+      sidebarBg: raw.dashboardTheme?.sidebarBg || '',
+      accent: raw.dashboardTheme?.accent || ''
+    },
     hero: {
       title: raw.hero?.title || d.hero.title,
       highlightedWord: raw.hero?.highlightedWord || d.hero.highlightedWord,
@@ -109,4 +114,23 @@ export function useUpdateSettingsMutation() {
       await queryClient.invalidateQueries({queryKey: settingsQueryKey});
     }
   });
+}
+
+export function useUpdateDashboardThemeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: DashboardTheme) => updateDashboardTheme(body),
+    onSuccess: dashboardTheme => {
+      // Apply at once on this browser without refetching the whole settings.
+      queryClient.setQueryData<SiteSetting>(settingsQueryKey, old =>
+        old ? {...old, dashboardTheme} : old
+      );
+    }
+  });
+}
+
+/** CSS variables for the owner/cashier dashboard shell, from the shared settings query. */
+export function useDashboardThemeStyle() {
+  const {data} = useSettingsQuery();
+  return dashboardThemeStyle(data?.dashboardTheme);
 }
