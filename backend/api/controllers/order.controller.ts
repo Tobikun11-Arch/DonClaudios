@@ -1325,6 +1325,23 @@ export const orderController = {
 
       const {customerInfo, items, totalAmount, paymentMethod} = req.body;
 
+      // Offline POS retries: the same clientRef always maps to one order.
+      const clientRef =
+        typeof req.body.clientRef === 'string' &&
+        /^[A-Za-z0-9_-]{8,64}$/.test(req.body.clientRef)
+          ? (req.body.clientRef as string)
+          : undefined;
+      if (clientRef) {
+        const existing = await orderRepository.findByClientRef(clientRef);
+        if (existing) {
+          const transaction = await transactionRepository.findByOrderId(
+            String(existing._id)
+          );
+          res.status(200).json({order: existing, transaction, duplicate: true});
+          return;
+        }
+      }
+
       if (!Array.isArray(items) || items.length === 0) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'items are required');
       }
@@ -1452,7 +1469,8 @@ export const orderController = {
         orderStatus: 'completed',
         stockDeducted: false,
         paymentStatus: 'unpaid',
-        orderNumber
+        orderNumber,
+        ...(clientRef ? {clientRef} : {})
       });
 
       const orderItems = normalizedItems.map(item => ({
