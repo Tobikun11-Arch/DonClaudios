@@ -428,13 +428,19 @@ function PayForm({
   };
 
   const busy = checkout.isPending || cash.isPending;
+  // Only show the plan picker when there's an actual alternative to paying in full.
+  const hasPlanChoice = summary.downPaymentAllowed || summary.cashAllowed;
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-gray-600 dark:text-gray-300">
-        Your order is confirmed. Choose how you want to pay.
+        Your order is confirmed.{' '}
+        {hasPlanChoice
+          ? 'Choose how you want to pay.'
+          : `Pay ${peso(summary.totalAmount)} online to continue.`}
       </p>
 
+      {hasPlanChoice ? (
       <div className="space-y-2">
         <PlanOption
           active={plan === 'full'}
@@ -461,6 +467,7 @@ function PayForm({
           />
         ) : null}
       </div>
+      ) : null}
 
       {!summary.configured ? (
         <p className="flex items-start gap-2 rounded-xl bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-gray-800/50 dark:text-gray-300">
