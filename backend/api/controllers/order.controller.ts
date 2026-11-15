@@ -1246,7 +1246,7 @@ export const orderController = {
       if (isNonEmptyString(guestInfo.email)) {
         try {
           // Public site URL: email images and links must work outside localhost.
-          const siteUrl = (env.FRONTEND_URL || 'https://don-claudios.vercel.app').replace(/\/+$/, '');
+          const siteUrl = (env.FRONTEND_URL || 'https://www.donclaudios.com').replace(/\/+$/, '');
           const settings = await settingsRepository.findOne().catch(() => null);
           const contact = (settings as any)?.contact ?? {};
           const trackingNumber = String(order._id);

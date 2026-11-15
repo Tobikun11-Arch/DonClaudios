@@ -27,7 +27,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://don-claudios.vercel.app'),
+  metadataBase: new URL('https://www.donclaudios.com'),
   title: "Donclaudio's Lechon House",
   description:
     "Donclaudio's Lechon House is a premier destination for delicious lechon and traditional Filipino cuisine.",
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     title: "Donclaudio's Lechon House",
     description:
       "Donclaudio's Lechon House is a premier destination for delicious lechon and traditional Filipino cuisine.",
-    url: 'https://don-claudios.vercel.app/',
+    url: 'https://www.donclaudios.com/',
     type: 'website',
     images: [
       {
