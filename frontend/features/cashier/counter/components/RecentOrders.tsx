@@ -4,6 +4,7 @@ import {Check, Pencil, Receipt} from 'lucide-react';
 import type {CounterOrderEntry} from '@/lib/api/orderApi';
 import {cn} from '@/lib/utils';
 import {orderLabel, paymentMethodLabel, peso} from '../counterShared';
+import SectionLoader from '@/shared/components/SectionLoader';
 
 function orderTime(order: CounterOrderEntry): string {
   if (!order.createdAt) return '';
@@ -35,7 +36,7 @@ export default function RecentOrders({
   onViewReceipt: (order: CounterOrderEntry) => void;
 }) {
   if (loading) {
-    return <p className="px-4 py-6 text-sm text-gray-500">Loading orders…</p>;
+    return <SectionLoader label="Loading orders" size={72} className="py-6" />;
   }
   if (orders.length === 0) {
     return (

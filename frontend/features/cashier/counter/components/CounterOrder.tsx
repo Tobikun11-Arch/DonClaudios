@@ -28,6 +28,7 @@ import OrderTicket, {type TicketBusy} from './OrderTicket';
 import RecentOrders from './RecentOrders';
 import CounterDialog from './CounterDialog';
 import CounterOrderReceipt from './CounterOrderReceipt';
+import SectionLoader from '@/shared/components/SectionLoader';
 
 type PanelTab = 'order' | 'recent';
 
@@ -546,14 +547,7 @@ export default function CounterOrder() {
 
           <div className="subtle-scrollbar p-3 sm:p-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
             {isLoading ? (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                {Array.from({length: 8}).map((_, i) => (
-                  <div
-                    key={i}
-                    className="aspect-[4/5] animate-pulse rounded-2xl bg-gray-100"
-                  />
-                ))}
-              </div>
+              <SectionLoader label="Loading menu" className="min-h-[50vh]" />
             ) : visibleProducts.length === 0 ? (
               <p className="py-12 text-center text-sm text-gray-500">
                 {query.trim()

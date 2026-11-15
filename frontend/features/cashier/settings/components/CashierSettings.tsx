@@ -16,6 +16,7 @@ import {validatePassword} from '@/lib/utils/passwordRules';
 import {Camera, Check, Pencil} from 'lucide-react';
 import {cn} from '@/lib/utils';
 import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
+import SectionLoader from '@/shared/components/SectionLoader';
 
 export function CashierSettings() {
   const meQuery = useMeQuery();
@@ -33,9 +34,7 @@ export function CashierSettings() {
 
   if (!user) {
     return (
-      <div className="rounded-2xl bg-white shadow p-10 text-center text-sm text-gray-500">
-        Loading profile...
-      </div>
+      <SectionLoader label="Loading profile" className="rounded-2xl bg-white shadow py-14" />
     );
   }
 

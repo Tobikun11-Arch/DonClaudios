@@ -28,6 +28,7 @@ import CashierNotificationBell from '@/features/cashier/notifications/components
 import PreOrderEditor from './PreOrderEditor';
 import PreOrderOrders, {type PreOrderRole} from './PreOrderOrders';
 import {STATUS_STYLE, daysUntil, nextDay, peso, shortDate, weekday} from '@/features/preorders/utils';
+import SectionLoader from '@/shared/components/SectionLoader';
 
 type View = {kind: 'list'} | {kind: 'edit'; id: string | null} | {kind: 'orders'; id: string};
 
@@ -219,13 +220,15 @@ export default function PreOrdersPage({role = 'owner'}: {role?: PreOrderRole}) {
   const [view, setView] = useState<View>({kind: 'list'});
 
   // Notifications link here with ?highlight=<orderId>: open that order's date.
-  const highlightId = useSearchParams().get('highlight');
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get('highlight');
+  const highlightKey = highlightId ? `${highlightId}|${searchParams.get('hl') ?? ''}` : null;
   const {data: highlighted} = usePreOrderDetail(highlightId);
-  // Render-time adjustment (no effect): open the date once per highlight.
+  // Render-time adjustment (no effect): open the date once per click.
   const [openedFor, setOpenedFor] = useState<string | null>(null);
   const highlightEventId = highlighted?.preOrder?.eventId;
-  if (highlightId && highlightEventId && openedFor !== highlightId) {
-    setOpenedFor(highlightId);
+  if (highlightKey && highlightEventId && openedFor !== highlightKey) {
+    setOpenedFor(highlightKey);
     setView({kind: 'orders', id: String(highlightEventId)});
   }
   const [dupFrom, setDupFrom] = useState<PreOrderEvent | null>(null);
@@ -336,11 +339,7 @@ export default function PreOrdersPage({role = 'owner'}: {role?: PreOrderRole}) {
           </Button>
         </div>
       ) : isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {Array.from({length: 3}).map((_, i) => (
-            <div key={i} className="h-56 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-900" />
-          ))}
-        </div>
+        <SectionLoader label="Loading pre-order dates" className="min-h-[40vh]" />
       ) : events.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-gray-200 p-12 text-center dark:border-gray-700">
           <CalendarDays className="mx-auto mb-3 h-8 w-8 text-gray-400" />

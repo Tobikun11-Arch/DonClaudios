@@ -29,6 +29,7 @@ import {OrderDetailDrawer} from '@/features/owner/orders/components/OrderDetailD
 import {nextStatus, staffStatusLabel, type FlowOrder} from '@/lib/orders/orderFlow';
 import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
 import {STATUS_STYLE, daysUntil, peso} from '@/features/preorders/utils';
+import SectionLoader from '@/shared/components/SectionLoader';
 
 export type PreOrderRole = 'owner' | 'cashier';
 
@@ -329,7 +330,7 @@ export default function PreOrderOrders({event, onBack, role = 'owner'}: Props) {
       </div>
 
       {isLoading ? (
-        <div className="h-40 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800" />
+        <SectionLoader label="Loading pre-orders" className="rounded-2xl border border-gray-100 bg-white py-14 dark:border-gray-700 dark:bg-gray-900" />
       ) : visible.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-gray-200 p-10 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
           {orders.length === 0 ? 'No pre-orders here yet.' : 'No pre-orders match these filters.'}
@@ -461,7 +462,7 @@ export default function PreOrderOrders({event, onBack, role = 'owner'}: Props) {
 
       {openId && detail.isLoading && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/30">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/40 border-t-white" />
+          <SectionLoader label="Loading order" size={120} className="rounded-3xl bg-white p-6 shadow-xl dark:bg-gray-900" />
         </div>
       )}
       <OrderDetailDrawer

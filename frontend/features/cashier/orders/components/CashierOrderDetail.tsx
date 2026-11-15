@@ -27,6 +27,7 @@ import {
 } from './CashierOrders';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {PreOrderBadge, withSize} from '@/shared/components/PreOrderBadge';
+import SectionLoader from '@/shared/components/SectionLoader';
 
 function getItemName(item: OrderHistoryItem) {
   let name = 'Product';
@@ -54,9 +55,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-4xl rounded-2xl bg-white shadow p-10 text-sm text-gray-500">
-        Loading order details...
-      </div>
+      <SectionLoader label="Loading order details" className="mx-auto max-w-4xl rounded-2xl bg-white shadow py-16" />
     );
   }
 
@@ -257,7 +256,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
           Conversation with {customer}
         </p>
         {messagesQuery.isLoading ? (
-          <div className="text-sm text-gray-500">Loading conversation...</div>
+          <SectionLoader label="Loading conversation" size={72} className="py-4" />
         ) : messagesQuery.isError ? (
           <div className="text-sm text-red-600">Failed to load conversation.</div>
         ) : (
