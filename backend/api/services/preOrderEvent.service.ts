@@ -376,7 +376,7 @@ async function announceToCustomers(event: PreOrderEventDocument) {
 async function notifyStaffNewPreOrder(order: OrderDocument) {
   const code = String(order._id).slice(-6).toUpperCase();
   const message = `New pre-order #${code} for ${formatPickup(order.preOrder!.pickupDate, order.preOrder!.slotLabel)}.`;
-  // Pre-orders are owner-only: cashiers are not notified.
+  // Goes to the owner and the cashiers (see ownerNotify.service).
   await notifyOwners({
     type: 'new_order',
     title: 'New pre-order',
@@ -571,7 +571,7 @@ export const preOrderEventService = {
       orderItemRepository.listByOrderIds(ids),
       CustomerModel.find(
         {_id: {$in: orders.map(o => o.customerId).filter(Boolean)}},
-        {firstName: 1, lastName: 1, phoneNumber: 1}
+        {firstName: 1, lastName: 1, phoneNumber: 1, email: 1}
       ).lean()
     ]);
     const customerById = new Map(customers.map(c => [String(c._id), c]));
@@ -581,6 +581,8 @@ export const preOrderEventService = {
       const list = itemsByOrder.get(key) ?? [];
       list.push({
         name: it.productId?.name ?? 'Item',
+        imageUrl: it.productId?.imageUrl ?? null,
+        category: it.productId?.category ?? null,
         sizeLabel: it.sizeLabel ?? null,
         quantity: it.quantity,
         price: it.price
@@ -594,14 +596,22 @@ export const preOrderEventService = {
         code: `#${String(o._id).slice(-6).toUpperCase()}`,
         customerName: c ? `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim() : 'Customer',
         customerPhone: (c as any)?.phoneNumber ?? null,
+        customerEmail: (c as any)?.email ?? null,
         slotLabel: o.preOrder?.slotLabel ?? '',
+        pickupAt: o.preOrder?.pickupAt ?? null,
         receiveMethod: o.preOrder?.receiveMethod ?? 'pickup',
+        // Lets the UI reuse the shared status flow (pick-up vs courier).
+        orderType: o.orderType,
+        deliveryMode: o.deliveryMode ?? null,
         orderStatus: o.orderStatus,
         paymentStatus: o.paymentStatus ?? 'unpaid',
+        paymentChannel: o.paymentChannel ?? null,
         amountPaid: o.amountPaid ?? 0,
         totalAmount: o.totalAmount,
         notes: o.riderNotes ?? null,
+        cancelReason: o.cancelReason ?? null,
         createdAt: o.createdAt,
+        updatedAt: (o as any).updatedAt ?? o.createdAt,
         items: itemsByOrder.get(String(o._id)) ?? []
       };
     });

@@ -9,8 +9,12 @@ const wrap =
 
 export const preOrderEventController = {
   // ----- owner -----
-  list: wrap(async (_req, res) => {
-    res.json({events: await preOrderEventService.listForOwner()});
+  list: wrap(async (req, res) => {
+    const events = await preOrderEventService.listForOwner();
+    // Cashiers only work published/closed dates; drafts are the owner's.
+    res.json({
+      events: req.auth?.type === 'cashier' ? events.filter(e => e.status !== 'draft') : events
+    });
   }),
   get: wrap(async (req, res) => {
     res.json({event: await preOrderEventService.getForOwner(req.params.id)});

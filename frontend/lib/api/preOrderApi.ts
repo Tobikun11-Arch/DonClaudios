@@ -91,15 +91,30 @@ export type PreOrderOwnerOrder = {
   code: string;
   customerName: string;
   customerPhone: string | null;
+  customerEmail?: string | null;
   slotLabel: string;
+  /** Pickup date + slot start (ISO). */
+  pickupAt?: string | null;
   receiveMethod: 'pickup' | 'lalamove';
+  orderType: 'pickup' | 'delivery' | 'reservation';
+  deliveryMode?: 'DONCLAUDIO' | 'LALAMOVE' | null;
   orderStatus: string;
   paymentStatus: 'unpaid' | 'down_payment' | 'paid';
+  paymentChannel?: string | null;
   amountPaid: number;
   totalAmount: number;
   notes: string | null;
+  cancelReason?: string | null;
   createdAt: string;
-  items: Array<{name: string; sizeLabel: string | null; quantity: number; price: number}>;
+  updatedAt?: string;
+  items: Array<{
+    name: string;
+    imageUrl?: string | null;
+    category?: string | null;
+    sizeLabel: string | null;
+    quantity: number;
+    price: number;
+  }>;
 };
 
 export type PlacePreOrderInput = {

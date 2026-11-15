@@ -13,7 +13,8 @@ import {
   MoreHorizontal,
   X,
   ChevronRight,
-  Store
+  Store,
+  CalendarClock
 } from 'lucide-react';
 import {Toaster} from '@/components/ui/sonner';
 import CashierUrgentSupportBubble from '@/features/cashier/support/components/CashierUrgentSupportBubble';
@@ -45,6 +46,12 @@ const PRIMARY_TABS = [
 
 const DRAWER_ITEMS = [
   {
+    label: 'Pre-orders',
+    tab: 'preorders',
+    icon: CalendarClock,
+    href: '/cashier/dashboard?tab=preorders'
+  },
+  {
     label: 'Settings',
     tab: 'settings',
     icon: User,
@@ -60,6 +67,7 @@ type DashboardLayoutProps = {
   menu?: React.ReactNode;
   settings?: React.ReactNode;
   counter?: React.ReactNode;
+  preorders?: React.ReactNode;
 };
 
 export default function DashboardLayout({
@@ -67,7 +75,8 @@ export default function DashboardLayout({
   orders,
   menu,
   settings,
-  counter
+  counter,
+  preorders
 }: DashboardLayoutProps) {
   const searchParams = useSearchParams();
   const brand = useBrand();
@@ -108,7 +117,8 @@ export default function DashboardLayout({
     orders,
     menu,
     settings,
-    counter
+    counter,
+    preorders
   };
 
   const handleLogout = async () => {

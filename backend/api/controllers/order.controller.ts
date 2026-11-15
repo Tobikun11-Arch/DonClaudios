@@ -237,9 +237,14 @@ export const orderController = {
           })
         : undefined;
 
-      const filter: Record<string, unknown> = {orderSource: {$ne: 'in-store'}};
-      // Holiday pre-orders are handled by the owner only.
-      if (req.auth?.type === 'cashier') filter.isPreOrder = {$ne: true};
+      // Dated pre-orders live in their own Pre-orders tab (owner and cashier),
+      // so neither order queue lists them. Reports still count them: they
+      // aggregate the orders collection directly, not this endpoint.
+      const baseFilter: Record<string, unknown> = {
+        orderSource: {$ne: 'in-store'},
+        isPreOrder: {$ne: true}
+      };
+      const filter: Record<string, unknown> = {...baseFilter};
       if (range) filter.createdAt = {$gte: range.from, $lt: range.to};
       if (query.status) filter.orderStatus = query.status;
       if (query.type) filter.orderType = query.type;
@@ -256,7 +261,7 @@ export const orderController = {
         // its own total. Only requested by the owner page (keeps the cashier
         // poll lean). Base filter keeps the selected date range.
         query.withCounts === 'true'
-          ? orderRepository.countsByFilter({orderSource: {$ne: 'in-store'}, ...(range ? {createdAt: {$gte: range.from, $lt: range.to}} : {})})
+          ? orderRepository.countsByFilter({...baseFilter, ...(range ? {createdAt: {$gte: range.from, $lt: range.to}} : {})})
           : Promise.resolve(undefined)
       ]);
       const totalPages = paginated ? Math.max(1, Math.ceil(total / limit)) : 1;
@@ -350,7 +355,7 @@ export const orderController = {
       if (!order) {
         throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
       }
-      assertCashierMayHandle(req.auth, order);
+      // Cashiers may open pre-orders (read-only view in their Pre-orders tab).
 
       const items = await orderItemRepository.listByOrderIds([String(order._id)]);
 
@@ -1912,7 +1917,12 @@ export const orderController = {
       if (!order) {
         throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found');
       }
-      assertCashierMayHandle(req.auth, order);
+      // Cashiers may move a pre-order through its statuses; everything else
+      // about a pre-order (cancelling and refunds, payments, follow-ups, the
+      // date itself) stays with the owner.
+      if (req.auth.type === 'cashier' && order.isPreOrder && status === 'cancelled') {
+        throw new ApiError(403, 'PREORDER_OWNER_ONLY', 'Only the owner can cancel a pre-order.');
+      }
 
       // Each kind of order has its own steps (see config/orderFlow.ts): only
       // the store's own rider goes "on the way"; pick-up, reservation and

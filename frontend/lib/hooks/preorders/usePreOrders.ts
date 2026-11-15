@@ -1,6 +1,8 @@
 'use client';
 
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {getOrderById, updateOrderStatus} from '@/lib/api/orderApi';
+import {SAFETY_REFETCH_MS, useRefetchOnChange} from '@/lib/hooks/sync/useRefetchOnChange';
 import {
   createPreOrderEvent,
   deletePreOrderEvent,
@@ -20,6 +22,7 @@ import {
 export const preOrderKeys = {
   owner: ['preorders', 'owner'] as const,
   ownerOrders: (id: string) => ['preorders', 'owner', id, 'orders'] as const,
+  order: (orderId: string) => ['preorders', 'order', orderId] as const,
   open: ['preorders', 'open'] as const,
   openOne: (id: string) => ['preorders', 'open', id] as const
 };
@@ -40,13 +43,39 @@ export function useOwnerPreOrders() {
   return useQuery({queryKey: preOrderKeys.owner, queryFn: listPreOrderEvents, retry: retryServerErrors});
 }
 
+/** Owner and cashier: the orders of one date. Refetches when orders change. */
 export function useOwnerPreOrderOrders(id: string | null) {
+  useRefetchOnChange('orders', preOrderKeys.ownerOrders(id ?? ''), !!id);
   return useQuery({
     queryKey: preOrderKeys.ownerOrders(id ?? ''),
     queryFn: () => listPreOrderEventOrders(id as string),
     enabled: !!id,
     retry: retryServerErrors,
-    refetchInterval: 30000
+    refetchInterval: SAFETY_REFETCH_MS
+  });
+}
+
+/** Full order (items, payment, timeline) for the detail drawer. */
+export function usePreOrderDetail(orderId: string | null) {
+  useRefetchOnChange('orders', preOrderKeys.order(orderId ?? ''), !!orderId);
+  return useQuery({
+    queryKey: preOrderKeys.order(orderId ?? ''),
+    queryFn: async () => (await getOrderById(orderId as string)).order,
+    enabled: !!orderId,
+    retry: retryServerErrors
+  });
+}
+
+/** Move a pre-order to its next status (owner or cashier). */
+export function useUpdatePreOrderStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({orderId, status}: {orderId: string; status: string}) =>
+      updateOrderStatus(orderId, status),
+    onSuccess: () => {
+      void qc.invalidateQueries({queryKey: ['preorders']});
+      void qc.invalidateQueries({queryKey: ['owner', 'orders']});
+    }
   });
 }
 
