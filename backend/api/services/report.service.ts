@@ -1388,3 +1388,51 @@ export async function getReportAcquisition(range: ResolvedRange): Promise<Report
     campaigns: [...campaignMap.values()].sort((a, b) => b.count - a.count).slice(0, 5)
   };
 }
+
+/* ------------------------------------------------------------------------- */
+/* Delivery heatmap: where delivery customers are                            */
+/* ------------------------------------------------------------------------- */
+
+export interface DeliveryHeatmap {
+  /** Drop-off pins rounded to ~110 m cells, with how many orders fell in each. */
+  points: Array<{lat: number; lng: number; count: number}>;
+  totalOrders: number;
+  days: number | null;
+}
+
+/**
+ * Pinned drop-offs of non-cancelled delivery orders. Coordinates are rounded
+ * to 3 decimals (~110 m) and grouped, so the owner sees density, never an
+ * exact house.
+ */
+export async function getDeliveryHeatmap(days: number | null): Promise<DeliveryHeatmap> {
+  const match: Record<string, unknown> = {
+    orderType: 'delivery',
+    orderStatus: {$ne: 'cancelled'},
+    'deliveryLocation.lat': {$type: 'number'},
+    'deliveryLocation.lng': {$type: 'number'}
+  };
+  if (days) match.createdAt = {$gte: new Date(Date.now() - days * 86400000)};
+
+  const cells: Array<{_id: {lat: number; lng: number}; count: number}> =
+    await OrderModel.aggregate([
+      {$match: match},
+      {
+        $group: {
+          _id: {
+            lat: {$round: ['$deliveryLocation.lat', 3]},
+            lng: {$round: ['$deliveryLocation.lng', 3]}
+          },
+          count: {$sum: 1}
+        }
+      },
+      {$sort: {count: -1}},
+      {$limit: 5000}
+    ]);
+
+  return {
+    points: cells.map(c => ({lat: c._id.lat, lng: c._id.lng, count: c.count})),
+    totalOrders: cells.reduce((n, c) => n + c.count, 0),
+    days
+  };
+}

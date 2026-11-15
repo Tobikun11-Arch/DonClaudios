@@ -19,11 +19,20 @@ type Props = {
   onZoneChange?: (zone: LatLng[]) => void;
   /** Colours the customer pin (green inside the zone, amber outside). */
   pinInside?: boolean;
+  /** Owner: dashed reference ring of this radius (km) around the store. */
+  guideRadiusKm?: number | null;
+  /** Owner: customer density heatmap. Null/undefined hides it. */
+  heatPoints?: HeatPoint[] | null;
   className?: string;
   ariaLabel?: string;
 };
 
+export type HeatPoint = {lat: number; lng: number; count: number};
+
 const BRAND = '#3c5e45';
+
+/** Green (few orders) → amber → red (many). */
+const HEAT_GRADIENT = {0.2: '#4A7C35', 0.4: '#A8CC8C', 0.6: '#F4B400', 0.8: '#F97316', 1: '#DC2626'};
 
 function pinHtml(color: string, label: string) {
   return `<div style="transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center">
@@ -67,6 +76,8 @@ export default function DeliveryZoneMap({
   editableZone = false,
   onZoneChange,
   pinInside,
+  guideRadiusKm,
+  heatPoints,
   className,
   ariaLabel = 'Free delivery area map'
 }: Props) {
@@ -76,6 +87,8 @@ export default function DeliveryZoneMap({
   const polygonRef = useRef<Leaflet.Polygon | null>(null);
   const pinRef = useRef<Leaflet.Marker | null>(null);
   const vertexLayerRef = useRef<Leaflet.LayerGroup | null>(null);
+  const guideRef = useRef<Leaflet.Circle | null>(null);
+  const heatRef = useRef<Leaflet.Layer | null>(null);
   const [ready, setReady] = useState(false);
 
   // Latest props for Leaflet event handlers registered once.
@@ -100,7 +113,9 @@ export default function DeliveryZoneMap({
 
       const map = L.map(containerRef.current, {
         zoomControl: true,
-        scrollWheelZoom: false,
+        // Owner editor: mouse wheel zooms at the cursor. The customer map
+        // keeps it off so scrolling the checkout page never gets trapped.
+        scrollWheelZoom: editableRef.current,
         // Clicks set the pin / add zone corners, so double-click must not zoom.
         doubleClickZoom: false,
         attributionControl: true
@@ -146,6 +161,8 @@ export default function DeliveryZoneMap({
       polygonRef.current = null;
       pinRef.current = null;
       vertexLayerRef.current = null;
+      guideRef.current = null;
+      heatRef.current = null;
     };
     // The store never moves while mounted.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -190,6 +207,77 @@ export default function DeliveryZoneMap({
       vertexLayerRef.current?.addLayer(handle);
     });
   }, [ready, zone, editableZone]);
+
+  // Reference ring for the km range.
+  useEffect(() => {
+    const L = LRef.current;
+    const map = mapRef.current;
+    if (!ready || !L || !map) return;
+
+    if (!guideRadiusKm || guideRadiusKm <= 0) {
+      guideRef.current?.remove();
+      guideRef.current = null;
+      return;
+    }
+    if (!guideRef.current) {
+      guideRef.current = L.circle([store.lat, store.lng], {
+        radius: guideRadiusKm * 1000,
+        color: '#c30010',
+        weight: 1.5,
+        opacity: 0.7,
+        dashArray: '2 6',
+        fill: false,
+        interactive: false
+      }).addTo(map);
+    } else {
+      guideRef.current.setRadius(guideRadiusKm * 1000);
+    }
+    // Keep the whole ring in view when it is drawn or resized.
+    map.fitBounds(guideRef.current.getBounds(), {padding: [16, 16]});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, guideRadiusKm]);
+
+  // Customer density heatmap (leaflet.heat needs the global `L`).
+  useEffect(() => {
+    const L = LRef.current;
+    const map = mapRef.current;
+    if (!ready || !L || !map) return;
+    let cancelled = false;
+
+    heatRef.current?.remove();
+    heatRef.current = null;
+    if (!heatPoints || heatPoints.length === 0) return;
+
+    (async () => {
+      // leaflet.heat attaches `heatLayer` to the global `L`. A dynamic
+      // `import('leaflet')` is a read-only module namespace, so the plugin's
+      // write would be silently dropped; give it a writable copy instead.
+      const g = window as unknown as {L?: typeof Leaflet};
+      if (!g.L?.heatLayer) {
+        g.L = Object.isExtensible(L) ? L : ({...L} as typeof Leaflet);
+        await import('leaflet.heat');
+      }
+      const heatLayer = g.L?.heatLayer;
+      if (cancelled || !mapRef.current || typeof heatLayer !== 'function') return;
+      const max = Math.max(...heatPoints.map(p => p.count));
+      // Square root so one very busy spot does not wash out the rest.
+      const data = heatPoints.map(
+        p => [p.lat, p.lng, Math.sqrt(p.count / max)] as [number, number, number]
+      );
+      heatRef.current = heatLayer(data, {
+        radius: 24,
+        blur: 18,
+        maxZoom: 14,
+        max: 1,
+        minOpacity: 0.3,
+        gradient: HEAT_GRADIENT
+      }).addTo(mapRef.current);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, heatPoints]);
 
   // Customer pin.
   useEffect(() => {

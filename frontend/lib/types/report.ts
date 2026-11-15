@@ -217,3 +217,12 @@ export type ReportAcquisition = {
   answeredSignups: number;
   campaigns: Array<{campaign: string; source: string; count: number}>;
 };
+
+/** Customer density for the delivery map (GET /report/delivery-heatmap). */
+export type DeliveryHeatmapDays = '30' | '90' | '365' | 'all';
+
+export type DeliveryHeatmap = {
+  points: Array<{lat: number; lng: number; count: number}>;
+  totalOrders: number;
+  days: number | null;
+};

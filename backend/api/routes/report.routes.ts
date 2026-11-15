@@ -4,6 +4,7 @@ import {requireAuth, requireAdmin} from '../middleware/auth';
 import {validateQuery} from '../middleware/validation';
 import {
   reportBreakdownQueryDto,
+  reportDeliveryHeatmapQueryDto,
   reportPdfQueryDto,
   reportRangeQueryDto,
   reportTimeseriesQueryDto
@@ -57,6 +58,14 @@ router.get(
   requireAdmin,
   validateQuery(reportRangeQueryDto),
   reportController.acquisition
+);
+
+router.get(
+  '/delivery-heatmap',
+  requireAuth,
+  requireAdmin,
+  validateQuery(reportDeliveryHeatmapQueryDto),
+  reportController.deliveryHeatmap
 );
 
 router.get('/dimensions', requireAuth, requireAdmin, reportController.dimensions);
