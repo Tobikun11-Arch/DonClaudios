@@ -17,6 +17,9 @@ import {
   DEFAULT_SLOTS,
   DEFAULT_SLOT_LIMIT
 } from '@/features/preorders/utils';
+import {todayInStoreTimezone} from '@/lib/preOrder/preOrder';
+
+const PAST_DATE_MESSAGE = 'Pickup date cannot be in the past';
 
 type SizeDraft = {
   key: string;
@@ -169,6 +172,7 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
   const submit = async () => {
     if (!form.title.trim()) return toast.error('Give this pre-order date a title');
     if (!form.pickupDate) return toast.error('Choose the pickup date');
+    if (pickupIsPast) return toast.error(PAST_DATE_MESSAGE);
     const input: PreOrderEventInput = {
       title: form.title.trim(),
       pickupDate: form.pickupDate,
@@ -205,6 +209,11 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
   };
 
   const totalSizes = form.products.reduce((n, p) => n + p.sizes.length, 0);
+  const today = todayInStoreTimezone();
+  // An existing date that has already passed keeps its stored value (the
+  // backend accepts it unchanged); only a newly chosen past day is blocked.
+  const pickupIsPast =
+    !!form.pickupDate && form.pickupDate < today && form.pickupDate !== event?.pickupDate;
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
@@ -235,7 +244,7 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
           </Button>
           <Button
             onClick={submit}
-            disabled={save.isPending}
+            disabled={save.isPending || pickupIsPast}
             className="bg-[#2d4a35] text-white hover:bg-[#3a5c44] dark:bg-[#4a7c59] dark:hover:bg-[#5a8f6a]"
           >
             {save.isPending ? 'Saving…' : 'Save'}
@@ -258,13 +267,24 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
             />
           </div>
           <div>
-            <label className={labelCls}>Pickup date</label>
+            <label className={labelCls} htmlFor="preorder-pickup-date">
+              Pickup date
+            </label>
             <input
+              id="preorder-pickup-date"
               type="date"
-              className={inputCls}
+              className={`${inputCls} ${pickupIsPast ? 'border-red-400 dark:border-red-500' : ''}`}
               value={form.pickupDate}
+              min={today}
+              aria-invalid={pickupIsPast}
+              aria-describedby={pickupIsPast ? 'preorder-pickup-date-error' : undefined}
               onChange={e => set('pickupDate', e.target.value)}
             />
+            {pickupIsPast && (
+              <p id="preorder-pickup-date-error" className="mt-1 text-[0.7rem] text-red-600 dark:text-red-400">
+                {PAST_DATE_MESSAGE}. Choose today or a later day.
+              </p>
+            )}
           </div>
           <div>
             <label className={labelCls}>Customers can cancel until</label>
