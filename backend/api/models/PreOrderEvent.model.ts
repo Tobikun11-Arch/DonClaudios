@@ -45,6 +45,8 @@ export interface PreOrderSlot {
   label: string;
   /** Start time "HH:MM" (Manila), used as the scheduled pickup time. */
   startTime: string;
+  /** End time "HH:MM" (Manila). Null on slots saved before end times existed. */
+  endTime?: string | null;
   limit: number;
   remaining: number;
 }
@@ -85,6 +87,7 @@ const EventProductSchema = new Schema<PreOrderEventProduct>({
 const SlotSchema = new Schema<PreOrderSlot>({
   label: {type: String, required: true, trim: true, maxlength: 40},
   startTime: {type: String, required: true, match: /^([01]\d|2[0-3]):[0-5]\d$/},
+  endTime: {type: String, default: null, match: /^([01]\d|2[0-3]):[0-5]\d$/},
   limit: {type: Number, required: true, min: 0},
   remaining: {type: Number, required: true, min: 0}
 });

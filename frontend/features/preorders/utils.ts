@@ -5,14 +5,38 @@ export const peso = (n: number) =>
 
 /** Same defaults as the backend (DEFAULT_SLOTS). */
 export const DEFAULT_SLOTS = [
-  {label: '8 - 9 AM', startTime: '08:00'},
-  {label: '10 - 11 AM', startTime: '10:00'},
-  {label: '12 - 1 PM', startTime: '12:00'},
-  {label: '2 - 3 PM', startTime: '14:00'},
-  {label: '4 - 5 PM', startTime: '16:00'},
-  {label: '6 - 7 PM', startTime: '18:00'},
-  {label: '8 PM', startTime: '20:00'}
+  {startTime: '08:00', endTime: '09:00'},
+  {startTime: '10:00', endTime: '11:00'},
+  {startTime: '12:00', endTime: '13:00'},
+  {startTime: '14:00', endTime: '15:00'},
+  {startTime: '16:00', endTime: '17:00'},
+  {startTime: '18:00', endTime: '19:00'},
+  {startTime: '20:00', endTime: '21:00'}
 ];
+
+/**
+ * Customer-facing slot label built from its times, e.g. "8 - 9 AM" or
+ * "11 AM - 12 PM". Same rule as the backend's slotLabel().
+ */
+export function slotLabel(startTime: string, endTime: string): string {
+  const part = (hhmm: string) => {
+    const [h, m] = hhmm.split(':').map(Number);
+    const hour = h % 12 === 0 ? 12 : h % 12;
+    return {text: m ? `${hour}:${String(m).padStart(2, '0')}` : String(hour), meridiem: h < 12 ? 'AM' : 'PM'};
+  };
+  const a = part(startTime);
+  const b = part(endTime);
+  return a.meridiem === b.meridiem
+    ? `${a.text} - ${b.text} ${b.meridiem}`
+    : `${a.text} ${a.meridiem} - ${b.text} ${b.meridiem}`;
+}
+
+/** "HH:MM" plus minutes, capped at 23:59 (slots never cross midnight). */
+export function addMinutesToTime(hhmm: string, minutes: number): string {
+  const [h, m] = hhmm.split(':').map(Number);
+  const total = Math.min(h * 60 + m + minutes, 23 * 60 + 59);
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
 export const DEFAULT_SLOT_LIMIT = 40;
 export const DEFAULT_SIZE_STOCK = 10;
 export const DEFAULT_MAX_PER_ORDER = 1;

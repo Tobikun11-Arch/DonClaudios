@@ -111,11 +111,31 @@ router.post(
 );
 router.post('/:id/payment/cash', optionalAuth, paymentController.chooseCash);
 router.post(
+  '/:id/payment/in-store',
+  optionalAuth,
+  paymentController.chooseInStore
+);
+router.post(
   '/:id/payment/balance',
   optionalAuth,
   paymentController.payBalance
 );
-// Staff: cash collected (cash on pickup, or the cash balance of a down payment).
+// Cancellation & refund policy (config/refundPolicy.ts).
+router.get('/:id/cancel-quote', optionalAuth, paymentController.cancelQuote);
+router.post(
+  '/:id/cancel-request/decline',
+  requireAuth,
+  requireStaff,
+  paymentController.declineCancelRequest
+);
+router.post(
+  '/:id/refund/cash',
+  requireAuth,
+  requireStaff,
+  paymentController.markCashRefunded
+);
+// Staff: cash collected (cash on pickup, in-store payment, or the cash
+// balance of a down payment).
 router.patch(
   '/:id/payment/mark-paid',
   requireAuth,

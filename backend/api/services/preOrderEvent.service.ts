@@ -36,15 +36,35 @@ import {ApiError} from '../utils/error';
 const MANILA_OFFSET_MS = 8 * 3600000;
 const DAY_MS = 86400000;
 
-export const DEFAULT_SLOTS: Array<{label: string; startTime: string}> = [
-  {label: '8 - 9 AM', startTime: '08:00'},
-  {label: '10 - 11 AM', startTime: '10:00'},
-  {label: '12 - 1 PM', startTime: '12:00'},
-  {label: '2 - 3 PM', startTime: '14:00'},
-  {label: '4 - 5 PM', startTime: '16:00'},
-  {label: '6 - 7 PM', startTime: '18:00'},
-  {label: '8 PM', startTime: '20:00'}
+export const DEFAULT_SLOTS: Array<{startTime: string; endTime: string}> = [
+  {startTime: '08:00', endTime: '09:00'},
+  {startTime: '10:00', endTime: '11:00'},
+  {startTime: '12:00', endTime: '13:00'},
+  {startTime: '14:00', endTime: '15:00'},
+  {startTime: '16:00', endTime: '17:00'},
+  {startTime: '18:00', endTime: '19:00'},
+  {startTime: '20:00', endTime: '21:00'}
 ];
+
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/**
+ * Customer-facing slot label built from its times, e.g. "8 - 9 AM",
+ * "11 AM - 12 PM", "8:30 - 9:30 AM". Keep in sync with the frontend copy
+ * in features/preorders/utils.ts.
+ */
+export function slotLabel(startTime: string, endTime: string): string {
+  const part = (hhmm: string) => {
+    const [h, m] = hhmm.split(':').map(Number);
+    const hour = h % 12 === 0 ? 12 : h % 12;
+    return {text: m ? `${hour}:${String(m).padStart(2, '0')}` : String(hour), meridiem: h < 12 ? 'AM' : 'PM'};
+  };
+  const a = part(startTime);
+  const b = part(endTime);
+  return a.meridiem === b.meridiem
+    ? `${a.text} - ${b.text} ${b.meridiem}`
+    : `${a.text} ${a.meridiem} - ${b.text} ${b.meridiem}`;
+}
 
 // --- date helpers (Asia/Manila) ----------------------------------------------
 
@@ -95,7 +115,7 @@ type SizeInput = {
   maxPerOrder?: unknown;
 };
 type ProductInput = {_id?: string; productId?: unknown; sizes?: SizeInput[]; maxSizes?: unknown};
-type SlotInput = {_id?: string; label?: unknown; startTime?: unknown; limit?: unknown};
+type SlotInput = {_id?: string; label?: unknown; startTime?: unknown; endTime?: unknown; limit?: unknown};
 
 export type EventInput = {
   title?: unknown;
@@ -219,11 +239,19 @@ async function buildContent(input: EventInput, existing?: PreOrderEventDocument)
   const keptSlotIds = new Set<string>();
   const slots = slotInputs.map((s, i) => {
     const where = `Time slot #${i + 1}`;
-    const label = text(s.label, `${where} label`, 40) as string;
     const startTime = typeof s.startTime === 'string' ? s.startTime.trim() : '';
-    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime)) {
+    if (!HHMM.test(startTime)) {
       throw new ApiError(400, 'VALIDATION_ERROR', `${where}: start time must be HH:MM`);
     }
+    const endTime = typeof s.endTime === 'string' ? s.endTime.trim() : '';
+    if (!HHMM.test(endTime)) {
+      throw new ApiError(400, 'VALIDATION_ERROR', `${where}: end time must be HH:MM`);
+    }
+    if (endTime <= startTime) {
+      throw new ApiError(400, 'VALIDATION_ERROR', `${where}: end time must be after the start time`);
+    }
+    // The label customers see is always built from the times.
+    const label = slotLabel(startTime, endTime);
     const limit = wholeNumber(s.limit, `${where} limit`, 0);
     const old = s._id && isId(s._id) ? oldSlots.get(s._id) : undefined;
     const used = old ? old.limit - old.remaining : 0;
@@ -235,6 +263,7 @@ async function buildContent(input: EventInput, existing?: PreOrderEventDocument)
       ...(old ? {_id: new mongoose.Types.ObjectId(s._id as string)} : {}),
       label,
       startTime,
+      endTime,
       limit,
       remaining: limit - used
     };
@@ -325,6 +354,7 @@ function shapeEvent(event: PreOrderEventDocument, info: Map<string, any>, forOwn
     _id: String(s._id),
     label: s.label,
     startTime: s.startTime,
+    endTime: s.endTime ?? null,
     remaining: s.remaining,
     full: s.remaining <= 0,
     ...(forOwner ? {limit: s.limit, booked: s.limit - s.remaining} : {})
@@ -547,7 +577,13 @@ export const preOrderEventService = {
           maxPerOrder: s.maxPerOrder
         }))
       })),
-      slots: source.slots.map(s => ({label: s.label, startTime: s.startTime, limit: s.limit, remaining: s.limit})),
+      slots: source.slots.map(s => ({
+        label: s.label,
+        startTime: s.startTime,
+        endTime: s.endTime ?? null,
+        limit: s.limit,
+        remaining: s.limit
+      })),
       createdBy: source.createdBy ?? null
     });
     return this.getForOwner(String(copy._id));

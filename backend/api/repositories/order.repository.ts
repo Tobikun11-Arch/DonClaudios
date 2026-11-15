@@ -193,6 +193,22 @@ export const orderRepository = {
       {$set: {paymentStatus: 'paid', paidAt, paidBy}}
     ).exec(),
 
+  /**
+   * Latch for auto-cancelling an overdue in-store payment: clears the
+   * deadline only if the order is still confirmed, unpaid and past it.
+   */
+  claimInStoreExpiry: (orderId: string, now: Date) =>
+    OrderModel.updateOne(
+      {
+        _id: orderId,
+        orderStatus: 'confirmed',
+        paymentStatus: 'unpaid',
+        paymentChoice: {$in: ['in_store_full', 'in_store_down_payment']},
+        paymentExpiresAt: {$lte: now}
+      },
+      {$set: {paymentExpiresAt: null}}
+    ).exec(),
+
   updateFields: (orderId: string, patch: Record<string, unknown>) =>
     OrderModel.findByIdAndUpdate(orderId, {$set: patch}, {new: true}).exec()
 };

@@ -42,6 +42,8 @@ export interface PaymentDocument extends mongoose.Document {
   paidChannel?: string | null;
   refundId?: string | null;
   refundedAt?: Date | null;
+  /** What was (or is being) refunded; less than `charge` for partial refunds. */
+  refundAmount?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -82,7 +84,8 @@ const PaymentSchema = new Schema<PaymentDocument>(
     paidAt: {type: Date, default: null},
     paidChannel: {type: String, default: null},
     refundId: {type: String, default: null},
-    refundedAt: {type: Date, default: null}
+    refundedAt: {type: Date, default: null},
+    refundAmount: {type: Number, default: null}
   },
   {timestamps: true}
 );

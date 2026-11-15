@@ -22,7 +22,12 @@ import {env} from '../config/env';
 import {storeStatusService} from '../services/storeStatus.service';
 import {guestOtpService} from '../services/guestOtp.service';
 import {guestOrderGuardService} from '../services/guestOrderGuard.service';
-import {paymentService} from '../services/payment.service';
+import {
+  customerCancelPolicy,
+  isInStoreChoice,
+  paymentService
+} from '../services/payment.service';
+import {downPaymentAmount} from '../config/paymentFees';
 import {preOrderEventService} from '../services/preOrderEvent.service';
 import {assertCashierMayHandle, notifyOwners} from '../services/ownerNotify.service';
 import {assertOrderCustomerAccess} from '../utils/orderAccess';
@@ -478,10 +483,24 @@ export const orderController = {
         throw new ApiError(403, 'FORBIDDEN', 'Order not found');
       }
 
+      const reasonText =
+        typeof req.body?.reason === 'string' && req.body.reason.trim().length > 0
+          ? req.body.reason.trim()
+          : undefined;
+
       const CANCELLABLE = ['pending'];
       if (order.isPreOrder) {
-        // Dated pre-orders: cancellable in any open status until the date's
-        // cut-off (default 14 days before pickup).
+        if (order.orderStatus === 'cancelled' || order.orderStatus === 'completed') {
+          throw new ApiError(400, 'INVALID_OPERATION', 'Order can no longer be cancelled');
+        }
+        // After the date's cut-off (default 14 days before pickup) the
+        // customer can only ASK; the owner approves under the late policy.
+        if (customerCancelPolicy(order) === 'late') {
+          await paymentService.requestCancellation(order, reasonText);
+          const pendingOrder = await orderRepository.findById(String(order._id));
+          res.status(200).json({order: pendingOrder, requested: true});
+          return;
+        }
         preOrderEventService.assertCustomerCanCancel(order);
       } else if (!CANCELLABLE.includes(order.orderStatus)) {
         throw new ApiError(
@@ -511,19 +530,19 @@ export const orderController = {
         }
       }
 
-      const reason =
-        typeof req.body?.reason === 'string' && req.body.reason.trim().length > 0
-          ? req.body.reason.trim()
-          : undefined;
+      const reason = reasonText;
 
       await orderRepository.cancel(String(order._id), reason);
+      await orderRepository.updateFields(String(order._id), {cancelledBy: 'customer'});
 
       if (order.isPreOrder) {
-        // Close open payment links and refund anything already paid online.
+        // Close open payment links and refund per the policy (before the
+        // cut-off: the full order amount, service fees excluded).
         try {
           await paymentService.handleOrderCancelled(
             String(order._id),
-            reason ?? 'Cancelled by the customer'
+            reason ?? 'Cancelled by the customer',
+            'early'
           );
         } catch (error) {
           console.error('Failed to settle payments for cancelled pre-order', error);
@@ -1538,13 +1557,16 @@ export const orderController = {
         throw new ApiError(409, 'ALREADY_PAID', 'Order is already paid');
       }
 
-      const cashPickup =
-        order.paymentChoice === 'cash_on_pickup' &&
-        (order.paymentStatus ?? 'unpaid') === 'unpaid';
+      const unpaid = (order.paymentStatus ?? 'unpaid') === 'unpaid';
+      const cashPickup = order.paymentChoice === 'cash_on_pickup' && unpaid;
+      // In-store: cash at the counter before the deadline (full or 50%).
+      const inStore = isInStoreChoice(order.paymentChoice) && unpaid;
+      const inStoreDown =
+        inStore && order.paymentChoice === 'in_store_down_payment';
       const cashBalance =
         order.paymentStatus === 'down_payment' &&
-        order.balanceChoice === 'cash';
-      if (!cashPickup && !cashBalance) {
+        (order.balanceChoice === 'cash' || order.balanceChoice === 'in_store');
+      if (!cashPickup && !inStore && !cashBalance) {
         throw new ApiError(
           400,
           'INVALID_OPERATION',
@@ -1552,27 +1574,34 @@ export const orderController = {
         );
       }
 
-      const cashAmount = Math.max(
-        0,
-        order.totalAmount - (order.amountPaid ?? 0)
-      );
+      const cashAmount = inStoreDown
+        ? downPaymentAmount(order.totalAmount)
+        : Math.max(0, order.totalAmount - (order.amountPaid ?? 0));
+      const paidAt = new Date();
       const result = await orderRepository.updatePaymentIfStatus(
         String(order._id),
-        [cashPickup ? 'unpaid' : 'down_payment'],
-        {
-          paymentStatus: 'paid',
-          paidAt: new Date(),
-          paidBy: req.auth.userId,
-          // A cash balance keeps the online channel as the order's method.
-          ...(cashPickup ? {paymentMethod: 'cash'} : {})
-        },
+        [unpaid ? 'unpaid' : 'down_payment'],
+        inStoreDown
+          ? {
+              paymentStatus: 'down_payment',
+              paymentMethod: 'cash',
+              paymentExpiresAt: null
+            }
+          : {
+              paymentStatus: 'paid',
+              paidAt,
+              paidBy: req.auth.userId,
+              paymentExpiresAt: null,
+              // A cash balance keeps the down payment's method.
+              ...(cashPickup || inStore ? {paymentMethod: 'cash'} : {})
+            },
         {amountPaid: cashAmount}
       );
       if (result.modifiedCount === 0) {
         throw new ApiError(409, 'ALREADY_PAID', 'Order is already paid');
       }
 
-      if (cashPickup) {
+      if (cashPickup || inStore) {
         await transactionRepository.updateByOrderId(String(order._id), {
           paymentMethod: 'cash',
           totalAmount: order.totalAmount
@@ -2102,12 +2131,36 @@ export const orderController = {
         cancelReason
       );
 
+      // Who is cancelling decides the refund (config/refundPolicy.ts):
+      // the store -> everything back incl. fees; the customer asked (by
+      // phone, or their late request is approved) -> the customer policy.
+      const onCustomerRequest =
+        status === 'cancelled' && req.body?.cancelledBy === 'customer';
+      const refundPolicy = onCustomerRequest
+        ? customerCancelPolicy(
+            order,
+            order.cancelRequest?.status === 'pending'
+              ? new Date(order.cancelRequest.requestedAt)
+              : new Date()
+          )
+        : 'store';
+      if (status === 'cancelled') {
+        await orderRepository.updateFields(req.params.id, {
+          cancelledBy: onCustomerRequest ? 'customer' : 'store'
+        });
+        // An open late request is settled by this cancel either way.
+        if (order.cancelRequest?.status === 'pending') {
+          await paymentService.markCancelRequestApproved(req.params.id, req.auth.userId);
+        }
+      }
+
       if (status === 'cancelled' && order.orderSource !== 'in-store') {
-        // Close open Xendit invoices and refund anything already paid online.
+        // Close open Xendit invoices and refund per the policy.
         try {
           await paymentService.handleOrderCancelled(
             req.params.id,
-            cancelReason ?? 'Cancelled by the store'
+            cancelReason ?? (onCustomerRequest ? 'Cancelled at the customer\'s request' : 'Cancelled by the store'),
+            refundPolicy
           );
         } catch (error) {
           console.error('Failed to settle payments for cancelled order', error);
@@ -2244,5 +2297,9 @@ export async function runOverdueCheck(): Promise<number> {
       );
     }
   }
+  // Same sweep cancels orders whose in-store payment deadline passed.
+  await paymentService
+    .expireOverdueInStorePayments(now)
+    .catch(error => console.error('Failed to expire in-store payments', error));
   return preparing.length;
 }

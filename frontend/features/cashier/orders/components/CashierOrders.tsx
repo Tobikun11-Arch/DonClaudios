@@ -19,7 +19,9 @@ import {
   useAdminOrderMessagesQuery,
   useFollowUpOrdersQuery
 } from '@/lib/hooks/orders/useOrderMessage';
-import type {OrderHistoryEntry, OrderHistoryItem} from '@/lib/api/orderApi';
+import {isInStoreChoice, type OrderHistoryEntry, type OrderHistoryItem} from '@/lib/api/orderApi';
+import {formatManilaDateTime} from '@/lib/payment/inStorePayment';
+import {RefundSummary} from '@/features/owner/orders/components/OrderCancellation';
 import {cn} from '@/lib/utils';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {PreOrderBadge, withSize} from '@/shared/components/PreOrderBadge';
@@ -138,7 +140,17 @@ export function cashToCollect(order: OrderHistoryEntry): number | null {
   }
   if (order.paymentStatus === 'paid') return null;
   if (order.paymentChoice === 'cash_on_pickup') return order.totalAmount;
-  if (order.paymentStatus === 'down_payment' && order.balanceChoice === 'cash') {
+  if (order.paymentStatus === 'unpaid' && order.paymentChoice === 'in_store_full') {
+    return order.totalAmount;
+  }
+  if (order.paymentStatus === 'unpaid' && order.paymentChoice === 'in_store_down_payment') {
+    // Mirrors backend downPaymentAmount (50%, rounded up).
+    return Math.ceil(order.totalAmount * 0.5);
+  }
+  if (
+    order.paymentStatus === 'down_payment' &&
+    (order.balanceChoice === 'cash' || order.balanceChoice === 'in_store')
+  ) {
     return balanceOf(order);
   }
   return null;
@@ -164,7 +176,7 @@ export function paymentStatusChip(order: OrderHistoryEntry): {
   if (order.paymentStatus === 'paid') {
     return {
       label:
-        order.paymentChoice === 'cash_on_pickup'
+        order.paymentChoice === 'cash_on_pickup' || isInStoreChoice(order.paymentChoice)
           ? 'Paid in cash'
           : `Paid · ${channelLabel(order)}`,
       className: green
@@ -175,6 +187,8 @@ export function paymentStatusChip(order: OrderHistoryEntry): {
       label:
         order.balanceChoice === 'cash'
           ? 'Down payment · balance in cash'
+          : order.balanceChoice === 'in_store'
+            ? 'Down payment · balance in store'
           : order.balanceChoice === 'online'
             ? 'Down payment · balance online'
             : 'Down payment paid',
@@ -183,6 +197,15 @@ export function paymentStatusChip(order: OrderHistoryEntry): {
   }
   if (order.paymentChoice === 'cash_on_pickup') {
     return {label: 'Cash on pickup', className: gray};
+  }
+  if (isInStoreChoice(order.paymentChoice) && order.orderStatus !== 'cancelled') {
+    return {
+      label:
+        order.paymentChoice === 'in_store_down_payment'
+          ? 'Paying 50% in store'
+          : 'Paying in store',
+      className: amber
+    };
   }
   if (order.paymentStatus === 'unpaid' && order.orderStatus !== 'pending') {
     return {label: 'Awaiting payment', className: gray};
@@ -212,7 +235,9 @@ export function paymentGateReason(
 
   if (next === 'preparing' || next === 'ready') {
     if (status === 'paid' || status === 'down_payment' || cashPickup) return null;
-    return 'Waiting for the customer to pay online';
+    return isInStoreChoice(order.paymentChoice)
+      ? 'Waiting for the customer to pay at the store'
+      : 'Waiting for the customer to pay online';
   }
   if (next === 'on_the_way') {
     if (status === 'paid') return null;
@@ -1074,7 +1099,14 @@ function getItemName(item: OrderHistoryItem) {
  * there is nothing to verify: this shows where the payment stands and offers
  * "Cash received" when cash is due (cash on pickup, or a cash balance).
  */
-export function OrderPaymentPanel({order}: {order: OrderHistoryEntry}) {
+export function OrderPaymentPanel({
+  order,
+  canRefund = true
+}: {
+  order: OrderHistoryEntry;
+  /** False hides the cash refund button (cashiers on pre-orders). */
+  canRefund?: boolean;
+}) {
   const markPaid = useMarkOnlineOrderPaidMutation();
 
   if (order.orderSource === 'in-store') return null;
@@ -1129,7 +1161,12 @@ export function OrderPaymentPanel({order}: {order: OrderHistoryEntry}) {
             Customer also paid {money(fee)} service fee (not part of sales).
           </p>
         ) : null}
-        {expiresAt && order.paymentChoice !== 'cash_on_pickup' ? (
+        {expiresAt && isInStoreChoice(order.paymentChoice) ? (
+          <p className="text-xs text-amber-700 dark:text-amber-300">
+            Customer pays in cash at the store by{' '}
+            {formatManilaDateTime(expiresAt)}. The order is cancelled automatically if unpaid by then.
+          </p>
+        ) : expiresAt && order.paymentChoice !== 'cash_on_pickup' ? (
           <p className="text-xs text-amber-700 dark:text-amber-300">
             Payment link expires{' '}
             {expiresAt.toLocaleTimeString(undefined, {hour: 'numeric', minute: '2-digit'})}.
@@ -1158,6 +1195,7 @@ export function OrderPaymentPanel({order}: {order: OrderHistoryEntry}) {
           </span>
         </div>
       ) : null}
+      <RefundSummary order={order} canRefund={canRefund} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import {CalendarClock, Package, X} from 'lucide-react';
 import {OrderStatusPill, OrderTypePill} from './OrderPills';
 import {itemName, orderCustomerName} from '../hooks/useOwnerOrders';
@@ -8,6 +8,8 @@ import {formatPeso} from '../../dashboard/components/reports/reportPrimitives';
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
 import {OrderPaymentPanel} from '@/features/cashier/orders/components/CashierOrders';
 import {PreOrderBadge, withSize} from '@/shared/components/PreOrderBadge';
+import {CancelRequestPanel, StaffCancelDialog} from './OrderCancellation';
+import SectionLoader from '@/shared/components/SectionLoader';
 import {fulfillmentLabel, statusFlow, staffStatusLabel} from '@/lib/orders/orderFlow';
 
 function formatDateTime(iso?: string) {
@@ -64,17 +66,22 @@ export function OrderDetailDrawer({
   onClose,
   onUpdateStatus,
   isUpdating,
-  allowCancel = true
+  allowCancel = true,
+  loading = false
 }: {
   order: OrderHistoryEntry | null;
+  /** Open the drawer right away and show the loader inside it. */
+  loading?: boolean;
   onClose: () => void;
   onUpdateStatus: (orderId: string, status: string) => void;
   isUpdating: boolean;
   /** False hides the Cancel button (cashiers on pre-orders). */
   allowCancel?: boolean;
 }) {
+  const [cancelFor, setCancelFor] = useState<string | null>(null);
+  const isOpen = !!order || loading;
   useEffect(() => {
-    if (!order) return;
+    if (!isOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
@@ -86,9 +93,42 @@ export function OrderDetailDrawer({
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = previous;
     };
-  }, [order, onClose]);
+  }, [isOpen, onClose]);
 
-  if (!order) return null;
+  if (!order) {
+    if (!loading) return null;
+    return (
+      <div className="fixed inset-0 z-[120] flex justify-end">
+        <button
+          type="button"
+          aria-label="Close order details"
+          onClick={onClose}
+          className="absolute inset-0 bg-black/40"
+        />
+        <aside
+          role="dialog"
+          aria-modal="true"
+          aria-label="Loading order"
+          className="relative flex h-full w-full max-w-md flex-col bg-white dark:bg-gray-900 shadow-2xl"
+        >
+          <header className="flex items-start justify-between gap-3 border-b border-[#E5E7EB] dark:border-gray-700 px-5 py-4">
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
+              Order detail
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="rounded-full p-1.5 text-[#6B7280] dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </header>
+          <SectionLoader label="Loading order" className="flex-1" />
+        </aside>
+      </div>
+    );
+  }
 
   const upcoming = nextStatuses(order);
   const items = order.items ?? [];
@@ -162,8 +202,10 @@ export function OrderDetailDrawer({
           </div>
 
           {order.orderSource !== 'in-store' ? (
-            <OrderPaymentPanel order={order} />
+            <OrderPaymentPanel order={order} canRefund={allowCancel} />
           ) : null}
+
+          <CancelRequestPanel order={order} canDecide={allowCancel} />
 
           {order.isPreOrder && order.preOrder ? (
             <section className="rounded-xl border border-purple-200 bg-purple-50/60 px-3.5 py-3 dark:border-purple-500/30 dark:bg-purple-500/10">
@@ -214,7 +256,12 @@ export function OrderDetailDrawer({
                 <button
                   type="button"
                   disabled={isUpdating}
-                  onClick={() => onUpdateStatus(order._id, 'cancelled')}
+                  onClick={() =>
+                    // Online orders: dialog with the refund policy preview.
+                    order.orderSource === 'in-store'
+                      ? onUpdateStatus(order._id, 'cancelled')
+                      : setCancelFor(order._id)
+                  }
                   className="rounded-xl border border-red-200 dark:border-red-500/30 bg-white dark:bg-gray-900 px-3 py-1.5 text-[0.78rem] font-semibold text-red-600 dark:text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Cancel
@@ -369,6 +416,9 @@ export function OrderDetailDrawer({
           )}
         </div>
       </aside>
+      {cancelFor === order._id ? (
+        <StaffCancelDialog order={order} onClose={() => setCancelFor(null)} />
+      ) : null}
     </div>
   );
 }

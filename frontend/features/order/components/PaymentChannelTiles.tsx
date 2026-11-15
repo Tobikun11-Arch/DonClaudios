@@ -1,6 +1,6 @@
 'use client';
 
-import {Check, CreditCard, ShieldCheck} from 'lucide-react';
+import {Check, CreditCard, ShieldCheck, Store} from 'lucide-react';
 import {
   PAYMENT_CHANNEL_LABELS,
   type PaymentChannel,
@@ -86,26 +86,36 @@ function tileClass(selected: boolean) {
   }`;
 }
 
+/** An online Xendit channel, or cash at the store counter. */
+export type PayOption = PaymentChannel | 'in_store';
+
 /**
- * "Pay with" picker: e-wallet tiles with brand marks, then a card option.
- * Each tile shows its own service fee so customers can compare.
+ * "Pay with" picker: e-wallet tiles with brand marks, then a card option,
+ * then (when offered) In-store cash. Each tile shows its own service fee so
+ * customers can compare.
  */
 export default function PaymentChannelTiles({
   quotes,
   channels,
   channel,
-  onChange
+  onChange,
+  showOnline = true,
+  inStore
 }: {
-  quotes: QuoteMap;
+  quotes: QuoteMap | null;
   channels: PaymentSummary['channels'];
-  channel: PaymentChannel;
-  onChange: (c: PaymentChannel) => void;
+  channel: PayOption;
+  onChange: (c: PayOption) => void;
+  /** False when Xendit is not configured: only In-store is offered. */
+  showOnline?: boolean;
+  /** Omit to hide the In-store option; `available: false` shows it disabled. */
+  inStore?: {available: boolean; note?: string | null};
 }) {
-  const wallets = channels.filter(c => c.id !== 'card');
-  const card = channels.find(c => c.id === 'card');
+  const wallets = showOnline && quotes ? channels.filter(c => c.id !== 'card') : [];
+  const card = showOnline && quotes ? channels.find(c => c.id === 'card') : undefined;
 
   const fee = (id: PaymentChannel) => {
-    const q = quotes[id];
+    const q = quotes?.[id];
     if (!q) return null;
     return q.transactionFee > 0 ? `+${peso(q.transactionFee)} service fee` : 'No service fee';
   };
@@ -173,10 +183,45 @@ export default function PaymentChannelTiles({
         </>
       ) : null}
 
-      <p className="flex items-center gap-1.5 text-[11px] text-gray-400">
-        <ShieldCheck size={13} aria-hidden />
-        You&apos;ll finish paying on a secure Xendit page.
-      </p>
+      {inStore ? (
+        <>
+          {wallets.length > 0 || card ? (
+            <div className="flex items-center gap-3 py-1">
+              <span className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+              <span className="text-[11px] text-gray-400">or pay in cash at the store</span>
+              <span className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+            </div>
+          ) : null}
+          <button
+            type="button"
+            role="radio"
+            aria-checked={channel === 'in_store'}
+            disabled={!inStore.available}
+            onClick={() => onChange('in_store')}
+            className={`${tileClass(channel === 'in_store')} items-center gap-3 px-4 py-3.5 disabled:cursor-not-allowed disabled:opacity-50`}
+          >
+            {channel === 'in_store' ? <SelectedTick /> : null}
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#2d4a35]/10 text-[#2d4a35] dark:bg-[#7ed4a0]/10 dark:text-[#7ed4a0]">
+              <Store size={18} aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-bold text-gray-900 dark:text-gray-100">
+                In-store
+              </span>
+              <span className="block text-[11px] text-gray-400">
+                {inStore.note ?? 'Pay cash at the counter · No service fee'}
+              </span>
+            </span>
+          </button>
+        </>
+      ) : null}
+
+      {channel !== 'in_store' && (wallets.length > 0 || card) ? (
+        <p className="flex items-center gap-1.5 text-[11px] text-gray-400">
+          <ShieldCheck size={13} aria-hidden />
+          You&apos;ll finish paying on a secure Xendit page.
+        </p>
+      ) : null}
     </div>
   );
 }

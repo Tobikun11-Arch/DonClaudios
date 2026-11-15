@@ -13,6 +13,14 @@ function DateCard({event, href, signedIn}: {event: PreOrderEvent; href: string; 
   const days = daysUntil(event.pickupDate);
   const ordered = (event.mine?.orderIds.length ?? 0) > 0;
   const full = ordered && (event.mine?.orderIds.length ?? 0) >= (event.maxOrdersPerCustomer ?? 1);
+  const badgeCls = 'shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold';
+  const badge = ordered ? (
+    <span className={`${badgeCls} bg-[#e9f5ee] text-[#2d4a35] dark:bg-[#7ed4a0]/10 dark:text-[#7ed4a0]`}>Pre-ordered</span>
+  ) : days <= 14 && days >= 0 && !event.soldOut ? (
+    <span className={`${badgeCls} bg-[#fff4dd] text-[#9a6400] dark:bg-amber-500/10 dark:text-amber-300`}>
+      {days === 0 ? 'Today' : `${days}d left`}
+    </span>
+  ) : null;
 
   return (
     <Link
@@ -29,12 +37,13 @@ function DateCard({event, href, signedIn}: {event: PreOrderEvent; href: string; 
           <span className="text-3xl font-bold leading-none">{day}</span>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 pr-14 text-lg font-bold leading-snug text-gray-900 dark:text-gray-100">{event.title}</p>
+          <p className="line-clamp-2 break-words text-lg font-bold leading-snug text-gray-900 dark:text-gray-100">{event.title}</p>
           <p className="text-sm text-gray-500 dark:text-gray-400">{weekday(event.pickupDate)}</p>
           <p className="mt-1 text-base font-bold text-[#2d4a35] dark:text-[#7ed4a0]">
             {event.soldOut ? 'Fully booked' : event.fromPrice != null ? `From ${peso(event.fromPrice)}` : ''}
           </p>
         </div>
+        {badge}
       </div>
 
       <div className="mt-auto flex items-center justify-between border-t border-[#eef3ef] bg-[#f7faf6] px-4 py-3 dark:border-gray-700 dark:bg-gray-800/50">
@@ -56,17 +65,6 @@ function DateCard({event, href, signedIn}: {event: PreOrderEvent; href: string; 
           <ChevronRight size={16} className="transition-transform group-hover:translate-x-0.5" />
         </span>
       </div>
-
-      {ordered && (
-        <span className="absolute right-3 top-3 rounded-full bg-[#e9f5ee] px-2.5 py-1 text-xs font-bold text-[#2d4a35] dark:bg-[#7ed4a0]/10 dark:text-[#7ed4a0]">
-          Pre-ordered
-        </span>
-      )}
-      {!ordered && days <= 14 && days >= 0 && !event.soldOut && (
-        <span className="absolute right-3 top-3 rounded-full bg-[#fff4dd] px-2.5 py-1 text-xs font-bold text-[#9a6400] dark:bg-amber-500/10 dark:text-amber-300">
-          {days === 0 ? 'Today' : `${days}d left`}
-        </span>
-      )}
     </Link>
   );
 }
