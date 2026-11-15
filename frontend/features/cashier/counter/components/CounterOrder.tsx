@@ -29,6 +29,7 @@ import RecentOrders from './RecentOrders';
 import CounterDialog from './CounterDialog';
 import CounterOrderReceipt from './CounterOrderReceipt';
 import SectionLoader from '@/shared/components/SectionLoader';
+import {useCashierPrefs} from '@/lib/cashier/cashierPrefs';
 
 type PanelTab = 'order' | 'recent';
 
@@ -63,7 +64,10 @@ export default function CounterOrder() {
   const [cart, setCart] = useState<CartLine[]>([]);
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>(ALL);
-  const [chargeMethod, setChargeMethod] = useState<PaymentMethod>('cash');
+  const prefs = useCashierPrefs();
+  // null = use this device's default (Settings > Counter) until the cashier picks one.
+  const [pickedMethod, setChargeMethod] = useState<PaymentMethod | null>(null);
+  const chargeMethod = pickedMethod ?? prefs.defaultPayment;
   const [cashReceived, setCashReceived] = useState('');
   const [panelTab, setPanelTab] = useState<PanelTab>('order');
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -215,6 +219,7 @@ export default function CounterOrder() {
     setEditingOrderId(null);
     setEditingOrderNumber(null);
     setCashReceived('');
+    setChargeMethod(null);
   };
 
   const handleClear = () => {

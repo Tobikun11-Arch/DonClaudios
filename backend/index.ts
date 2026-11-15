@@ -21,6 +21,10 @@ const corsOptions: cors.CorsOptions = {
     }
 
     const allowedExact = new Set(['http://localhost:3000']);
+    // Expo web dev server for the mobile POS (native apps send no Origin).
+    if (process.env.NODE_ENV !== 'production') {
+      allowedExact.add('http://localhost:8081');
+    }
 
     let originUrl: URL | null = null;
     try {
@@ -38,7 +42,7 @@ const corsOptions: cors.CorsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-guest-session-id'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-guest-session-id', 'x-client'],
   // Lets the browser read the report number / file name of exported PDFs.
   exposedHeaders: ['Content-Disposition', 'X-Report-Number']
 };

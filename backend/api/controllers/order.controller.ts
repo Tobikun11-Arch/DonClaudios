@@ -217,6 +217,12 @@ function resolveCourier(orderType: string, deliveryMode: string, raw: unknown) {
   return courier;
 }
 
+// `scope=queue` (the cashier's polled list): unfinished orders of any age, plus
+// everything from the last 7 days. Older history is fetched only when the
+// cashier picks a date range.
+const QUEUE_ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready', 'on_the_way'];
+const QUEUE_RECENT_MS = 7 * 24 * 60 * 60 * 1000;
+
 export const orderController = {
   async listAllOrders(req: Request, res: Response, next: NextFunction) {
     try {
@@ -248,6 +254,12 @@ export const orderController = {
       if (range) filter.createdAt = {$gte: range.from, $lt: range.to};
       if (query.status) filter.orderStatus = query.status;
       if (query.type) filter.orderType = query.type;
+      if (query.scope === 'queue' && !range) {
+        filter.$or = [
+          {orderStatus: {$in: QUEUE_ACTIVE_STATUSES}},
+          {createdAt: {$gte: new Date(Date.now() - QUEUE_RECENT_MS)}}
+        ];
+      }
 
       const paginated = query.page !== undefined && query.limit !== undefined;
       const page = paginated ? query.page! : 1;
@@ -1318,6 +1330,23 @@ export const orderController = {
 
       const {customerInfo, items, totalAmount, paymentMethod} = req.body;
 
+      // Offline POS retries: the same clientRef always maps to one order.
+      const clientRef =
+        typeof req.body.clientRef === 'string' &&
+        /^[A-Za-z0-9_-]{8,64}$/.test(req.body.clientRef)
+          ? (req.body.clientRef as string)
+          : undefined;
+      if (clientRef) {
+        const existing = await orderRepository.findByClientRef(clientRef);
+        if (existing) {
+          const transaction = await transactionRepository.findByOrderId(
+            String(existing._id)
+          );
+          res.status(200).json({order: existing, transaction, duplicate: true});
+          return;
+        }
+      }
+
       if (!Array.isArray(items) || items.length === 0) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'items are required');
       }
@@ -1445,7 +1474,8 @@ export const orderController = {
         orderStatus: 'completed',
         stockDeducted: false,
         paymentStatus: 'unpaid',
-        orderNumber
+        orderNumber,
+        ...(clientRef ? {clientRef} : {})
       });
 
       const orderItems = normalizedItems.map(item => ({

@@ -180,6 +180,8 @@ export type ListAllOrdersParams = {
   from?: string;
   to?: string;
   withCounts?: boolean;
+  /** `queue`: active orders + the last 7 days only (when no date range). */
+  scope?: 'queue';
 };
 
 export type OrderDetailResponse = {

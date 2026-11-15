@@ -1,5 +1,6 @@
 import {settingsRepository} from '../repositories/settings.repository';
-import type {SiteSettingDocument} from '../models/SiteSetting.model';
+import {DASHBOARD_TARGETS, type SiteSettingDocument} from '../models/SiteSetting.model';
+import type {DashboardThemeDto} from '../dtos/settings.dto';
 import {
   DEFAULT_FREE_DELIVERY_SETTINGS,
   isValidLatLng,
@@ -66,11 +67,13 @@ export const settingsService = {
       freeDelivery: _ignored,
       rewardsEarnPoints: _ignoredPoints,
       rewardsEarnPesos: _ignoredPesos,
+      dashboardTheme: _ignoredTheme,
       ...rest
     } = data as Partial<SiteSettingDocument> & {
       freeDelivery?: unknown;
       rewardsEarnPoints?: unknown;
       rewardsEarnPesos?: unknown;
+      dashboardTheme?: unknown;
     };
     return settingsRepository.update(rest);
   },
@@ -111,5 +114,23 @@ export const settingsService = {
 
   defaultRewardsEarn(): RewardsEarnRule {
     return DEFAULT_REWARDS_EARN_RULE;
+  },
+
+  /** Saves one dashboard's colors; '' resets a color to the default. */
+  async updateDashboardTheme(input: DashboardThemeDto) {
+    const doc = await settingsRepository.update({
+      // Dot path: only this dashboard changes, the others are kept.
+      [`dashboardTheme.${input.target}`]: {
+        sidebarBg: input.sidebarBg.trim().toLowerCase(),
+        accent: input.accent.trim().toLowerCase()
+      }
+    } as Partial<SiteSettingDocument>);
+    const saved = doc?.dashboardTheme ?? {};
+    return Object.fromEntries(
+      DASHBOARD_TARGETS.map(t => [
+        t,
+        {sidebarBg: saved[t]?.sidebarBg || '', accent: saved[t]?.accent || ''}
+      ])
+    );
   }
 };

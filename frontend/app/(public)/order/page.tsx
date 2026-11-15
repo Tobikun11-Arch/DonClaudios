@@ -1,7 +1,6 @@
 'use client';
 
 import {useMemo} from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import {PackageSearch} from 'lucide-react';
 import {toast} from 'sonner';
@@ -21,6 +20,7 @@ import {
 import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
 import PreOrderDatesStrip from '@/features/preorders/components/PreOrderDatesStrip';
 import {MenuBrowser} from '@/features/menu/components/MenuBrowser';
+import {BrandLogo} from '@/shared/components/BrandLogo';
 
 function ProductsSection() {
   const brand = useBrand();
@@ -167,7 +167,7 @@ function ProductsSection() {
           </div>
 
           <div className="hidden sm:block w-40 h-40">
-            <Image
+            <BrandLogo
               src={brand.logo}
               alt="logo"
               width={160}

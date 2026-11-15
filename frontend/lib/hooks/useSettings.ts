@@ -1,17 +1,34 @@
 'use client';
 
-import {getSettings, updateSettings} from '@/lib/api/settingsApi';
+import {getSettings, updateDashboardTheme, updateSettings} from '@/lib/api/settingsApi';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
-import type {SiteSetting, SectionId, SectionStyle} from '@/lib/types/settings';
+import type {
+  SiteSetting,
+  SectionId,
+  SectionStyle,
+  DashboardTheme,
+  DashboardTarget
+} from '@/lib/types/settings';
+import {dashboardThemeStyle} from '@/lib/dashboardTheme';
 import {DEFAULT_SETTINGS} from '@/features/owner/appearance/constants';
 
 export const settingsQueryKey = ['settings'] as const;
+
+function themeOf(raw: Partial<SiteSetting>, target: DashboardTarget): DashboardTheme {
+  const t = raw.dashboardTheme?.[target];
+  return {sidebarBg: t?.sidebarBg || '', accent: t?.accent || ''};
+}
 
 function mergeWithDefaults(raw: Partial<SiteSetting>): SiteSetting {
   const d = DEFAULT_SETTINGS;
   return {
     brandName: raw.brandName || raw.footer?.brandName || d.footer.brandName,
     brandLogo: raw.brandLogo || '',
+    dashboardTheme: {
+      owner: themeOf(raw, 'owner'),
+      cashier: themeOf(raw, 'cashier'),
+      customer: themeOf(raw, 'customer')
+    },
     hero: {
       title: raw.hero?.title || d.hero.title,
       highlightedWord: raw.hero?.highlightedWord || d.hero.highlightedWord,
@@ -94,9 +111,11 @@ export function useSettingsQuery() {
         return DEFAULT_SETTINGS;
       }
     },
+    // Branding/homepage rarely change: treat them as fresh for 5 minutes so
+    // every page, tab switch and component mount doesn't hit GET /settings.
+    // The owner's own saves update the cache right away.
+    staleTime: 5 * 60_000,
     refetchOnWindowFocus: true,
-    refetchOnMount: 'always',
-    staleTime: 0,
     placeholderData: DEFAULT_SETTINGS
   });
 }
@@ -109,4 +128,24 @@ export function useUpdateSettingsMutation() {
       await queryClient.invalidateQueries({queryKey: settingsQueryKey});
     }
   });
+}
+
+export function useUpdateDashboardThemeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: DashboardTheme & {target: DashboardTarget}) =>
+      updateDashboardTheme(body),
+    onSuccess: dashboardTheme => {
+      // Apply at once on this browser without refetching the whole settings.
+      queryClient.setQueryData<SiteSetting>(settingsQueryKey, old =>
+        old ? {...old, dashboardTheme} : old
+      );
+    }
+  });
+}
+
+/** CSS variables for a dashboard shell, from the shared settings query. */
+export function useDashboardThemeStyle(target: DashboardTarget) {
+  const {data} = useSettingsQuery();
+  return dashboardThemeStyle(data?.dashboardTheme?.[target]);
 }

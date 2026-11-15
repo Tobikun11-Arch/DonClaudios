@@ -11,6 +11,7 @@ import {uploadProfileImage} from '@/lib/api/uploadApi';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {Camera, Check, Pencil} from 'lucide-react';
 import type {MeUser} from '@/lib/api/authApi';
+import {DEFAULT_LOGO} from '@/lib/hooks/useBrand';
 
 type FieldDef = {
   label: string;
@@ -25,12 +26,15 @@ function AvatarUpload({
   label,
   imageUrl,
   fallback,
+  defaultImageUrl,
   onSave
 }: {
   shape: 'circle' | 'square';
   label: string;
   imageUrl?: string;
   fallback: string;
+  /** Shown when no image is set (or it fails to load), instead of the letter. */
+  defaultImageUrl?: string;
   onSave: (url: string) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -38,8 +42,19 @@ function AvatarUpload({
     imageUrl
   );
   const [isUploading, setIsUploading] = useState(false);
+  const [failedUrl, setFailedUrl] = useState<string | undefined>();
 
-  const currentUrl = optimisticUrl || imageUrl;
+  // Drop the optimistic preview once the saved value changes (e.g. "Reset to
+  // defaults" clears it), so a stale upload doesn't linger.
+  const [prevImageUrl, setPrevImageUrl] = useState(imageUrl);
+  if (prevImageUrl !== imageUrl) {
+    setPrevImageUrl(imageUrl);
+    setOptimisticUrl(imageUrl);
+  }
+
+  const savedUrl = optimisticUrl || imageUrl;
+  const usingDefault = !savedUrl || savedUrl === failedUrl;
+  const currentUrl = usingDefault ? defaultImageUrl : savedUrl;
 
   const handleFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -84,7 +99,14 @@ function AvatarUpload({
         <img
           src={currentUrl}
           alt={label}
-          className="h-full w-full object-cover"
+          className={`h-full w-full ${
+            usingDefault
+              ? 'object-contain p-2 bg-[#e9f5ee] dark:bg-[#1f3a2a]'
+              : 'object-cover'
+          }`}
+          onError={() => {
+            if (!usingDefault) setFailedUrl(savedUrl);
+          }}
         />
       ) : (
         <span className="flex h-full w-full items-center justify-center bg-[#e9f5ee] dark:bg-[#1f3a2a] text-[#2d4a35] dark:text-[#7ed4a0] text-3xl font-bold">
@@ -367,6 +389,7 @@ export function ProfileTab() {
             label="Business logo"
             imageUrl={user.businessLogo}
             fallback={(user.businessName || 'D').charAt(0)}
+            defaultImageUrl={DEFAULT_LOGO}
             onSave={url => persist({businessLogo: url}, 'Business logo updated.')}
           />
         </div>

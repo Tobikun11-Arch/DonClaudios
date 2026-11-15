@@ -12,6 +12,11 @@ import type {CashierDocument} from '../models/Cashier.model';
 const ACCESS_COOKIE = 'dc_access_token';
 const REFRESH_COOKIE = 'dc_refresh_token';
 
+/** The Expo cashier app sends `X-Client: mobile` on login and refresh. */
+function isMobileClient(req: Request): boolean {
+  return req.get('x-client') === 'mobile';
+}
+
 function getCookieOptions(): CookieOptions {
   const isProduction =
     env.NODE_ENV === 'production' || process.env.VERCEL === '1';
@@ -425,7 +430,10 @@ export const authController = {
           lastName: 'lastName' in user ? user.lastName : undefined,
           phoneNumber: 'phoneNumber' in user ? user.phoneNumber : undefined,
           address: 'address' in user ? user.address : undefined
-        }
+        },
+        // Native apps cannot rely on httpOnly cookies; they ask for the
+        // tokens in the body and keep them in the device's secure store.
+        ...(isMobileClient(req) ? {accessToken, refreshToken} : {})
       });
     } catch (error) {
       next(error);
@@ -434,9 +442,12 @@ export const authController = {
 
   async refresh(req: Request, res: Response, next: NextFunction) {
     try {
-      const refreshToken =
-        (req.cookies?.[REFRESH_COOKIE] as string | undefined) ??
-        (req.body.refreshToken as string | undefined);
+      // Mobile sends its stored token in the body. Prefer it: a native cookie
+      // jar may still hold the original (never rotated) login cookie.
+      const bodyToken = req.body?.refreshToken as string | undefined;
+      const refreshToken = isMobileClient(req) && bodyToken
+        ? bodyToken
+        : (req.cookies?.[REFRESH_COOKIE] as string | undefined) ?? bodyToken;
 
       if (!refreshToken) {
         throw new ApiError(401, 'UNAUTHORIZED', 'Missing refresh token');
@@ -449,6 +460,17 @@ export const authController = {
         ...opts,
         maxAge: 15 * 60 * 1000
       });
+
+      if (isMobileClient(req)) {
+        // Sliding session for the POS: a device that comes online at least
+        // once a week never has to sign in again.
+        res.status(200).json({
+          message: 'Refreshed',
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken
+        });
+        return;
+      }
 
       res.status(200).json({message: 'Refreshed'});
     } catch (error) {

@@ -1,14 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import {useBrand} from '@/lib/hooks/useBrand';
+import {BrandLogo} from '@/shared/components/BrandLogo';
 
 export default function NotFound() {
   const brand = useBrand();
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center">
-      <Image
+      <BrandLogo
         src={brand.logo}
         alt={brand.name + ' Logo'}
         width={120}

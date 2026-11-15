@@ -20,6 +20,13 @@ export const adminRepository = {
 
   listAll: () => AdminModel.find({}).exec(),
 
+  /** The store's public name and logo (first admin), without the rest of the account. */
+  findBrand: () =>
+    AdminModel.findOne({})
+      .select('businessName businessLogo')
+      .lean<{businessName?: string; businessLogo?: string}>()
+      .exec(),
+
   create: (data: Partial<AdminDocument>) => AdminModel.create(data),
 
   updateProfile: (id: string, data: Partial<AdminDocument>) =>

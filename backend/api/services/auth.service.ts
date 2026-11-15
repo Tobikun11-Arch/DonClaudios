@@ -583,7 +583,15 @@ export const authService = {
         {expiresIn: '15m'}
       );
 
-      return {accessToken};
+      // Only handed out to mobile clients (see authController.refresh); the
+      // web keeps its existing refresh cookie.
+      const nextRefreshToken = jwt.sign(
+        {userId: user.id, type: userType},
+        env.JWT_REFRESH_SECRET,
+        {expiresIn: '7d'}
+      );
+
+      return {accessToken, refreshToken: nextRefreshToken};
     } catch {
       throw new ApiError(401, 'UNAUTHORIZED', 'Invalid token');
     }

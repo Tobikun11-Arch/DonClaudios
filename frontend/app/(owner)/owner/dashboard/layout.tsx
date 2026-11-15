@@ -2,7 +2,6 @@
 import {useSearchParams} from 'next/navigation';
 import {usePathname} from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import {useRouter} from 'next/navigation';
 import {useLogout} from '@/lib/hooks/auth/useLogout';
 import {useState, useRef, useCallback, useEffect} from 'react';
@@ -22,6 +21,8 @@ import {
 import {Toaster} from '@/components/ui/sonner';
 import OwnerSupportChatBubble from '@/features/owner/support/components/OwnerSupportChatBubble';
 import {useBrand} from '@/lib/hooks/useBrand';
+import {useDashboardThemeStyle} from '@/lib/hooks/useSettings';
+import {BrandLogo} from '@/shared/components/BrandLogo';
 
 const PRIMARY_TABS = [
   {
@@ -104,6 +105,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const logoutMutation = useLogout();
   const brand = useBrand();
+  const dashboardStyle = useDashboardThemeStyle('owner');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const expandTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -163,21 +165,21 @@ export default function DashboardLayout({
   const drawerTabActive = DRAWER_ITEMS.some(i => isActive(i.tab));
 
   return (
-    <div className="flex h-screen cursor-default bg-gray-50 dark:bg-gray-800">
+    <div className="flex h-screen cursor-default bg-gray-50 dark:bg-gray-800" style={dashboardStyle}>
       {/* ── Desktop Sidebar ── */}
       <aside
         onMouseEnter={handleSidebarEnter}
         onMouseLeave={handleSidebarLeave}
         className={`
           hidden md:flex flex-col flex-shrink-0 overflow-hidden
-          min-h-screen bg-[#2d4a35] z-40
+          min-h-screen bg-(--dash-sidebar) z-40
           transition-[width,box-shadow] duration-200 ease-out
           ${sidebarExpanded ? 'w-64 shadow-2xl' : 'w-[72px] shadow-xl'}
         `}
       >
         {/* Logo Area */}
         <div
-          className={`relative flex items-center justify-center px-4 border-b border-[#3a5c44] transition-[height,padding] duration-200 ease-out ${sidebarExpanded ? 'h-[178px] py-6' : 'h-24 py-2'}`}
+          className={`relative flex items-center justify-center px-4 border-b border-(--dash-hover) transition-[height,padding] duration-200 ease-out ${sidebarExpanded ? 'h-[178px] py-6' : 'h-24 py-2'}`}
         >
           <div
             className={`absolute transition-[opacity,transform] duration-150 ease-out ${
@@ -186,7 +188,7 @@ export default function DashboardLayout({
                 : 'opacity-100 scale-100'
             }`}
           >
-            <Image
+            <BrandLogo
               src={brand.logo}
               alt={brand.name}
               width={36}
@@ -202,7 +204,7 @@ export default function DashboardLayout({
                 : 'opacity-0 scale-90 pointer-events-none'
             }`}
           >
-            <Image
+            <BrandLogo
               src={brand.logo}
               alt={brand.name}
               width={130}
@@ -232,16 +234,16 @@ export default function DashboardLayout({
                     ${
                       sidebarExpanded
                         ? active
-                          ? 'bg-[#4a7c59] text-white shadow-md shadow-[#2d4a35]/50'
-                          : 'text-[#b8d4c0] hover:bg-[#3a5c44] hover:text-white'
+                          ? 'bg-(--dash-accent) text-(--dash-accent-text) shadow-md shadow-black/25'
+                          : 'text-(--dash-text) hover:bg-(--dash-hover) hover:text-(--dash-text-strong)'
                         : active
-                          ? 'text-white'
-                          : 'text-[#b8d4c0] hover:bg-[#3a5c44] hover:text-white'
+                          ? 'text-(--dash-text-strong)'
+                          : 'text-(--dash-text) hover:bg-(--dash-hover) hover:text-(--dash-text-strong)'
                     }
                   `}
                 >
                   {active && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-white/80 dark:bg-gray-900/80 rounded-r-full" />
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-(--dash-accent-text)/80 rounded-r-full" />
                   )}
                   <Icon
                     size={20}
@@ -267,7 +269,7 @@ export default function DashboardLayout({
 
         {/* Logout */}
         <div
-          className={`${sidebarExpanded ? 'px-2' : 'px-0'} pb-5 pt-2 border-t border-[#3a5c44]`}
+          className={`${sidebarExpanded ? 'px-2' : 'px-0'} pb-5 pt-2 border-t border-(--dash-hover)`}
         >
           <div className="relative group/nav">
             <button
@@ -277,7 +279,7 @@ export default function DashboardLayout({
                 w-full flex items-center py-3 rounded-xl
                 ${sidebarExpanded ? 'gap-3 px-3' : 'gap-0 px-0 justify-center'}
                 text-sm font-semibold tracking-wide
-                text-[#f08080] hover:bg-[#3a1a1a] hover:text-red-300
+                text-(--dash-danger) hover:bg-(--dash-danger-hover-bg) hover:text-(--dash-danger-hover)
                 transition-[padding,gap] duration-200 ease-out
                 disabled:opacity-50 disabled:cursor-not-allowed
               `}
@@ -317,7 +319,7 @@ export default function DashboardLayout({
       <nav
         className="
           md:hidden fixed bottom-0 left-0 right-0 z-50
-          bg-[#2d4a35] border-t border-[#3a5c44]
+          bg-(--dash-sidebar) border-t border-(--dash-hover)
           flex items-center justify-around
           px-2 pt-3 pb-[env(safe-area-inset-bottom,10px)]
         "
@@ -334,12 +336,12 @@ export default function DashboardLayout({
               <Icon
                 size={22}
                 className={`transition-colors duration-200 ${
-                  active ? 'text-[#7ed4a0]' : 'text-[#5a8a6a]'
+                  active ? 'text-(--dash-highlight)' : 'text-(--dash-text-dim)'
                 }`}
               />
               <span
                 className={`text-[10px] font-bold leading-none transition-colors duration-200 ${
-                  active ? 'text-[#7ed4a0]' : 'text-[#5a8a6a]'
+                  active ? 'text-(--dash-highlight)' : 'text-(--dash-text-dim)'
                 }`}
               >
                 {item.mobileLabel}
@@ -347,7 +349,7 @@ export default function DashboardLayout({
 
               <span
                 className={`
-          mt-1 h-0.5 w-6 rounded-full bg-[#7ed4a0]
+          mt-1 h-0.5 w-6 rounded-full bg-(--dash-highlight)
           transition-all duration-300 ease-out
           ${active ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}
         `}
@@ -363,12 +365,12 @@ export default function DashboardLayout({
           <MoreHorizontal
             size={22}
             className={`transition-colors duration-200 ${
-              drawerTabActive ? 'text-[#7ed4a0]' : 'text-[#5a8a6a]'
+              drawerTabActive ? 'text-(--dash-highlight)' : 'text-(--dash-text-dim)'
             }`}
           />
           <span
             className={`text-[10px] font-bold leading-none transition-colors duration-200 ${
-              drawerTabActive ? 'text-[#7ed4a0]' : 'text-[#5a8a6a]'
+              drawerTabActive ? 'text-(--dash-highlight)' : 'text-(--dash-text-dim)'
             }`}
           >
             More
@@ -376,7 +378,7 @@ export default function DashboardLayout({
 
           <span
             className={`
-              mt-1 h-0.5 w-6 rounded-full bg-[#7ed4a0]
+              mt-1 h-0.5 w-6 rounded-full bg-(--dash-highlight)
               transition-all duration-300 ease-out
               ${drawerTabActive ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}
             `}
@@ -402,7 +404,7 @@ export default function DashboardLayout({
       <div
         className={`
           md:hidden fixed bottom-0 left-0 right-0
-          bg-[#2d4a35] rounded-t-3xl
+          bg-(--dash-sidebar) rounded-t-3xl
           transition-transform duration-300 ease-out
           pb-[env(safe-area-inset-bottom,16px)]
           ${
@@ -414,20 +416,20 @@ export default function DashboardLayout({
       >
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
           <div className="flex flex-col gap-1">
-            <div className="w-10 h-1 rounded-full bg-[#4a7c59] mb-1" />
-            <span className="text-xs font-bold text-[#7aab8a] uppercase tracking-widest">
+            <div className="w-10 h-1 rounded-full bg-(--dash-accent) mb-1" />
+            <span className="text-xs font-bold text-(--dash-text-dim) uppercase tracking-widest">
               More Options
             </span>
           </div>
           <button
             onClick={() => setDrawerOpen(false)}
-            className="p-2 rounded-full hover:bg-[#3a5c44] text-[#7aab8a] hover:text-white transition-colors"
+            className="p-2 rounded-full hover:bg-(--dash-hover) text-(--dash-text-dim) hover:text-(--dash-text-strong) transition-colors"
           >
             <X size={18} />
           </button>
         </div>
 
-        <div className="px-4 pb-4 border-t border-[#3a5c44]">
+        <div className="px-4 pb-4 border-t border-(--dash-hover)">
           <div className="flex flex-col gap-1 pt-3">
             {DRAWER_ITEMS.map(item => {
               const Icon = item.icon;
@@ -443,8 +445,8 @@ export default function DashboardLayout({
                     transition-all duration-200
                     ${
                       active
-                        ? 'bg-[#4a7c59] text-white'
-                        : 'text-[#b8d4c0] hover:bg-[#3a5c44] hover:text-white'
+                        ? 'bg-(--dash-accent) text-(--dash-accent-text)'
+                        : 'text-(--dash-text) hover:bg-(--dash-hover) hover:text-(--dash-text-strong)'
                     }
                   `}
                 >
@@ -456,7 +458,7 @@ export default function DashboardLayout({
             })}
           </div>
 
-          <div className="my-3 border-t border-[#3a5c44]" />
+          <div className="my-3 border-t border-(--dash-hover)" />
 
           <button
             onClick={handleLogout}
@@ -464,7 +466,7 @@ export default function DashboardLayout({
             className="
               w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl
               text-sm font-semibold
-              text-[#f08080] hover:bg-[#3a1a1a] hover:text-red-300
+              text-(--dash-danger) hover:bg-(--dash-danger-hover-bg) hover:text-(--dash-danger-hover)
               transition-all duration-200
               disabled:opacity-50 disabled:cursor-not-allowed
             "

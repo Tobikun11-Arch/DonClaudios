@@ -6,6 +6,9 @@ export const orderRepository = {
   findById: (id: string, session?: ClientSession) =>
     OrderModel.findById(id, null, {session}).exec(),
 
+  findByClientRef: (clientRef: string) =>
+    OrderModel.findOne({clientRef}).exec(),
+
   listByCustomerId: (customerId: string) =>
     OrderModel.find({customerId}).sort({createdAt: -1}).exec(),
 

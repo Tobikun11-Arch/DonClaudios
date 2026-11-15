@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import {Button} from '@/components/ui/button';
 import {ShoppingCart, Menu, X} from 'lucide-react';
 import {useEffect, useState} from 'react';
@@ -22,6 +21,7 @@ import {useQueryClient} from '@tanstack/react-query';
 import {meQueryKey, useMeQuery} from '@/lib/hooks/auth/useMeQuery';
 import {getMe} from '@/lib/api/authApi';
 import {getDashboardPath} from '@/lib/auth/redirects';
+import {BrandLogo} from '@/shared/components/BrandLogo';
 
 export default function Header() {
   const brand = useBrand();
@@ -126,9 +126,9 @@ export default function Header() {
           }}
           className="flex items-center gap-3 cursor-default"
         >
-          <Image
+          <BrandLogo
             src={brand.logo}
-            alt="DonClaudio's Logo"
+            alt={`${brand.name} logo`}
             width={48}
             height={48}
           />
