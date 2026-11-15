@@ -102,6 +102,49 @@ export type OrderPreOrderInfo = {
   cancelDeadline: string;
 };
 
+/** The refund decided when the order was cancelled (backend refundPolicy). */
+export type OrderRefundInfo = {
+  policy: 'early' | 'late' | 'store';
+  paid: number;
+  retained: number;
+  onlineTotal: number;
+  cash: number;
+  feesRefunded: number;
+  feesNotRefunded: number;
+  refundTotal: number;
+  decidedAt: string;
+};
+
+export type OrderCancelRequest = {
+  status: 'pending' | 'approved' | 'declined';
+  reason?: string | null;
+  requestedAt: string;
+  decidedAt?: string | null;
+  decidedBy?: string | null;
+  note?: string | null;
+};
+
+export type RefundPlan = {
+  policy: 'early' | 'late' | 'store';
+  paid: number;
+  retained: number;
+  online: Array<{paymentId: string; amount: number}>;
+  onlineTotal: number;
+  cash: number;
+  feesRefunded: number;
+  feesNotRefunded: number;
+  refundTotal: number;
+};
+
+export type CancelQuote = {
+  /** cancel = allowed now; request = must ask the owner; requested = already asked. */
+  mode: 'cancel' | 'request' | 'requested' | 'closed';
+  plan: RefundPlan;
+  cancelDeadline: string | null;
+  pickupAt: string | null;
+  cancelRequest: OrderCancelRequest | null;
+};
+
 export type OrderHistoryEntry = {
   _id: string;
   orderType: 'pickup' | 'delivery' | 'reservation';
@@ -127,7 +170,7 @@ export type OrderHistoryEntry = {
   /** How the customer chose to pay after the cashier confirmed. */
   paymentChoice?: PaymentChoice | null;
   /** How the balance is settled after a down payment. */
-  balanceChoice?: 'cash' | 'online' | null;
+  balanceChoice?: 'cash' | 'online' | 'in_store' | null;
   /** Order amount settled so far (excludes transaction fees). */
   amountPaid?: number;
   /** Xendit fees the customer paid on top of the order. */
@@ -136,6 +179,11 @@ export type OrderHistoryEntry = {
   /** When the open Xendit invoice expires. */
   paymentExpiresAt?: string | null;
   refundStatus?: 'none' | 'pending' | 'refunded' | 'failed';
+  cancelledBy?: 'customer' | 'store' | 'system' | null;
+  refund?: OrderRefundInfo | null;
+  cashRefundDue?: number;
+  cashRefundedAt?: string | null;
+  cancelRequest?: OrderCancelRequest | null;
   /** Dated Holiday Pre-order (see `preOrder`). */
   isPreOrder?: boolean;
   preOrder?: OrderPreOrderInfo | null;
@@ -255,10 +303,45 @@ export async function getOrderById(orderId: string) {
   return res.data;
 }
 
-export async function updateOrderStatus(orderId: string, status: string) {
+export async function updateOrderStatus(
+  orderId: string,
+  status: string,
+  extra?: {reason?: string; cancelledBy?: 'store' | 'customer'}
+) {
   const res = await httpClient.patch<{order: OrderHistoryEntry}>(
     `/orders/${orderId}/status`,
-    {status}
+    {status, ...extra}
+  );
+  return res.data;
+}
+
+/** What cancelling does right now and the refund per the policy. */
+export async function fetchCancelQuote(
+  orderId: string,
+  opts: {by?: 'store' | 'customer'; phoneNumber?: string} = {}
+) {
+  const params: Record<string, string> = {};
+  if (opts.by) params.by = opts.by;
+  if (opts.phoneNumber) params.phoneNumber = opts.phoneNumber;
+  const res = await httpClient.get<{quote: CancelQuote}>(
+    `/orders/${orderId}/cancel-quote`,
+    {params}
+  );
+  return res.data.quote;
+}
+
+export async function declineCancelRequest(orderId: string, note?: string) {
+  const res = await httpClient.post<{order: OrderHistoryEntry}>(
+    `/orders/${orderId}/cancel-request/decline`,
+    {note}
+  );
+  return res.data;
+}
+
+export async function markCashRefunded(orderId: string) {
+  const res = await httpClient.post<{order: OrderHistoryEntry}>(
+    `/orders/${orderId}/refund/cash`,
+    {}
   );
   return res.data;
 }
@@ -411,7 +494,7 @@ export async function cancelTrackedOrder(
   reason: string,
   phoneNumber?: string
 ) {
-  const res = await httpClient.post<OrderDetailResponse>(
+  const res = await httpClient.post<OrderDetailResponse & {requested?: boolean}>(
     `/orders/customer/track/${orderId}/cancel`,
     {reason},
     {params: phoneNumber ? {phoneNumber} : undefined}
@@ -453,7 +536,16 @@ export async function getGuestOtpStatus(phoneNumber: string) {
 /* ------------------------------------------------------------------ */
 
 export type PaymentChannel = 'gcash' | 'maya' | 'grabpay' | 'shopeepay' | 'card';
-export type PaymentChoice = 'online_full' | 'online_down_payment' | 'cash_on_pickup';
+export type PaymentChoice =
+  | 'online_full'
+  | 'online_down_payment'
+  | 'cash_on_pickup'
+  | 'in_store_full'
+  | 'in_store_down_payment';
+
+export function isInStoreChoice(choice?: PaymentChoice | null): boolean {
+  return choice === 'in_store_full' || choice === 'in_store_down_payment';
+}
 export type PaymentKind = 'full' | 'down_payment' | 'balance';
 
 export const PAYMENT_CHANNEL_LABELS: Record<PaymentChannel, string> = {
@@ -482,6 +574,7 @@ export type PaymentRecord = {
     | 'REFUND_PENDING'
     | 'REFUNDED'
     | 'REFUND_FAILED';
+  refundAmount?: number | null;
   paidAt: string | null;
   createdAt: string;
 };
@@ -494,15 +587,29 @@ export type PaymentSummary = {
   transactionFee: number;
   paymentStatus: 'unpaid' | 'down_payment' | 'paid';
   paymentChoice: PaymentChoice | null;
-  balanceChoice: 'cash' | 'online' | null;
+  balanceChoice: 'cash' | 'online' | 'in_store' | null;
   paymentChannel: PaymentChannel | null;
   refundStatus: 'none' | 'pending' | 'refunded' | 'failed';
+  refund?: OrderRefundInfo | null;
+  cashRefundDue?: number;
+  cashRefundedAt?: string | null;
+  cancelRequest?: OrderCancelRequest | null;
   /** Whole order in cash on pickup (never for pre-orders). */
   cashAllowed: boolean;
   /** Balance after a down payment may be paid in cash (self pick-up only). */
   balanceCashAllowed?: boolean;
   isPreOrder?: boolean;
   pickup?: {date: string; slotLabel: string; receiveMethod: 'pickup' | 'lalamove'} | null;
+  /** Cash at the store counter before `dueAt` (see lib/payment/inStorePayment). */
+  inStore?: {
+    allowed: boolean;
+    dueAt: string;
+    isPreOrderCart: boolean;
+    hasPickupDate: boolean;
+    reason: string | null;
+  };
+  /** Balance in cash at the store; dueAt null = before the order is released. */
+  balanceInStore?: {dueAt: string | null} | null;
   downPaymentAllowed: boolean;
   downPaymentAmount: number;
   channels: Array<{id: PaymentChannel; label: string}>;
@@ -553,10 +660,13 @@ export async function startPaymentCheckout(
   return res.data;
 }
 
-/** After a down payment: pay the balance online (returns invoiceUrl) or in cash. */
+/** After a down payment: pay the balance online (returns invoiceUrl), in cash on pickup, or in store. */
 export async function payOrderBalance(
   orderId: string,
-  input: {method: 'online'; channel: PaymentChannel} | {method: 'cash'},
+  input:
+    | {method: 'online'; channel: PaymentChannel}
+    | {method: 'cash'}
+    | {method: 'in_store'},
   phoneNumber?: string
 ) {
   const res = await httpClient.post<CheckoutResponse | OrderDetailResponse>(
@@ -575,6 +685,20 @@ export async function submitCashPayment(
     `/orders/${orderId}/payment/cash`,
     {},
     {params: phoneNumber ? {phoneNumber} : undefined}
+  );
+  return res.data;
+}
+
+/** Pay in cash at the store before the deadline (no Xendit invoice). */
+export async function chooseInStorePayment(
+  orderId: string,
+  kind: 'full' | 'down_payment',
+  phoneNumber?: string
+) {
+  const res = await httpClient.post<OrderDetailResponse>(
+    `/orders/${orderId}/payment/in-store`,
+    {kind},
+    {params: guestParams(phoneNumber)}
   );
   return res.data;
 }

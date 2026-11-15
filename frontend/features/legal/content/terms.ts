@@ -27,10 +27,10 @@ export const terms: LegalPageProps = {
     },
     {
       heading: "Payment",
-      summary: "When payment opens, the payment options, and the transaction fee.",
+      summary: "When payment opens, the payment options, and the service fee.",
       body: [
         "Payment opens after our team confirms your order. Online payments are processed securely by our payment provider, Xendit, through GCash, Maya, GrabPay, ShopeePay, or credit/debit card.",
-        "Online payments include a transaction fee charged by the payment provider. The exact fee is shown before you pay and depends on the payment channel you choose.",
+        "Online payments include a service fee charged by the payment provider. The exact fee is shown before you pay and depends on the payment channel you choose.",
         "If an online payment is not completed within the time shown, the order is cancelled automatically.",
       ],
       table: {

@@ -3,7 +3,7 @@ import type { LegalPageProps } from "../components/LegalLayout";
 export const returnPolicy: LegalPageProps = {
   slug: "return-policy",
   title: "Return & Refund Policy",
-  lastUpdated: "November 7, 2026",
+  lastUpdated: "November 15, 2026",
   intro:
     "Our food is prepared fresh for every order. Because our products are perishable, the following policy applies.",
   sections: [
@@ -38,16 +38,26 @@ export const returnPolicy: LegalPageProps = {
       heading: "Cancellations",
       summary: "When an order can be cancelled, including pre-orders.",
       body: [
-        "Orders may be cancelled before preparation begins. Pre-orders (e.g. whole lechon) must be cancelled at least 48 hours before the scheduled date. Late cancellations may not be refunded.",
-        "Orders that are not paid online within the time shown after confirmation are cancelled automatically.",
+        "Regular orders may be cancelled while they are still pending (before the store confirms them).",
+        "Pre-orders (e.g. whole lechon for a holiday date) follow the refund rules below. The cancellation cut-off is shown on your order (14 days before pickup unless the date says otherwise).",
+        "Orders that are not paid within the time shown after confirmation (online payment link, or the in-store payment deadline) are cancelled automatically.",
       ],
+      table: {
+        columns: ["When", "What you get back"],
+        rows: [
+          ["You cancel on or before the cut-off", "100% of the order amount you paid. Online service fees are not refunded."],
+          ["You ask to cancel after the cut-off (until pickup)", "The store reviews your request. If approved, the 50% down payment is kept and anything paid above it is refunded. If declined, the order stays as booked."],
+          ["The store cancels your order", "Everything you paid, including online service fees."],
+        ],
+      },
     },
     {
       heading: "Refund Processing",
       summary: "Refunds go back to your original payment method.",
       body: [
-        "Approved refunds for online payments are returned to the original payment method, including the transaction fee. Most refunds arrive within 5-7 business days, depending on your bank or e-wallet.",
-        "Refunds for cash payments are settled at the store.",
+        "Refunds for online payments are returned automatically to the original payment method (GCash, Maya, GrabPay, ShopeePay or card). Most refunds arrive within 5-7 business days, depending on your bank or e-wallet.",
+        "Online service fees are charged by our payment provider and are only refunded when the store cancels the order.",
+        "Cash paid at the store is refunded in cash at the store counter. Bring your order number.",
       ],
     },
   ],

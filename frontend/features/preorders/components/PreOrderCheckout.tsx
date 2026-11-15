@@ -165,6 +165,11 @@ function ProductBlock({
               <div className={`min-w-0 flex-1 ${disabled ? 'opacity-50' : ''}`}>
                 <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{size.label}</p>
                 {size.description && <p className="text-xs text-gray-500 dark:text-gray-400">{size.description}</p>}
+                {!size.soldOut && (
+                  <p className="text-[0.7rem] font-medium text-[#9a6400] dark:text-amber-300">
+                    Max {size.maxPerOrder} per customer
+                  </p>
+                )}
                 {already > 0 && (
                   <p className="text-[0.7rem] font-semibold text-[#2d4a35] dark:text-[#7ed4a0]">In your pre-order: {already}</p>
                 )}
@@ -547,7 +552,7 @@ export default function PreOrderCheckout({eventId}: {eventId: string}) {
                         active ? 'text-white/80' : s.full ? '' : s.remaining <= 5 ? 'text-[#c30010] dark:text-red-400' : 'text-gray-500 dark:text-gray-400'
                       }`}
                     >
-                      {s.full ? 'Full' : s.remaining <= 5 ? `${s.remaining} left` : 'Available'}
+                      {s.full ? 'Full' : `${s.remaining} ${s.remaining === 1 ? 'slot' : 'slots'} left`}
                     </span>
                   </button>
                 );

@@ -8,7 +8,20 @@ import {
   type PaymentChannel,
   type PaymentQuote
 } from '../config/paymentFees';
-import type {OrderDocument, OrderStatus} from '../models/Order.model';
+import {
+  computeRefundPlan,
+  type RefundPolicyCase
+} from '../config/refundPolicy';
+import {
+  inStoreBalanceDueAt,
+  inStorePaymentDueAt,
+  inStorePaymentOpen
+} from '../config/inStorePayment';
+import type {
+  OrderDocument,
+  OrderStatus,
+  PaymentChoice
+} from '../models/Order.model';
 import type {PaymentDocument, PaymentKind} from '../models/Payment.model';
 import type {PaymentMethod} from '../models/Transaction.model';
 import type {CashierDocument} from '../models/Cashier.model';
@@ -36,6 +49,8 @@ import {ApiError} from '../utils/error';
  *
  *   cashier confirms -> customer picks: online full | online 50% down payment
  *   (pre-order-only carts) | cash on pickup (pickup only)
+ *   | in store (cash at the counter, full or 50%, before a deadline; see
+ *     config/inStorePayment.ts. A missed deadline auto-cancels the order)
  *   -> Xendit invoice -> PAID webhook -> order paymentStatus updated
  *   -> cashier may start preparing.
  *   Unpaid invoice EXPIRED -> order auto-cancelled.
@@ -70,6 +85,44 @@ export async function orderAllowsDownPayment(order: OrderDocument) {
   if (order.isPreOrder) return true;
   const flags = await getOrderProductFlags(order);
   return !flags.hasRegular;
+}
+
+export function isInStoreChoice(choice?: PaymentChoice | null) {
+  return choice === 'in_store_full' || choice === 'in_store_down_payment';
+}
+
+/** When the store confirmed the order (start of the in-store deadline). */
+function confirmedAtOf(order: OrderDocument) {
+  const entry = [...(order.statusHistory ?? [])]
+    .reverse()
+    .find(h => h.status === 'confirmed');
+  return entry?.at ? new Date(entry.at) : new Date(order.updatedAt ?? Date.now());
+}
+
+/**
+ * In-store payment for this order: the deadline (stored once chosen, else
+ * what it would be) and whether it may still be chosen.
+ */
+async function inStoreInfo(order: OrderDocument) {
+  const isPreOrderCart =
+    order.isPreOrder === true || (await getOrderProductFlags(order)).hasPreOrder;
+  const pickupAt = order.preOrder?.pickupAt ? new Date(order.preOrder.pickupAt) : null;
+  const chosen = isInStoreChoice(order.paymentChoice) && order.paymentExpiresAt;
+  const dueAt = chosen
+    ? new Date(order.paymentExpiresAt as Date)
+    : inStorePaymentDueAt({confirmedAt: confirmedAtOf(order), isPreOrderCart, pickupAt});
+  const open = inStorePaymentOpen(dueAt);
+  return {
+    allowed: open,
+    dueAt,
+    isPreOrderCart,
+    hasPickupDate: pickupAt !== null,
+    reason: open
+      ? null
+      : pickupAt
+        ? 'It is too close to your pickup date to pay in store. Please pay online.'
+        : 'The time to pay in store has passed. Please pay online.'
+  };
 }
 
 function isPaidLike(status: PaymentDocument['status']) {
@@ -235,21 +288,32 @@ async function cancelPendingInvoices(orderId: string, kinds?: PaymentKind[]) {
 
 async function recomputeRefundStatus(orderId: string) {
   const payments = await paymentRepository.listByOrderId(orderId);
+  const order = await orderRepository.findById(orderId);
+  const cashDue = order?.cashRefundDue ?? 0;
+  const cashPending = cashDue > 0 && !order?.cashRefundedAt;
+  const cashDone = cashDue > 0 && !!order?.cashRefundedAt;
   const statuses = payments.map(p => p.status);
   let refundStatus: 'none' | 'pending' | 'refunded' | 'failed' = 'none';
   if (statuses.includes('REFUND_FAILED')) refundStatus = 'failed';
-  else if (statuses.includes('REFUND_PENDING')) refundStatus = 'pending';
-  else if (statuses.includes('REFUNDED')) refundStatus = 'refunded';
+  else if (statuses.includes('REFUND_PENDING') || cashPending) refundStatus = 'pending';
+  else if (statuses.includes('REFUNDED') || cashDone) refundStatus = 'refunded';
   await orderRepository.updateFields(orderId, {refundStatus});
   return refundStatus;
 }
 
-async function refundPayment(payment: PaymentDocument, reason: string) {
+async function refundPayment(
+  payment: PaymentDocument,
+  reason: string,
+  amount: number = payment.charge
+) {
   const referenceId = `DC-REFUND-${String(payment._id)}`;
+  const refundAmount = Math.min(payment.charge, Math.max(0, amount));
+  if (refundAmount <= 0) return;
   const claimed = await paymentRepository.transition(
     String(payment._id),
     ['PAID'],
-    'REFUND_PENDING'
+    'REFUND_PENDING',
+    {refundAmount}
   );
   if (!claimed) return;
 
@@ -257,7 +321,7 @@ async function refundPayment(payment: PaymentDocument, reason: string) {
     const refund = await xenditService.createRefund({
       invoiceId: payment.xenditInvoiceId,
       referenceId,
-      amount: payment.charge
+      amount: refundAmount
     });
     const status =
       refund.status === 'SUCCEEDED'
@@ -294,11 +358,47 @@ async function refundPayment(payment: PaymentDocument, reason: string) {
   if (refundStatus === 'failed') {
     await notifyAdmins(
       'Refund failed',
-      `The automatic refund of ${peso(payment.charge)} for order #${orderCode(orderId)} failed. Please refund the customer from the Xendit dashboard.`,
+      `The automatic refund of ${peso(refundAmount)} for order #${orderCode(orderId)} failed. Please refund the customer from the Xendit dashboard.`,
       orderId
     );
   }
 }
+
+/** Order amount + fee of every PAID online payment (what a refund draws on). */
+async function paidOnlinePayments(orderId: string) {
+  return paymentRepository.listByOrderAndStatus(orderId, ['PAID']);
+}
+
+async function buildRefundPlan(order: OrderDocument, policy: RefundPolicyCase) {
+  const paid = await paidOnlinePayments(String(order._id));
+  return computeRefundPlan({
+    policy,
+    totalAmount: order.totalAmount,
+    amountPaid: order.amountPaid ?? 0,
+    onlinePayments: paid.map(p => ({
+      id: String(p._id),
+      amount: p.amount,
+      transactionFee: p.transactionFee
+    }))
+  });
+}
+
+/** Early (on/before the date's cut-off) or late, for a customer cancellation. */
+export function customerCancelPolicy(
+  order: OrderDocument,
+  at: Date = new Date()
+): RefundPolicyCase {
+  if (!order.isPreOrder || !order.preOrder) return 'early';
+  return at.getTime() > new Date(order.preOrder.cancelDeadline).getTime()
+    ? 'late'
+    : 'early';
+}
+
+const POLICY_LABEL: Record<RefundPolicyCase, string> = {
+  early: 'cancelled before the cut-off: full refund of the order amount',
+  late: 'late cancellation: the 50% down payment is kept',
+  store: 'cancelled by the store: full refund including service fees'
+};
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -311,6 +411,10 @@ function quotesFor(amount: number): QuoteMap {
     PAYMENT_CHANNELS.map(channel => [channel, computeCharge(amount, channel)])
   ) as QuoteMap;
 }
+
+const INVOICE_CHECK_INTERVAL_MS = 4000;
+/** invoiceId -> last time we asked Xendit about it (ms). */
+const lastInvoiceCheck = new Map<string, number>();
 
 export const paymentService = {
   isConfigured: isXenditConfigured,
@@ -329,6 +433,7 @@ export const paymentService = {
     const balanceDue = Math.max(0, total - amountPaid);
     const dp = downPaymentAmount(total);
     const pending = payments.find(p => p.status === 'PENDING') ?? null;
+    const inStore = await inStoreInfo(order);
 
     return {
       configured: isXenditConfigured(),
@@ -341,6 +446,10 @@ export const paymentService = {
       balanceChoice: order.balanceChoice ?? null,
       paymentChannel: order.paymentChannel ?? null,
       refundStatus: order.refundStatus ?? 'none',
+      refund: order.refund ?? null,
+      cashRefundDue: order.cashRefundDue ?? 0,
+      cashRefundedAt: order.cashRefundedAt ?? null,
+      cancelRequest: order.cancelRequest ?? null,
       // Pre-orders must start with an online payment (down or full); only the
       // balance may be paid in cash, and only when the customer picks it up.
       cashAllowed: order.orderType === 'pickup' && !order.isPreOrder,
@@ -353,6 +462,23 @@ export const paymentService = {
             receiveMethod: order.preOrder.receiveMethod
           }
         : null,
+      inStore: {
+        allowed: inStore.allowed,
+        dueAt: inStore.dueAt,
+        isPreOrderCart: inStore.isPreOrderCart,
+        hasPickupDate: inStore.hasPickupDate,
+        reason: inStore.reason
+      },
+      // Balance after a down payment, in cash at the counter (any order type).
+      balanceInStore:
+        order.paymentStatus === 'down_payment'
+          ? {
+              dueAt:
+                order.balanceChoice === 'in_store' && order.paymentExpiresAt
+                  ? order.paymentExpiresAt
+                  : inStoreBalanceDueAt(order.preOrder?.pickupAt ?? null)
+            }
+          : null,
       downPaymentAllowed: allowsDownPayment,
       downPaymentAmount: dp,
       channels: PAYMENT_CHANNELS.map(id => ({id, label: PAYMENT_FEES[id].label})),
@@ -381,6 +507,7 @@ export const paymentService = {
         transactionFee: p.transactionFee,
         charge: p.charge,
         status: p.status,
+        refundAmount: p.refundAmount ?? null,
         paidAt: p.paidAt ?? null,
         createdAt: p.createdAt
       }))
@@ -556,6 +683,128 @@ export const paymentService = {
     );
   },
 
+  /**
+   * Customer will pay in cash at the store counter (full or 50% down payment)
+   * before the deadline. No Xendit invoice; the cashier marks it received.
+   */
+  async chooseInStore(order: OrderDocument, kind: 'full' | 'down_payment') {
+    if (order.orderSource === 'in-store') {
+      throw new ApiError(400, 'INVALID_OPERATION', 'Counter orders are paid at the register');
+    }
+    if (order.orderStatus !== 'confirmed') {
+      throw new ApiError(409, 'PAYMENT_NOT_OPEN', 'Payment opens once the cashier confirms your order');
+    }
+    if ((order.paymentStatus ?? 'unpaid') !== 'unpaid') {
+      throw new ApiError(409, 'ALREADY_PAID', 'This order is already paid');
+    }
+    if (kind === 'down_payment' && !(await orderAllowsDownPayment(order))) {
+      throw new ApiError(
+        400,
+        'DOWN_PAYMENT_NOT_ALLOWED',
+        'Orders that include regular products require full payment. Down payments only apply to pre-order products.'
+      );
+    }
+    const info = await inStoreInfo(order);
+    if (!info.allowed) {
+      throw new ApiError(409, 'IN_STORE_CLOSED', info.reason ?? 'In-store payment is no longer available');
+    }
+
+    const orderId = String(order._id);
+    await cancelPendingInvoices(orderId);
+    await orderRepository.updateFields(orderId, {
+      paymentChoice: kind === 'down_payment' ? 'in_store_down_payment' : 'in_store_full',
+      // Re-choosing never extends the deadline: it is fixed from confirmation.
+      paymentExpiresAt: info.dueAt
+    });
+    const amount = kind === 'down_payment' ? downPaymentAmount(order.totalAmount) : order.totalAmount;
+    const due = info.dueAt.toLocaleString('en-PH', {
+      timeZone: 'Asia/Manila',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+    console.info(
+      `[audit] order ${orderId} will pay ${peso(amount)} in store (${kind}) by ${info.dueAt.toISOString()}`
+    );
+    await notifyStaff(
+      'Paying in store',
+      `Order #${orderCode(orderId)} will pay ${peso(amount)}${kind === 'down_payment' ? ' (50% down payment)' : ''} in cash at the store by ${due}. Mark it received when they pay.`,
+      orderId
+    );
+  },
+
+  /**
+   * Auto-cancels the order when its in-store payment deadline has passed
+   * unpaid. Returns true when it cancelled. Safe to call repeatedly.
+   */
+  async expireInStoreIfDue(order: OrderDocument, now: Date = new Date()) {
+    if (
+      order.orderStatus !== 'confirmed' ||
+      (order.paymentStatus ?? 'unpaid') !== 'unpaid' ||
+      !isInStoreChoice(order.paymentChoice) ||
+      !order.paymentExpiresAt ||
+      new Date(order.paymentExpiresAt).getTime() > now.getTime()
+    ) {
+      return false;
+    }
+    // Atomic claim so two pollers cannot cancel (and notify) twice.
+    const claim = await orderRepository.claimInStoreExpiry(String(order._id), now);
+    if (claim.modifiedCount === 0) return false;
+    await autoCancelUnpaidOrder(order, 'In-store payment was not made before the deadline');
+    return true;
+  },
+
+  /** Sweeps every overdue in-store payment (called from the overdue check). */
+  async expireOverdueInStorePayments(now: Date = new Date()) {
+    const due = await orderRepository.listPaginated(
+      {
+        orderStatus: 'confirmed',
+        paymentStatus: 'unpaid',
+        paymentChoice: {$in: ['in_store_full', 'in_store_down_payment']},
+        paymentExpiresAt: {$lte: now}
+      },
+      1,
+      0
+    );
+    let cancelled = 0;
+    for (const order of due) {
+      try {
+        if (await paymentService.expireInStoreIfDue(order, now)) cancelled++;
+      } catch (error) {
+        console.error(`[payment] in-store expiry failed for ${String(order._id)}`, error);
+      }
+    }
+    return cancelled;
+  },
+
+  /** After a down payment, the customer pays the balance in cash at the store. */
+  async chooseInStoreBalance(order: OrderDocument) {
+    if (order.orderStatus === 'cancelled' || order.orderStatus === 'completed') {
+      throw new ApiError(409, 'PAYMENT_NOT_OPEN', 'This order can no longer be paid');
+    }
+    if (order.paymentStatus !== 'down_payment') {
+      throw new ApiError(409, 'PAYMENT_NOT_OPEN', 'There is no balance to pay on this order');
+    }
+    const orderId = String(order._id);
+    await cancelPendingInvoices(orderId, ['balance']);
+    const dueAt = inStoreBalanceDueAt(order.preOrder?.pickupAt ?? null);
+    await orderRepository.updateFields(orderId, {
+      balanceChoice: 'in_store',
+      paymentExpiresAt: dueAt
+    });
+    const balance = Math.max(0, order.totalAmount - (order.amountPaid ?? 0));
+    await notifyStaff(
+      'Balance in store',
+      `The ${peso(balance)} balance of order #${orderCode(orderId)} will be paid in cash at the store${
+        dueAt
+          ? ` by ${dueAt.toLocaleString('en-PH', {timeZone: 'Asia/Manila', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'})}`
+          : ''
+      }. Do not release it until it is paid.`,
+      orderId
+    );
+  },
+
   /** After a down payment, the customer settles the balance in cash on pickup. */
   async chooseCashBalance(order: OrderDocument) {
     if (order.paymentStatus !== 'down_payment') {
@@ -583,6 +832,39 @@ export const paymentService = {
   },
 
   /** Xendit invoice callback (PAID / SETTLED / EXPIRED). */
+  /**
+   * Fallback for a missed webhook (local dev without a tunnel, backend down
+   * when Xendit called, wrong webhook URL): ask Xendit for each PENDING
+   * invoice's real status and apply it, exactly as the webhook would.
+   * Throttled per invoice so the 3-5 s polling doesn't hammer Xendit.
+   * Returns true when something changed, so callers reload the order.
+   */
+  async syncPendingFromXendit(orderId: string): Promise<boolean> {
+    if (!isXenditConfigured()) return false;
+    const payments = await paymentRepository.listByOrderId(orderId);
+    const pending = payments.filter(p => p.status === 'PENDING');
+    let changed = false;
+    for (const payment of pending) {
+      const invoiceId = payment.xenditInvoiceId;
+      const last = lastInvoiceCheck.get(invoiceId) ?? 0;
+      if (Date.now() - last < INVOICE_CHECK_INTERVAL_MS) continue;
+      lastInvoiceCheck.set(invoiceId, Date.now());
+      try {
+        const invoice = await xenditService.getInvoice(invoiceId);
+        if (invoice.status === 'PAID' || invoice.status === 'SETTLED') {
+          await applyPaid(payment, invoice);
+          changed = true;
+        } else if (invoice.status === 'EXPIRED') {
+          await applyExpired(payment);
+          changed = true;
+        }
+      } catch (err) {
+        console.warn(`[payment] could not check invoice ${invoiceId}:`, err);
+      }
+    }
+    return changed;
+  },
+
   async handleInvoiceWebhook(body: any) {
     const invoiceId = typeof body?.id === 'string' ? body.id : null;
     if (!invoiceId) return {ignored: 'missing id'};
@@ -648,13 +930,13 @@ export const paymentService = {
       await notifyCustomer(
         order,
         'Refund completed',
-        `We refunded ${peso(payment.charge)} for order #${orderCode(orderId)} to your original payment method.`
+        `We refunded ${peso(payment.refundAmount ?? payment.charge)} for order #${orderCode(orderId)} to your original payment method.`
       );
     }
     if (refundStatus === 'failed') {
       await notifyAdmins(
         'Refund failed',
-        `The automatic refund of ${peso(payment.charge)} for order #${orderCode(orderId)} failed. Please refund the customer from the Xendit dashboard.`,
+        `The automatic refund of ${peso(payment.refundAmount ?? payment.charge)} for order #${orderCode(orderId)} failed. Please refund the customer from the Xendit dashboard.`,
         orderId
       );
     }
@@ -665,22 +947,195 @@ export const paymentService = {
    * Called whenever an online order is cancelled: closes open invoices and
    * refunds everything already paid online. Safe to call more than once.
    */
-  async handleOrderCancelled(orderId: string, reason = 'Order cancelled') {
+  async handleOrderCancelled(
+    orderId: string,
+    reason = 'Order cancelled',
+    policy: RefundPolicyCase = 'store'
+  ) {
     await cancelPendingInvoices(orderId);
-    const paid = await paymentRepository.listByOrderAndStatus(orderId, ['PAID']);
-    if (paid.length === 0) return;
-    if (!isXenditConfigured()) {
-      await orderRepository.updateFields(orderId, {refundStatus: 'failed'});
-      await notifyAdmins(
-        'Refund needed',
-        `Order #${orderCode(orderId)} was cancelled after being paid online, but Xendit is not configured. Please refund the customer manually.`,
+    const order = await orderRepository.findById(orderId);
+    if (!order) return;
+    // Decided once: a repeated call must not re-plan on the leftover payments.
+    if (order.refund) return;
+
+    const plan = await buildRefundPlan(order, policy);
+    if (plan.paid <= 0 && plan.onlineTotal <= 0) return;
+
+    await orderRepository.updateFields(orderId, {
+      refund: {
+        policy: plan.policy,
+        paid: plan.paid,
+        retained: plan.retained,
+        onlineTotal: plan.onlineTotal,
+        cash: plan.cash,
+        feesRefunded: plan.feesRefunded,
+        feesNotRefunded: plan.feesNotRefunded,
+        refundTotal: plan.refundTotal,
+        decidedAt: new Date()
+      },
+      cashRefundDue: plan.cash
+    });
+    console.info(
+      `[audit] refund plan for order ${orderId} (${plan.policy}): online ${plan.onlineTotal}, cash ${plan.cash}, retained ${plan.retained}`
+    );
+
+    if (plan.online.length > 0) {
+      if (!isXenditConfigured()) {
+        await orderRepository.updateFields(orderId, {refundStatus: 'failed'});
+        await notifyAdmins(
+          'Refund needed',
+          `Order #${orderCode(orderId)} was cancelled after being paid online, but Xendit is not configured. Please refund ${peso(plan.onlineTotal)} manually.`,
+          orderId
+        );
+      } else {
+        const paid = await paidOnlinePayments(orderId);
+        for (const entry of plan.online) {
+          const payment = paid.find(p => String(p._id) === entry.paymentId);
+          if (payment) await refundPayment(payment, reason, entry.amount);
+        }
+      }
+    }
+    if (plan.cash > 0) {
+      await notifyStaff(
+        'Cash refund due',
+        `Order #${orderCode(orderId)} was cancelled. Hand back ${peso(plan.cash)} in cash when the customer comes to the store, then mark it as refunded.`,
         orderId
       );
-      return;
     }
-    for (const payment of paid) {
-      await refundPayment(payment, reason);
+    await recomputeRefundStatus(orderId);
+
+    const parts: string[] = [];
+    if (plan.onlineTotal > 0) parts.push(`${peso(plan.onlineTotal)} to your original payment method`);
+    if (plan.cash > 0) parts.push(`${peso(plan.cash)} in cash at the store`);
+    await notifyCustomer(
+      order,
+      'Refund for your cancelled order',
+      parts.length > 0
+        ? `Order #${orderCode(orderId)} (${POLICY_LABEL[plan.policy]}). We are refunding ${parts.join(' and ')}.`
+        : `Order #${orderCode(orderId)} (${POLICY_LABEL[plan.policy]}). Under our refund policy no amount is refunded.`
+    );
+  },
+
+  /**
+   * What cancelling would do right now: whether the customer may cancel,
+   * must ask, or cannot, and the refund the policy gives.
+   */
+  async quoteCancellation(order: OrderDocument, by: 'customer' | 'store') {
+    const now = new Date();
+    const open = order.orderStatus !== 'cancelled' && order.orderStatus !== 'completed';
+    let mode: 'cancel' | 'request' | 'requested' | 'closed' = 'closed';
+    let policy: RefundPolicyCase = 'store';
+
+    if (by === 'store') {
+      mode = open ? 'cancel' : 'closed';
+    } else if (!order.isPreOrder || !order.preOrder) {
+      mode = open && order.orderStatus === 'pending' ? 'cancel' : 'closed';
+      policy = 'early';
+    } else if (open) {
+      policy = customerCancelPolicy(order, now);
+      if (policy === 'early') mode = 'cancel';
+      else if (order.cancelRequest?.status === 'pending') mode = 'requested';
+      else if (now.getTime() < new Date(order.preOrder.pickupAt).getTime()) mode = 'request';
     }
+
+    const plan = await buildRefundPlan(order, policy);
+    return {
+      mode,
+      plan,
+      cancelDeadline: order.preOrder?.cancelDeadline ?? null,
+      pickupAt: order.preOrder?.pickupAt ?? null,
+      cancelRequest: order.cancelRequest ?? null
+    };
+  },
+
+  /** Customer asks to cancel a pre-order after its cut-off. */
+  async requestCancellation(order: OrderDocument, reason?: string) {
+    if (!order.isPreOrder || !order.preOrder) {
+      throw new ApiError(400, 'INVALID_OPERATION', 'Only pre-orders can be cancelled by request');
+    }
+    if (order.orderStatus === 'cancelled' || order.orderStatus === 'completed') {
+      throw new ApiError(400, 'INVALID_OPERATION', 'Order can no longer be cancelled');
+    }
+    if (new Date() >= new Date(order.preOrder.pickupAt)) {
+      throw new ApiError(400, 'CANCEL_WINDOW_CLOSED', 'The pickup time has passed. Please contact the store.');
+    }
+    if (order.cancelRequest?.status === 'pending') {
+      throw new ApiError(409, 'ALREADY_REQUESTED', 'You already asked to cancel this pre-order');
+    }
+    if (order.cancelRequest?.status === 'declined') {
+      throw new ApiError(409, 'REQUEST_DECLINED', 'The store already declined a cancellation for this pre-order. Please contact the store.');
+    }
+    const orderId = String(order._id);
+    await orderRepository.updateFields(orderId, {
+      cancelRequest: {
+        status: 'pending',
+        reason: reason ?? null,
+        requestedAt: new Date(),
+        decidedAt: null,
+        decidedBy: null,
+        note: null
+      }
+    });
+    const plan = await buildRefundPlan(order, 'late');
+    await notifyOwners({
+      type: 'order_status',
+      title: 'Cancellation request',
+      message: `Pre-order #${orderCode(orderId)} asks to cancel after the cut-off.${reason ? ` Reason: ${reason}.` : ''} If approved: refund ${peso(plan.refundTotal)}, keep ${peso(plan.retained)}.`,
+      orderId,
+      link: '/owner/dashboard?tab=preorders'
+    });
+  },
+
+  /** Owner turns down a late cancellation request; the order goes on. */
+  async declineCancelRequest(order: OrderDocument, staffId: string, note?: string) {
+    if (order.cancelRequest?.status !== 'pending') {
+      throw new ApiError(409, 'NO_REQUEST', 'There is no open cancellation request');
+    }
+    const orderId = String(order._id);
+    await orderRepository.updateFields(orderId, {
+      'cancelRequest.status': 'declined',
+      'cancelRequest.decidedAt': new Date(),
+      'cancelRequest.decidedBy': staffId,
+      'cancelRequest.note': note ?? null
+    });
+    await notifyCustomer(
+      order,
+      'Cancellation request declined',
+      `Your request to cancel pre-order #${orderCode(orderId)} was declined.${note ? ` ${note}` : ''} Your order stays as booked.`
+    );
+  },
+
+  /** Marks request decided after an approval (the cancel itself runs elsewhere). */
+  async markCancelRequestApproved(orderId: string, staffId: string, note?: string) {
+    await orderRepository.updateFields(orderId, {
+      'cancelRequest.status': 'approved',
+      'cancelRequest.decidedAt': new Date(),
+      'cancelRequest.decidedBy': staffId,
+      'cancelRequest.note': note ?? null
+    });
+  },
+
+  /** Staff handed the cash refund back at the counter. */
+  async markCashRefunded(order: OrderDocument, staffId: string) {
+    const due = order.cashRefundDue ?? 0;
+    if (order.orderStatus !== 'cancelled' || due <= 0) {
+      throw new ApiError(400, 'INVALID_OPERATION', 'There is no cash refund due on this order');
+    }
+    if (order.cashRefundedAt) {
+      throw new ApiError(409, 'ALREADY_REFUNDED', 'The cash refund was already recorded');
+    }
+    const orderId = String(order._id);
+    await orderRepository.updateFields(orderId, {
+      cashRefundedAt: new Date(),
+      cashRefundedBy: staffId
+    });
+    await recomputeRefundStatus(orderId);
+    console.info(`[audit] cash refund ${due} for order ${orderId} given by ${staffId}`);
+    await notifyCustomer(
+      order,
+      'Cash refund given',
+      `We handed back ${peso(due)} in cash for cancelled order #${orderCode(orderId)}.`
+    );
   },
 
   /**
@@ -700,7 +1155,9 @@ export const paymentService = {
       throw new ApiError(
         409,
         'PAYMENT_REQUIRED',
-        'Wait for the customer to pay online before preparing this order'
+        isInStoreChoice(order.paymentChoice)
+          ? 'Wait for the customer to pay at the store, then mark the cash as received'
+          : 'Wait for the customer to pay online before preparing this order'
       );
     }
 
@@ -710,7 +1167,9 @@ export const paymentService = {
         409,
         'PAYMENT_REQUIRED',
         status === 'down_payment'
-          ? 'The customer still has to pay the balance online before delivery'
+          ? order.balanceChoice === 'in_store'
+            ? 'The customer still has to pay the balance at the store before delivery'
+            : 'The customer still has to pay the balance online before delivery'
           : 'This order is not paid yet'
       );
     }
@@ -718,7 +1177,9 @@ export const paymentService = {
     // completed
     if (status === 'paid') return;
     const cashDue =
-      cashPickup || (status === 'down_payment' && order.balanceChoice === 'cash');
+      cashPickup ||
+      (status === 'down_payment' &&
+        (order.balanceChoice === 'cash' || order.balanceChoice === 'in_store'));
     throw new ApiError(
       409,
       'PAYMENT_REQUIRED',
@@ -858,6 +1319,7 @@ async function applyExpired(payment: PaymentDocument) {
     order.orderStatus !== 'confirmed' ||
     (order.paymentStatus ?? 'unpaid') !== 'unpaid' ||
     order.paymentChoice === 'cash_on_pickup' ||
+    isInStoreChoice(order.paymentChoice) ||
     stillOpen.length > 0
   ) {
     return;
@@ -866,9 +1328,11 @@ async function applyExpired(payment: PaymentDocument) {
   await autoCancelUnpaidOrder(order);
 }
 
-async function autoCancelUnpaidOrder(order: OrderDocument) {
+async function autoCancelUnpaidOrder(
+  order: OrderDocument,
+  reason = 'Payment was not completed in time'
+) {
   const orderId = String(order._id);
-  const reason = 'Payment was not completed in time';
 
   if (order.isPreOrder) {
     await preOrderEventService.releaseForOrder(order);
@@ -889,7 +1353,7 @@ async function autoCancelUnpaidOrder(order: OrderDocument) {
   }
 
   await orderRepository.cancel(orderId, reason);
-  await orderRepository.updateFields(orderId, {paymentExpiresAt: null});
+  await orderRepository.updateFields(orderId, {paymentExpiresAt: null, cancelledBy: 'system'});
   console.info(`[audit] order ${orderId} auto-cancelled: ${reason}`);
 
   await notifyStaff(

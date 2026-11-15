@@ -15,8 +15,19 @@ import {
   DEFAULT_MAX_PER_ORDER,
   DEFAULT_SIZE_STOCK,
   DEFAULT_SLOTS,
-  DEFAULT_SLOT_LIMIT
+  DEFAULT_SLOT_LIMIT,
+  addMinutesToTime,
+  slotLabel
 } from '@/features/preorders/utils';
+import {todayInStoreTimezone} from '@/lib/preOrder/preOrder';
+
+const PAST_DATE_MESSAGE = 'Pickup date cannot be in the past';
+
+function slotTimeError(s: {startTime: string; endTime: string}): string | null {
+  if (!s.startTime || !s.endTime) return 'set both a start and an end time';
+  if (s.endTime <= s.startTime) return 'end time must be after the start time';
+  return null;
+}
 
 type SizeDraft = {
   key: string;
@@ -29,7 +40,7 @@ type SizeDraft = {
   sold: number;
 };
 type ProductDraft = {key: string; _id?: string; productId: string; maxSizes: string; sizes: SizeDraft[]};
-type SlotDraft = {key: string; _id?: string; label: string; startTime: string; limit: string; booked: number};
+type SlotDraft = {key: string; _id?: string; startTime: string; endTime: string; limit: string; booked: number};
 
 let seq = 0;
 const k = () => `k${++seq}`;
@@ -55,8 +66,8 @@ function fromEvent(event: PreOrderEvent | null) {
       products: [] as ProductDraft[],
       slots: DEFAULT_SLOTS.map(s => ({
         key: k(),
-        label: s.label,
         startTime: s.startTime,
+        endTime: s.endTime,
         limit: String(DEFAULT_SLOT_LIMIT),
         booked: 0
       })) as SlotDraft[]
@@ -87,8 +98,9 @@ function fromEvent(event: PreOrderEvent | null) {
     slots: event.slots.map(s => ({
       key: k(),
       _id: s._id,
-      label: s.label,
       startTime: s.startTime,
+      // Slots saved before end times existed default to one hour.
+      endTime: s.endTime || addMinutesToTime(s.startTime, 60),
       limit: String(s.limit ?? s.remaining),
       booked: s.booked ?? 0
     }))
@@ -169,6 +181,9 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
   const submit = async () => {
     if (!form.title.trim()) return toast.error('Give this pre-order date a title');
     if (!form.pickupDate) return toast.error('Choose the pickup date');
+    if (pickupIsPast) return toast.error(PAST_DATE_MESSAGE);
+    const badSlot = form.slots.findIndex(s => slotTimeError(s));
+    if (badSlot >= 0) return toast.error(`Time slot #${badSlot + 1}: ${slotTimeError(form.slots[badSlot])}`);
     const input: PreOrderEventInput = {
       title: form.title.trim(),
       pickupDate: form.pickupDate,
@@ -190,8 +205,8 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
       })),
       slots: form.slots.map(s => ({
         _id: s._id,
-        label: s.label.trim(),
         startTime: s.startTime,
+        endTime: s.endTime,
         limit: Number(s.limit)
       }))
     };
@@ -205,6 +220,11 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
   };
 
   const totalSizes = form.products.reduce((n, p) => n + p.sizes.length, 0);
+  const today = todayInStoreTimezone();
+  // An existing date that has already passed keeps its stored value (the
+  // backend accepts it unchanged); only a newly chosen past day is blocked.
+  const pickupIsPast =
+    !!form.pickupDate && form.pickupDate < today && form.pickupDate !== event?.pickupDate;
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
@@ -235,7 +255,7 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
           </Button>
           <Button
             onClick={submit}
-            disabled={save.isPending}
+            disabled={save.isPending || pickupIsPast}
             className="bg-[#2d4a35] text-white hover:bg-[#3a5c44] dark:bg-[#4a7c59] dark:hover:bg-[#5a8f6a]"
           >
             {save.isPending ? 'Saving…' : 'Save'}
@@ -258,13 +278,24 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
             />
           </div>
           <div>
-            <label className={labelCls}>Pickup date</label>
+            <label className={labelCls} htmlFor="preorder-pickup-date">
+              Pickup date
+            </label>
             <input
+              id="preorder-pickup-date"
               type="date"
-              className={inputCls}
+              className={`${inputCls} ${pickupIsPast ? 'border-red-400 dark:border-red-500' : ''}`}
               value={form.pickupDate}
+              min={today}
+              aria-invalid={pickupIsPast}
+              aria-describedby={pickupIsPast ? 'preorder-pickup-date-error' : undefined}
               onChange={e => set('pickupDate', e.target.value)}
             />
+            {pickupIsPast && (
+              <p id="preorder-pickup-date-error" className="mt-1 text-[0.7rem] text-red-600 dark:text-red-400">
+                {PAST_DATE_MESSAGE}. Choose today or a later day.
+              </p>
+            )}
           </div>
           <div>
             <label className={labelCls}>Customers can cancel until</label>
@@ -490,7 +521,7 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
             onClick={() =>
               set('slots', [
                 ...form.slots,
-                {key: k(), label: '', startTime: '', limit: String(DEFAULT_SLOT_LIMIT), booked: 0}
+                {key: k(), startTime: '', endTime: '', limit: String(DEFAULT_SLOT_LIMIT), booked: 0}
               ])
             }
           >
@@ -498,49 +529,92 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
           </Button>
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
-          {form.slots.map(s => (
-            <div
-              key={s.key}
-              className="flex items-center gap-2 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 p-2"
-            >
-              <Clock size={16} className="ml-1 shrink-0 text-[#4a7c59] dark:text-[#7ed4a0]" />
-              <input
-                className={`${inputCls} min-w-0 flex-1`}
-                placeholder="Label, e.g. 8 - 9 AM"
-                value={s.label}
-                onChange={e => updateSlot(s.key, {label: e.target.value})}
-              />
-              <input
-                type="time"
-                className={`${inputCls} w-[7.5rem]`}
-                aria-label="Start time"
-                value={s.startTime}
-                onChange={e => updateSlot(s.key, {startTime: e.target.value})}
-              />
-              <div className="w-20">
-                <input
-                  type="number"
-                  min={Math.max(s.booked, 1)}
-                  className={inputCls}
-                  aria-label="Order limit"
-                  value={s.limit}
-                  onChange={e => updateSlot(s.key, {limit: e.target.value})}
-                />
-                {s.booked > 0 && (
-                  <p className="mt-0.5 text-[0.68rem] text-gray-500 dark:text-gray-400">{s.booked} booked</p>
+          {form.slots.map((s, i) => {
+            const timeError = slotTimeError(s);
+            const showError = timeError && s.startTime && s.endTime;
+            return (
+              <div
+                key={s.key}
+                className={`space-y-2 rounded-xl border bg-gray-50/60 p-2 dark:bg-gray-800/40 ${
+                  showError ? 'border-red-300 dark:border-red-500/60' : 'border-gray-100 dark:border-gray-700'
+                }`}
+              >
+                <div className="flex items-center gap-2 px-1">
+                  <Clock size={16} className="shrink-0 text-[#4a7c59] dark:text-[#7ed4a0]" />
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">#{i + 1}</span>
+                  <span className="truncate text-sm font-bold text-gray-900 dark:text-gray-100">
+                    {timeError ? 'Set the time' : slotLabel(s.startTime, s.endTime)}
+                  </span>
+                  {s.booked > 0 && (
+                    <span className="ml-auto shrink-0 text-[0.68rem] text-gray-500 dark:text-gray-400">
+                      {s.booked} booked
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-end gap-2">
+                  <label className="min-w-0 flex-1">
+                    <span className="mb-0.5 block text-[0.68rem] font-semibold text-gray-500 dark:text-gray-400">
+                      Start
+                    </span>
+                    <input
+                      type="time"
+                      className={inputCls}
+                      value={s.startTime}
+                      onChange={e => {
+                        const startTime = e.target.value;
+                        // Keep the slot length when the start moves; new slots default to one hour.
+                        const endTime =
+                          startTime && (!s.endTime || s.endTime <= startTime)
+                            ? addMinutesToTime(startTime, 60)
+                            : s.endTime;
+                        updateSlot(s.key, {startTime, endTime});
+                      }}
+                    />
+                  </label>
+                  <label className="min-w-0 flex-1">
+                    <span className="mb-0.5 block text-[0.68rem] font-semibold text-gray-500 dark:text-gray-400">
+                      End
+                    </span>
+                    <input
+                      type="time"
+                      className={inputCls}
+                      value={s.endTime}
+                      min={s.startTime || undefined}
+                      aria-invalid={!!showError}
+                      onChange={e => updateSlot(s.key, {endTime: e.target.value})}
+                    />
+                  </label>
+                  <label className="w-20 shrink-0">
+                    <span className="mb-0.5 block text-[0.68rem] font-semibold text-gray-500 dark:text-gray-400">
+                      Limit
+                    </span>
+                    <input
+                      type="number"
+                      min={Math.max(s.booked, 1)}
+                      className={inputCls}
+                      value={s.limit}
+                      onChange={e => updateSlot(s.key, {limit: e.target.value})}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    disabled={s.booked > 0}
+                    title={s.booked > 0 ? 'This slot already has orders' : 'Remove slot'}
+                    aria-label={`Remove time slot #${i + 1}`}
+                    onClick={() => set('slots', form.slots.filter(x => x.key !== s.key))}
+                    className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-red-500/10"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+                {showError && (
+                  <p className="px-1 text-[0.7rem] text-red-600 dark:text-red-400">
+                    End time must be after the start time.
+                  </p>
                 )}
               </div>
-              <button
-                type="button"
-                disabled={s.booked > 0}
-                title={s.booked > 0 ? 'This slot already has orders' : 'Remove slot'}
-                onClick={() => set('slots', form.slots.filter(x => x.key !== s.key))}
-                className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-red-500/10"
-              >
-                <Trash2 size={15} />
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 

@@ -27,6 +27,9 @@ import {toast} from 'sonner';
 import CustomerOrderFollowUp from '@/features/order/components/CustomerOrderFollowUp';
 import {courierLabel, customerStep, fulfillmentKind, fulfillmentLabel, statusFlow} from '@/lib/orders/orderFlow';
 import OrderPaymentCard from '@/features/order/components/OrderPaymentCard';
+import {useCancelQuoteQuery} from '@/lib/hooks/orders/useOrderCancellation';
+import {refundPolicySummary} from '@/lib/payment/refundPolicy';
+import {RefundBreakdown} from '@/features/owner/orders/components/OrderCancellation';
 import {
   formatMinutes,
   OVERDUE_GRACE_MINUTES,
@@ -39,13 +42,34 @@ const STORE_ADDRESS =
 
 const CANCELLABLE = ['pending'];
 
-/** Pre-orders: cancellable in any open status until the date's cut-off. */
+/**
+ * Pre-orders: self-cancel until the date's cut-off, then only a request to
+ * the owner until pickup (see lib/payment/refundPolicy). One request only.
+ */
 function canCustomerCancel(order: OrderHistoryEntry) {
   if (order.isPreOrder && order.preOrder) {
     if (order.orderStatus === 'cancelled' || order.orderStatus === 'completed') return false;
-    return Date.now() < new Date(order.preOrder.cancelDeadline).getTime();
+    if (order.cancelRequest) return false;
+    return Date.now() < new Date(order.preOrder.pickupAt).getTime();
   }
   return CANCELLABLE.includes(order.orderStatus);
+}
+
+/** After the cut-off a pre-order cancel becomes a request. */
+function isLateCancel(order: OrderHistoryEntry) {
+  return (
+    !!order.isPreOrder &&
+    !!order.preOrder &&
+    Date.now() > new Date(order.preOrder.cancelDeadline).getTime()
+  );
+}
+
+function cutoffDaysOf(order: OrderHistoryEntry) {
+  const po = order.preOrder;
+  if (!po) return 14;
+  return Math.round(
+    (new Date(po.pickupAt).getTime() - new Date(po.cancelDeadline).getTime()) / 86400000
+  );
 }
 
 function manilaDate(iso: string, opts: Intl.DateTimeFormatOptions) {
@@ -91,9 +115,15 @@ function PreOrderPickupCard({order}: {order: OrderHistoryEntry}) {
         {open ? (
           <p className="flex items-start gap-2 text-gray-500 dark:text-gray-400">
             <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-[#2d4a35] dark:text-[#7ed4a0]" />
-            {canCancel
-              ? `You can cancel until ${manilaDate(new Date(new Date(po.cancelDeadline).getTime() - 1).toISOString(), {month: 'long', day: 'numeric'})}.`
-              : 'The cancellation period for this pre-order has ended.'}
+            {order.cancelRequest?.status === 'pending'
+              ? 'You asked to cancel this pre-order. The store will review your request.'
+              : order.cancelRequest?.status === 'declined'
+                ? `The store declined your cancellation request${order.cancelRequest.note ? `: ${order.cancelRequest.note}` : '.'} Your order stays as booked.`
+                : !isLateCancel(order)
+                  ? `You can cancel with a full refund until ${manilaDate(new Date(new Date(po.cancelDeadline).getTime() - 1).toISOString(), {month: 'long', day: 'numeric'})}.`
+                  : canCancel
+                    ? 'The free cancellation period has ended. You can still ask the store to cancel; the 50% down payment is kept if approved.'
+                    : 'The cancellation period for this pre-order has ended.'}
           </p>
         ) : null}
       </div>
@@ -166,10 +196,23 @@ function paymentDisplay(order: OrderHistoryEntry) {
     const channel = order.paymentChannel
       ? METHOD_LABELS[order.paymentChannel] ?? order.paymentChannel
       : 'Online';
-    return `${channel} (down payment)${order.balanceChoice === 'cash' ? ' + cash balance' : ''}`;
+    return `${channel} (down payment)${
+      order.balanceChoice === 'cash'
+        ? ' + cash balance'
+        : order.balanceChoice === 'in_store'
+          ? ' + balance in store'
+          : ''
+    }`;
   }
   if (order.paymentChoice === 'cash_on_pickup' && order.paymentStatus !== 'paid') {
     return 'Cash on pickup';
+  }
+  if (
+    (order.paymentChoice === 'in_store_full' ||
+      order.paymentChoice === 'in_store_down_payment') &&
+    order.paymentStatus === 'unpaid'
+  ) {
+    return 'In-store (cash at the counter)';
   }
   const method = order.paymentMethod;
   if (!method || method === 'other') {
@@ -333,9 +376,14 @@ export default function OrderTracking({
               <CancelOrderButton
                 orderId={orderId}
                 phone={resolvedPhone}
+                preOrder={!!order.isPreOrder && !!order.preOrder}
+                late={isLateCancel(order)}
+                cutoffDays={cutoffDaysOf(order)}
                 hint={
                   order.isPreOrder && order.preOrder
-                    ? `Pre-orders can be cancelled up to ${order.preOrder.cancelDeadline ? Math.round((new Date(order.preOrder.pickupAt).getTime() - new Date(order.preOrder.cancelDeadline).getTime()) / 86400000) : 14} days before pickup.`
+                    ? isLateCancel(order)
+                      ? 'Less than the cancellation cut-off before pickup: the store reviews your request.'
+                      : `Free cancellation up to ${cutoffDaysOf(order)} days before pickup.`
                     : undefined
                 }
               />
@@ -751,13 +799,21 @@ function PaymentsDetailsCard({order}: {order: OrderHistoryEntry}) {
 function CancelOrderButton({
   orderId,
   phone,
-  hint = 'You can only cancel while your order is still pending.'
+  hint = 'You can only cancel while your order is still pending.',
+  preOrder = false,
+  late = false,
+  cutoffDays = 14
 }: {
   orderId: string;
   phone?: string;
   hint?: string;
+  preOrder?: boolean;
+  /** After the cut-off: the button sends a request instead of cancelling. */
+  late?: boolean;
+  cutoffDays?: number;
 }) {
   const [open, setOpen] = useState(false);
+  const quote = useCancelQuoteQuery(orderId, {phoneNumber: phone, enabled: open && preOrder});
   const [reason, setReason] = useState(CANCEL_REASONS[0]);
   const [otherText, setOtherText] = useState('');
   const cancelMutation = useCancelTrackedOrderMutation(orderId, phone);
@@ -781,10 +837,15 @@ function CancelOrderButton({
         className="w-full h-12 rounded-full font-bold text-white"
         onClick={() => setOpen(true)}
       >
-        Cancel Order
+        {late ? 'Request cancellation' : 'Cancel Order'}
       </Button>
       <p className="mt-2 text-center text-xs text-gray-400">
-        {hint}
+        {hint}{' '}
+        {preOrder ? (
+          <a href="/return-policy" target="_blank" rel="noreferrer" className="underline">
+            Refund policy
+          </a>
+        ) : null}
       </p>
 
       {open ? (
@@ -807,7 +868,9 @@ function CancelOrderButton({
                     Let us know why you&apos;re cancelling
                   </p>
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    This will permanently cancel your order.
+                    {late
+                      ? 'The store will review your request. Your order stays active until they approve it.'
+                      : 'This will permanently cancel your order.'}
                   </p>
                 </div>
                 <button
@@ -851,6 +914,26 @@ function CancelOrderButton({
                 />
               ) : null}
 
+              {preOrder ? (
+                <div className="mt-4 rounded-xl border border-gray-200 px-4 py-3 text-xs dark:border-gray-700">
+                  <p className="mb-1 font-semibold text-gray-900 dark:text-gray-100">
+                    {late ? 'If the store approves' : 'Your refund'}
+                  </p>
+                  {quote.isLoading ? (
+                    <p className="text-gray-500">Calculating your refund...</p>
+                  ) : quote.data ? (
+                    <RefundBreakdown plan={quote.data.plan} />
+                  ) : (
+                    <p className="text-gray-500">Refund preview unavailable.</p>
+                  )}
+                  <ul className="mt-2 list-disc space-y-0.5 pl-4 text-gray-500 dark:text-gray-400">
+                    {refundPolicySummary(cutoffDays).map(line => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
               {error?.message ? (
                 <p className="mt-3 text-xs text-red-600 dark:text-red-300">{error.message}</p>
               ) : null}
@@ -861,9 +944,26 @@ function CancelOrderButton({
                   variant="destructive"
                   className="w-full h-12 rounded-full font-bold text-white"
                   disabled={isPending}
-                  onClick={() => cancelMutation.mutate(finalReason)}
+                  onClick={() =>
+                    cancelMutation.mutate(finalReason, {
+                      onSuccess: data => {
+                        setOpen(false);
+                        toast.success(
+                          data?.requested
+                            ? 'Request sent. The store will review it.'
+                            : 'Your order was cancelled.'
+                        );
+                      }
+                    })
+                  }
                 >
-                  {isPending ? 'Cancelling...' : 'Cancel Order'}
+                  {isPending
+                    ? late
+                      ? 'Sending...'
+                      : 'Cancelling...'
+                    : late
+                      ? 'Send request'
+                      : 'Cancel Order'}
                 </Button>
                 <Button
                   type="button"

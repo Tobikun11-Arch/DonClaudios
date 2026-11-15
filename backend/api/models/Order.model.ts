@@ -47,12 +47,39 @@ export type PaymentStatus = 'unpaid' | 'down_payment' | 'paid';
 export type PaymentChoice =
   | 'online_full'
   | 'online_down_payment'
-  | 'cash_on_pickup';
+  | 'cash_on_pickup'
+  /** Cash at the store counter before the deadline in `paymentExpiresAt`. */
+  | 'in_store_full'
+  | 'in_store_down_payment';
 
 /** How the customer settles the rest after a down payment. */
-export type BalanceChoice = 'cash' | 'online';
+export type BalanceChoice = 'cash' | 'online' | 'in_store';
 
 export type RefundStatus = 'none' | 'pending' | 'refunded' | 'failed';
+
+/** What the cancellation refund was, per config/refundPolicy.ts. */
+export interface OrderRefundInfo {
+  policy: 'early' | 'late' | 'store';
+  paid: number;
+  retained: number;
+  onlineTotal: number;
+  cash: number;
+  feesRefunded: number;
+  feesNotRefunded: number;
+  refundTotal: number;
+  decidedAt: Date;
+}
+
+/** Customer asked to cancel a pre-order after its cut-off (owner decides). */
+export interface OrderCancelRequest {
+  status: 'pending' | 'approved' | 'declined';
+  reason?: string | null;
+  requestedAt: Date;
+  decidedAt?: Date | null;
+  decidedBy?: string | null;
+  /** Owner's note to the customer (e.g. why it was declined). */
+  note?: string | null;
+}
 
 export type OrderPaymentMethod =
   | 'cash'
@@ -132,9 +159,20 @@ export interface OrderDocument extends mongoose.Document {
   transactionFee?: number;
   /** Channel of the last online payment, e.g. 'gcash'. */
   paymentChannel?: string | null;
-  /** When the open Xendit invoice expires (drives the UI countdown). */
+  /**
+   * When the open Xendit invoice expires, or the in-store payment deadline
+   * (paymentChoice in_store_*). Drives the UI countdown and auto-cancel.
+   */
   paymentExpiresAt?: Date | null;
   refundStatus?: RefundStatus;
+  /** Who cancelled the order (drives the refund policy). */
+  cancelledBy?: 'customer' | 'store' | 'system' | null;
+  refund?: OrderRefundInfo | null;
+  /** Cash to hand back at the counter, and when/who handed it back. */
+  cashRefundDue?: number;
+  cashRefundedAt?: Date | null;
+  cashRefundedBy?: string | null;
+  cancelRequest?: OrderCancelRequest | null;
   /**
    * How the order was paid: cash at the counter / on pickup, or the online
    * channel reported by Xendit.
@@ -263,12 +301,19 @@ const OrderSchema = new Schema<OrderDocument>(
     },
     paymentChoice: {
       type: String,
-      enum: ['online_full', 'online_down_payment', 'cash_on_pickup', null],
+      enum: [
+        'online_full',
+        'online_down_payment',
+        'cash_on_pickup',
+        'in_store_full',
+        'in_store_down_payment',
+        null
+      ],
       default: null
     },
     balanceChoice: {
       type: String,
-      enum: ['cash', 'online', null],
+      enum: ['cash', 'online', 'in_store', null],
       default: null
     },
     amountPaid: {type: Number, default: 0},
@@ -279,6 +324,45 @@ const OrderSchema = new Schema<OrderDocument>(
       type: String,
       enum: ['none', 'pending', 'refunded', 'failed'],
       default: 'none'
+    },
+    cancelledBy: {
+      type: String,
+      enum: ['customer', 'store', 'system', null],
+      default: null
+    },
+    refund: {
+      type: new Schema(
+        {
+          policy: {type: String, enum: ['early', 'late', 'store'], required: true},
+          paid: {type: Number, default: 0},
+          retained: {type: Number, default: 0},
+          onlineTotal: {type: Number, default: 0},
+          cash: {type: Number, default: 0},
+          feesRefunded: {type: Number, default: 0},
+          feesNotRefunded: {type: Number, default: 0},
+          refundTotal: {type: Number, default: 0},
+          decidedAt: {type: Date, required: true}
+        },
+        {_id: false}
+      ),
+      default: null
+    },
+    cashRefundDue: {type: Number, default: 0},
+    cashRefundedAt: {type: Date, default: null},
+    cashRefundedBy: {type: String, default: null},
+    cancelRequest: {
+      type: new Schema(
+        {
+          status: {type: String, enum: ['pending', 'approved', 'declined'], required: true},
+          reason: {type: String, default: null},
+          requestedAt: {type: Date, required: true},
+          decidedAt: {type: Date, default: null},
+          decidedBy: {type: String, default: null},
+          note: {type: String, default: null}
+        },
+        {_id: false}
+      ),
+      default: null
     },
     paymentMethod: {
       type: String,

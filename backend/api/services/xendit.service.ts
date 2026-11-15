@@ -119,7 +119,7 @@ export const xenditService = {
       items: [{name: input.description, quantity: 1, price: input.orderAmount}],
       fees:
         input.transactionFee > 0
-          ? [{type: 'Transaction fee', value: input.transactionFee}]
+          ? [{type: 'Service fee', value: input.transactionFee}]
           : undefined
     });
   },

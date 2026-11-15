@@ -5,6 +5,7 @@ import {
   cancelTrackedOrder,
   getTrackedOrder,
   submitCashPayment,
+  chooseInStorePayment,
   fetchPaymentSummary,
   startPaymentCheckout,
   payOrderBalance,
@@ -84,6 +85,7 @@ export function useCancelTrackedOrderMutation(
       await queryClient.invalidateQueries({queryKey: allOrdersQueryKey});
       await queryClient.invalidateQueries({queryKey: followUpOrdersKey});
       await queryClient.invalidateQueries({queryKey: ['preorders']});
+      await queryClient.invalidateQueries({queryKey: ['orders', 'payment', orderId]});
     }
   });
 }
@@ -141,13 +143,24 @@ export function usePayBalanceMutation(orderId: string, phoneNumber?: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (
-      input: {method: 'online'; channel: PaymentChannel} | {method: 'cash'}
+      input: {method: 'online'; channel: PaymentChannel} | {method: 'cash'} | {method: 'in_store'}
     ) => payOrderBalance(orderId, input, phoneNumber),
     onSuccess: async data => {
       if ('invoiceUrl' in data && data.invoiceUrl) {
         window.location.assign(data.invoiceUrl);
         return;
       }
+      await invalidateOrderQueries(queryClient, orderId);
+    }
+  });
+}
+
+export function useChooseInStoreMutation(orderId: string, phoneNumber?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (kind: 'full' | 'down_payment') =>
+      chooseInStorePayment(orderId, kind, phoneNumber),
+    onSuccess: async () => {
       await invalidateOrderQueries(queryClient, orderId);
     }
   });

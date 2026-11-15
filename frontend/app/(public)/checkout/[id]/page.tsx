@@ -56,18 +56,13 @@ import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {sanitizePhone, sanitizeName} from '@/lib/validation/numeric';
 import {normalizePH, detectCarrier, toAppCarrier} from '@/lib/phone';
 import {cn} from '@/lib/utils';
+import {ORDER_NOTES_COPY, hasNote, keepNotesFor, toggleNote} from '@/lib/orders/orderNotes';
 
 const STORE = {
   lat: 14.39092185435405,
   lng: 120.8530823121149
 };
 
-const NOTE_SUGGESTIONS = [
-  'Call upon arrival',
-  'Extra sauce on the side',
-  'Leave at gate',
-  'Ring the doorbell'
-];
 
 function buildMapPreviewSrc(userLat: number, userLng: number) {
   const midLat = (userLat + STORE.lat) / 2;
@@ -216,19 +211,17 @@ export default function CheckoutGuestPage() {
       : null;
 
   const toggleNoteSuggestion = (suggestion: string) => {
-    const value = suggestion.trim();
-    if (!value) return;
-
-    setNotesToRider(current => {
-      const remaining = current
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean)
-        .filter(s => s !== value)
-        .join(', ');
-      return remaining.length > 0 ? `${remaining}, ${value}` : value;
-    });
+    setNotesToRider(current => toggleNote(current, suggestion));
   };
+
+  // Switching how the order is received drops the other type's chip notes
+  // (e.g. "Leave at gate" makes no sense for a pick-up).
+  const [notesOrderType, setNotesOrderType] = useState(orderType);
+  if (notesOrderType !== orderType) {
+    setNotesOrderType(orderType);
+    setNotesToRider(current => keepNotesFor(current, orderType));
+  }
+  const notesCopy = ORDER_NOTES_COPY[orderType] ?? ORDER_NOTES_COPY.Delivery;
 
   const handleAddressChange = (value: string) => {
     setAddress(value);
@@ -239,11 +232,7 @@ export default function CheckoutGuestPage() {
     });
   };
 
-  const isNoteActive = (suggestion: string) =>
-    notesToRider
-      .split(',')
-      .map(s => s.trim())
-      .includes(suggestion);
+  const isNoteActive = (suggestion: string) => hasNote(notesToRider, suggestion);
 
   const isLikelyValidPhone = (value: string) => {
     const digits = value.replace(/\D/g, '');
@@ -793,11 +782,11 @@ export default function CheckoutGuestPage() {
                     Additional details
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Delivery instructions (optional)
+                    {notesCopy.hint}
                   </p>
 
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {NOTE_SUGGESTIONS.map(suggestion => (
+                    {notesCopy.suggestions.map(suggestion => (
                       <button
                         key={suggestion}
                         type="button"
@@ -818,7 +807,7 @@ export default function CheckoutGuestPage() {
                   <Input
                     value={notesToRider}
                     onChange={e => setNotesToRider(e.target.value)}
-                    placeholder="Notes to rider"
+                    placeholder={notesCopy.placeholder}
                     className="mt-3"
                   />
 

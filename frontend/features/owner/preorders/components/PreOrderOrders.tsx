@@ -460,13 +460,9 @@ export default function PreOrderOrders({event, onBack, role = 'owner'}: Props) {
         </div>
       )}
 
-      {openId && detail.isLoading && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/30">
-          <SectionLoader label="Loading order" size={120} className="rounded-3xl bg-white p-6 shadow-xl dark:bg-gray-900" />
-        </div>
-      )}
       <OrderDetailDrawer
         order={openId && detail.data ? detail.data : null}
+        loading={!!openId && detail.isLoading}
         onClose={() => setOpenId(null)}
         onUpdateStatus={(id, next) => changeStatus(id, next, detail.data)}
         isUpdating={updateStatus.isPending}

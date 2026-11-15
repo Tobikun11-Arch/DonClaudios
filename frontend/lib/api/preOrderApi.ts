@@ -33,6 +33,8 @@ export type PreOrderSlot = {
   _id: string;
   label: string;
   startTime: string;
+  /** Null on slots saved before end times existed. */
+  endTime?: string | null;
   remaining: number;
   full: boolean;
   /** Owner only. */
@@ -83,7 +85,8 @@ export type PreOrderEventInput = {
       maxPerOrder: number;
     }>;
   }>;
-  slots: Array<{_id?: string; label: string; startTime: string; limit: number}>;
+  /** The label is built by the server from startTime and endTime. */
+  slots: Array<{_id?: string; startTime: string; endTime: string; limit: number}>;
 };
 
 export type PreOrderOwnerOrder = {

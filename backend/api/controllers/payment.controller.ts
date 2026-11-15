@@ -4,6 +4,7 @@ import {transactionRepository} from '../repositories/transaction.repository';
 import {paymentService, assertWebhookToken} from '../services/payment.service';
 import {isPaymentChannel} from '../config/paymentFees';
 import {assertOrderCustomerAccess} from '../utils/orderAccess';
+import {assertCashierMayHandle} from '../services/ownerNotify.service';
 import {ApiError} from '../utils/error';
 
 async function loadOrder(id: string) {
@@ -22,8 +23,16 @@ export const paymentController = {
   /** GET /orders/:id/payment — payment step summary (customer or staff). */
   async getSummary(req: Request, res: Response, next: NextFunction) {
     try {
-      const order = await loadOrder(req.params.id);
+      let order = await loadOrder(req.params.id);
       if (!isStaff(req)) assertOrderCustomerAccess(order, req);
+      // Don't depend on the webhook alone to leave "Confirming your payment".
+      if (await paymentService.syncPendingFromXendit(String(order._id))) {
+        order = await loadOrder(req.params.id);
+      }
+      // Missed in-store deadline: cancel now rather than wait for the sweep.
+      if (await paymentService.expireInStoreIfDue(order)) {
+        order = await loadOrder(req.params.id);
+      }
       res.status(200).json({payment: await paymentService.getSummary(order)});
     } catch (error) {
       next(error);
@@ -70,13 +79,36 @@ export const paymentController = {
     }
   },
 
-  /** POST /orders/:id/payment/balance {method: 'cash' | 'online', channel?}. */
+  /** POST /orders/:id/payment/in-store {kind} — pay cash at the store counter. */
+  async chooseInStore(req: Request, res: Response, next: NextFunction) {
+    try {
+      const order = await loadOrder(req.params.id);
+      assertOrderCustomerAccess(order, req);
+      const kind = req.body?.kind;
+      if (kind !== 'full' && kind !== 'down_payment') {
+        throw new ApiError(400, 'VALIDATION_ERROR', "kind must be 'full' or 'down_payment'");
+      }
+      await paymentService.chooseInStore(order, kind);
+      const updated = await orderRepository.findById(String(order._id));
+      res.status(200).json({order: updated});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** POST /orders/:id/payment/balance {method: 'cash' | 'in_store' | 'online', channel?}. */
   async payBalance(req: Request, res: Response, next: NextFunction) {
     try {
       const order = await loadOrder(req.params.id);
       assertOrderCustomerAccess(order, req);
 
       const method = req.body?.method;
+      if (method === 'in_store') {
+        await paymentService.chooseInStoreBalance(order);
+        const updated = await orderRepository.findById(String(order._id));
+        res.status(200).json({order: updated});
+        return;
+      }
       if (method === 'cash') {
         await paymentService.chooseCashBalance(order);
         const updated = await orderRepository.findById(String(order._id));
@@ -84,7 +116,7 @@ export const paymentController = {
         return;
       }
       if (method !== 'online') {
-        throw new ApiError(400, 'VALIDATION_ERROR', "method must be 'cash' or 'online'");
+        throw new ApiError(400, 'VALIDATION_ERROR', "method must be 'cash', 'in_store' or 'online'");
       }
       const channel = req.body?.channel;
       if (!isPaymentChannel(channel)) {
@@ -92,6 +124,54 @@ export const paymentController = {
       }
       const result = await paymentService.startCheckout(order, 'balance', channel);
       res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * GET /orders/:id/cancel-quote?by=store|customer — what cancelling does now
+   * (cancel / request / closed) and the refund per the policy. Customers
+   * always get their own view.
+   */
+  async cancelQuote(req: Request, res: Response, next: NextFunction) {
+    try {
+      const order = await loadOrder(req.params.id);
+      let by: 'customer' | 'store' = 'customer';
+      if (isStaff(req)) {
+        by = req.query.by === 'customer' ? 'customer' : 'store';
+      } else {
+        assertOrderCustomerAccess(order, req);
+      }
+      res.status(200).json({quote: await paymentService.quoteCancellation(order, by)});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** POST /orders/:id/cancel-request/decline {note?} — owner keeps the order. */
+  async declineCancelRequest(req: Request, res: Response, next: NextFunction) {
+    try {
+      const order = await loadOrder(req.params.id);
+      assertCashierMayHandle(req.auth, order);
+      const note =
+        typeof req.body?.note === 'string' && req.body.note.trim()
+          ? req.body.note.trim().slice(0, 300)
+          : undefined;
+      await paymentService.declineCancelRequest(order, req.auth!.userId, note);
+      res.status(200).json({order: await orderRepository.findById(String(order._id))});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** POST /orders/:id/refund/cash — cash refund handed back at the counter. */
+  async markCashRefunded(req: Request, res: Response, next: NextFunction) {
+    try {
+      const order = await loadOrder(req.params.id);
+      assertCashierMayHandle(req.auth, order);
+      await paymentService.markCashRefunded(order, req.auth!.userId);
+      res.status(200).json({order: await orderRepository.findById(String(order._id))});
     } catch (error) {
       next(error);
     }
