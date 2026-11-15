@@ -1523,7 +1523,8 @@ export const orderController = {
         isOnline: true
       });
 
-      notifyCashiersOfNewOrder(String(order._id), serverTotal);
+      // No "New order" notification or push for walk-ins: the cashier who rang
+      // it up is standing at the counter, so it would only be noise.
 
       res.status(201).json({order, transaction});
     } catch (error) {
