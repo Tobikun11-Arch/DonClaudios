@@ -22,6 +22,7 @@ import type {Category} from '@/lib/types/category';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {FilterPills} from '@/shared/components/FilterPills';
 import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
+import SectionLoader from '@/shared/components/SectionLoader';
 
 function stockClass(stock: number) {
   if (stock <= 0) return 'bg-red-50 text-red-700 border-red-200';
@@ -302,9 +303,7 @@ export function CashierMenuStock() {
 
       {view === 'products' ? (
         productsQuery.isLoading ? (
-          <div className="rounded-2xl bg-white shadow p-5 text-sm text-gray-500">
-            Loading products...
-          </div>
+          <SectionLoader label="Loading products" className="rounded-2xl bg-white shadow py-14" />
         ) : productsQuery.isError ? (
           <div className="rounded-2xl bg-white shadow p-5 text-sm text-red-600">
             {getFriendlyErrorMessage(productsQuery.error, 'Failed to load products')}
@@ -326,9 +325,7 @@ export function CashierMenuStock() {
           </div>
         )
       ) : promosQuery.isLoading ? (
-        <div className="rounded-2xl bg-white shadow p-5 text-sm text-gray-500">
-          Loading promos...
-        </div>
+        <SectionLoader label="Loading promos" className="rounded-2xl bg-white shadow py-14" />
       ) : promosQuery.isError ? (
         <div className="rounded-2xl bg-white shadow p-5 text-sm text-red-600">
           {getFriendlyErrorMessage(promosQuery.error, 'Failed to load promos')}

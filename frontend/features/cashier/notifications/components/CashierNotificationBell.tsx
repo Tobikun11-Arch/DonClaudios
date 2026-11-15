@@ -15,6 +15,8 @@ import {useNotificationSound} from '@/lib/hooks/notifications/useNotificationSou
 import {useCashierPrefs} from '@/lib/cashier/cashierPrefs';
 import type {Notification} from '@/lib/types/notification';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
+import {notificationUrl} from '@/lib/notifications/notificationUrl';
+import SectionLoader from '@/shared/components/SectionLoader';
 
 export default function CashierNotificationBell() {
   const [open, setOpen] = useState(false);
@@ -46,24 +48,17 @@ export default function CashierNotificationBell() {
     setOpen(prev => !prev);
   };
 
-  const handleClick = async (notification: Notification) => {
-    if (!notification.read) {
-      try {
-        await markReadMutation.mutateAsync(notification._id);
-      } catch (error) {
-        toast.error(
-          getFriendlyErrorMessage(error, 'Failed to update notification.')
-        );
-      }
-    }
+  const handleClick = (notification: Notification) => {
+    // Navigate first: waiting on "mark read" (e.g. while the session refreshes
+    // right after login) used to swallow the redirect.
     setOpen(false);
-    if (notification.link) {
-      const highlightId = notification.orderId ?? notification.reviewId;
-      const openChat = notification.type === 'order_message' ? '&openChat=1' : '';
-      const url = highlightId
-        ? `${notification.link}${notification.link.includes('?') ? '&' : '?'}highlight=${highlightId}${openChat}`
-        : notification.link;
-      router.push(url);
+    const link =
+      notification.link ?? (notification.orderId ? '/cashier/dashboard?tab=orders' : null);
+    if (link) router.push(notificationUrl(link, notification));
+    if (!notification.read) {
+      markReadMutation.mutateAsync(notification._id).catch(error =>
+        toast.error(getFriendlyErrorMessage(error, 'Failed to update notification.'))
+      );
     }
   };
 
@@ -151,9 +146,7 @@ export default function CashierNotificationBell() {
 
           <div className="max-h-80 overflow-y-auto">
             {isLoading ? (
-              <div className="p-5 text-sm text-gray-500">
-                Loading notifications...
-              </div>
+              <SectionLoader label="Loading notifications" size={64} className="py-6" />
             ) : notifications.length === 0 ? (
               <div className="p-5 text-sm text-gray-500">
                 No notifications yet.

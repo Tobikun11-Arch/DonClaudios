@@ -1,7 +1,7 @@
 'use client';
 
 import {useEffect} from 'react';
-import {X} from 'lucide-react';
+import {CalendarClock, Package, X} from 'lucide-react';
 import {OrderStatusPill, OrderTypePill} from './OrderPills';
 import {itemName, orderCustomerName} from '../hooks/useOwnerOrders';
 import {formatPeso} from '../../dashboard/components/reports/reportPrimitives';
@@ -22,6 +22,33 @@ function formatDateTime(iso?: string) {
   });
 }
 
+function formatDay(iso?: string) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-PH', {
+    timeZone: 'Asia/Manila',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+function ItemThumb({item}: {item: OrderHistoryEntry['items'][number]}) {
+  const src = item.imageUrl ?? (typeof item.productId === 'string' ? undefined : item.productId?.imageUrl);
+  return src ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt=""
+      loading="lazy"
+      className="h-11 w-11 shrink-0 rounded-lg object-cover"
+    />
+  ) : (
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#E8F0E3] text-[#2d4a35] dark:bg-[#7ed4a0]/10 dark:text-[#7ed4a0]">
+      <Package className="h-4 w-4" />
+    </div>
+  );
+}
+
 /** Remaining steps of this order's own flow (the backend rejects any other). */
 function nextStatuses(order: OrderHistoryEntry): string[] {
   if (order.orderStatus === 'cancelled' || order.orderStatus === 'completed') return [];
@@ -36,12 +63,15 @@ export function OrderDetailDrawer({
   order,
   onClose,
   onUpdateStatus,
-  isUpdating
+  isUpdating,
+  allowCancel = true
 }: {
   order: OrderHistoryEntry | null;
   onClose: () => void;
   onUpdateStatus: (orderId: string, status: string) => void;
   isUpdating: boolean;
+  /** False hides the Cancel button (cashiers on pre-orders). */
+  allowCancel?: boolean;
 }) {
   useEffect(() => {
     if (!order) return;
@@ -135,6 +165,34 @@ export function OrderDetailDrawer({
             <OrderPaymentPanel order={order} />
           ) : null}
 
+          {order.isPreOrder && order.preOrder ? (
+            <section className="rounded-xl border border-purple-200 bg-purple-50/60 px-3.5 py-3 dark:border-purple-500/30 dark:bg-purple-500/10">
+              <p className="mb-2 flex items-center gap-1.5 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-purple-700 dark:text-purple-300">
+                <CalendarClock className="h-3.5 w-3.5" /> {order.preOrder.eventTitle}
+              </p>
+              <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-[0.8rem]">
+                <div>
+                  <dt className="text-[0.68rem] text-[#6B7280] dark:text-gray-400">Pickup</dt>
+                  <dd className="font-semibold text-[#1A1A1A] dark:text-gray-100">
+                    {formatDay(order.preOrder.pickupAt)} · {order.preOrder.slotLabel}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[0.68rem] text-[#6B7280] dark:text-gray-400">Receive by</dt>
+                  <dd className="font-semibold text-[#1A1A1A] dark:text-gray-100">
+                    {order.preOrder.receiveMethod === 'lalamove' ? 'Lalamove' : 'Self pick-up'}
+                  </dd>
+                </div>
+                <div className="col-span-2">
+                  <dt className="text-[0.68rem] text-[#6B7280] dark:text-gray-400">Customer can cancel until</dt>
+                  <dd className="font-semibold text-[#1A1A1A] dark:text-gray-100">
+                    {formatDateTime(order.preOrder.cancelDeadline)}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+          ) : null}
+
           {upcoming.length > 0 && (
             <section>
               <h3 className="mb-2 text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
@@ -152,6 +210,7 @@ export function OrderDetailDrawer({
                     {staffStatusLabel(order, status)}
                   </button>
                 ))}
+                {allowCancel && (
                 <button
                   type="button"
                   disabled={isUpdating}
@@ -160,6 +219,7 @@ export function OrderDetailDrawer({
                 >
                   Cancel
                 </button>
+                )}
               </div>
             </section>
           )}
@@ -238,7 +298,8 @@ export function OrderDetailDrawer({
               )}
               {items.map((item, index) => (
                 <li key={item._id ?? index} className="flex items-start justify-between gap-3 px-3 py-2.5">
-                  <div className="min-w-0">
+                  <ItemThumb item={item} />
+                  <div className="min-w-0 flex-1">
                     <p className="text-[0.85rem] font-medium text-[#1A1A1A] dark:text-gray-100">
                       {withSize(itemName(item) || 'Removed product', item.sizeLabel)}
                     </p>

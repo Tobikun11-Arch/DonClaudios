@@ -29,6 +29,7 @@ import {
   nextStatus as nextFlowStatus,
   staffStatusLabel
 } from '@/lib/orders/orderFlow';
+import SectionLoader from '@/shared/components/SectionLoader';
 
 export const ORDER_STATUSES = [
   'pending',
@@ -301,7 +302,7 @@ export function CashierOrders() {
     }
     return map;
   }, [followUpQuery.data]);
-  const {highlightId, isOpenChat} = useScrollToHighlight();
+  const {highlightId, highlightToken, isOpenChat} = useScrollToHighlight();
   const [expandedId, setExpandedId] = useState<string | null>(
     isOpenChat ? highlightId : null
   );
@@ -311,7 +312,17 @@ export function CashierOrders() {
     if (isOpenChat && highlightId) setExpandedId(highlightId);
   }
 
-  const highlightKey = highlightId ?? null;
+  // Each notification click is a new highlight (id + click token).
+  const highlightKey = highlightId ? `${highlightId}|${highlightToken ?? ''}` : null;
+
+  // A notification must never land on a list that hides its order: clear the
+  // type and date filters once per click (render-time, no effect).
+  const [clearedFor, setClearedFor] = useState<string | null>(null);
+  if (highlightKey && clearedFor !== highlightKey) {
+    setClearedFor(highlightKey);
+    setOrderTypeFilter('all');
+    setDateRange({from: null, to: null});
+  }
   const highlightedOrder = highlightId ? orders.find(o => o._id === highlightId) : undefined;
   const resolvedFilter =
     manualFilter.key === highlightKey
@@ -548,9 +559,7 @@ export function CashierOrders() {
       </div>
 
       {isLoading ? (
-        <div className="rounded-2xl bg-white dark:bg-gray-900 shadow p-5 text-sm text-gray-500 dark:text-gray-400">
-          Loading orders...
-        </div>
+        <SectionLoader label="Loading orders" className="rounded-2xl bg-white dark:bg-gray-900 shadow py-14" />
       ) : isError ? (
         <div className="rounded-2xl bg-white dark:bg-gray-900 shadow p-5 text-sm text-red-600 dark:text-red-400">
           Failed to load orders.
@@ -1031,7 +1040,7 @@ function OrderCard({
             Conversation with {customerDisplay(order)}
           </p>
           {messagesQuery.isLoading ? (
-            <div className="text-sm text-gray-500 dark:text-gray-400">Loading conversation...</div>
+            <SectionLoader label="Loading conversation" size={72} className="py-4" />
           ) : messagesQuery.isError ? (
             <div className="text-sm text-red-600 dark:text-red-400">
               Failed to load conversation.

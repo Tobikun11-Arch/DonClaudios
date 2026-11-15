@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import {cn} from '@/lib/utils';
 import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
+import SectionLoader from '@/shared/components/SectionLoader';
 
 const SECTIONS = [
   {id: 'profile', label: 'Profile', icon: UserRound, hint: 'Your photo, name and contact details.'},
@@ -187,10 +188,7 @@ function ProfileSection() {
 
   if (!user) {
     return (
-      <div className="space-y-4">
-        <div className="h-48 rounded-2xl bg-gray-100 animate-pulse" />
-        <div className="h-56 rounded-2xl bg-gray-100 animate-pulse" />
-      </div>
+      <SectionLoader label="Loading profile" className="rounded-2xl bg-white shadow py-14" />
     );
   }
 

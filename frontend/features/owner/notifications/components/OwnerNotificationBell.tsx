@@ -13,6 +13,7 @@ import {useAdminNotificationsQuery,
 import {useNotificationSound} from '@/lib/hooks/notifications/useNotificationSound';
 import type {Notification} from '@/lib/types/notification';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
+import {notificationUrl} from '@/lib/notifications/notificationUrl';
 
 export default function OwnerNotificationBell({alert = false}: {alert?: boolean}) {
   const [open, setOpen] = useState(false);
@@ -43,23 +44,14 @@ export default function OwnerNotificationBell({alert = false}: {alert?: boolean}
     setOpen(prev => !prev);
   };
 
-  const handleClick = async (notification: Notification) => {
-    if (!notification.read) {
-      try {
-        await markReadMutation.mutateAsync(notification._id);
-      } catch (error) {
-        toast.error(
-          getFriendlyErrorMessage(error, 'Failed to update notification.')
-        );
-      }
-    }
+  const handleClick = (notification: Notification) => {
+    // Navigate first so a slow "mark read" never blocks the redirect.
     setOpen(false);
-    if (notification.link) {
-      const highlightId = notification.orderId ?? notification.reviewId;
-      const url = highlightId
-        ? `${notification.link}${notification.link.includes('?') ? '&' : '?'}highlight=${highlightId}`
-        : notification.link;
-      router.push(url);
+    if (notification.link) router.push(notificationUrl(notification.link, notification));
+    if (!notification.read) {
+      markReadMutation.mutateAsync(notification._id).catch(error =>
+        toast.error(getFriendlyErrorMessage(error, 'Failed to update notification.'))
+      );
     }
   };
 

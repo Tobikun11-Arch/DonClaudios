@@ -1,6 +1,7 @@
 'use client';
 
 import {useState, type ReactNode} from 'react';
+import {useSearchParams} from 'next/navigation';
 import {
   CalendarDays,
   Copy,
@@ -17,14 +18,17 @@ import {
   useDeletePreOrder,
   useDuplicatePreOrder,
   useOwnerPreOrders,
+  usePreOrderDetail,
   useSetPreOrderStatus
 } from '@/lib/hooks/preorders/usePreOrders';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import type {PreOrderEvent} from '@/lib/api/preOrderApi';
 import OwnerNotificationBell from '@/features/owner/notifications/components/OwnerNotificationBell';
+import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
 import PreOrderEditor from './PreOrderEditor';
-import PreOrderOrders from './PreOrderOrders';
+import PreOrderOrders, {type PreOrderRole} from './PreOrderOrders';
 import {STATUS_STYLE, daysUntil, nextDay, peso, shortDate, weekday} from '@/features/preorders/utils';
+import SectionLoader from '@/shared/components/SectionLoader';
 
 type View = {kind: 'list'} | {kind: 'edit'; id: string | null} | {kind: 'orders'; id: string};
 
@@ -70,13 +74,16 @@ function EventCard({
   onEdit,
   onOrders,
   onDuplicate,
-  onDelete
+  onDelete,
+  readOnly = false
 }: {
   event: PreOrderEvent;
   onEdit: () => void;
   onOrders: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  /** Cashier view: open the orders only, no changes to the date. */
+  readOnly?: boolean;
 }) {
   const setStatus = useSetPreOrderStatus();
   const status = STATUS_STYLE[event.status];
@@ -160,8 +167,10 @@ function EventCard({
 
       <div className="mt-4 flex flex-wrap gap-2 border-t border-gray-100 pt-3 dark:border-gray-700">
         <Button size="sm" variant="outline" onClick={onOrders}>
-          <ListOrdered size={14} /> Orders
+          <ListOrdered size={14} /> {readOnly ? 'View orders' : 'Orders'}
         </Button>
+        {!readOnly && (
+        <>
         <Button size="sm" variant="outline" onClick={onEdit}>
           <Pencil size={14} /> Edit
         </Button>
@@ -198,14 +207,30 @@ function EventCard({
             <Trash2 size={15} />
           </button>
         </div>
+        </>
+        )}
       </div>
     </div>
   );
 }
 
-export default function PreOrdersPage() {
+export default function PreOrdersPage({role = 'owner'}: {role?: PreOrderRole}) {
+  const readOnly = role === 'cashier';
   const {data: events = [], isLoading, isError, refetch, isFetching} = useOwnerPreOrders();
   const [view, setView] = useState<View>({kind: 'list'});
+
+  // Notifications link here with ?highlight=<orderId>: open that order's date.
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get('highlight');
+  const highlightKey = highlightId ? `${highlightId}|${searchParams.get('hl') ?? ''}` : null;
+  const {data: highlighted} = usePreOrderDetail(highlightId);
+  // Render-time adjustment (no effect): open the date once per click.
+  const [openedFor, setOpenedFor] = useState<string | null>(null);
+  const highlightEventId = highlighted?.preOrder?.eventId;
+  if (highlightKey && highlightEventId && openedFor !== highlightKey) {
+    setOpenedFor(highlightKey);
+    setView({kind: 'orders', id: String(highlightEventId)});
+  }
   const [dupFrom, setDupFrom] = useState<PreOrderEvent | null>(null);
   const [dupTitle, setDupTitle] = useState('');
   const [dupDate, setDupDate] = useState('');
@@ -213,7 +238,7 @@ export default function PreOrdersPage() {
   const duplicate = useDuplicatePreOrder();
   const remove = useDeletePreOrder();
 
-  if (view.kind === 'edit') {
+  if (view.kind === 'edit' && !readOnly) {
     const event = view.id ? (events.find(e => e._id === view.id) ?? null) : null;
     return (
       <PreOrderEditor
@@ -226,7 +251,7 @@ export default function PreOrdersPage() {
   }
   if (view.kind === 'orders') {
     const event = events.find(e => e._id === view.id);
-    if (event) return <PreOrderOrders event={event} onBack={() => setView({kind: 'list'})} />;
+    if (event) return <PreOrderOrders event={event} role={role} onBack={() => setView({kind: 'list'})} />;
   }
 
   const upcoming = events.filter(e => daysUntil(e.pickupDate) >= 0);
@@ -270,6 +295,7 @@ export default function PreOrdersPage() {
           onOrders={() => setView({kind: 'orders', id: e._id})}
           onDuplicate={() => openDuplicate(e)}
           onDelete={() => setDeleting(e)}
+          readOnly={readOnly}
         />
       ))}
     </div>
@@ -283,10 +309,12 @@ export default function PreOrdersPage() {
             Pre-orders
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Open pickup dates ahead of time, choose the products and sizes, and set limits per size
-            and per time slot.
+            {readOnly
+              ? 'See who ordered for each pickup date and move their orders along. Dates are set up by the owner.'
+              : 'Open pickup dates ahead of time, choose the products and sizes, and set limits per size and per time slot.'}
           </p>
         </div>
+        {!readOnly && (
         <div className="order-last flex w-full items-center gap-2 sm:order-none sm:w-auto">
           <Button
             onClick={() => setView({kind: 'edit', id: null})}
@@ -295,7 +323,8 @@ export default function PreOrdersPage() {
             <Plus size={16} /> New date
           </Button>
         </div>
-        <OwnerNotificationBell />
+        )}
+        {readOnly ? <CashierNotificationBell /> : <OwnerNotificationBell />}
       </div>
 
       {isError ? (
@@ -310,17 +339,15 @@ export default function PreOrdersPage() {
           </Button>
         </div>
       ) : isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {Array.from({length: 3}).map((_, i) => (
-            <div key={i} className="h-56 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-900" />
-          ))}
-        </div>
+        <SectionLoader label="Loading pre-order dates" className="min-h-[40vh]" />
       ) : events.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-gray-200 p-12 text-center dark:border-gray-700">
           <CalendarDays className="mx-auto mb-3 h-8 w-8 text-gray-400" />
           <p className="font-semibold text-gray-800 dark:text-gray-200">No pre-order dates yet</p>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Create a date such as Dec 24 and add the products customers can reserve.
+            {readOnly
+              ? 'When the owner opens a pickup date, it will show up here.'
+              : 'Create a date such as Dec 24 and add the products customers can reserve.'}
           </p>
         </div>
       ) : (

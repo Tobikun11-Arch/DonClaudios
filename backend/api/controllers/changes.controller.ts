@@ -43,7 +43,7 @@ const fingerprint = (...parts: number[]) => parts.join('-');
 // Overdue alerts used to piggyback on the 5s full-order poll. Keep them close
 // to real time by running the (cheap, "preparing"-only) check from here,
 // at most once per interval per server instance.
-const OVERDUE_CHECK_INTERVAL_MS = 15_000;
+const OVERDUE_CHECK_INTERVAL_MS = 60_000;
 let lastOverdueCheckAt = 0;
 function maybeRunOverdueCheck() {
   const now = Date.now();
