@@ -6,6 +6,7 @@ import {ReactQueryProvider} from '@/lib/provider/ReactQueryProvider';
 import {AppThemeProvider} from '@/components/theme/AppThemeProvider';
 import {ServiceWorkerRegistrar} from '@/components/pwa/ServiceWorkerRegistrar';
 import {InstallPrompt} from '@/components/pwa/InstallPrompt';
+import {AcquisitionTracker} from '@/components/AcquisitionTracker';
 
 const inter = Inter({subsets: ['latin'], variable: '--font-sans'});
 
@@ -90,6 +91,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
         <ServiceWorkerRegistrar />
+        <AcquisitionTracker />
         <AppThemeProvider>
           <ReactQueryProvider>{children}</ReactQueryProvider>
         </AppThemeProvider>

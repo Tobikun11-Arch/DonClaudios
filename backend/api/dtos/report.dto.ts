@@ -30,6 +30,10 @@ export const reportBreakdownQueryDto = reportRangeQueryDto.extend({
   limit: z.coerce.number().int().min(1).max(200).optional()
 });
 
+export const reportDeliveryHeatmapQueryDto = z.object({
+  days: z.enum(['30', '90', '365', 'all']).optional()
+});
+
 export const REPORT_VIEWS = ['sales', 'operations', 'products', 'customers', 'overview'] as const;
 
 // A PDF is not a breakdown request: the view decides which tables appear, so

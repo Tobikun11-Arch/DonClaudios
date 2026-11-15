@@ -1,5 +1,6 @@
 import {httpClient} from './httpClient';
 import type {ReportPreset} from '@/lib/types/report';
+import {getAcquisitionPayload} from '@/lib/acquisition';
 
 export type GuestOrderItemInput = {
   productId: string;
@@ -273,9 +274,10 @@ export type ListOrderMessagesResponse = {
 };
 
 export async function createGuestOrder(body: CreateGuestOrderInput) {
+  // Optional "where did you come from" data; the backend ignores it if missing.
   const res = await httpClient.post<CreatedGuestOrderResponse>(
     '/orders/guest',
-    body
+    {...body, acquisition: getAcquisitionPayload()}
   );
   return res.data;
 }

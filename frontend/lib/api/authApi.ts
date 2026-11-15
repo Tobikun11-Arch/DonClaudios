@@ -1,4 +1,5 @@
 import {httpClient} from './httpClient';
+import {getAcquisitionPayload} from '@/lib/acquisition';
 
 export type CustomerAddress = {
   _id?: string;
@@ -124,7 +125,11 @@ type SessionsResponse = {
 };
 
 export async function registerCustomer(data: RegisterRequest) {
-  const res = await httpClient.post<RegisterResponse>('/auth/register', data);
+  // Optional "where did you come from" data; the backend ignores it if missing.
+  const res = await httpClient.post<RegisterResponse>('/auth/register', {
+    ...data,
+    acquisition: getAcquisitionPayload()
+  });
   return res.data;
 }
 

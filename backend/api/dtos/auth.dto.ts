@@ -22,7 +22,10 @@ export const registerDto = z.object({
   password: passwordSchema,
   phoneNumber: z.string().min(1).optional(),
   address: z.string().min(1).optional(),
-  carrier: z.enum(['globe_dito', 'smart_tnt']).optional()
+  carrier: z.enum(['globe_dito', 'smart_tnt']).optional(),
+  // Optional and loosely typed on purpose: sanitizeAcquisition() cleans it and
+  // never fails a sign-up over bad tracking data.
+  acquisition: z.unknown().optional()
 });
 
 export const verifyEmailDto = z.object({

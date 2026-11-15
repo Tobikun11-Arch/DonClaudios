@@ -17,6 +17,7 @@ import {
   toManilaDayKey
 } from '../utils/dateRange';
 import type {ReportGranularity, ResolvedRange} from '../utils/dateRange';
+import {ACQUISITION_LABELS} from '../config/acquisition';
 
 /**
  * Every non-cancelled state. This is "order value placed", NOT money received,
@@ -1233,4 +1234,205 @@ export async function getReportInventoryHealth(
 /** Today's Manila day key, used by the PDF footer. */
 export function todayManilaKey(): string {
   return toManilaDayKey(new Date());
+}
+
+/* ------------------------------------------------------------------------- */
+/* Acquisition: where customers come from                                    */
+/* ------------------------------------------------------------------------- */
+
+export interface ReportAcquisitionRow {
+  key: string;
+  label: string;
+  /** Accounts created in the window from this source. */
+  signups: number;
+  /** Collected online orders in the window (account + guest). */
+  orders: number;
+  revenue: number;
+}
+
+export interface ReportAcquisition {
+  rows: ReportAcquisitionRow[];
+  totals: {signups: number; orders: number; revenue: number};
+  /** Share of new sign-ups that have any source data (asked or automatic). */
+  trackedSignupRate: number;
+  /** How many new sign-ups answered "How did you hear about us?". */
+  answeredSignups: number;
+  /** Top `utm_campaign` values on new sign-ups and guest orders. */
+  campaigns: Array<{campaign: string; source: string; count: number}>;
+}
+
+/** The customer's own answer wins, then the automatic channel, else "unknown". */
+const resolvedSourceExpr = (path: string) => ({
+  $ifNull: [`${path}.heardFrom`, {$ifNull: [`${path}.source`, 'unknown']}]
+});
+
+export async function getReportAcquisition(range: ResolvedRange): Promise<ReportAcquisition> {
+  const created = rangeMatch(range.from, range.to).createdAt;
+  const collectedMatch = {
+    createdAt: created,
+    orderStatus: {$in: REALIZED_STATUSES},
+    // Counter walk-ins are not online acquisition; they are shown elsewhere.
+    orderSource: {$ne: 'in-store'}
+  };
+
+  const [signupAgg, orderAgg, signupCampaigns, guestCampaigns] = await Promise.all([
+    CustomerModel.aggregate([
+      {$match: {createdAt: created, isVerified: true}},
+      {
+        $group: {
+          _id: resolvedSourceExpr('$acquisition'),
+          count: {$sum: 1},
+          answered: {$sum: {$cond: [{$ifNull: ['$acquisition.heardFrom', false]}, 1, 0]}}
+        }
+      }
+    ]),
+    OrderModel.aggregate([
+      {$match: collectedMatch},
+      {
+        $lookup: {
+          from: CustomerModel.collection.name,
+          localField: 'customerId',
+          foreignField: '_id',
+          as: 'cust',
+          pipeline: [{$project: {acquisition: 1}}]
+        }
+      },
+      // Guests carry their own source; account orders use the customer's.
+      {
+        $addFields: {
+          acq: {$cond: ['$isGuest', '$acquisition', {$arrayElemAt: ['$cust.acquisition', 0]}]}
+        }
+      },
+      {
+        $group: {
+          _id: resolvedSourceExpr('$acq'),
+          orders: {$sum: 1},
+          revenue: {$sum: '$totalAmount'}
+        }
+      }
+    ]),
+    CustomerModel.aggregate([
+      {$match: {createdAt: created, isVerified: true, 'acquisition.utmCampaign': {$exists: true}}},
+      {
+        $group: {
+          _id: {campaign: '$acquisition.utmCampaign', source: resolvedSourceExpr('$acquisition')},
+          count: {$sum: 1}
+        }
+      }
+    ]),
+    OrderModel.aggregate([
+      {$match: {...collectedMatch, isGuest: true, 'acquisition.utmCampaign': {$exists: true}}},
+      {
+        $group: {
+          _id: {campaign: '$acquisition.utmCampaign', source: resolvedSourceExpr('$acquisition')},
+          count: {$sum: 1}
+        }
+      }
+    ])
+  ]);
+
+  const byKey = new Map<string, ReportAcquisitionRow>();
+  const row = (key: string) => {
+    const k = typeof key === 'string' && key ? key : 'unknown';
+    let r = byKey.get(k);
+    if (!r) {
+      r = {
+        key: k,
+        label: ACQUISITION_LABELS[k as keyof typeof ACQUISITION_LABELS] ?? k,
+        signups: 0,
+        orders: 0,
+        revenue: 0
+      };
+      byKey.set(k, r);
+    }
+    return r;
+  };
+
+  let answeredSignups = 0;
+  for (const g of signupAgg) {
+    row(g._id).signups += g.count;
+    answeredSignups += g.answered;
+  }
+  for (const g of orderAgg) {
+    const r = row(g._id);
+    r.orders += g.orders;
+    r.revenue += g.revenue ?? 0;
+  }
+
+  const rows = [...byKey.values()]
+    .map(r => ({...r, revenue: peso(r.revenue)}))
+    // Unknown always last so the real channels lead.
+    .sort((a, b) =>
+      a.key === 'unknown' ? 1 : b.key === 'unknown' ? -1 : b.signups + b.orders - (a.signups + a.orders)
+    );
+
+  const totals = rows.reduce(
+    (t, r) => ({signups: t.signups + r.signups, orders: t.orders + r.orders, revenue: t.revenue + r.revenue}),
+    {signups: 0, orders: 0, revenue: 0}
+  );
+  const unknownSignups = byKey.get('unknown')?.signups ?? 0;
+
+  const campaignMap = new Map<string, {campaign: string; source: string; count: number}>();
+  for (const g of [...signupCampaigns, ...guestCampaigns]) {
+    const key = `${g._id.campaign}|${g._id.source}`;
+    const c = campaignMap.get(key) ?? {campaign: g._id.campaign, source: g._id.source, count: 0};
+    c.count += g.count;
+    campaignMap.set(key, c);
+  }
+
+  return {
+    rows,
+    totals: {...totals, revenue: peso(totals.revenue)},
+    trackedSignupRate: safePercent(totals.signups - unknownSignups, totals.signups),
+    answeredSignups,
+    campaigns: [...campaignMap.values()].sort((a, b) => b.count - a.count).slice(0, 5)
+  };
+}
+
+/* ------------------------------------------------------------------------- */
+/* Delivery heatmap: where delivery customers are                            */
+/* ------------------------------------------------------------------------- */
+
+export interface DeliveryHeatmap {
+  /** Drop-off pins rounded to ~110 m cells, with how many orders fell in each. */
+  points: Array<{lat: number; lng: number; count: number}>;
+  totalOrders: number;
+  days: number | null;
+}
+
+/**
+ * Pinned drop-offs of non-cancelled delivery orders. Coordinates are rounded
+ * to 3 decimals (~110 m) and grouped, so the owner sees density, never an
+ * exact house.
+ */
+export async function getDeliveryHeatmap(days: number | null): Promise<DeliveryHeatmap> {
+  const match: Record<string, unknown> = {
+    orderType: 'delivery',
+    orderStatus: {$ne: 'cancelled'},
+    'deliveryLocation.lat': {$type: 'number'},
+    'deliveryLocation.lng': {$type: 'number'}
+  };
+  if (days) match.createdAt = {$gte: new Date(Date.now() - days * 86400000)};
+
+  const cells: Array<{_id: {lat: number; lng: number}; count: number}> =
+    await OrderModel.aggregate([
+      {$match: match},
+      {
+        $group: {
+          _id: {
+            lat: {$round: ['$deliveryLocation.lat', 3]},
+            lng: {$round: ['$deliveryLocation.lng', 3]}
+          },
+          count: {$sum: 1}
+        }
+      },
+      {$sort: {count: -1}},
+      {$limit: 5000}
+    ]);
+
+  return {
+    points: cells.map(c => ({lat: c._id.lat, lng: c._id.lng, count: c.count})),
+    totalOrders: cells.reduce((n, c) => n + c.count, 0),
+    days
+  };
 }

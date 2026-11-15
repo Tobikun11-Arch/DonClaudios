@@ -516,7 +516,9 @@ export default function CounterOrder() {
         {/* Menu */}
         <section
           aria-label="Menu"
-          className="flex flex-1 flex-col rounded-2xl border border-gray-200 bg-white lg:min-h-0"
+          // min-w-0: long category rows scroll inside instead of widening the
+          // menu and squeezing the order panel.
+          className="flex min-w-0 flex-1 flex-col rounded-2xl border border-gray-200 bg-white lg:min-h-0"
         >
           <div className="space-y-3 border-b border-gray-100 p-3 sm:p-4">
             <div className="relative">
@@ -577,7 +579,7 @@ export default function CounterOrder() {
         {/* Ticket (lg+) */}
         <aside
           aria-label="Order"
-          className="hidden min-h-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white lg:flex lg:w-[380px] xl:w-[420px]"
+          className="hidden min-h-0 shrink-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white lg:flex lg:w-[380px] xl:w-[420px]"
         >
           {renderPanel()}
         </aside>

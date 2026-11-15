@@ -1,4 +1,6 @@
 import mongoose, {Schema} from 'mongoose';
+import {AcquisitionSchema} from './base/Acquisition.schema';
+import type {Acquisition} from '../config/acquisition';
 
 export type OrderType = 'pickup' | 'delivery' | 'reservation';
 export type DeliveryMode = 'DONCLAUDIO' | 'LALAMOVE';
@@ -117,6 +119,8 @@ export interface OrderDocument extends mongoose.Document {
   deliveryMode?: DeliveryMode;
   /** Pinned drop-off for delivery orders (used for the free-delivery zone). */
   deliveryLocation?: {lat: number; lng: number} | null;
+  /** Guest orders only: where the guest came from (account orders use the customer's). */
+  acquisition?: Acquisition | null;
   /** Courier the customer books themself (self-booked delivery only). */
   courier?: {
     provider: 'lalamove' | 'grab_express' | 'move_it' | 'other';
@@ -264,6 +268,7 @@ const OrderSchema = new Schema<OrderDocument>(
       ),
       default: null
     },
+    acquisition: {type: AcquisitionSchema, default: undefined},
     orderSource: {
       type: String,
       enum: ['online', 'in-store'],

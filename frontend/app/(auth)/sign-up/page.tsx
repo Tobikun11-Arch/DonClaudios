@@ -9,6 +9,7 @@ import {Label} from '@/components/ui/label';
 import PasswordStrengthChecklist from '@/components/PasswordStrengthChecklist';
 import {validatePassword} from '@/lib/utils/passwordRules';
 import LocationPicker from '@/features/order/components/LocationPicker';
+import {HeardFromPicker} from '@/features/customer/components/HeardFromPicker';
 import {useRouter} from 'next/navigation';
 import {registerCustomer} from '@/lib/api/authApi';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
@@ -238,6 +239,8 @@ import {normalizePH, detectCarrier, toAppCarrier} from '@/lib/phone';export defa
             required
           />
         </div>
+
+        <HeardFromPicker />
 
         <div className="flex items-start gap-2">
           <input

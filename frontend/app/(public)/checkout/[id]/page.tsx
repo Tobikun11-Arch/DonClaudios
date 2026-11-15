@@ -56,6 +56,7 @@ import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {sanitizePhone, sanitizeName} from '@/lib/validation/numeric';
 import {normalizePH, detectCarrier, toAppCarrier} from '@/lib/phone';
 import {cn} from '@/lib/utils';
+import {HeardFromPicker} from '@/features/customer/components/HeardFromPicker';
 import {ORDER_NOTES_COPY, hasNote, keepNotesFor, toggleNote} from '@/lib/orders/orderNotes';
 
 const STORE = {
@@ -1039,6 +1040,8 @@ export default function CheckoutGuestPage() {
                   ) : null}
                 </div>
               </div>
+
+              <HeardFromPicker className="mt-5 border-t border-gray-100 pt-5" />
             </div>
 
             <div className="rounded-2xl bg-white p-6 shadow">

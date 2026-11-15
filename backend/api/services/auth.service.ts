@@ -15,6 +15,7 @@ import {
   generateVerificationCode,
   getVerificationExpiry
 } from '../utils/verification';
+import {sanitizeAcquisition} from '../config/acquisition';
 
 export const authService = {
   async register(data: {
@@ -25,8 +26,10 @@ export const authService = {
     phoneNumber: string;
     address: string;
     carrier?: 'globe_dito' | 'smart_tnt';
+    acquisition?: unknown;
   }) {
     const email = data.email.toLowerCase().trim();
+    const acquisition = sanitizeAcquisition(data.acquisition);
     const carrier = data.carrier === 'smart_tnt' ? 'smart_tnt' : 'globe_dito';
     const useEmailOtp = carrier === 'smart_tnt';
 
@@ -110,7 +113,9 @@ export const authService = {
           verificationCode,
           verificationExpiry,
           isVerified: false,
-          phoneVerified: false
+          phoneVerified: false,
+          // Keep the first answer if the pending account already has one.
+          ...(acquisition && !target.acquisition ? {acquisition} : {})
         } as any);
 
         const customer = await customerRepository.findById(String(target._id));
@@ -157,8 +162,9 @@ export const authService = {
         verificationCode,
         verificationExpiry,
         isVerified: false,
-        phoneVerified: false
-      });
+        phoneVerified: false,
+        ...(acquisition ? {acquisition} : {})
+      } as any);
 
       try {
         if (useEmailOtp) {

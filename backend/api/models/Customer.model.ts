@@ -1,5 +1,7 @@
 import mongoose, {Schema} from 'mongoose';
 import {BaseUserDocument, createBaseUserSchema} from './base/BaseUser.schema';
+import {AcquisitionSchema} from './base/Acquisition.schema';
+import type {Acquisition} from '../config/acquisition';
 
 export interface CustomerAddress {
   _id?: string;
@@ -32,6 +34,8 @@ export interface CustomerDocument extends BaseUserDocument {
   /** When the first-login dashboard guide was finished or skipped. */
   onboardingTourDoneAt?: Date | null;
   onboardingTourOutcome?: 'completed' | 'skipped' | null;
+  /** Where the customer came from. Absent for accounts made before tracking. */
+  acquisition?: Acquisition | null;
 }
 
 const BaseSchema = createBaseUserSchema<CustomerDocument>();
@@ -74,6 +78,7 @@ const CustomerSchema = new Schema<CustomerDocument>(
       sauceCount: {type: Number, min: 0}
     },
     occasions: {type: [OccasionSchema], default: []},
+    acquisition: {type: AcquisitionSchema, default: undefined},
     onboardingTourDoneAt: {type: Date, default: null},
     onboardingTourOutcome: {
       type: String,
