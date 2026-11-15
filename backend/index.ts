@@ -20,7 +20,13 @@ const corsOptions: cors.CorsOptions = {
       return callback(null, true);
     }
 
-    const allowedExact = new Set(['http://localhost:3000']);
+    const allowedExact = new Set([
+      'http://localhost:3000',
+      // Custom domain (the browser normally goes through the same-origin
+      // /api proxy, so this is a safety net for any direct call).
+      'https://donclaudios.com',
+      'https://www.donclaudios.com'
+    ]);
     // Expo web dev server for the mobile POS (native apps send no Origin).
     if (process.env.NODE_ENV !== 'production') {
       allowedExact.add('http://localhost:8081');
