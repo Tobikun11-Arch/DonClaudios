@@ -51,6 +51,14 @@ router.get(
   reportController.inventoryHealth
 );
 
+router.get(
+  '/acquisition',
+  requireAuth,
+  requireAdmin,
+  validateQuery(reportRangeQueryDto),
+  reportController.acquisition
+);
+
 router.get('/dimensions', requireAuth, requireAdmin, reportController.dimensions);
 
 router.get(

@@ -22,6 +22,7 @@ import {ReportBreakdownTable, breakdownToCsvRows} from './ReportBreakdownTable';
 import {ReportExportBar} from './ReportExportBar';
 import type {ReportRange} from '@/lib/types/report';
 import {useChartColors} from '../chartTheme';
+import {AcquisitionCard} from './AcquisitionCard';
 
 const GUEST_COLOR = '#E5DDD0';
 const MEMBER_COLOR = '#4A7C35';
@@ -212,6 +213,8 @@ export function CustomersReportView({range}: {range: ReportRange}) {
           </div>
         </ReportCard>
       </div>
+
+      <AcquisitionCard range={range} />
 
         <ReportCard
           title={dimension === 'customer' ? 'Top customers' : 'Payment methods'}

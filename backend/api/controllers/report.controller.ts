@@ -2,6 +2,7 @@ import {Request, Response, NextFunction} from 'express';
 import {
   REPORT_DIMENSIONS,
   getReportBreakdown,
+  getReportAcquisition,
   getReportInventoryHealth,
   getReportOperations,
   getReportSummary,
@@ -139,6 +140,15 @@ export const reportController = {
     try {
       const range = toRange(readQuery<RangeQuery>(req));
       res.status(200).json(await getReportInventoryHealth(range));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async acquisition(req: Request, res: Response, next: NextFunction) {
+    try {
+      const range = toRange(readQuery<RangeQuery>(req));
+      res.status(200).json(await getReportAcquisition(range));
     } catch (error) {
       next(error);
     }

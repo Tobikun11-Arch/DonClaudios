@@ -2,6 +2,7 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {
+  getReportAcquisition,
   getReportBreakdown,
   getReportInventoryHealth,
   getReportOperations,
@@ -32,7 +33,8 @@ export const reportKeys = {
   breakdown: (r: ReportRange, dimension: ReportDimension, limit: number) =>
     ['report', 'breakdown', ...rangeKey(r), dimension, limit] as const,
   operations: (r: ReportRange) => ['report', 'operations', ...rangeKey(r)] as const,
-  inventoryHealth: (r: ReportRange) => ['report', 'inventory-health', ...rangeKey(r)] as const
+  inventoryHealth: (r: ReportRange) => ['report', 'inventory-health', ...rangeKey(r)] as const,
+  acquisition: (r: ReportRange) => ['report', 'acquisition', ...rangeKey(r)] as const
 };
 
 const shared = {
@@ -90,6 +92,15 @@ export function useReportInventoryHealthQuery(range: ReportRange, enabled = true
   return useQuery({
     queryKey: reportKeys.inventoryHealth(range),
     queryFn: () => getReportInventoryHealth(range),
+    enabled,
+    ...shared
+  });
+}
+
+export function useReportAcquisitionQuery(range: ReportRange, enabled = true) {
+  return useQuery({
+    queryKey: reportKeys.acquisition(range),
+    queryFn: () => getReportAcquisition(range),
     enabled,
     ...shared
   });

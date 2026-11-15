@@ -200,3 +200,20 @@ export type ReportInventoryHealth = {
   slowMovers: Array<{key: string; label: string; units: number; revenue: number; stock: number}>;
   topSellers: Array<{key: string; label: string; units: number; revenue: number; stock: number}>;
 };
+
+/** Where customers come from (GET /report/acquisition). */
+export type ReportAcquisitionRow = {
+  key: string;
+  label: string;
+  signups: number;
+  orders: number;
+  revenue: number;
+};
+
+export type ReportAcquisition = {
+  rows: ReportAcquisitionRow[];
+  totals: {signups: number; orders: number; revenue: number};
+  trackedSignupRate: number;
+  answeredSignups: number;
+  campaigns: Array<{campaign: string; source: string; count: number}>;
+};

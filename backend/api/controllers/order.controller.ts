@@ -49,6 +49,7 @@ import {settingsService} from '../services/settings.service';
 import {assertPreOrderItemsOrderable} from '../services/cart.service';
 import {isPositiveInteger, reserveOrderStock} from '../services/preOrder.service';
 import type {ListAllOrdersQuery} from '../dtos/order.dto';
+import {sanitizeAcquisition} from '../config/acquisition';
 
 async function notifyCashiersOfNewOrder(orderId: string, totalAmount: number) {
   try {
@@ -969,8 +970,11 @@ export const orderController = {
         totalAmount,
         riderNotes,
         changeFor,
-        courier: rawCourier
+        courier: rawCourier,
+        acquisition: rawAcquisition
       } = req.body;
+      // Optional; never fails the order (see config/acquisition.ts).
+      const acquisition = sanitizeAcquisition(rawAcquisition);
 
       if (!guestInfo || typeof guestInfo !== 'object') {
         throw new ApiError(400, 'VALIDATION_ERROR', 'guestInfo is required');
@@ -1151,7 +1155,8 @@ export const orderController = {
                 estimatedPrepMinutes,
                 estimatedReadyAt,
                 isOnline: true,
-                stockDeducted: true
+                stockDeducted: true,
+                acquisition
               },
               session
             );
@@ -1202,7 +1207,8 @@ export const orderController = {
             estimatedPrepMinutes,
             estimatedReadyAt,
             isOnline: true,
-            stockDeducted: true
+            stockDeducted: true,
+            acquisition
           });
 
           const orderItems = normalizedItems.map((item, index) => ({

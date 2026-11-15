@@ -1,5 +1,6 @@
 import {httpClient} from './httpClient';
 import type {
+  ReportAcquisition,
   ReportBreakdown,
   ReportDimension,
   ReportInventoryHealth,
@@ -47,6 +48,13 @@ export async function getReportBreakdown(
 
 export async function getReportOperations(range: ReportRange) {
   const res = await httpClient.get<ReportOperations>('/report/operations', {params: toParams(range)});
+  return res.data;
+}
+
+export async function getReportAcquisition(range: ReportRange) {
+  const res = await httpClient.get<ReportAcquisition>('/report/acquisition', {
+    params: toParams(range)
+  });
   return res.data;
 }
 
