@@ -10,8 +10,17 @@ type CartItem = {
   instructions?: string;
 };
 
+/** A guest cart is cleared after this long with no activity. */
+export const GUEST_CART_TTL_MS = 60 * 60 * 1000;
+
 type CartStore = {
   items: CartItem[];
+  /** Last cart change or site visit (ms). Null for an empty or legacy cart. */
+  lastActiveAt: number | null;
+  /** Marks the guest as active, keeping the cart alive. */
+  touch: () => void;
+  /** Clears the cart if it has been idle longer than the TTL. True if it was cleared. */
+  expireIfIdle: (now?: number) => boolean;
   addItem: (item: Omit<CartItem, 'qty'> & {qty?: number}) => void;
   removeItem: (productId: string) => void;
   setQty: (productId: string, qty: number) => void;
@@ -22,6 +31,22 @@ export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
+      lastActiveAt: null,
+      touch: () => {
+        if (get().items.length > 0) set({lastActiveAt: Date.now()});
+      },
+      expireIfIdle: (now = Date.now()) => {
+        const {items, lastActiveAt} = get();
+        if (items.length === 0) return false;
+        // Carts saved before this rule have no timestamp: start the clock now.
+        if (lastActiveAt == null) {
+          set({lastActiveAt: now});
+          return false;
+        }
+        if (now - lastActiveAt <= GUEST_CART_TTL_MS) return false;
+        set({items: [], lastActiveAt: null});
+        return true;
+      },
       addItem: item => {
         const qtyToAdd = item.qty ?? 1;
         if (qtyToAdd <= 0) return;
@@ -33,7 +58,8 @@ export const useCartStore = create<CartStore>()(
               i.productId === item.productId
                 ? {...i, qty: i.qty + qtyToAdd, instructions: item.instructions}
                 : i
-            )
+            ),
+            lastActiveAt: Date.now()
           });
           return;
         }
@@ -49,23 +75,29 @@ export const useCartStore = create<CartStore>()(
               qty: qtyToAdd,
               instructions: item.instructions
             }
-          ]
+          ],
+          lastActiveAt: Date.now()
         });
       },
       removeItem: productId =>
-        set({items: get().items.filter(i => i.productId !== productId)}),
+        set({
+          items: get().items.filter(i => i.productId !== productId),
+          lastActiveAt: Date.now()
+        }),
       setQty: (productId, qty) => {
         const safeQty = Math.max(1, qty);
         set({
           items: get().items.map(i =>
             i.productId === productId ? {...i, qty: safeQty} : i
-          )
+          ),
+          lastActiveAt: Date.now()
         });
       },
-      clear: () => set({items: []})
+      clear: () => set({items: [], lastActiveAt: null})
     }),
     {
-      name: 'donclaudios_cart'
+      name: 'donclaudios_cart',
+      partialize: state => ({items: state.items, lastActiveAt: state.lastActiveAt})
     }
   )
 );

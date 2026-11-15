@@ -1126,7 +1126,7 @@ export function OrderPaymentPanel({order}: {order: OrderHistoryEntry}) {
         </p>
         {fee > 0 ? (
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            Customer also paid {money(fee)} transaction fee (not part of sales).
+            Customer also paid {money(fee)} service fee (not part of sales).
           </p>
         ) : null}
         {expiresAt && order.paymentChoice !== 'cash_on_pickup' ? (

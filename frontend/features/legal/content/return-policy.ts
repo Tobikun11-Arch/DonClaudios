@@ -46,7 +46,7 @@ export const returnPolicy: LegalPageProps = {
       heading: "Refund Processing",
       summary: "Refunds go back to your original payment method.",
       body: [
-        "Approved refunds for online payments are returned to the original payment method, including the transaction fee. Most refunds arrive within 5-7 business days, depending on your bank or e-wallet.",
+        "Approved refunds for online payments are returned to the original payment method, including the service fee. Most refunds arrive within 5-7 business days, depending on your bank or e-wallet.",
         "Refunds for cash payments are settled at the store.",
       ],
     },

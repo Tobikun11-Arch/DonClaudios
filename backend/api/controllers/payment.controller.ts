@@ -22,8 +22,12 @@ export const paymentController = {
   /** GET /orders/:id/payment — payment step summary (customer or staff). */
   async getSummary(req: Request, res: Response, next: NextFunction) {
     try {
-      const order = await loadOrder(req.params.id);
+      let order = await loadOrder(req.params.id);
       if (!isStaff(req)) assertOrderCustomerAccess(order, req);
+      // Don't depend on the webhook alone to leave "Confirming your payment".
+      if (await paymentService.syncPendingFromXendit(String(order._id))) {
+        order = await loadOrder(req.params.id);
+      }
       res.status(200).json({payment: await paymentService.getSummary(order)});
     } catch (error) {
       next(error);

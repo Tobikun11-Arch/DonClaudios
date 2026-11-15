@@ -312,6 +312,10 @@ function quotesFor(amount: number): QuoteMap {
   ) as QuoteMap;
 }
 
+const INVOICE_CHECK_INTERVAL_MS = 4000;
+/** invoiceId -> last time we asked Xendit about it (ms). */
+const lastInvoiceCheck = new Map<string, number>();
+
 export const paymentService = {
   isConfigured: isXenditConfigured,
 
@@ -583,6 +587,39 @@ export const paymentService = {
   },
 
   /** Xendit invoice callback (PAID / SETTLED / EXPIRED). */
+  /**
+   * Fallback for a missed webhook (local dev without a tunnel, backend down
+   * when Xendit called, wrong webhook URL): ask Xendit for each PENDING
+   * invoice's real status and apply it, exactly as the webhook would.
+   * Throttled per invoice so the 3-5 s polling doesn't hammer Xendit.
+   * Returns true when something changed, so callers reload the order.
+   */
+  async syncPendingFromXendit(orderId: string): Promise<boolean> {
+    if (!isXenditConfigured()) return false;
+    const payments = await paymentRepository.listByOrderId(orderId);
+    const pending = payments.filter(p => p.status === 'PENDING');
+    let changed = false;
+    for (const payment of pending) {
+      const invoiceId = payment.xenditInvoiceId;
+      const last = lastInvoiceCheck.get(invoiceId) ?? 0;
+      if (Date.now() - last < INVOICE_CHECK_INTERVAL_MS) continue;
+      lastInvoiceCheck.set(invoiceId, Date.now());
+      try {
+        const invoice = await xenditService.getInvoice(invoiceId);
+        if (invoice.status === 'PAID' || invoice.status === 'SETTLED') {
+          await applyPaid(payment, invoice);
+          changed = true;
+        } else if (invoice.status === 'EXPIRED') {
+          await applyExpired(payment);
+          changed = true;
+        }
+      } catch (err) {
+        console.warn(`[payment] could not check invoice ${invoiceId}:`, err);
+      }
+    }
+    return changed;
+  },
+
   async handleInvoiceWebhook(body: any) {
     const invoiceId = typeof body?.id === 'string' ? body.id : null;
     if (!invoiceId) return {ignored: 'missing id'};

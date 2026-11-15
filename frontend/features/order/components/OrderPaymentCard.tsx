@@ -25,13 +25,14 @@ import {
   useStartCheckoutMutation,
   useSubmitCashPaymentMutation
 } from '@/lib/hooks/orders/useTrackOrder';
+import PaymentChannelTiles from './PaymentChannelTiles';
 
 /*
  * XENDIT PAYMENT card (customer side).
  *
  * Appears once the cashier confirms the order. The customer picks full
  * payment, a 50% down payment (pre-order-only carts) or cash on pickup
- * (pickup only). Online options show the per-channel transaction fee, then
+ * (pickup only). Online options show the per-channel service fee, then
  * redirect to Xendit's hosted checkout. Xendit's webhook marks the order paid;
  * this card polls until that happens.
  */
@@ -342,7 +343,7 @@ function PaidDetails({summary}: {summary: PaymentSummary}) {
         ) : null}
         {summary.transactionFee > 0 ? (
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Includes {peso(summary.transactionFee)} transaction fee charged by the payment provider.
+            Includes {peso(summary.transactionFee)} service fee charged by the payment provider.
           </p>
         ) : null}
       </div>
@@ -644,35 +645,21 @@ function ChannelPicker({
   const q = quotes[channel];
   return (
     <div className="space-y-3">
-      <p className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-        Pay with
-      </p>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {channels.map(c => (
-          <button
-            key={c.id}
-            type="button"
-            onClick={() => onChange(c.id)}
-            className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
-              channel === c.id
-                ? 'border-[#3c5e45] bg-[#3c5e45]/5 font-bold text-gray-900 dark:bg-[#7ed4a0]/10 dark:text-gray-100 dark:border-[#7ed4a0]/60'
-                : 'border-gray-200 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800'
-            }`}
-          >
-            {c.label}
-          </button>
-        ))}
-      </div>
+      <PaymentChannelTiles
+        quotes={quotes}
+        channels={channels}
+        channel={channel}
+        onChange={onChange}
+      />
       {q ? (
         <div className="rounded-xl border border-gray-200 px-4 py-3 text-sm dark:border-gray-700">
           <Row label="Order amount" value={peso(q.amount)} />
-          <Row label="Transaction fee" value={peso(q.transactionFee)} />
+          <Row label="Service fee" value={peso(q.transactionFee)} />
           <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
           <Row label="Total to pay" value={peso(q.charge)} bold />
           <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-            The transaction fee is charged by our payment provider (Xendit) for{' '}
-            {PAYMENT_CHANNEL_LABELS[channel]}. You will be redirected to a secure
-            Xendit page to pay.
+            The service fee is charged by our payment provider (Xendit) for{' '}
+            {PAYMENT_CHANNEL_LABELS[channel]}.
           </p>
         </div>
       ) : null}

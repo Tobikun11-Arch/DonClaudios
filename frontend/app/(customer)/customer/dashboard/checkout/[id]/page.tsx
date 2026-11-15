@@ -38,6 +38,7 @@ import {useCreateCustomerOrderMutation} from '@/lib/hooks/orders/useCustomerOrde
 import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
 import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 import {cn} from '@/lib/utils';
+import {ORDER_NOTES_COPY, hasNote, keepNotesFor, toggleNote} from '@/lib/orders/orderNotes';
 import {useQueryClient} from '@tanstack/react-query';
 import {PRODUCTS_QUERY_PREFIX} from '@/lib/hooks/products/useProducts';
 import {MIN_ORDER_MESSAGE, MIN_ORDER_TOTAL} from '@/lib/constants/orderLimits';
@@ -47,12 +48,6 @@ const STORE = {
   lng: 120.8530823121149
 };
 
-const NOTE_SUGGESTIONS = [
-  'Call upon arrival',
-  'Extra sauce on the side',
-  'Leave at gate',
-  'Ring the doorbell'
-];
 
 function getProductId(value: unknown) {
   if (typeof value === 'string') return value;
@@ -174,19 +169,17 @@ export default function CustomerCheckoutPage() {
 
 
   const toggleNoteSuggestion = (suggestion: string) => {
-    const value = suggestion.trim();
-    if (!value) return;
-
-    setNotesToRider(current => {
-      const remaining = current
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean)
-        .filter(s => s !== value)
-        .join(', ');
-      return remaining.length > 0 ? `${remaining}, ${value}` : value;
-    });
+    setNotesToRider(current => toggleNote(current, suggestion));
   };
+
+  // Switching how the order is received drops the other type's chip notes
+  // (e.g. "Leave at gate" makes no sense for a pick-up).
+  const [notesOrderType, setNotesOrderType] = useState(orderType);
+  if (notesOrderType !== orderType) {
+    setNotesOrderType(orderType);
+    setNotesToRider(current => keepNotesFor(current, orderType));
+  }
+  const notesCopy = ORDER_NOTES_COPY[orderType] ?? ORDER_NOTES_COPY.Delivery;
 
   const handleAddressChange = (value: string) => {
     setAddress(value);
@@ -197,11 +190,7 @@ export default function CustomerCheckoutPage() {
     });
   };
 
-  const isNoteActive = (suggestion: string) =>
-    notesToRider
-      .split(',')
-      .map(s => s.trim())
-      .includes(suggestion);
+  const isNoteActive = (suggestion: string) => hasNote(notesToRider, suggestion);
 
   const handleCheckout = async () => {
     if (items.length === 0) return;
@@ -628,11 +617,11 @@ export default function CustomerCheckoutPage() {
                   Additional details
                 </p>
                 <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
-                  Delivery instructions (optional)
+                  {notesCopy.hint}
                 </p>
 
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {NOTE_SUGGESTIONS.map(suggestion => (
+                  {notesCopy.suggestions.map(suggestion => (
                     <button
                       key={suggestion}
                       type="button"
@@ -653,7 +642,7 @@ export default function CustomerCheckoutPage() {
                 <Input
                   value={notesToRider}
                   onChange={e => setNotesToRider(e.target.value)}
-                  placeholder="Notes to rider"
+                  placeholder={notesCopy.placeholder}
                   className="mt-3 dark:bg-gray-800 dark:text-gray-100"
                 />
               </div>
