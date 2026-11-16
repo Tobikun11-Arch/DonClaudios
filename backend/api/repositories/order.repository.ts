@@ -1,3 +1,4 @@
+import {settingsService} from '../services/settings.service';
 import {OrderModel, OrderDocument} from '../models/Order.model';
 import type {OrderStatus, PaymentStatus} from '../models/Order.model';
 import type {FilterQuery, ClientSession} from 'mongoose';
@@ -66,10 +67,19 @@ export const orderRepository = {
       .sort({createdAt: -1})
       .exec(),
 
-  create: (data: Partial<OrderDocument>, session?: ClientSession) =>
-    session
-      ? OrderModel.create([data], {session}).then(rows => rows[0])
-      : OrderModel.create(data),
+  /**
+   * Every new order snapshots the owner's current down payment percent, so a
+   * later settings change never alters what an existing order owes.
+   */
+  create: async (data: Partial<OrderDocument>, session?: ClientSession) => {
+    const withPercent: Partial<OrderDocument> =
+      data.downPaymentPercent == null
+        ? {...data, downPaymentPercent: await settingsService.getDownPaymentPercent()}
+        : data;
+    return session
+      ? OrderModel.create([withPercent], {session}).then(rows => rows[0])
+      : OrderModel.create(withPercent);
+  },
 
   updateStatus: (orderId: string, orderStatus: string) =>
     OrderModel.updateOne({_id: orderId}, {orderStatus}).exec(),

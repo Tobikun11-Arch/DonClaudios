@@ -12,7 +12,6 @@ import {
   Clock,
   Info,
   Minus,
-  Phone,
   Plus,
   Store,
   UtensilsCrossed
@@ -22,6 +21,8 @@ import {useOpenPreOrder, usePlacePreOrder} from '@/lib/hooks/preorders/usePreOrd
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import type {PreOrderEvent, PreOrderProduct, PreOrderSize} from '@/lib/api/preOrderApi';
 import {manilaLongDate, peso} from '../utils';
+import {useDownPaymentQuery} from '@/lib/hooks/useDownPayment';
+import {PreOrderNextSteps} from './PreOrderNextSteps';
 
 type Picked = {productId: string; productName: string; size: PreOrderSize; quantity: number};
 type Receive = 'pickup' | 'lalamove';
@@ -221,6 +222,7 @@ function OrderPanel({
   onPlace: () => void;
 }) {
   const total = items.reduce((n, i) => n + i.size.price * i.quantity, 0);
+  const {percent: downPaymentPercent} = useDownPaymentQuery();
   return (
     <div className="rounded-2xl border border-[#e3ece5] bg-white p-5 shadow-[0_8px_30px_rgba(45,74,53,0.06)] dark:border-gray-700 dark:bg-gray-900">
       <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Your pre-order</p>
@@ -232,7 +234,7 @@ function OrderPanel({
         <Clock size={15} className="text-[#2d4a35] dark:text-[#7ed4a0]" />
         {slotLabel ?? 'Choose a time slot'}
         {receive && <span className="text-gray-400">·</span>}
-        {receive === 'pickup' ? 'Self pick-up' : receive === 'lalamove' ? 'Lalamove' : ''}
+        {receive === 'pickup' ? 'Self pick-up' : receive === 'lalamove' ? 'Courier (you book)' : ''}
       </p>
 
       <div className="my-4 border-t border-dashed border-gray-200 dark:border-gray-700" />
@@ -279,12 +281,17 @@ function OrderPanel({
         {placing ? 'Placing pre-order…' : 'Place pre-order'}
       </button>
 
+      <PreOrderNextSteps
+        className="mt-4"
+        compact
+        cancelDeadline={event.cancelDeadline}
+        cutoffDays={event.cancelCutoffDays}
+        pickupLabel={`${event.pickupDateLabel}${slotLabel ? ` · ${slotLabel}` : ''}`}
+        downPaymentPercent={downPaymentPercent}
+        total={total}
+      />
+
       <ul className="mt-4 space-y-2 text-xs text-gray-500 dark:text-gray-400">
-        <li className="flex gap-2">
-          <Phone size={14} className="mt-0.5 shrink-0 text-[#2d4a35] dark:text-[#7ed4a0]" />
-          No payment yet. We will call you to confirm, then you pay a down payment or the full
-          amount online (GCash, Maya, card or bank).
-        </li>
         <li className="flex gap-2">
           <Info size={14} className="mt-0.5 shrink-0 text-[#2d4a35] dark:text-[#7ed4a0]" />
           You can cancel until {manilaLongDate(event.cancelDeadline)} ({event.cancelCutoffDays} days
@@ -409,7 +416,7 @@ export default function PreOrderCheckout({eventId}: {eventId: string}) {
         receiveMethod: receive,
         notes: notes.trim() || undefined
       });
-      toast.success('Pre-order placed! We will call you to confirm.');
+      toast.success(`Pre-order placed! Expect our call to confirm on or before ${manilaLongDate(event.cancelDeadline)}.`);
       router.push(`/customer/dashboard/order-confirmation/${order._id}`);
     } catch (error) {
       toast.error(getFriendlyErrorMessage(error, 'Could not place your pre-order. Please try again.'));
@@ -482,8 +489,8 @@ export default function PreOrderCheckout({eventId}: {eventId: string}) {
                 {
                   key: 'lalamove',
                   icon: Bike,
-                  title: 'Lalamove (you book it)',
-                  text: 'You book the Lalamove rider yourself to collect at your chosen time. Payment is online only.'
+                  title: 'Courier (you book it)',
+                  text: 'Book your own rider (Lalamove, Grab Express, Move It, Transportify or any courier) to collect at your chosen time. Payment is online only.'
                 }
               ] as const).map(opt => {
                 const active = receive === opt.key;
@@ -516,8 +523,8 @@ export default function PreOrderCheckout({eventId}: {eventId: string}) {
             {receive === 'lalamove' && (
               <p className="mt-3 flex gap-2 rounded-xl bg-[#fff8e8] p-3 text-sm text-[#7a5200] dark:bg-amber-500/10 dark:text-amber-300">
                 <Info size={16} className="mt-0.5 shrink-0" />
-                The store does not book or pay for the courier. Book your Lalamove to arrive at the
-                store within your time slot.
+                The store does not book or pay for the courier. Book your Lalamove, Grab Express or
+                other courier to arrive at the store within your time slot.
               </p>
             )}
           </section>

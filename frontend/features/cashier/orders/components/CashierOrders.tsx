@@ -144,8 +144,8 @@ export function cashToCollect(order: OrderHistoryEntry): number | null {
     return order.totalAmount;
   }
   if (order.paymentStatus === 'unpaid' && order.paymentChoice === 'in_store_down_payment') {
-    // Mirrors backend downPaymentAmount (50%, rounded up).
-    return Math.ceil(order.totalAmount * 0.5);
+    // Mirrors backend downPaymentAmount (the order's own %, rounded up).
+    return Math.ceil((order.totalAmount * (order.downPaymentPercent ?? 50)) / 100);
   }
   if (
     order.paymentStatus === 'down_payment' &&
@@ -202,7 +202,7 @@ export function paymentStatusChip(order: OrderHistoryEntry): {
     return {
       label:
         order.paymentChoice === 'in_store_down_payment'
-          ? 'Paying 50% in store'
+          ? `Paying ${order.downPaymentPercent ?? 50}% in store`
           : 'Paying in store',
       className: amber
     };

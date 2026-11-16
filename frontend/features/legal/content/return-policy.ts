@@ -46,7 +46,7 @@ export const returnPolicy: LegalPageProps = {
         columns: ["When", "What you get back"],
         rows: [
           ["You cancel on or before the cut-off", "100% of the order amount you paid. Online service fees are not refunded."],
-          ["You ask to cancel after the cut-off (until pickup)", "The store reviews your request. If approved, the 50% down payment is kept and anything paid above it is refunded. If declined, the order stays as booked."],
+          ["You ask to cancel after the cut-off (until pickup)", "The store reviews your request. If approved, the down payment (the percentage shown at checkout) is kept and anything paid above it is refunded. If declined, the order stays as booked."],
           ["The store cancels your order", "Everything you paid, including online service fees."],
         ],
       },

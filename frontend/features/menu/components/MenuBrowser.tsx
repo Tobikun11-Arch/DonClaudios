@@ -107,6 +107,14 @@ export function MenuBrowser({
       .filter(section => !onFeatured || section.items.length > 0);
   }, [onFeatured, resolvedTab, featuredSections, categorySections, query, excluded, sort]);
 
+  // Item counts per tab for the "All categories" panel.
+  const tabCounts = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const section of categorySections) out[section.id] = section.items.length;
+    out[FEATURED_TAB_ID] = featuredSections.reduce((n, s) => n + s.items.length, 0);
+    return out;
+  }, [categorySections, featuredSections]);
+
   const nothingFound = sections.every(s => s.items.length === 0);
   const filtersActive = query.trim().length > 0 || excluded.size > 0;
 
@@ -170,7 +178,7 @@ export function MenuBrowser({
       </div>
 
       <div ref={barRef} className={cn('sticky z-30 mt-3 py-2', stickyClassName)}>
-        <MenuCategoryChips tabs={tabs} activeId={resolvedTab} onSelect={selectTab} />
+        <MenuCategoryChips tabs={tabs} activeId={resolvedTab} onSelect={selectTab} counts={tabCounts} />
       </div>
 
       <div ref={resultsRef} className="scroll-mt-32 pt-3">

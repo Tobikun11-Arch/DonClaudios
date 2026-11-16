@@ -1,3 +1,4 @@
+import {DOWN_PAYMENT_PERCENT_MAX, DOWN_PAYMENT_PERCENT_MIN} from '../config/paymentFees';
 import {z} from 'zod';
 import {
   REWARDS_EARN_PESOS_MAX,
@@ -40,6 +41,16 @@ export const rewardsEarnDto = z.object({
 });
 
 export type RewardsEarnDto = z.infer<typeof rewardsEarnDto>;
+
+export const downPaymentDto = z.object({
+  downPaymentPercent: z
+    .number({invalid_type_error: 'Down payment must be a number'})
+    .int('Down payment must be a whole percent')
+    .min(DOWN_PAYMENT_PERCENT_MIN, `Down payment must be at least ${DOWN_PAYMENT_PERCENT_MIN}%`)
+    .max(DOWN_PAYMENT_PERCENT_MAX, `Down payment cannot be more than ${DOWN_PAYMENT_PERCENT_MAX}%`)
+});
+
+export type DownPaymentDto = z.infer<typeof downPaymentDto>;
 
 // '' clears a color back to the default.
 const hexColor = z

@@ -1,5 +1,6 @@
 'use client';
 
+import {isProductPromoExpired} from '@/lib/utils/promoDates';
 import {useMemo} from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -96,11 +97,13 @@ export default function OrderSlot() {
   const availableProducts = useMemo(() => {
     // A pre-order that is fully done (no live batch and no next batch) is
     // removed from the menu. One still batching stays visible.
+    const now = new Date();
     return products.filter(
       p =>
         p.isAvailable &&
         p.stock > 0 &&
-        !(isPreOrderProduct(p) && preOrderDisplay(p).closed)
+        !(isPreOrderProduct(p) && preOrderDisplay(p).closed) &&
+        !isProductPromoExpired(p, now)
     );
   }, [products]);
 
@@ -275,7 +278,7 @@ export default function OrderSlot() {
         signedIn
         cartQtyById={cartQtyById}
         onAdd={handleAdd}
-        stickyClassName="top-14 -mx-4 bg-gray-50 px-4 sm:-mx-6 sm:px-6 md:top-0 dark:bg-gray-800"
+        stickyClassName="top-14 -mx-4 bg-gray-50 px-4 [--chip-fade:#f9fafb] sm:-mx-6 sm:px-6 md:top-0 dark:bg-gray-800 dark:[--chip-fade:#1f2937]"
       />
     </div>
   );

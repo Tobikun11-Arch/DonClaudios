@@ -1,5 +1,6 @@
 'use client';
 
+import {isProductPromoExpired} from '@/lib/utils/promoDates';
 import {useMemo} from 'react';
 import Link from 'next/link';
 import {PackageSearch} from 'lucide-react';
@@ -54,14 +55,8 @@ function ProductsSection() {
         p.isAvailable &&
         p.stock > 0 &&
         !(isPreOrderProduct(p) && preOrderDisplay(p).closed) &&
-        // Filter out products with expired embedded promos (but keep upcoming ones)
-        !(
-          p.isPromoActive &&
-          p.promoEndDate &&
-          new Date(p.promoEndDate) < now &&
-          // Also check if it's not upcoming (i.e., it's already passed start date)
-          (!p.promoStartDate || new Date(p.promoStartDate) < now)
-        )
+        // Products whose own promo has ended are hidden.
+        !isProductPromoExpired(p, now)
     );
   }, [products]);
 
@@ -190,7 +185,7 @@ function ProductsSection() {
         signedIn={isSignedIn}
         cartQtyById={cartQtyById}
         onAdd={handleAdd}
-        stickyClassName="top-[72px] -mx-4 bg-white px-4"
+        stickyClassName="top-[72px] -mx-4 bg-white px-4 [--chip-fade:#ffffff]"
         headerAction={
           <Link
             href="/track"

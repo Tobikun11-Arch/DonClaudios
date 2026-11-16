@@ -30,6 +30,8 @@ import {courierLabel, customerStep, fulfillmentKind, fulfillmentLabel, statusFlo
 import OrderPaymentCard from '@/features/order/components/OrderPaymentCard';
 import {useCancelQuoteQuery} from '@/lib/hooks/orders/useOrderCancellation';
 import {refundPolicySummary} from '@/lib/payment/refundPolicy';
+import {PreOrderNextSteps} from '@/features/preorders/components/PreOrderNextSteps';
+import {DEFAULT_DOWN_PAYMENT_PERCENT} from '@/lib/hooks/useDownPayment';
 import {RefundBreakdown} from '@/features/owner/orders/components/OrderCancellation';
 import {
   formatMinutes,
@@ -110,7 +112,7 @@ function PreOrderPickupCard({order}: {order: OrderHistoryEntry}) {
             <Store className="mt-0.5 h-4 w-4 shrink-0 text-[#2d4a35] dark:text-[#7ed4a0]" />
           )}
           {lalamove
-            ? 'Lalamove: please book your own rider to collect at the store within your time slot.'
+            ? 'Courier: book your own rider (Lalamove, Grab Express, etc.) to collect at the store within your time slot.'
             : 'Self pick-up at the store within your time slot.'}
         </p>
         {open ? (
@@ -123,9 +125,23 @@ function PreOrderPickupCard({order}: {order: OrderHistoryEntry}) {
                 : !isLateCancel(order)
                   ? `You can cancel with a full refund until ${manilaDate(new Date(new Date(po.cancelDeadline).getTime() - 1).toISOString(), {month: 'long', day: 'numeric'})}.`
                   : canCancel
-                    ? 'The free cancellation period has ended. You can still ask the store to cancel; the 50% down payment is kept if approved.'
+                    ? 'The free cancellation period has ended. You can still ask the store to cancel; the down payment is kept if approved.'
                     : 'The cancellation period for this pre-order has ended.'}
           </p>
+        ) : null}
+        {order.orderStatus === 'pending' ? (
+          // Still waiting for the store's call: show when to expect it and
+          // when payment is due, so the customer is not left guessing.
+          <PreOrderNextSteps
+            className="mt-3"
+            compact
+            cancelDeadline={po.cancelDeadline}
+            cutoffDays={cutoffDaysOf(order)}
+            pickupLabel={`${manilaDate(po.pickupAt, {weekday: 'long', month: 'long', day: 'numeric'})} · ${po.slotLabel}`}
+            downPaymentPercent={order.downPaymentPercent ?? DEFAULT_DOWN_PAYMENT_PERCENT}
+            total={order.totalAmount}
+            placedAt={order.createdAt}
+          />
         ) : null}
       </div>
     </div>
@@ -232,7 +248,7 @@ function paymentDisplay(order: OrderHistoryEntry) {
 function typeDisplay(order: OrderHistoryEntry) {
   if (order.isPreOrder && order.preOrder) {
     return order.preOrder.receiveMethod === 'lalamove'
-      ? 'Pre-order · Lalamove (you book)'
+      ? 'Pre-order · Courier (you book)'
       : 'Pre-order · Self pick-up';
   }
   if (order.orderType === 'delivery') return fulfillmentLabel(order);
@@ -380,6 +396,7 @@ export default function OrderTracking({
                 preOrder={!!order.isPreOrder && !!order.preOrder}
                 late={isLateCancel(order)}
                 cutoffDays={cutoffDaysOf(order)}
+                downPaymentPercent={order.downPaymentPercent ?? undefined}
                 hint={
                   order.isPreOrder && order.preOrder
                     ? isLateCancel(order)
@@ -810,7 +827,8 @@ function CancelOrderButton({
   hint = 'You can only cancel while your order is still pending.',
   preOrder = false,
   late = false,
-  cutoffDays = 14
+  cutoffDays = 14,
+  downPaymentPercent
 }: {
   orderId: string;
   phone?: string;
@@ -819,6 +837,7 @@ function CancelOrderButton({
   /** After the cut-off: the button sends a request instead of cancelling. */
   late?: boolean;
   cutoffDays?: number;
+  downPaymentPercent?: number;
 }) {
   const [open, setOpen] = useState(false);
   const quote = useCancelQuoteQuery(orderId, {phoneNumber: phone, enabled: open && preOrder});
@@ -936,7 +955,7 @@ function CancelOrderButton({
                     <p className="text-gray-500">Refund preview unavailable.</p>
                   )}
                   <ul className="mt-2 list-disc space-y-0.5 pl-4 text-gray-500 dark:text-gray-400">
-                    {refundPolicySummary(cutoffDays).map(line => (
+                    {refundPolicySummary(cutoffDays, downPaymentPercent).map(line => (
                       <li key={line}>{line}</li>
                     ))}
                   </ul>

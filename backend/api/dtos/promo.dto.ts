@@ -1,4 +1,9 @@
 import {z} from 'zod';
+import {parsePromoDate} from '../config/promoDates';
+
+/** Date-only input is pinned to the store's day (start 00:00 / end 23:59, UTC+8). */
+const promoDate = (edge: 'start' | 'end') =>
+  z.preprocess(value => parsePromoDate(value, edge) ?? value, z.coerce.date());
 
 const promoBaseDto = z.object({
   title: z.string().min(1),
@@ -9,8 +14,8 @@ const promoBaseDto = z.object({
   discountRate: z.coerce.number().min(0).optional(),
   discountAmount: z.coerce.number().min(0).optional(),
   productIds: z.array(z.string().min(1)).optional(),
-  startDate: z.coerce.date(),
-  endDate: z.coerce.date(),
+  startDate: promoDate('start'),
+  endDate: promoDate('end'),
   isActive: z.coerce.boolean().optional()
 });
 

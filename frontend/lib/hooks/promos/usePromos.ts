@@ -9,6 +9,7 @@ import {
   updatePromo
 } from '@/lib/api/promosApi';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {isPromoLive} from '@/lib/utils/promoDates';
 
 export const promosQueryKey = ['promos'] as const;
 export const publicPromosQueryKey = ['promos', 'public'] as const;
@@ -27,6 +28,11 @@ export function usePublicPromosQuery() {
   return useQuery({
     queryKey: publicPromosQueryKey,
     queryFn: listPromos,
+    // The server only returns live promos; this also drops one that ends
+    // while the page is open, so customers and the counter never see it.
+    select: data => ({...data, promos: data.promos.filter(p => isPromoLive(p))}),
+    // Refetch periodically so a promo that ends (or starts) shows up without reload.
+    refetchInterval: 5 * 60_000,
     refetchOnWindowFocus: false,
     staleTime: 15_000
   });

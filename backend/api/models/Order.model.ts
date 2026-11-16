@@ -141,6 +141,8 @@ export interface OrderDocument extends mongoose.Document {
   stockDeducted: boolean;
   /** True for dated pre-orders (Holiday pre-orders). */
   isPreOrder?: boolean;
+  /** Down payment % in force when the order was placed (snapshot of the owner setting). */
+  downPaymentPercent?: number | null;
   preOrder?: OrderPreOrderInfo | null;
   /**
    * Loyalty points credited when this order was completed, or null if it has
@@ -380,6 +382,7 @@ const OrderSchema = new Schema<OrderDocument>(
     paidBy: {type: String, default: null},
     isOnline: {type: Boolean, default: true},
     isPreOrder: {type: Boolean, default: false},
+    downPaymentPercent: {type: Number, default: null},
     preOrder: {
       type: new Schema(
         {

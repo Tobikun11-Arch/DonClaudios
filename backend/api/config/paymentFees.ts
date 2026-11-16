@@ -79,9 +79,36 @@ export function computeCharge(
   return {amount: base, transactionFee: charge - base, charge};
 }
 
-/** Pre-order carts may pay this share up front; the rest is the balance. */
-export const DOWN_PAYMENT_RATIO = 0.5;
+/**
+ * Pre-order carts may pay this share up front; the rest is the balance.
+ * The owner sets the live value in Settings (SiteSetting.downPaymentPercent).
+ * Each order keeps the percent it was placed with (Order.downPaymentPercent)
+ * so changing the setting never changes what an existing order owes.
+ */
+export const DEFAULT_DOWN_PAYMENT_PERCENT = 50;
+export const DOWN_PAYMENT_PERCENT_MIN = 10;
+export const DOWN_PAYMENT_PERCENT_MAX = 90;
 
-export function downPaymentAmount(totalAmount: number): number {
-  return Math.ceil(totalAmount * DOWN_PAYMENT_RATIO);
+export function isValidDownPaymentPercent(value: unknown): value is number {
+  return (
+    typeof value === 'number' &&
+    Number.isInteger(value) &&
+    value >= DOWN_PAYMENT_PERCENT_MIN &&
+    value <= DOWN_PAYMENT_PERCENT_MAX
+  );
+}
+
+/** The percent to use: a valid saved value, else the fallback. */
+export function resolveDownPaymentPercent(
+  value: unknown,
+  fallback: number = DEFAULT_DOWN_PAYMENT_PERCENT
+): number {
+  return isValidDownPaymentPercent(value) ? value : fallback;
+}
+
+export function downPaymentAmount(
+  totalAmount: number,
+  percent: number = DEFAULT_DOWN_PAYMENT_PERCENT
+): number {
+  return Math.ceil((totalAmount * percent) / 100);
 }

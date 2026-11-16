@@ -7,6 +7,12 @@ import {
   type FreeDeliverySettings
 } from '../config/delivery';
 import {
+  DEFAULT_DOWN_PAYMENT_PERCENT,
+  DOWN_PAYMENT_PERCENT_MAX,
+  DOWN_PAYMENT_PERCENT_MIN,
+  resolveDownPaymentPercent
+} from '../config/paymentFees';
+import {
   DEFAULT_REWARDS_EARN_RULE,
   REWARDS_EARN_PESOS_MAX,
   REWARDS_EARN_PESOS_MIN,
@@ -67,12 +73,14 @@ export const settingsService = {
       freeDelivery: _ignored,
       rewardsEarnPoints: _ignoredPoints,
       rewardsEarnPesos: _ignoredPesos,
+      downPaymentPercent: _ignoredDownPayment,
       dashboardTheme: _ignoredTheme,
       ...rest
     } = data as Partial<SiteSettingDocument> & {
       freeDelivery?: unknown;
       rewardsEarnPoints?: unknown;
       rewardsEarnPesos?: unknown;
+      downPaymentPercent?: unknown;
       dashboardTheme?: unknown;
     };
     return settingsRepository.update(rest);
@@ -114,6 +122,38 @@ export const settingsService = {
 
   defaultRewardsEarn(): RewardsEarnRule {
     return DEFAULT_REWARDS_EARN_RULE;
+  },
+
+  /** Live pre-order down payment percent (owner setting), default if never saved. */
+  async getDownPaymentPercent(): Promise<number> {
+    const doc = await settingsRepository.findOrCreate();
+    return resolveDownPaymentPercent(doc.downPaymentPercent);
+  },
+
+  async updateDownPaymentPercent(percent: number): Promise<number> {
+    const doc = await settingsRepository.update({
+      downPaymentPercent: percent
+    } as Partial<SiteSettingDocument>);
+    return resolveDownPaymentPercent(doc?.downPaymentPercent);
+  },
+
+  /**
+   * The down payment percent an order uses: the one snapshotted when it was
+   * placed, or the live setting for orders created before the snapshot existed.
+   */
+  async downPaymentPercentFor(order: {downPaymentPercent?: number | null}): Promise<number> {
+    if (order.downPaymentPercent != null) {
+      return resolveDownPaymentPercent(order.downPaymentPercent);
+    }
+    return this.getDownPaymentPercent();
+  },
+
+  downPaymentLimits() {
+    return {
+      default: DEFAULT_DOWN_PAYMENT_PERCENT,
+      min: DOWN_PAYMENT_PERCENT_MIN,
+      max: DOWN_PAYMENT_PERCENT_MAX
+    };
   },
 
   /** Saves one dashboard's colors; '' resets a color to the default. */

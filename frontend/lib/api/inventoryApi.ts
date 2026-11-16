@@ -2,6 +2,8 @@ import {httpClient} from './httpClient';
 import type {
   AdjustBody,
   AdjustResponse,
+  InventoryProductsParams,
+  InventoryProductsResponse,
   ListMovementsResponse,
   RestockBody,
   RestockResponse
@@ -29,5 +31,20 @@ export async function listMovements(productId?: string) {
     '/inventory/movements',
     {params}
   );
+  return res.data;
+}
+
+/** One server-side page of the owner inventory table. */
+export async function listInventoryProducts(params: InventoryProductsParams) {
+  const res = await httpClient.get<InventoryProductsResponse>('/inventory/products', {
+    params: {
+      page: params.page,
+      limit: params.limit,
+      search: params.search?.trim() || undefined,
+      status: params.status && params.status !== 'all' ? params.status : undefined,
+      category: params.category && params.category !== 'all' ? params.category : undefined,
+      sort: params.sort
+    }
+  });
   return res.data;
 }

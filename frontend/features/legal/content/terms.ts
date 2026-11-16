@@ -37,7 +37,7 @@ export const terms: LegalPageProps = {
         columns: ["Payment option", "Available for", "When to pay"],
         rows: [
           ["Pay in full online", "All online orders", "After the store confirms your order"],
-          ["50% down payment online", "Orders with pre-order items only", "Down payment after confirmation; balance online or in cash on pickup"],
+          ["Down payment online (percentage set by the store)", "Orders with pre-order items only", "Down payment after confirmation; balance online or in cash on pickup"],
           ["Cash on pickup", "Pick-up orders only", "When you collect your order at the store"],
         ],
       },

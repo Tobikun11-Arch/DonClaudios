@@ -18,6 +18,7 @@ import {useAllergenCatalog} from '@/lib/hooks/useAllergens';
 import {relativeTime, exactDateTime} from '@/lib/utils/relativeTime';
 import {InventoryToolbar, type SortOption} from './InventoryToolbar';
 import {MenuToggle} from './MenuToggle';
+import {Pagination} from '@/shared/components/Pagination';
 import type {Product, ProductAllergen} from '@/lib/types/product';
 
 interface ToolbarProps {
@@ -41,6 +42,14 @@ interface Props {
   errorMessage?: string;
   onRetry: () => void;
   toolbar: ToolbarProps;
+  pagination: {
+    page: number;
+    totalPages: number;
+    total: number;
+    pageSize: number;
+    isFetching: boolean;
+    onPageChange: (page: number) => void;
+  } | null;
   togglingId: string | null;
   onToggleMenu: (p: Product, next: boolean) => void;
   onOpenRow: (p: Product) => void;
@@ -184,6 +193,7 @@ export function InventoryTable({
   errorMessage,
   onRetry,
   toolbar,
+  pagination,
   togglingId,
   onToggleMenu,
   onOpenRow,
@@ -197,7 +207,7 @@ export function InventoryTable({
   const noResults = !noProductsAtAll && !isLoading && !isError && products.length === 0;
 
   return (
-    <div className="space-y-4">
+    <div id="inventory-table-top" className="space-y-4 scroll-mt-4">
       <InventoryToolbar {...toolbar} />
 
       {isLoading && (
@@ -466,9 +476,23 @@ export function InventoryTable({
             })}
           </div>
 
-          <p className="text-xs text-gray-400">
-            Showing {products.length} of {toolbar.counts.all} products
-          </p>
+          {pagination && (
+            <Pagination
+              page={pagination.page}
+              totalPages={pagination.totalPages}
+              total={pagination.total}
+              pageSize={pagination.pageSize}
+              isFetching={pagination.isFetching}
+              onPageChange={next => {
+                pagination.onPageChange(next);
+                // Bring the table header back into view on page change.
+                document
+                  .getElementById('inventory-table-top')
+                  ?.scrollIntoView({behavior: 'smooth', block: 'start'});
+              }}
+              itemLabel="products"
+            />
+          )}
         </>
       )}
     </div>
