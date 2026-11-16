@@ -3,7 +3,7 @@ import {ApiError} from '../utils/error';
 import {customerRepository} from '../repositories/customer.repository';
 import {productRepository} from '../repositories/product.repository';
 import {rewardRedemptionRepository} from '../repositories/reward.repository';
-import {fallbackPointsCost} from '../config/rewards';
+import {fallbackPointsCost, isRewardCategory, REWARD_CATEGORIES} from '../config/rewards';
 
 /**
  * A reward's point cost is STORED on the product as `pointsCost` and owned
@@ -33,7 +33,7 @@ export const rewardService = {
 
     const products = await productRepository.listPublic();
     const redeemableProducts = products
-      .filter(p => p.isAvailable && p.stock > 0)
+      .filter(p => p.isAvailable && p.stock > 0 && isRewardCategory(p.category))
       .map(product => ({
         _id: String(product._id),
         name: product.name,
@@ -82,6 +82,13 @@ export const rewardService = {
     }
     if (!product) {
       throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Reward not found');
+    }
+    if (!isRewardCategory(product.category)) {
+      throw new ApiError(
+        400,
+        'NOT_REDEEMABLE',
+        `Points can only be used on ${REWARD_CATEGORIES.join(', ').replace(/, ([^,]*)$/, ' and $1')}.`
+      );
     }
     if (!product.isAvailable || product.stock <= 0) {
       throw new ApiError(400, 'OUT_OF_STOCK', 'This reward is out of stock');
