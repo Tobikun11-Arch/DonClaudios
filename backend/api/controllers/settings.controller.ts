@@ -67,10 +67,14 @@ export const settingsController = {
 
   async updateDownPayment(req: Request, res: Response, next: NextFunction) {
     try {
-      const downPaymentPercent = await settingsService.updateDownPaymentPercent(
+      const {percent, ordersUpdated} = await settingsService.updateDownPaymentPercent(
         req.body.downPaymentPercent
       );
-      res.status(200).json({downPaymentPercent, limits: settingsService.downPaymentLimits()});
+      res.status(200).json({
+        downPaymentPercent: percent,
+        ordersUpdated,
+        limits: settingsService.downPaymentLimits()
+      });
     } catch (error) {
       next(error);
     }

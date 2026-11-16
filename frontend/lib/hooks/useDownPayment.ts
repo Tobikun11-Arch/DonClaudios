@@ -40,6 +40,20 @@ export function useUpdateDownPaymentMutation() {
   });
 }
 
+/**
+ * The percent an order uses, same rule as the backend: nothing paid yet ->
+ * the owner's live setting; already paid -> the percent saved on the order.
+ */
+export function effectiveDownPaymentPercent(
+  order: {downPaymentPercent?: number | null; paymentStatus?: string | null},
+  livePercent: number
+) {
+  if ((order.paymentStatus ?? 'unpaid') === 'unpaid' || order.downPaymentPercent == null) {
+    return livePercent;
+  }
+  return order.downPaymentPercent;
+}
+
 /** Down payment for a total, rounded up — same as the backend. */
 export function downPaymentFor(total: number, percent: number) {
   return Math.ceil((total * percent) / 100);

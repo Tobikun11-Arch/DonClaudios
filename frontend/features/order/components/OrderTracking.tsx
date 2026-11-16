@@ -31,7 +31,7 @@ import OrderPaymentCard from '@/features/order/components/OrderPaymentCard';
 import {useCancelQuoteQuery} from '@/lib/hooks/orders/useOrderCancellation';
 import {refundPolicySummary} from '@/lib/payment/refundPolicy';
 import {PreOrderNextSteps} from '@/features/preorders/components/PreOrderNextSteps';
-import {DEFAULT_DOWN_PAYMENT_PERCENT} from '@/lib/hooks/useDownPayment';
+import {effectiveDownPaymentPercent, useDownPaymentQuery} from '@/lib/hooks/useDownPayment';
 import {RefundBreakdown} from '@/features/owner/orders/components/OrderCancellation';
 import {
   formatMinutes,
@@ -71,7 +71,7 @@ function cutoffDaysOf(order: OrderHistoryEntry) {
   const po = order.preOrder;
   if (!po) return 14;
   return Math.round(
-    (new Date(po.pickupAt).getTime() - new Date(po.cancelDeadline).getTime()) / 86400000
+    (new Date(po.pickupDate).getTime() - new Date(po.cancelDeadline).getTime()) / 86400000
   );
 }
 
@@ -80,6 +80,7 @@ function manilaDate(iso: string, opts: Intl.DateTimeFormatOptions) {
 }
 
 function PreOrderPickupCard({order}: {order: OrderHistoryEntry}) {
+  const {percent: livePercent} = useDownPaymentQuery();
   const po = order.preOrder;
   if (!po) return null;
   const lalamove = po.receiveMethod === 'lalamove';
@@ -138,7 +139,7 @@ function PreOrderPickupCard({order}: {order: OrderHistoryEntry}) {
             cancelDeadline={po.cancelDeadline}
             cutoffDays={cutoffDaysOf(order)}
             pickupLabel={`${manilaDate(po.pickupAt, {weekday: 'long', month: 'long', day: 'numeric'})} · ${po.slotLabel}`}
-            downPaymentPercent={order.downPaymentPercent ?? DEFAULT_DOWN_PAYMENT_PERCENT}
+            downPaymentPercent={effectiveDownPaymentPercent(order, livePercent)}
             total={order.totalAmount}
             placedAt={order.createdAt}
           />
@@ -280,6 +281,7 @@ export default function OrderTracking({
   /** Guests: show the copyable tracking number so they can track later. */
   showTrackingNumber?: boolean;
 }) {
+  const {percent: liveDownPaymentPercent} = useDownPaymentQuery();
   const [mounted, setMounted] = useState(false);
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
@@ -396,7 +398,7 @@ export default function OrderTracking({
                 preOrder={!!order.isPreOrder && !!order.preOrder}
                 late={isLateCancel(order)}
                 cutoffDays={cutoffDaysOf(order)}
-                downPaymentPercent={order.downPaymentPercent ?? undefined}
+                downPaymentPercent={effectiveDownPaymentPercent(order, liveDownPaymentPercent)}
                 hint={
                   order.isPreOrder && order.preOrder
                     ? isLateCancel(order)

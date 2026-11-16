@@ -77,6 +77,8 @@ export async function updateRewardsEarnSettings(
 
 export type DownPaymentResponse = {
   downPaymentPercent: number;
+  /** PUT only: how many unpaid orders were moved to the new percent. */
+  ordersUpdated?: number;
   limits: {default: number; min: number; max: number};
 };
 

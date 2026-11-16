@@ -39,9 +39,14 @@ export function PaymentsTab() {
       return;
     }
     updateMutation.mutate(parsed, {
-      onSuccess: () => {
+      onSuccess: data => {
         setDraft(null);
-        toast.success(`Down payment set to ${parsed}%.`);
+        const n = data.ordersUpdated ?? 0;
+        toast.success(
+          n > 0
+            ? `Down payment set to ${parsed}%. Updated ${n} unpaid order${n === 1 ? '' : 's'}.`
+            : `Down payment set to ${parsed}%.`
+        );
       },
       onError: err => toast.error(getFriendlyErrorMessage(err, 'Failed to save down payment'))
     });
@@ -123,9 +128,10 @@ export function PaymentsTab() {
             </span>
           )}
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Applies to pre-orders placed after you save. Existing pre-orders keep the percent they
-            were placed with. On an approved late cancellation, the store keeps this down payment
-            share.
+            Applies to new pre-orders and to every open order that has not paid anything yet.
+            Orders that already paid a down payment or the full amount keep their percent, and so
+            do orders the customer is in the middle of paying online. On an approved late
+            cancellation, the store keeps the order&apos;s down payment share.
           </p>
         </div>
 

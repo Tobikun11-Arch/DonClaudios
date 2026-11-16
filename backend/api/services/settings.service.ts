@@ -1,6 +1,8 @@
 import {settingsRepository} from '../repositories/settings.repository';
 import {DASHBOARD_TARGETS, type SiteSettingDocument} from '../models/SiteSetting.model';
 import type {DashboardThemeDto} from '../dtos/settings.dto';
+import {OrderModel} from '../models/Order.model';
+import {PaymentModel} from '../models/Payment.model';
 import {
   DEFAULT_FREE_DELIVERY_SETTINGS,
   isValidLatLng,
@@ -130,22 +132,51 @@ export const settingsService = {
     return resolveDownPaymentPercent(doc.downPaymentPercent);
   },
 
-  async updateDownPaymentPercent(percent: number): Promise<number> {
+  /**
+   * Saves the new percent and stamps it on every open order that has not
+   * paid anything yet (reads of unpaid orders use the live setting anyway, see
+   * downPaymentPercentFor; this keeps the stored value in step). Orders that already paid a down payment (or in full)
+   * keep their percent. Orders with an open online invoice are skipped too:
+   * that invoice was issued for the old amount, so changing the percent under
+   * it would make the paid amount and the order disagree.
+   */
+  async updateDownPaymentPercent(
+    percent: number
+  ): Promise<{percent: number; ordersUpdated: number}> {
     const doc = await settingsRepository.update({
       downPaymentPercent: percent
     } as Partial<SiteSettingDocument>);
-    return resolveDownPaymentPercent(doc?.downPaymentPercent);
+    const saved = resolveDownPaymentPercent(doc?.downPaymentPercent);
+
+    const withOpenInvoice = await PaymentModel.distinct('orderId', {status: 'PENDING'});
+    const result = await OrderModel.updateMany(
+      {
+        paymentStatus: {$in: ['unpaid', null]},
+        orderStatus: {$nin: ['cancelled', 'completed']},
+        _id: {$nin: withOpenInvoice},
+        downPaymentPercent: {$ne: saved}
+      },
+      {$set: {downPaymentPercent: saved}}
+    ).exec();
+
+    return {percent: saved, ordersUpdated: result.modifiedCount};
   },
 
   /**
    * The down payment percent an order uses: the one snapshotted when it was
    * placed, or the live setting for orders created before the snapshot existed.
    */
-  async downPaymentPercentFor(order: {downPaymentPercent?: number | null}): Promise<number> {
-    if (order.downPaymentPercent != null) {
-      return resolveDownPaymentPercent(order.downPaymentPercent);
+  async downPaymentPercentFor(order: {
+    downPaymentPercent?: number | null;
+    paymentStatus?: string | null;
+  }): Promise<number> {
+    // Nothing paid yet: always the owner's current setting, so a change in
+    // Settings reaches every unpaid order (even ones saved with an old value).
+    if ((order.paymentStatus ?? 'unpaid') === 'unpaid' || order.downPaymentPercent == null) {
+      return this.getDownPaymentPercent();
     }
-    return this.getDownPaymentPercent();
+    // Down payment or full payment made: the percent it was made with.
+    return resolveDownPaymentPercent(order.downPaymentPercent);
   },
 
   downPaymentLimits() {
