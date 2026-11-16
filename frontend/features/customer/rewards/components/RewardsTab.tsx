@@ -17,7 +17,8 @@ import type {RewardProduct, RewardRedemption} from '@/lib/api/rewardsApi';
 import {formatPoints} from '@/lib/utils/formatPoints';
 import {
   buildEarnBannerText,
-  REWARDS_VALUE_FOOTNOTE
+  REWARDS_VALUE_FOOTNOTE,
+  REWARD_CATEGORIES
 } from '@/config/rewards';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
@@ -157,7 +158,11 @@ export default function RewardsTab() {
           </h2>
         </div>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Pick a product below and spend your points to get it.
+          Pick a product below and spend your points to get it. Rewards are available on{' '}
+          <span className="font-semibold text-gray-700 dark:text-gray-200">
+            {REWARD_CATEGORIES.join(', ').replace(/, ([^,]*)$/, ' and $1')}
+          </span>
+          .
         </p>
         <p className="mt-1 text-xs text-gray-400">
           {REWARDS_VALUE_FOOTNOTE}

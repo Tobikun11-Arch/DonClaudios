@@ -173,3 +173,21 @@ export function buildRewardsEarnCopy(
   const {rewardsEarnPoints: points, rewardsEarnPesos: pesos} = rule;
   return `Earn ${points.toLocaleString('en-PH')} point${points === 1 ? '' : 's'} for every ₱${pesos.toLocaleString('en-PH')} you spend (delivery fees not included). Redeem them for your favorite dishes!`;
 }
+
+/* ------------------------------------------------------------------ *
+ * WHAT CAN BE REDEEMED
+ * ------------------------------------------------------------------ */
+
+/**
+ * Points can only be spent on products in these categories. Matching ignores
+ * case and surrounding spaces, but is otherwise exact ("Hot Drinks" and
+ * "Alcoholic Drinks" are NOT included).
+ * Mirrored in frontend/config/rewards.ts for the customer copy.
+ */
+export const REWARD_CATEGORIES = ['Rice Meals', 'Appetizers', 'Drinks'] as const;
+
+const REWARD_CATEGORY_SET = new Set(REWARD_CATEGORIES.map(c => c.trim().toLowerCase()));
+
+export function isRewardCategory(category?: string | null): boolean {
+  return !!category && REWARD_CATEGORY_SET.has(category.trim().toLowerCase());
+}

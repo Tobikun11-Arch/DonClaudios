@@ -55,3 +55,21 @@ export function buildEarnBannerText(
     pesos
   )} (delivery fees not included). Redeem them for your favorite dishes!`;
 }
+
+/* ------------------------------------------------------------------ *
+ * WHAT CAN BE REDEEMED
+ * ------------------------------------------------------------------ */
+
+/**
+ * Points can only be spent on products in these categories. Matching ignores
+ * case and surrounding spaces, but is otherwise exact ("Hot Drinks" and
+ * "Alcoholic Drinks" are NOT included).
+ * Mirrors backend/api/config/rewards.ts, which enforces it.
+ */
+export const REWARD_CATEGORIES = ['Rice Meals', 'Appetizers', 'Drinks'] as const;
+
+const REWARD_CATEGORY_SET = new Set(REWARD_CATEGORIES.map(c => c.trim().toLowerCase()));
+
+export function isRewardCategory(category?: string | null): boolean {
+  return !!category && REWARD_CATEGORY_SET.has(category.trim().toLowerCase());
+}
