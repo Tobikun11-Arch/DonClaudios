@@ -48,6 +48,7 @@ import {customerStatusLabel, isStatusAllowed, parseCourier, staffFlowError} from
 import {settingsService} from '../services/settings.service';
 import {assertPreOrderItemsOrderable} from '../services/cart.service';
 import {isPositiveInteger, reserveOrderStock} from '../services/preOrder.service';
+import {applyServerPrices} from '../services/orderPricing.service';
 import type {ListAllOrdersQuery} from '../dtos/order.dto';
 import {sanitizeAcquisition} from '../config/acquisition';
 
@@ -676,14 +677,11 @@ export const orderController = {
             'items.quantity must be a whole number greater than zero'
           );
         }
-        const price = Number(i.price);
-        if (!Number.isFinite(price) || price <= 0) {
-          throw new ApiError(400, 'VALIDATION_ERROR', 'items.price is invalid');
-        }
+        // The browser's price is ignored; applyServerPrices sets it below.
         return {
           productId: i.productId as string,
           quantity,
-          price,
+          price: 0,
           specialRequest: isNonEmptyString(i.specialRequest)
             ? i.specialRequest
             : isNonEmptyString(i.instructions)
@@ -691,6 +689,9 @@ export const orderController = {
               : undefined
         };
       });
+      // Price every line from the database (product price + active promo),
+      // never from the request body.
+      await applyServerPrices(normalizedItems);
 
       const deliveryProducts = await productRepository.findManyByIds(
         normalizedItems.map(i => i.productId)
@@ -1065,14 +1066,11 @@ export const orderController = {
             'items.quantity must be a whole number greater than zero'
           );
         }
-        const price = Number(i.price);
-        if (!Number.isFinite(price) || price <= 0) {
-          throw new ApiError(400, 'VALIDATION_ERROR', 'items.price is invalid');
-        }
+        // The browser's price is ignored; applyServerPrices sets it below.
         return {
           productId: i.productId as string,
           quantity,
-          price,
+          price: 0,
           specialRequest: isNonEmptyString(i.specialRequest)
             ? i.specialRequest
             : isNonEmptyString(i.instructions)
@@ -1080,6 +1078,9 @@ export const orderController = {
               : undefined
         };
       });
+      // Price every line from the database (product price + active promo),
+      // never from the request body.
+      await applyServerPrices(normalizedItems);
 
       const productIds = normalizedItems.map(i => i.productId);
       const {itemPreps, estimatedPrepMinutes, estimatedReadyAt} =
