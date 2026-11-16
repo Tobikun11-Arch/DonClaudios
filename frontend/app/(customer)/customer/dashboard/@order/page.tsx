@@ -216,7 +216,7 @@ export default function OrderSlot() {
           aria-label="Open cart"
           data-tour="cart"
         >
-          <span className="relative">
+          <span className="relative" data-cart-target>
             <ShoppingCart className="h-8 w-8 text-[#2d4a35] dark:text-[#7ed4a0]" />
 
             {cartUniqueCount > 0 && (

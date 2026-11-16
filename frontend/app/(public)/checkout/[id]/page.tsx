@@ -473,7 +473,7 @@ export default function CheckoutGuestPage() {
     <div className="space-y-2">
       <Button
         type="button"
-        className="w-full h-12 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
+        className="w-full h-12 rounded-full bg-[#3c5e45] text-white shadow-lg shadow-[#3c5e45]/25 hover:bg-[#3c5e45]"
         disabled={
           items.length === 0 ||
           belowMinimum ||
@@ -499,7 +499,7 @@ export default function CheckoutGuestPage() {
           items to your cart.
         </p>
       ) : checkoutError ? (
-        <p className="text-center text-xs font-medium text-[#c30010]">
+        <p className="ux-enter text-center text-xs font-medium text-[#c30010]">
           {checkoutError}
         </p>
       ) : overGuestMax ? (
@@ -538,7 +538,7 @@ export default function CheckoutGuestPage() {
         </div>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 items-start gap-6">
-          <div className="lg:col-span-2 space-y-6">
+          <div className="ux-stagger-section lg:col-span-2 space-y-6">
             <div className="rounded-2xl bg-white p-6 shadow">
               <div className="flex items-center justify-between">
                 <div>
@@ -848,10 +848,12 @@ export default function CheckoutGuestPage() {
                       }));
                     }}
                     placeholder="Your First Name"
-                    className="mt-2"
+                    autoComplete="given-name"
+                    aria-invalid={errors.firstName ? true : undefined}
+                    className={cn('mt-2', errors.firstName && 'ux-shake')}
                   />
                   {errors.firstName ? (
-                    <p className="mt-1 text-xs font-medium text-red-600">
+                    <p className="ux-enter mt-1 text-xs font-medium text-red-600">
                       {errors.firstName}
                     </p>
                   ) : null}
@@ -868,10 +870,12 @@ export default function CheckoutGuestPage() {
                       setErrors(current => ({...current, lastName: undefined}));
                     }}
                     placeholder="Your Last Name"
-                    className="mt-2"
+                    autoComplete="family-name"
+                    aria-invalid={errors.lastName ? true : undefined}
+                    className={cn('mt-2', errors.lastName && 'ux-shake')}
                   />
                   {errors.lastName ? (
-                    <p className="mt-1 text-xs font-medium text-red-600">
+                    <p className="ux-enter mt-1 text-xs font-medium text-red-600">
                       {errors.lastName}
                     </p>
                   ) : null}
@@ -916,10 +920,15 @@ export default function CheckoutGuestPage() {
                     }
                   }}
                   placeholder="you@example.com"
-                  className="mt-2"
+                  autoComplete="email"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  aria-invalid={errors.email ? true : undefined}
+                  className={cn('mt-2', errors.email && 'ux-shake')}
                 />
                 {errors.email ? (
-                  <p className="mt-1 text-xs font-medium text-red-600">
+                  <p className="ux-enter mt-1 text-xs font-medium text-red-600">
                     {errors.email}
                   </p>
                 ) : null}
@@ -946,10 +955,13 @@ export default function CheckoutGuestPage() {
                     }
                   }}
                   placeholder="09xx xxx xxxx"
-                  className="mt-2"
+                  autoComplete="tel-national"
+                  inputMode="tel"
+                  aria-invalid={errors.mobileNumber ? true : undefined}
+                  className={cn('mt-2', errors.mobileNumber && 'ux-shake')}
                 />
                 {errors.mobileNumber ? (
-                  <p className="mt-1 text-xs font-medium text-red-600">
+                  <p className="ux-enter mt-1 text-xs font-medium text-red-600">
                     {errors.mobileNumber}
                   </p>
                 ) : null}
@@ -1070,7 +1082,7 @@ export default function CheckoutGuestPage() {
             </div>
           </div>
 
-          <div className="lg:col-span-1 lg:sticky lg:top-[85px]">
+          <div className="ux-enter lg:col-span-1 lg:sticky lg:top-[85px]">
             <div className="rounded-2xl bg-white p-6 shadow">
               <div className="flex items-center justify-between">
                 <p className="text-lg font-bold text-gray-900">Order summary</p>
@@ -1143,7 +1155,7 @@ export default function CheckoutGuestPage() {
                           <div className="mt-2 inline-flex items-center rounded-full border border-gray-200 overflow-hidden">
                             <button
                               type="button"
-                              className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50"
+                              className="ux-hit h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50"
                               onClick={() =>
                                 setQty(
                                   item.productId,
@@ -1154,12 +1166,12 @@ export default function CheckoutGuestPage() {
                             >
                               <Minus className="h-4 w-4" />
                             </button>
-                            <div className="min-w-9 text-center text-base font-bold text-gray-900">
+                            <div className="ux-num min-w-9 text-center text-base font-bold text-gray-900">
                               {item.qty}
                             </div>
                             <button
                               type="button"
-                              className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+                              className="ux-hit h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                               onClick={() =>
                                 setQty(item.productId, item.qty + 1)
                               }
@@ -1193,7 +1205,7 @@ export default function CheckoutGuestPage() {
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold text-gray-900">Total</span>
-                  <span className="text-2xl font-extrabold text-gray-900">
+                  <span className="ux-num text-2xl font-extrabold text-gray-900">
                     ₱{total}.00
                   </span>
                 </div>

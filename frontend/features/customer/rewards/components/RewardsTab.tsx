@@ -6,6 +6,7 @@ import {Coins, Gift, History, Loader2, Sparkles, X, CheckCircle2, Store, QrCode}
 import {QRCodeSVG} from 'qrcode.react';
 import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
+import {useTilt} from '@/shared/motion/useTilt';
 import {FilterPills} from '@/shared/components/FilterPills';
 import {
   useRewardsQuery,
@@ -37,6 +38,8 @@ export default function RewardsTab() {
   const [redeemedReward, setRedeemedReward] = useState<RewardRedemption | null>(null);
   const [qrView, setQrView] = useState<RewardRedemption | null>(null);
   const redeemedQrRef = useRef<HTMLDivElement>(null);
+  // Visual only: the balance card tilts toward the pointer in 3D.
+  const {onPointerMove: onTiltMove, onPointerLeave: onTiltLeave} = useTilt<HTMLDivElement>(5);
   const historyQrRef = useRef<HTMLDivElement>(null);
 
   const downloadQR = (ref: React.RefObject<HTMLDivElement | null>, code: string) => {
@@ -102,7 +105,13 @@ export default function RewardsTab() {
   return (
     <div className="w-full max-w-6xl mx-auto">
       {/* Points balance hero */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#2d4a35] via-[#3a5c44] to-[#2d4a35] p-6 text-white shadow-lg sm:p-8">
+      <div className="ux-tilt-scene">
+      <div
+        onPointerMove={onTiltMove}
+        onPointerLeave={onTiltLeave}
+        className="ux-tilt relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#2d4a35] via-[#3a5c44] to-[#2d4a35] p-6 text-white shadow-lg sm:p-8"
+      >
+        <span className="ux-tilt-light" aria-hidden="true" />
         <div className="pointer-events-none absolute -top-10 -right-10 h-48 w-48 rounded-full bg-[#7ed4a0]/20 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-16 left-1/4 h-48 w-48 rounded-full bg-[#f0c060]/10 blur-2xl" />
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -112,7 +121,7 @@ export default function RewardsTab() {
               Your Rewards Balance
             </p>
             <p className="mt-2 flex items-baseline gap-2">
-              <span className="text-5xl font-extrabold tracking-tight">
+              <span className="ux-num text-5xl font-extrabold tracking-tight">
                 {formatPoints(points)}
               </span>
               <span className="flex items-center gap-1 text-lg font-semibold text-[#7ed4a0]">
@@ -136,6 +145,7 @@ export default function RewardsTab() {
             </Button>
           </div>
         </div>
+      </div>
       </div>
 
       {/* Rewards catalog */}
@@ -180,14 +190,14 @@ export default function RewardsTab() {
             <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">No rewards available.</p>
           </div>
         ) : (
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="ux-stagger mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredProducts.map(product => {
               const canRedeem = points >= product.pointsRequired;
               const soldOut = product.stock <= 0;
               return (
                 <div
                   key={product._id}
-                  className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 transition-shadow hover:shadow-md dark:bg-gray-900 dark:ring-gray-700"
+                  className="ux-lift flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 transition-shadow hover:shadow-md dark:bg-gray-900 dark:ring-gray-700"
                 >
                   <div className="relative h-40 w-full bg-gray-100 dark:bg-gray-800">
                     {product.imageUrl ? (
@@ -248,13 +258,13 @@ export default function RewardsTab() {
       {/* Confirm redeem modal */}
       {confirmOpen && selected && (
         <div
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/45 p-4"
+          className="ux-scrim fixed inset-0 z-[120] flex items-center justify-center bg-black/45 p-4"
           role="dialog"
           aria-modal="true"
           onClick={() => setConfirmOpen(false)}
         >
           <div
-            className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900"
+            className="ux-modal w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4">
@@ -319,13 +329,13 @@ export default function RewardsTab() {
       {/* History modal */}
       {historyOpen && (
         <div
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/45 p-4"
+          className="ux-scrim fixed inset-0 z-[120] flex items-center justify-center bg-black/45 p-4"
           role="dialog"
           aria-modal="true"
           onClick={() => setHistoryOpen(false)}
         >
           <div
-            className="flex max-h-[80vh] w-full max-w-md flex-col rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900"
+            className="ux-modal flex max-h-[80vh] w-full max-w-md flex-col rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
@@ -432,13 +442,13 @@ export default function RewardsTab() {
     {/* QR Code modal — shown after successful redeem */}
     {redeemedReward && (
       <div
-        className="fixed inset-0 z-[130] flex items-center justify-center bg-black/50 p-4"
+        className="ux-scrim fixed inset-0 z-[130] flex items-center justify-center bg-black/50 p-4"
         role="dialog"
         aria-modal="true"
         onClick={() => setRedeemedReward(null)}
       >
         <div
-          className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900"
+          className="ux-modal w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900"
           onClick={e => e.stopPropagation()}
         >
           <div className="flex items-center justify-between">
@@ -460,7 +470,7 @@ export default function RewardsTab() {
             </Button>
           </div>
 
-          <div className="mt-4 flex justify-center" ref={redeemedQrRef}>
+          <div className="ux-windup mt-4 flex justify-center" ref={redeemedQrRef}>
             <QRCodeSVG
               value={redeemedReward.redeemCode ?? ''}
               size={200}
@@ -501,13 +511,13 @@ export default function RewardsTab() {
     {/* QR Code view modal — shown from history */}
     {qrView && (
       <div
-        className="fixed inset-0 z-[130] flex items-center justify-center bg-black/50 p-4"
+        className="ux-scrim fixed inset-0 z-[130] flex items-center justify-center bg-black/50 p-4"
         role="dialog"
         aria-modal="true"
         onClick={() => setQrView(null)}
       >
         <div
-          className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900"
+          className="ux-modal w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900"
           onClick={e => e.stopPropagation()}
         >
           <div className="flex items-center justify-between">

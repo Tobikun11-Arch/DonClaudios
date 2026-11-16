@@ -24,6 +24,7 @@ import {
   type OrderHistoryItem
 } from '@/lib/api/orderApi';
 import {toast} from 'sonner';
+import {useEscapeKey} from '@/shared/motion/useEscapeKey';
 import CustomerOrderFollowUp from '@/features/order/components/CustomerOrderFollowUp';
 import {courierLabel, customerStep, fulfillmentKind, fulfillmentLabel, statusFlow} from '@/lib/orders/orderFlow';
 import OrderPaymentCard from '@/features/order/components/OrderPaymentCard';
@@ -299,8 +300,8 @@ export default function OrderTracking({
       <div
         className={
           embedded
-            ? 'w-full max-w-3xl mx-auto space-y-4'
-            : 'w-full max-w-3xl mx-auto px-4 py-10 space-y-6'
+            ? 'ux-stagger-section w-full max-w-3xl mx-auto space-y-4'
+            : 'ux-stagger-section w-full max-w-3xl mx-auto px-4 py-10 space-y-6'
         }
       >
         {query.isLoading && !order ? (
@@ -473,7 +474,14 @@ function TrackingNumberBar({orderId}: {orderId: string}) {
         <p className="text-[11px] font-semibold uppercase tracking-wide text-[#3c5e45]">
           Tracking number · save it to check this order later
         </p>
-        <p className="mt-0.5 break-all font-mono text-sm font-bold text-gray-900 select-all">{orderId}</p>
+        <p className="mt-0.5 break-all font-mono text-sm font-bold text-gray-900 select-all">
+          {/* Miller's law: read in chunks of 4. Margins, not spaces, so a copy is still the exact ID. */}
+          {(orderId.match(/.{1,4}/g) ?? [orderId]).map((chunk, i) => (
+            <span key={i} className="mr-1.5 last:mr-0">
+              {chunk}
+            </span>
+          ))}
+        </p>
       </div>
       <div className="flex shrink-0 gap-2">
         <button
@@ -587,7 +595,7 @@ function StatusTrackerCard({order}: {order: OrderHistoryEntry}) {
                 <div
                   className={
                     isCurrent
-                      ? 'mt-1 h-5 w-5 rounded-full bg-[#3c5e45] ring-4 ring-[#3c5e45]/20'
+                      ? 'ux-windup ux-ring mt-1 h-5 w-5 rounded-full bg-[#3c5e45] text-[#3c5e45] ring-4 ring-[#3c5e45]/20'
                       : isPast
                         ? 'mt-1.5 h-4 w-4 rounded-full bg-gray-400'
                         : 'mt-1.5 h-4 w-4 rounded-full border-2 border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900'
@@ -818,6 +826,7 @@ function CancelOrderButton({
   const [otherText, setOtherText] = useState('');
   const cancelMutation = useCancelTrackedOrderMutation(orderId, phone);
   const isPending = cancelMutation.isPending;
+  useEscapeKey(open && !isPending, () => setOpen(false));
   const error = cancelMutation.error as {
     message?: string;
   } | null;
@@ -851,7 +860,7 @@ function CancelOrderButton({
       {open ? (
         <div className="fixed inset-0 z-100" role="dialog" aria-modal="true">
           <div
-            className="absolute inset-0 bg-black/40"
+            className="ux-scrim absolute inset-0 bg-black/40"
             aria-hidden="true"
             onClick={() => {
               if (!isPending) setOpen(false);
@@ -860,7 +869,7 @@ function CancelOrderButton({
           <div className="absolute inset-0 flex items-end sm:items-center justify-center p-0 sm:p-6">
             <div
               onClick={e => e.stopPropagation()}
-              className="w-full sm:max-w-md bg-white shadow-xl border border-gray-100 rounded-t-2xl sm:rounded-2xl p-6 dark:bg-gray-900 dark:border-gray-700"
+              className="ux-modal ux-modal-sheet w-full sm:max-w-md bg-white shadow-xl border border-gray-100 rounded-t-2xl sm:rounded-2xl p-6 dark:bg-gray-900 dark:border-gray-700"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -876,7 +885,7 @@ function CancelOrderButton({
                 <button
                   type="button"
                   aria-label="Close"
-                  className="shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="ux-hit shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                   onClick={() => {
                     if (!isPending) setOpen(false);
                   }}

@@ -104,7 +104,7 @@ export default function OwnerNotificationBell({alert = false}: {alert?: boolean}
           <div
             onClick={() => setOpen(false)}
             aria-hidden="true"
-            className="fixed inset-0 z-[55] overscroll-contain bg-black/30 sm:hidden"
+            className="ux-scrim fixed inset-0 z-[55] overscroll-contain bg-black/30 sm:hidden"
           />
           {/*
             Bottom sheet below `sm`: the bell is flush right, so `absolute right-0
@@ -115,7 +115,7 @@ export default function OwnerNotificationBell({alert = false}: {alert?: boolean}
           <div
             role="dialog"
             aria-label="Notifications"
-            className="fixed inset-x-3 bottom-24 z-[60] max-h-[70vh] overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-12 sm:w-96 sm:max-h-none sm:overflow-y-visible sm:overscroll-auto"
+            className="ux-pop [--ux-origin:bottom_center] sm:[--ux-origin:top_right] fixed inset-x-3 bottom-24 z-[60] max-h-[70vh] overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-12 sm:w-96 sm:max-h-none sm:overflow-y-visible sm:overscroll-auto"
           >
           <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-4 py-3">
             <div>

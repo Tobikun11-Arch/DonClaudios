@@ -215,7 +215,7 @@ export default function CashiersPage({embedded = false}: {embedded?: boolean} = 
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 md:gap-5">
+          <div className="ux-stagger grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 md:gap-5">
             {visibleCashiers.map(c => (
               <CashierCard
                 key={c._id}

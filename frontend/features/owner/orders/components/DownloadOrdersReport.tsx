@@ -118,7 +118,7 @@ export function DownloadOrdersReport() {
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
+          className="ux-scrim fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
           onClick={() => setOpen(false)}
         >
           <div
@@ -126,7 +126,7 @@ export function DownloadOrdersReport() {
             aria-modal="true"
             aria-label="Download orders report"
             onClick={e => e.stopPropagation()}
-            className="w-full max-w-md rounded-t-2xl bg-white dark:bg-gray-900 p-5 shadow-2xl sm:rounded-2xl"
+            className="ux-modal ux-modal-sheet w-full max-w-md rounded-t-2xl bg-white dark:bg-gray-900 p-5 shadow-2xl sm:rounded-2xl"
           >
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-[#1A1A1A] dark:text-gray-100">

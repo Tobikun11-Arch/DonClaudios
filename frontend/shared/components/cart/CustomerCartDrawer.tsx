@@ -341,14 +341,15 @@ export default function CustomerCartDrawer() {
     <div className={`fixed inset-0 ${Z.drawerOverlay}`}>
       <button
         type="button"
-        className="absolute inset-0 bg-black/40"
+        className="ux-scrim absolute inset-0 bg-black/40"
+        data-no-press
         onClick={close}
         aria-label="Close cart"
       />
 
       <div
         className={
-          'absolute bg-white shadow-2xl flex flex-col dark:bg-gray-900 ' +
+          'ux-drawer absolute bg-white shadow-2xl flex flex-col dark:bg-gray-900 ' +
           'w-full md:w-105 ' +
           'bottom-0 md:bottom-auto md:top-0 md:right-0 ' +
           'h-[85dvh] md:h-dvh ' +
@@ -420,7 +421,10 @@ export default function CustomerCartDrawer() {
                   key={item.productId}
                   className="flex items-start gap-3 rounded-2xl border border-gray-100 bg-white p-3 dark:border-gray-700 dark:bg-gray-900"
                 >
-                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                  <div
+                    data-cart-item={item.productId}
+                    className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-gray-800/50"
+                  >
                     <Image
                       src={
                         item.imageUrl && item.imageUrl.length > 0
@@ -501,7 +505,7 @@ export default function CustomerCartDrawer() {
                       <div className="inline-flex items-center rounded-full border border-gray-200 overflow-hidden dark:border-gray-700">
                         <button
                           type="button"
-                          className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800"
+                          className="ux-hit h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800"
                           onClick={() => {
                             if (item.quantity <= 1) {
                               requestRemoveItem(item);
@@ -520,12 +524,12 @@ export default function CustomerCartDrawer() {
                         >
                           <Minus className="h-4 w-4" />
                         </button>
-                        <div className="min-w-10 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        <div className="ux-num min-w-10 text-center text-sm font-semibold text-gray-900 dark:text-gray-100">
                           {item.quantity}
                         </div>
                         <button
                           type="button"
-                          className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed dark:hover:bg-gray-800"
+                          className="ux-hit h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed dark:hover:bg-gray-800"
                           onClick={() => increaseItem(item)}
                           aria-label="Increase"
                           disabled={
@@ -572,13 +576,13 @@ export default function CustomerCartDrawer() {
 
       {orderDetailsOpen ? (
         <div
-          className={`fixed inset-0 ${Z.orderModal} bg-black/40 flex items-center justify-center p-4`}
+          className={`ux-scrim fixed inset-0 ${Z.orderModal} bg-black/40 flex items-center justify-center p-4`}
           onClick={cancelOrderDetails}
           role="dialog"
           aria-modal="true"
         >
           <div
-            className="w-full max-w-[520px] max-h-[calc(100vh-32px)] rounded-[24px] bg-white shadow-[0_24px_60px_rgba(0,0,0,.35)] overflow-hidden flex flex-col dark:bg-gray-900 dark:[--brand-green-tint:#7ed4a01f]! dark:[--brand-green-text:#7ed4a0]! dark:[--border:#374151]! dark:[--surface-muted:#1f2937]! dark:[--surface-soft:#1f293780]! dark:[--surface-card:#111827]! dark:[--text:#f3f4f6]! dark:[--text-muted:#9ca3af]!"
+            className="ux-modal w-full max-w-[520px] max-h-[calc(100vh-32px)] rounded-[24px] bg-white shadow-[0_24px_60px_rgba(0,0,0,.35)] overflow-hidden flex flex-col dark:bg-gray-900 dark:[--brand-green-tint:#7ed4a01f]! dark:[--brand-green-text:#7ed4a0]! dark:[--border:#374151]! dark:[--surface-muted:#1f2937]! dark:[--surface-soft:#1f293780]! dark:[--surface-card:#111827]! dark:[--text:#f3f4f6]! dark:[--text-muted:#9ca3af]!"
             onClick={e => e.stopPropagation()}
             style={
               {

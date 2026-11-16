@@ -242,7 +242,7 @@ function DeleteAccountDialog({
 
   return (
     <div
-      className={`fixed inset-0 ${Z.globalModal} flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-6 dark:bg-black/70`}
+      className={`ux-scrim fixed inset-0 ${Z.globalModal} flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-6 dark:bg-black/70`}
       onClick={() => !isDeleting && onClose()}
     >
       <div
@@ -250,7 +250,7 @@ function DeleteAccountDialog({
         aria-modal="true"
         aria-labelledby="delete-account-title"
         onClick={e => e.stopPropagation()}
-        className="w-full max-w-md rounded-t-2xl border border-gray-100 bg-white p-5 shadow-xl sm:rounded-2xl sm:p-6 dark:border-gray-700 dark:bg-gray-900"
+        className="ux-modal ux-modal-sheet w-full max-w-md rounded-t-2xl border border-gray-100 bg-white p-5 shadow-xl sm:rounded-2xl sm:p-6 dark:border-gray-700 dark:bg-gray-900"
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -269,7 +269,7 @@ function DeleteAccountDialog({
             onClick={onClose}
             disabled={isDeleting}
             aria-label="Close"
-            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+            className="ux-hit rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
           >
             <X className="h-5 w-5" />
           </button>
@@ -329,8 +329,9 @@ function DeleteAccountDialog({
 
           {error && (
             <p
+              key={error}
               role="alert"
-              className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300"
+              className="ux-shake rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300"
             >
               {error}
             </p>

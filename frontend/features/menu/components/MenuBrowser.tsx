@@ -72,6 +72,14 @@ export function MenuBrowser({
   const resultsRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const pendingScrollRef = useRef(false);
+  // Visual only: the menu staggers in once when it first loads. Switching
+  // categories is frequent, so after that the new cards show at once.
+  const [introDone, setIntroDone] = useState(false);
+  useEffect(() => {
+    if (isLoading || introDone) return;
+    const t = window.setTimeout(() => setIntroDone(true), 900);
+    return () => window.clearTimeout(t);
+  }, [isLoading, introDone]);
 
   const bestSellersQuery = useBestSellerIds();
   const bestSellerIds = bestSellersQuery.data ?? EMPTY_IDS;
@@ -208,7 +216,7 @@ export function MenuBrowser({
                     {items.length} {items.length === 1 ? 'item' : 'items'}
                   </span>
                 </h3>
-                <div className={GRID}>
+                <div className={cn(GRID, !introDone && 'ux-stagger')}>
                   {items.map(item => (
                     <MenuItemCard
                       key={`${id}-${item.id}`}

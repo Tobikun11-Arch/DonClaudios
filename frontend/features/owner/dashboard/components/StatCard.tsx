@@ -29,7 +29,7 @@ export function StatCard({data}: Props) {
           <p className="text-[0.75rem] font-medium uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
             {data.label}
           </p>
-          <p className="text-[1.5rem] font-bold text-[#1A1A1A] dark:text-gray-100 leading-none">
+          <p className="ux-num text-[1.5rem] font-bold text-[#1A1A1A] dark:text-gray-100 leading-none">
             {data.key === 'todaySales' || data.key === 'totalRevenue'
               ? `₱${data.value.toLocaleString()}`
               : data.value.toLocaleString()}

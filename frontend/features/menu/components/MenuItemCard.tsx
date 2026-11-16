@@ -5,6 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {Plus} from 'lucide-react';
 import {cn} from '@/lib/utils';
+import {useCartUiStore} from '@/app/store/cartUiStore';
+import {flyWhenCartOpens} from '@/shared/motion/flyToCart';
 import {useAllergenCatalog} from '@/lib/hooks/useAllergens';
 import {formatMenuPrice, type MenuItem} from '../menuItems';
 
@@ -57,7 +59,7 @@ export function MenuItemCard({
     : null;
 
   return (
-    <div className="group relative flex h-full flex-col rounded-3xl bg-white p-2 shadow-[0_2px_10px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04] transition-shadow duration-200 hover:shadow-[0_6px_20px_rgba(0,0,0,0.10)] sm:p-2.5 dark:bg-gray-900 dark:ring-white/10">
+    <div className="ux-lift group relative flex h-full flex-col rounded-3xl bg-white p-2 shadow-[0_2px_10px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04] transition-shadow duration-200 hover:shadow-[0_6px_20px_rgba(0,0,0,0.10)] sm:p-2.5 dark:bg-gray-900 dark:ring-white/10">
       <Link
         href={item.href}
         aria-label={`${item.name}, view details`}
@@ -93,7 +95,8 @@ export function MenuItemCard({
 
         {cartQty > 0 && (
           <span
-            className="pointer-events-none absolute right-2 top-2 rounded-full bg-white/95 px-2 py-0.5 text-xs font-bold text-gray-900 shadow-sm dark:bg-gray-900/95 dark:text-gray-100"
+            key={cartQty}
+            className="ux-squash ux-num pointer-events-none absolute right-2 top-2 rounded-full bg-white/95 px-2 py-0.5 text-xs font-bold text-gray-900 shadow-sm dark:bg-gray-900/95 dark:text-gray-100"
             aria-label={`${cartQty} in your cart`}
           >
             x{cartQty}
@@ -102,7 +105,17 @@ export function MenuItemCard({
 
         <button
           type="button"
-          onClick={onAdd}
+          onClick={e => {
+            const photo = e.currentTarget.parentElement;
+            onAdd();
+            // Visual only: the photo flies into the cart once it opens.
+            flyWhenCartOpens(
+              photo,
+              item.id,
+              () => useCartUiStore.getState().isOpen,
+              listener => useCartUiStore.subscribe(s => listener(s.isOpen))
+            );
+          }}
           disabled={addDisabled}
           aria-label={
             addDisabled
