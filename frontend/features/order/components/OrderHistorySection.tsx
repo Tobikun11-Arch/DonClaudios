@@ -330,7 +330,7 @@ export default function OrderHistorySection({
                   {group.orders.length} order{group.orders.length > 1 ? 's' : ''}
                 </span>
               </div>
-              <div className="space-y-3">
+              <div className="ux-stagger space-y-3">
                 {group.orders.map(order => (
                   <OrderCard
                     key={order._id}

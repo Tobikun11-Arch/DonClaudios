@@ -188,6 +188,8 @@ export type OrderHistoryEntry = {
   /** Dated Holiday Pre-order (see `preOrder`). */
   isPreOrder?: boolean;
   preOrder?: OrderPreOrderInfo | null;
+  /** Down payment % this order was placed with (owner setting at the time). */
+  downPaymentPercent?: number | null;
   /** Set on server docs; missing in some cached local entries. */
   orderSource?: 'online' | 'in-store' | null;
   /** Walk-in order number, e.g. "DC-001". */
@@ -614,6 +616,8 @@ export type PaymentSummary = {
   balanceInStore?: {dueAt: string | null} | null;
   downPaymentAllowed: boolean;
   downPaymentAmount: number;
+  /** Percent behind `downPaymentAmount` (the order's own down payment %). */
+  downPaymentPercent?: number;
   channels: Array<{id: PaymentChannel; label: string}>;
   quotes: {
     full: QuoteMap;

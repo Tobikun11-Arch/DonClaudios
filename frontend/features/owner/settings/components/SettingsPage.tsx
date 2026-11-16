@@ -14,6 +14,7 @@ import {StoreStatusTab} from './StoreStatusTab';
 import {MenuCategoriesTab} from './MenuCategoriesTab';
 import {DeliveryTab} from './DeliveryTab';
 import {RewardsTab} from './RewardsTab';
+import {PaymentsTab} from './PaymentsTab';
 import AppearancePreview from '@/features/owner/appearance/components/AppearancePreview';
 import {
   UserRound,
@@ -32,7 +33,8 @@ import {
   ChevronDown,
   Search,
   Truck,
-  Gift
+  Gift,
+  Wallet
 } from 'lucide-react';
 
 type TabId =
@@ -47,6 +49,7 @@ type TabId =
   | 'store'
   | 'delivery'
   | 'rewards'
+  | 'payments'
   | 'categories'
   | 'security'
   | 'cashier';
@@ -67,6 +70,7 @@ const TOP_ITEMS: TopItem[] = [
   {id: 'store', label: 'Store Status', icon: Clock, group: 1},
   {id: 'delivery', label: 'Delivery', icon: Truck, group: 1},
   {id: 'rewards', label: 'Rewards', icon: Gift, group: 1},
+  {id: 'payments', label: 'Payments', icon: Wallet, group: 1},
   {id: 'categories', label: 'Menu Categories', icon: Tags, group: 1},
   {id: 'security', label: 'Security', icon: ShieldCheck, group: 1}
 ];
@@ -97,6 +101,7 @@ const TAB_INFO: Record<TabId, {label: string; subtitle: string}> = {
   store: {label: 'Store Status', subtitle: 'Opening hours and manual close controls.'},
   delivery: {label: 'Delivery', subtitle: 'Free delivery minimum and area.'},
   rewards: {label: 'Rewards', subtitle: 'How customers earn loyalty points.'},
+  payments: {label: 'Payments', subtitle: 'Pre-order down payment percentage.'},
   categories: {label: 'Menu Categories', subtitle: 'Organize how products are grouped.'},
   security: {label: 'Security', subtitle: 'Password and active sessions.'},
   cashier: {label: 'Cashier', subtitle: 'Manage cashier accounts.'}
@@ -160,6 +165,8 @@ export function SettingsPage() {
         return <DeliveryTab />;
       case 'rewards':
         return <RewardsTab />;
+      case 'payments':
+        return <PaymentsTab />;
       case 'categories':
         return <MenuCategoriesTab />;
       case 'security':

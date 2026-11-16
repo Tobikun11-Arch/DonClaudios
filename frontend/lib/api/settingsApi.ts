@@ -74,3 +74,21 @@ export async function updateRewardsEarnSettings(
   const res = await httpClient.put<RewardsEarnResponse>('/settings/rewards-earn', body);
   return res.data;
 }
+
+export type DownPaymentResponse = {
+  downPaymentPercent: number;
+  /** PUT only: how many unpaid orders were moved to the new percent. */
+  ordersUpdated?: number;
+  limits: {default: number; min: number; max: number};
+};
+
+/** Owner's pre-order down payment percent (public read). */
+export async function getDownPaymentSettings() {
+  const res = await httpClient.get<DownPaymentResponse>('/settings/down-payment');
+  return res.data;
+}
+
+export async function updateDownPaymentSettings(body: {downPaymentPercent: number}) {
+  const res = await httpClient.put<DownPaymentResponse>('/settings/down-payment', body);
+  return res.data;
+}

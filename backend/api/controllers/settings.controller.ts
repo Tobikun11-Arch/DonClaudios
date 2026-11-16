@@ -56,6 +56,30 @@ export const settingsController = {
     }
   },
 
+  async getDownPayment(_req: Request, res: Response, next: NextFunction) {
+    try {
+      const downPaymentPercent = await settingsService.getDownPaymentPercent();
+      res.status(200).json({downPaymentPercent, limits: settingsService.downPaymentLimits()});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateDownPayment(req: Request, res: Response, next: NextFunction) {
+    try {
+      const {percent, ordersUpdated} = await settingsService.updateDownPaymentPercent(
+        req.body.downPaymentPercent
+      );
+      res.status(200).json({
+        downPaymentPercent: percent,
+        ordersUpdated,
+        limits: settingsService.downPaymentLimits()
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async getRewardsEarn(_req: Request, res: Response, next: NextFunction) {
     try {
       const rewardsEarn = await settingsService.getRewardsEarn();

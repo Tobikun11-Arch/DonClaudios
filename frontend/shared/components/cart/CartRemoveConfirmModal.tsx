@@ -3,6 +3,7 @@
 import {Button} from '@/components/ui/button';
 import {X} from 'lucide-react';
 import {Z} from '@/lib/zIndex';
+import {useEscapeKey} from '@/shared/motion/useEscapeKey';
 
 type CartRemoveConfirmModalProps = {
   itemName: string;
@@ -19,17 +20,19 @@ export default function CartRemoveConfirmModal({
   onCancel,
   onConfirm
 }: CartRemoveConfirmModalProps) {
+  useEscapeKey(isOpen && !isRemoving, onCancel);
+
   if (!isOpen) return null;
 
   return (
     <div
-      className={`fixed inset-0 ${Z.cartConfirm} flex items-center justify-center bg-black/45 p-4`}
+      className={`ux-scrim fixed inset-0 ${Z.cartConfirm} flex items-center justify-center bg-black/45 p-4`}
       role="dialog"
       aria-modal="true"
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900"
+        className="ux-modal w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
@@ -61,6 +64,7 @@ export default function CartRemoveConfirmModal({
             variant="outline"
             onClick={onCancel}
             disabled={isRemoving}
+            autoFocus
             className="rounded-full"
           >
             Cancel
@@ -71,7 +75,7 @@ export default function CartRemoveConfirmModal({
             disabled={isRemoving}
             className="rounded-full bg-[#c30010] text-white hover:bg-[#a6000d]"
           >
-            {isRemoving ? 'Removing...' : 'Remove'}
+            {isRemoving ? 'Removing...' : 'Remove item'}
           </Button>
         </div>
       </div>

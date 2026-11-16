@@ -182,14 +182,14 @@ export default function CartDrawer() {
 
   return (
     <div
-      className={`fixed inset-0 ${Z.drawerOverlay} bg-black/40`}
+      className={`ux-scrim fixed inset-0 ${Z.drawerOverlay} bg-black/40`}
       onClick={close}
       role="dialog"
       aria-modal="true"
     >
       <div
         className={
-          'fixed bg-white shadow-2xl flex flex-col ' +
+          'ux-drawer fixed bg-white shadow-2xl flex flex-col ' +
           'w-full md:w-105 ' +
           'bottom-0 md:bottom-auto md:top-0 md:right-0 ' +
           'h-[85dvh] md:h-dvh ' +
@@ -245,7 +245,10 @@ export default function CartDrawer() {
                   key={item.productId}
                   className="flex items-start gap-3 rounded-2xl border border-gray-100 bg-white p-3"
                 >
-                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-gray-50">
+                  <div
+                    data-cart-item={item.productId}
+                    className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-gray-50"
+                  >
                     <Image
                       src={
                         item.imageUrl && item.imageUrl.length > 0
@@ -301,7 +304,7 @@ export default function CartDrawer() {
                       <div className="inline-flex items-center rounded-full border border-gray-200 overflow-hidden">
                         <button
                           type="button"
-                          className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50"
+                          className="ux-hit h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50"
                           onClick={() => {
                             if (item.qty <= 1) {
                               requestRemoveItem(item);
@@ -313,7 +316,7 @@ export default function CartDrawer() {
                         >
                           <Minus className="h-4 w-4" />
                         </button>
-                        <div className="min-w-10 text-center text-sm font-semibold text-gray-900">
+                        <div className="ux-num min-w-10 text-center text-sm font-semibold text-gray-900">
                           {item.qty}
                         </div>
                         {(() => {
@@ -327,7 +330,7 @@ export default function CartDrawer() {
                           return (
                         <button
                           type="button"
-                          className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+                          className="ux-hit h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                           onClick={() => setQty(item.productId, item.qty + 1)}
                           disabled={atCap}
                           title={
@@ -387,13 +390,13 @@ export default function CartDrawer() {
 
       {orderDetailsOpen ? (
         <div
-          className={`fixed inset-0 ${Z.orderModal} bg-black/40 flex items-center justify-center p-4`}
+          className={`ux-scrim fixed inset-0 ${Z.orderModal} bg-black/40 flex items-center justify-center p-4`}
           onClick={cancelOrderDetails}
           role="dialog"
           aria-modal="true"
         >
           <div
-            className="w-full max-w-[520px] max-h-[calc(100vh-32px)] rounded-[24px] bg-white shadow-[0_24px_60px_rgba(0,0,0,.35)] overflow-hidden flex flex-col"
+            className="ux-modal w-full max-w-[520px] max-h-[calc(100vh-32px)] rounded-[24px] bg-white shadow-[0_24px_60px_rgba(0,0,0,.35)] overflow-hidden flex flex-col"
             onClick={e => e.stopPropagation()}
             style={
               {

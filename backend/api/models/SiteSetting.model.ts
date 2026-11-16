@@ -84,6 +84,8 @@ export interface SiteSettingDocument extends mongoose.Document {
   /** Loyalty earn rule: rewardsEarnPoints points per rewardsEarnPesos pesos (see config/rewards.ts). */
   rewardsEarnPoints?: number;
   rewardsEarnPesos?: number;
+  /** Share of a pre-order the customer pays up front, in % (see config/paymentFees.ts). */
+  downPaymentPercent?: number;
   /** Per-dashboard colors (hex). Empty/unset means the default green. */
   dashboardTheme?: Partial<Record<DashboardTarget, DashboardColors>>;
 }
@@ -205,6 +207,8 @@ const SiteSettingSchema = new Schema<SiteSettingDocument>(
     // No defaults: unset means "use DEFAULT_REWARDS_EARN_RULE" (config/rewards.ts).
     rewardsEarnPoints: {type: Number, min: 1},
     rewardsEarnPesos: {type: Number, min: 1},
+    // No default: unset means DEFAULT_DOWN_PAYMENT_PERCENT (config/paymentFees.ts).
+    downPaymentPercent: {type: Number, min: 1, max: 100},
     // No defaults: unset means "use the built-in DonClaudio's green".
     dashboardTheme: {
       owner: {type: DashboardColorsSchema, default: undefined},

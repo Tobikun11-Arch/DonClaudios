@@ -5,6 +5,7 @@ import CartDrawer from '@/shared/components/cart/CartDrawer';
 import GuestCartExpiry from '@/shared/components/cart/GuestCartExpiry';
 import SupportChatBubble from '@/features/support/components/SupportChatBubble';
 import {Toaster} from '@/components/ui/sonner';
+import {UxMotionScope} from '@/shared/motion/UxMotionScope';
 
 // Restaurant structured data (schema.org) so Google can show address, phone
 // and hours in search and connect the site to the Google Business Profile.
@@ -50,6 +51,7 @@ export default function PublicLayout({children}: {children: React.ReactNode}) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{__html: JSON.stringify(restaurantJsonLd)}}
       />
+      <UxMotionScope exceptHome />
       <Header />
       <main className="pt-12">{children}</main>
       <CartDrawer />

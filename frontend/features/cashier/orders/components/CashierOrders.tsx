@@ -7,6 +7,7 @@ import {toast} from 'sonner';
 import {MessageCircle, Package, ChevronRight, ChevronDown, ChevronUp, User, Phone, MapPin, Clock, Globe, Store} from 'lucide-react';
 import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
 import OrderChatThread from '@/features/order/components/OrderChatThread';
+import {effectiveDownPaymentPercent, useDownPaymentQuery} from '@/lib/hooks/useDownPayment';
 import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
 import {Modal} from '@/features/owner/cashiers/components/Modal';
 import {Button} from '@/components/ui/button';
@@ -134,7 +135,8 @@ function balanceOf(order: OrderHistoryEntry) {
 }
 
 /** Cash the cashier must collect before completing the order, or null. */
-export function cashToCollect(order: OrderHistoryEntry): number | null {
+/** `livePercent`: the owner's current down payment % (unpaid orders follow it). */
+export function cashToCollect(order: OrderHistoryEntry, livePercent?: number): number | null {
   if (order.orderSource === 'in-store' || order.orderStatus === 'cancelled') {
     return null;
   }
@@ -144,8 +146,9 @@ export function cashToCollect(order: OrderHistoryEntry): number | null {
     return order.totalAmount;
   }
   if (order.paymentStatus === 'unpaid' && order.paymentChoice === 'in_store_down_payment') {
-    // Mirrors backend downPaymentAmount (50%, rounded up).
-    return Math.ceil(order.totalAmount * 0.5);
+    // Mirrors backend downPaymentAmount (the order's own %, rounded up).
+    const pct = effectiveDownPaymentPercent(order, livePercent ?? order.downPaymentPercent ?? 50);
+    return Math.ceil((order.totalAmount * pct) / 100);
   }
   if (
     order.paymentStatus === 'down_payment' &&
@@ -160,7 +163,7 @@ export function cashToCollect(order: OrderHistoryEntry): number | null {
  * The small chip shown on each card header. Online orders show where the
  * Xendit payment stands; counter orders are hidden on purpose.
  */
-export function paymentStatusChip(order: OrderHistoryEntry): {
+export function paymentStatusChip(order: OrderHistoryEntry, livePercent?: number): {
   label: string;
   className: string;
 } | null {
@@ -202,7 +205,7 @@ export function paymentStatusChip(order: OrderHistoryEntry): {
     return {
       label:
         order.paymentChoice === 'in_store_down_payment'
-          ? 'Paying 50% in store'
+          ? `Paying ${effectiveDownPaymentPercent(order, livePercent ?? order.downPaymentPercent ?? 50)}% in store`
           : 'Paying in store',
       className: amber
     };
@@ -706,6 +709,7 @@ function OrderCard({
   statusUpdating: boolean;
   cancelUpdating: boolean;
 }) {
+  const {percent: liveDownPaymentPercent} = useDownPaymentQuery();
   const messagesQuery = useAdminOrderMessagesQuery(order._id, expanded);
   const sendMutation = useSendCashierOrderMessageMutation();
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -791,7 +795,7 @@ function OrderCard({
               )}
               {!isWalkIn &&
                 (() => {
-                  const chip = paymentStatusChip(order);
+                  const chip = paymentStatusChip(order, liveDownPaymentPercent);
                   return chip ? (
                     <span
                       className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-bold ${chip.className}`}
@@ -1108,12 +1112,13 @@ export function OrderPaymentPanel({
   canRefund?: boolean;
 }) {
   const markPaid = useMarkOnlineOrderPaidMutation();
+  const {percent: livePercent} = useDownPaymentQuery();
 
   if (order.orderSource === 'in-store') return null;
   if (order.orderStatus === 'pending') return null;
 
-  const chip = paymentStatusChip(order);
-  const cashDue = cashToCollect(order);
+  const chip = paymentStatusChip(order, livePercent);
+  const cashDue = cashToCollect(order, livePercent);
   const amountPaid = order.amountPaid ?? 0;
   const fee = order.transactionFee ?? 0;
   const expiresAt =

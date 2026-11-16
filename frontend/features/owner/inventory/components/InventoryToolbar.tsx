@@ -84,7 +84,7 @@ export function InventoryDropdown({
           <div
             onClick={() => setOpen(false)}
             aria-hidden="true"
-            className="fixed inset-0 z-[55] overscroll-contain bg-black/30 sm:hidden"
+            className="ux-scrim fixed inset-0 z-[55] overscroll-contain bg-black/30 sm:hidden"
           />
           {/*
             Below `sm` this is a bottom sheet. `absolute right-0 w-56` extended
@@ -95,7 +95,7 @@ export function InventoryDropdown({
           <div
             role="dialog"
             aria-label={current}
-            className="fixed inset-x-3 bottom-24 z-[60] max-h-[70vh] overflow-y-auto overscroll-contain rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-1 shadow-xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-10 sm:z-30 sm:mt-1 sm:max-h-none sm:w-56 sm:overflow-y-visible sm:overscroll-auto"
+            className="ux-pop [--ux-origin:bottom_center] sm:[--ux-origin:top_right] fixed inset-x-3 bottom-24 z-[60] max-h-[70vh] overflow-y-auto overscroll-contain rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-1 shadow-xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-10 sm:z-30 sm:mt-1 sm:max-h-none sm:w-56 sm:overflow-y-visible sm:overscroll-auto"
           >
           <button
             type="button"

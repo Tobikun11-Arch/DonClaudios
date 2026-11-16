@@ -43,12 +43,16 @@ function StarRating({
           type="button"
           disabled={disabled}
           onClick={() => onChange(n)}
-          className="disabled:cursor-not-allowed"
+          className="ux-hit disabled:cursor-not-allowed"
           aria-label={`${n} star${n > 1 ? 's' : ''}`}
         >
+          {/* Squash on landing: each star that fills remounts and pops,
+              one after another, so the rating reads left to right. */}
           <Star
+            key={n <= value ? 'on' : 'off'}
+            style={n <= value ? {animationDelay: `${(n - 1) * 30}ms`} : undefined}
             className={`w-8 h-8 transition-colors ${
-              n <= value ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+              n <= value ? 'ux-squash fill-yellow-400 text-yellow-400' : 'text-gray-300'
             }`}
           />
         </button>

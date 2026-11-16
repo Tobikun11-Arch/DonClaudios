@@ -18,6 +18,7 @@ import {
   validatePreOrderFields
 } from '../config/preOrder';
 import {notificationService} from './notification.service';
+import {isEmbeddedPromoExpired, parsePromoDate} from '../config/promoDates';
 import {attachPreOrderAllowance} from './preOrder.service';
 
 /**
@@ -195,11 +196,20 @@ export const productService = {
    * carries `preOrderOrderedToday` / `preOrderRemainingAllowance` so the UI can
    * disable add-to-cart once their per-day limit is reached.
    */
-  async list(includePreOrder = true, customerId?: string) {
+  async list(
+    includePreOrder = true,
+    customerId?: string,
+    options: {hideExpiredPromos?: boolean} = {}
+  ) {
     const products = await productRepository.listPublic();
-    const visible = includePreOrder
-      ? products
-      : products.filter(p => p.isPreOrder !== true);
+    const now = new Date();
+    const visible = products.filter(
+      p =>
+        (includePreOrder || p.isPreOrder !== true) &&
+        // Customers and the counter never see a product whose promo ended.
+        // The owner still does, so they can extend or remove it.
+        !(options.hideExpiredPromos && isEmbeddedPromoExpired(p, now))
+    );
     return attachPreOrderAllowance(visible, customerId);
   },
 
@@ -268,10 +278,8 @@ export const productService = {
       promoType: data.promoType,
       discountRate: data.discountRate,
       discountAmount: data.discountAmount,
-      promoStartDate: data.promoStartDate
-        ? new Date(data.promoStartDate)
-        : undefined,
-      promoEndDate: data.promoEndDate ? new Date(data.promoEndDate) : undefined,
+      promoStartDate: parsePromoDate(data.promoStartDate, 'start'),
+      promoEndDate: parsePromoDate(data.promoEndDate, 'end'),
       isPromoActive: data.isPromoActive,
       // Spread last so the normalised values win over the raw string input.
       ...preOrder,
@@ -357,10 +365,10 @@ export const productService = {
     // and sending an explicit null clears it.
     const updateData: any = {...data};
     if (data.promoStartDate) {
-      updateData.promoStartDate = new Date(data.promoStartDate);
+      updateData.promoStartDate = parsePromoDate(data.promoStartDate, 'start');
     }
     if (data.promoEndDate) {
-      updateData.promoEndDate = new Date(data.promoEndDate);
+      updateData.promoEndDate = parsePromoDate(data.promoEndDate, 'end');
     }
     // Normalised pre-order values win over any raw input on the payload.
     updateData.isPreOrder = preOrder.isPreOrder;

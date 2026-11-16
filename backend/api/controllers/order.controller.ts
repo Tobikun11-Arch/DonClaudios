@@ -1582,7 +1582,7 @@ export const orderController = {
       }
 
       const cashAmount = inStoreDown
-        ? downPaymentAmount(order.totalAmount)
+        ? downPaymentAmount(order.totalAmount, await settingsService.downPaymentPercentFor(order))
         : Math.max(0, order.totalAmount - (order.amountPaid ?? 0));
       const paidAt = new Date();
       const result = await orderRepository.updatePaymentIfStatus(

@@ -6,6 +6,14 @@ import {requireAdmin, requireAuth} from '../middleware/auth';
 
 const router = Router();
 
+// Paginated owner inventory table (filter/sort/page done server-side).
+router.get(
+  '/products',
+  requireAuth,
+  requireAdmin,
+  stockMovementController.listProducts
+);
+
 router.patch(
   '/:productId/restock',
   requireAuth,

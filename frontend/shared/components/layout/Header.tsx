@@ -171,7 +171,7 @@ export default function Header() {
             onClick={handleCartClick}
             className="flex items-center gap-2 bg-[#3c5e45]"
           >
-            <span className="relative">
+            <span className="relative" data-cart-target>
               <ShoppingCart className="w-6 h-6" />
               {isOrderRoute && cartUniqueCount > 0 && (
                 <span className="absolute -right-2 -top-2 h-5 min-w-5 px-1 rounded-full bg-[#c30010] text-white text-[10px] font-bold grid place-items-center">
@@ -181,7 +181,7 @@ export default function Header() {
             </span>
             {isOrderRoute ? (
               cartUniqueCount > 0 ? (
-                <span className="text-sm font-semibold">
+                <span className="ux-num text-sm font-semibold">
                   ₱{cartSubtotal}.00
                 </span>
               ) : null
@@ -210,7 +210,7 @@ export default function Header() {
       </div>
 
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-gray-100 bg-white/95 backdrop-blur-sm px-4 sm:px-6 py-4 flex flex-col gap-4">
+        <div className="ux-pop [--ux-origin:top_center] lg:hidden border-t border-gray-100 bg-white/95 backdrop-blur-sm px-4 sm:px-6 py-4 flex flex-col gap-4">
           {navItems.map(item => (
             <a
               key={item.id}
@@ -241,7 +241,7 @@ export default function Header() {
               onClick={handleCartClick}
               className="flex items-center justify-center gap-2 bg-[#3c5e45] text-sm px-3 py-2"
             >
-              <span className="relative">
+              <span className="relative" data-cart-target>
                 <ShoppingCart className="w-6 h-6" />
                 {isOrderRoute && cartUniqueCount > 0 && (
                   <span className="absolute -right-2 -top-2 h-5 min-w-5 px-1 rounded-full bg-[#c30010] text-white text-[10px] font-bold grid place-items-center">

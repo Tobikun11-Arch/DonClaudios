@@ -1,5 +1,6 @@
 'use client';
 
+import {isProductPromoExpired} from '@/lib/utils/promoDates';
 import {Button} from '@/components/ui/button';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import type {Product} from '@/lib/types/product';
@@ -90,7 +91,8 @@ export default function PromoSection({
       (productsQuery.data?.products ?? []).filter(
         product =>
           product.category.toLowerCase() === 'promo' &&
-          product.isPromoActive !== false
+          product.isPromoActive !== false &&
+          !isProductPromoExpired(product)
       ),
     [productsQuery.data]
   );

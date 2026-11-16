@@ -103,14 +103,14 @@ export function StaffCancelDialog({
 
   return (
     <div className="fixed inset-0 z-[130] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true">
-      <button type="button" aria-label="Close" className="absolute inset-0 bg-black/40" onClick={() => !cancel.isPending && onClose()} />
-      <div className="relative w-full max-w-md rounded-t-2xl bg-white p-5 shadow-xl dark:bg-gray-900 sm:rounded-2xl">
+      <button type="button" aria-label="Close" className="ux-scrim absolute inset-0 bg-black/40" onClick={() => !cancel.isPending && onClose()} />
+      <div className="ux-modal ux-modal-sheet relative w-full max-w-md rounded-t-2xl bg-white p-5 shadow-xl dark:bg-gray-900 sm:rounded-2xl">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-base font-bold text-gray-900 dark:text-gray-100">Cancel order #{order._id.slice(-6).toUpperCase()}</p>
             <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">The refund is calculated from the refund policy.</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
+          <button type="button" onClick={onClose} aria-label="Close" className="ux-hit rounded-full p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
             <X className="h-4 w-4" />
           </button>
         </div>

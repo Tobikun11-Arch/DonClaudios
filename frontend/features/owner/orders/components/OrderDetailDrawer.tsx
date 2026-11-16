@@ -103,13 +103,13 @@ export function OrderDetailDrawer({
           type="button"
           aria-label="Close order details"
           onClick={onClose}
-          className="absolute inset-0 bg-black/40"
+          className="ux-scrim absolute inset-0 bg-black/40"
         />
         <aside
           role="dialog"
           aria-modal="true"
           aria-label="Loading order"
-          className="relative flex h-full w-full max-w-md flex-col bg-white dark:bg-gray-900 shadow-2xl"
+          className="ux-drawer-right relative flex h-full w-full max-w-md flex-col bg-white dark:bg-gray-900 shadow-2xl"
         >
           <header className="flex items-start justify-between gap-3 border-b border-[#E5E7EB] dark:border-gray-700 px-5 py-4">
             <p className="text-[0.7rem] font-semibold uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
@@ -119,7 +119,7 @@ export function OrderDetailDrawer({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="rounded-full p-1.5 text-[#6B7280] dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="ux-hit rounded-full p-1.5 text-[#6B7280] dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               <X className="h-4 w-4" />
             </button>
@@ -140,13 +140,13 @@ export function OrderDetailDrawer({
         type="button"
         aria-label="Close order details"
         onClick={onClose}
-        className="absolute inset-0 bg-black/40"
+        className="ux-scrim absolute inset-0 bg-black/40"
       />
       <aside
         role="dialog"
         aria-modal="true"
         aria-label={`Order ${order._id}`}
-        className="relative flex h-full w-full max-w-md flex-col overflow-y-auto bg-white dark:bg-gray-900 shadow-2xl"
+        className="ux-drawer-right relative flex h-full w-full max-w-md flex-col overflow-y-auto bg-white dark:bg-gray-900 shadow-2xl"
       >
         <header className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-[#E5E7EB] dark:border-gray-700 bg-white dark:bg-gray-900 px-5 py-4">
           <div className="min-w-0">
@@ -161,7 +161,7 @@ export function OrderDetailDrawer({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="rounded-full p-1.5 text-[#6B7280] dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="ux-hit rounded-full p-1.5 text-[#6B7280] dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <X className="h-4 w-4" />
           </button>

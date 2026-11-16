@@ -114,7 +114,7 @@ export function ReportRangePicker({
           <div
             onClick={() => setOpen(false)}
             aria-hidden="true"
-            className="fixed inset-0 z-[55] overscroll-contain bg-black/30 sm:hidden"
+            className="ux-scrim fixed inset-0 z-[55] overscroll-contain bg-black/30 sm:hidden"
           />
           {/*
             Below `sm` this is a bottom sheet rather than a popover. The old
@@ -126,7 +126,7 @@ export function ReportRangePicker({
           <div
             role="dialog"
             aria-label="Report date range"
-            className="fixed inset-x-3 bottom-24 z-[60] max-h-[70vh] overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-12 sm:mt-1 sm:max-h-none sm:w-80 sm:overflow-y-visible sm:overscroll-auto"
+            className="ux-pop [--ux-origin:bottom_center] sm:[--ux-origin:top_right] fixed inset-x-3 bottom-24 z-[60] max-h-[70vh] overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-xl sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-12 sm:mt-1 sm:max-h-none sm:w-80 sm:overflow-y-visible sm:overscroll-auto"
           >
             <p className="mb-2 text-[0.7rem] font-semibold uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
               Quick range

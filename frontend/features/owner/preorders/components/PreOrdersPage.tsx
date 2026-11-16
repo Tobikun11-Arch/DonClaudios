@@ -45,10 +45,10 @@ function Dialog({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-100 flex items-end justify-center bg-black/40 sm:items-center sm:p-6" onClick={onClose}>
+    <div className="ux-scrim fixed inset-0 z-100 flex items-end justify-center bg-black/40 sm:items-center sm:p-6" onClick={onClose}>
       <div
         onClick={e => e.stopPropagation()}
-        className="w-full rounded-t-2xl border border-gray-100 bg-white p-5 shadow-xl dark:border-gray-700 dark:bg-gray-900 sm:max-w-md sm:rounded-2xl"
+        className="ux-modal ux-modal-sheet w-full rounded-t-2xl border border-gray-100 bg-white p-5 shadow-xl dark:border-gray-700 dark:bg-gray-900 sm:max-w-md sm:rounded-2xl"
       >
         <p className="mb-3 text-base font-bold text-gray-900 dark:text-gray-100">{title}</p>
         {children}

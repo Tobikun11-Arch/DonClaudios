@@ -216,7 +216,7 @@ export default function CustomerOnboardingTour() {
       {/* Dimmed backdrop with a "hole" around the highlighted element. */}
       {rect ? (
         <div
-          className="pointer-events-none absolute rounded-xl ring-4 ring-[#7ed4a0] transition-all duration-300 ease-out"
+          className="pointer-events-none absolute rounded-xl ring-4 ring-[#7ed4a0] transition-[left,top,width,height] duration-300 ease-[cubic-bezier(0.77,0,0.175,1)]"
           style={{
             left: rect.left - PAD,
             top: rect.top - PAD,
@@ -232,7 +232,7 @@ export default function CustomerOnboardingTour() {
       <div className="absolute inset-0" />
 
       <div
-        className="absolute rounded-2xl bg-white p-4 shadow-2xl transition-all duration-300 ease-out dark:bg-gray-900 dark:ring-1 dark:ring-gray-700"
+        className="ux-pop [--ux-origin:center] absolute rounded-2xl bg-white p-4 shadow-2xl transition-[left,top,bottom,width] duration-300 ease-[cubic-bezier(0.77,0,0.175,1)] dark:bg-gray-900 dark:ring-1 dark:ring-gray-700"
         style={cardStyle}
       >
         <div className="flex items-start justify-between gap-2">
@@ -245,6 +245,13 @@ export default function CustomerOnboardingTour() {
           >
             Skip <X size={12} />
           </button>
+        </div>
+        {/* Goal gradient: progress fills from the left as the tour advances. */}
+        <div className="mt-2 h-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800" aria-hidden="true">
+          <div
+            className="ux-progress h-full w-full origin-left bg-[#7ed4a0]"
+            style={{transform: `scaleX(${(index + 1) / STEPS.length})`}}
+          />
         </div>
 
         <h2

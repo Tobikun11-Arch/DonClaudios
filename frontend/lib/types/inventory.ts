@@ -35,3 +35,20 @@ export type AdjustResponse = {
 export type ListMovementsResponse = {
   movements: StockMovement[];
 };
+
+export type InventoryStatusFilter = 'all' | 'in_stock' | 'low_stock' | 'out_of_stock';
+export type InventorySort = 'attention' | 'name_asc' | 'stock_asc' | 'stock_desc' | 'updated';
+
+export type InventoryProductsParams = {
+  page: number;
+  limit: number;
+  search?: string;
+  status?: InventoryStatusFilter;
+  category?: string;
+  sort?: InventorySort;
+};
+
+export type InventoryProductsResponse = {
+  products: Product[];
+  pagination: {page: number; limit: number; total: number; totalPages: number};
+};

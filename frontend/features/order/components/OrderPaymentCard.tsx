@@ -35,7 +35,7 @@ import PaymentChannelTiles, {type PayOption} from './PaymentChannelTiles';
  * XENDIT PAYMENT card (customer side).
  *
  * Appears once the cashier confirms the order. The customer picks full
- * payment, a 50% down payment (pre-order-only carts) or cash on pickup
+ * payment, a down payment (owner-set %, pre-order-only carts) or cash on pickup
  * (pickup only), then pays online or In-store (cash at the counter before a
  * deadline, no service fee; see lib/payment/inStorePayment). Online options
  * show the per-channel service fee, then
@@ -550,7 +550,7 @@ function PayForm({
           <PlanOption
             active={plan === 'down_payment'}
             onClick={() => setPlan('down_payment')}
-            title={`Pay 50% down payment${where}`}
+            title={`Pay ${summary.downPaymentPercent ?? 50}% down payment${where}`}
             subtitle={`${peso(summary.downPaymentAmount)} now, ${peso(summary.totalAmount - summary.downPaymentAmount)} later`}
             disabled={!canPayPlan}
           />
@@ -859,7 +859,7 @@ function InStoreNotice({
         <Store className="mt-0.5 h-4 w-4 shrink-0" />
         <span>
           {preview ? 'Pay' : 'Please pay'} {peso(amount)}
-          {down ? ' (50% down payment)' : ''} in cash at the store counter by{' '}
+          {down ? ` (${summary.downPaymentPercent ?? 50}% down payment)` : ''} in cash at the store counter by{' '}
           <span className="whitespace-nowrap">{formatManilaDateTime(info.dueAt)}</span>{' '}
           (Philippine time).
         </span>

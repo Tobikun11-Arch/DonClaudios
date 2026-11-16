@@ -5,6 +5,7 @@ import {useRouter} from 'next/navigation';
 import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
 import {getDashboardPath} from '@/lib/auth/redirects';
 import Loading from '../loading';
+import {UxMotionScope} from '@/shared/motion/UxMotionScope';
 
 export default function CustomerLayout({
   children
@@ -31,5 +32,10 @@ export default function CustomerLayout({
 
   if (isLoading || isRedirecting) return <Loading />;
 
-  return <>{children}</>;
+  return (
+    <>
+      <UxMotionScope />
+      {children}
+    </>
+  );
 }

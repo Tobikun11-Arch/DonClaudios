@@ -33,6 +33,7 @@ import {transactionRepository} from '../repositories/transaction.repository';
 import {cashierRepository} from '../repositories/cashier.repository';
 import {adminRepository} from '../repositories/admin.repository';
 import {notificationService} from './notification.service';
+import {settingsService} from './settings.service';
 import {pushService} from './push.service';
 import {stockMovementService} from './stockMovement.service';
 import {preOrderEventService} from './preOrderEvent.service';
@@ -373,6 +374,8 @@ async function buildRefundPlan(order: OrderDocument, policy: RefundPolicyCase) {
   const paid = await paidOnlinePayments(String(order._id));
   return computeRefundPlan({
     policy,
+    // A late cancellation keeps this order's down payment share.
+    retainedPercent: await settingsService.downPaymentPercentFor(order),
     totalAmount: order.totalAmount,
     amountPaid: order.amountPaid ?? 0,
     onlinePayments: paid.map(p => ({
@@ -431,7 +434,8 @@ export const paymentService = {
     const total = order.totalAmount;
     const amountPaid = order.amountPaid ?? 0;
     const balanceDue = Math.max(0, total - amountPaid);
-    const dp = downPaymentAmount(total);
+    const dpPercent = await settingsService.downPaymentPercentFor(order);
+    const dp = downPaymentAmount(total, dpPercent);
     const pending = payments.find(p => p.status === 'PENDING') ?? null;
     const inStore = await inStoreInfo(order);
 
@@ -481,6 +485,7 @@ export const paymentService = {
           : null,
       downPaymentAllowed: allowsDownPayment,
       downPaymentAmount: dp,
+      downPaymentPercent: dpPercent,
       channels: PAYMENT_CHANNELS.map(id => ({id, label: PAYMENT_FEES[id].label})),
       quotes: {
         full: quotesFor(total),
@@ -558,7 +563,7 @@ export const paymentService = {
             'Orders that include regular products require full payment. Down payments only apply to pre-order products.'
           );
         }
-        amount = downPaymentAmount(total);
+        amount = downPaymentAmount(total, await settingsService.downPaymentPercentFor(order));
       } else {
         amount = total;
       }
@@ -716,7 +721,10 @@ export const paymentService = {
       // Re-choosing never extends the deadline: it is fixed from confirmation.
       paymentExpiresAt: info.dueAt
     });
-    const amount = kind === 'down_payment' ? downPaymentAmount(order.totalAmount) : order.totalAmount;
+    const amount =
+      kind === 'down_payment'
+        ? downPaymentAmount(order.totalAmount, await settingsService.downPaymentPercentFor(order))
+        : order.totalAmount;
     const due = info.dueAt.toLocaleString('en-PH', {
       timeZone: 'Asia/Manila',
       month: 'short',

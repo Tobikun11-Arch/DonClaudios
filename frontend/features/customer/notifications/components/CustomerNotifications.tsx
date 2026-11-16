@@ -89,7 +89,7 @@ export default function CustomerNotifications() {
           You have no notifications yet.
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="ux-stagger space-y-4">
           {notifications.map(notification => (
             <div
               key={notification._id}

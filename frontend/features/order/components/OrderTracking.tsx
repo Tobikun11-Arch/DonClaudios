@@ -24,11 +24,14 @@ import {
   type OrderHistoryItem
 } from '@/lib/api/orderApi';
 import {toast} from 'sonner';
+import {useEscapeKey} from '@/shared/motion/useEscapeKey';
 import CustomerOrderFollowUp from '@/features/order/components/CustomerOrderFollowUp';
 import {courierLabel, customerStep, fulfillmentKind, fulfillmentLabel, statusFlow} from '@/lib/orders/orderFlow';
 import OrderPaymentCard from '@/features/order/components/OrderPaymentCard';
 import {useCancelQuoteQuery} from '@/lib/hooks/orders/useOrderCancellation';
 import {refundPolicySummary} from '@/lib/payment/refundPolicy';
+import {PreOrderNextSteps} from '@/features/preorders/components/PreOrderNextSteps';
+import {effectiveDownPaymentPercent, useDownPaymentQuery} from '@/lib/hooks/useDownPayment';
 import {RefundBreakdown} from '@/features/owner/orders/components/OrderCancellation';
 import {
   formatMinutes,
@@ -68,7 +71,7 @@ function cutoffDaysOf(order: OrderHistoryEntry) {
   const po = order.preOrder;
   if (!po) return 14;
   return Math.round(
-    (new Date(po.pickupAt).getTime() - new Date(po.cancelDeadline).getTime()) / 86400000
+    (new Date(po.pickupDate).getTime() - new Date(po.cancelDeadline).getTime()) / 86400000
   );
 }
 
@@ -77,6 +80,7 @@ function manilaDate(iso: string, opts: Intl.DateTimeFormatOptions) {
 }
 
 function PreOrderPickupCard({order}: {order: OrderHistoryEntry}) {
+  const {percent: livePercent} = useDownPaymentQuery();
   const po = order.preOrder;
   if (!po) return null;
   const lalamove = po.receiveMethod === 'lalamove';
@@ -109,7 +113,7 @@ function PreOrderPickupCard({order}: {order: OrderHistoryEntry}) {
             <Store className="mt-0.5 h-4 w-4 shrink-0 text-[#2d4a35] dark:text-[#7ed4a0]" />
           )}
           {lalamove
-            ? 'Lalamove: please book your own rider to collect at the store within your time slot.'
+            ? 'Courier: book your own rider (Lalamove, Grab Express, etc.) to collect at the store within your time slot.'
             : 'Self pick-up at the store within your time slot.'}
         </p>
         {open ? (
@@ -122,9 +126,23 @@ function PreOrderPickupCard({order}: {order: OrderHistoryEntry}) {
                 : !isLateCancel(order)
                   ? `You can cancel with a full refund until ${manilaDate(new Date(new Date(po.cancelDeadline).getTime() - 1).toISOString(), {month: 'long', day: 'numeric'})}.`
                   : canCancel
-                    ? 'The free cancellation period has ended. You can still ask the store to cancel; the 50% down payment is kept if approved.'
+                    ? 'The free cancellation period has ended. You can still ask the store to cancel; the down payment is kept if approved.'
                     : 'The cancellation period for this pre-order has ended.'}
           </p>
+        ) : null}
+        {order.orderStatus === 'pending' ? (
+          // Still waiting for the store's call: show when to expect it and
+          // when payment is due, so the customer is not left guessing.
+          <PreOrderNextSteps
+            className="mt-3"
+            compact
+            cancelDeadline={po.cancelDeadline}
+            cutoffDays={cutoffDaysOf(order)}
+            pickupLabel={`${manilaDate(po.pickupAt, {weekday: 'long', month: 'long', day: 'numeric'})} · ${po.slotLabel}`}
+            downPaymentPercent={effectiveDownPaymentPercent(order, livePercent)}
+            total={order.totalAmount}
+            placedAt={order.createdAt}
+          />
         ) : null}
       </div>
     </div>
@@ -231,7 +249,7 @@ function paymentDisplay(order: OrderHistoryEntry) {
 function typeDisplay(order: OrderHistoryEntry) {
   if (order.isPreOrder && order.preOrder) {
     return order.preOrder.receiveMethod === 'lalamove'
-      ? 'Pre-order · Lalamove (you book)'
+      ? 'Pre-order · Courier (you book)'
       : 'Pre-order · Self pick-up';
   }
   if (order.orderType === 'delivery') return fulfillmentLabel(order);
@@ -263,6 +281,7 @@ export default function OrderTracking({
   /** Guests: show the copyable tracking number so they can track later. */
   showTrackingNumber?: boolean;
 }) {
+  const {percent: liveDownPaymentPercent} = useDownPaymentQuery();
   const [mounted, setMounted] = useState(false);
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
@@ -299,8 +318,8 @@ export default function OrderTracking({
       <div
         className={
           embedded
-            ? 'w-full max-w-3xl mx-auto space-y-4'
-            : 'w-full max-w-3xl mx-auto px-4 py-10 space-y-6'
+            ? 'ux-stagger-section w-full max-w-3xl mx-auto space-y-4'
+            : 'ux-stagger-section w-full max-w-3xl mx-auto px-4 py-10 space-y-6'
         }
       >
         {query.isLoading && !order ? (
@@ -379,6 +398,7 @@ export default function OrderTracking({
                 preOrder={!!order.isPreOrder && !!order.preOrder}
                 late={isLateCancel(order)}
                 cutoffDays={cutoffDaysOf(order)}
+                downPaymentPercent={effectiveDownPaymentPercent(order, liveDownPaymentPercent)}
                 hint={
                   order.isPreOrder && order.preOrder
                     ? isLateCancel(order)
@@ -473,7 +493,14 @@ function TrackingNumberBar({orderId}: {orderId: string}) {
         <p className="text-[11px] font-semibold uppercase tracking-wide text-[#3c5e45]">
           Tracking number · save it to check this order later
         </p>
-        <p className="mt-0.5 break-all font-mono text-sm font-bold text-gray-900 select-all">{orderId}</p>
+        <p className="mt-0.5 break-all font-mono text-sm font-bold text-gray-900 select-all">
+          {/* Miller's law: read in chunks of 4. Margins, not spaces, so a copy is still the exact ID. */}
+          {(orderId.match(/.{1,4}/g) ?? [orderId]).map((chunk, i) => (
+            <span key={i} className="mr-1.5 last:mr-0">
+              {chunk}
+            </span>
+          ))}
+        </p>
       </div>
       <div className="flex shrink-0 gap-2">
         <button
@@ -587,7 +614,7 @@ function StatusTrackerCard({order}: {order: OrderHistoryEntry}) {
                 <div
                   className={
                     isCurrent
-                      ? 'mt-1 h-5 w-5 rounded-full bg-[#3c5e45] ring-4 ring-[#3c5e45]/20'
+                      ? 'ux-windup ux-ring mt-1 h-5 w-5 rounded-full bg-[#3c5e45] text-[#3c5e45] ring-4 ring-[#3c5e45]/20'
                       : isPast
                         ? 'mt-1.5 h-4 w-4 rounded-full bg-gray-400'
                         : 'mt-1.5 h-4 w-4 rounded-full border-2 border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900'
@@ -802,7 +829,8 @@ function CancelOrderButton({
   hint = 'You can only cancel while your order is still pending.',
   preOrder = false,
   late = false,
-  cutoffDays = 14
+  cutoffDays = 14,
+  downPaymentPercent
 }: {
   orderId: string;
   phone?: string;
@@ -811,6 +839,7 @@ function CancelOrderButton({
   /** After the cut-off: the button sends a request instead of cancelling. */
   late?: boolean;
   cutoffDays?: number;
+  downPaymentPercent?: number;
 }) {
   const [open, setOpen] = useState(false);
   const quote = useCancelQuoteQuery(orderId, {phoneNumber: phone, enabled: open && preOrder});
@@ -818,6 +847,7 @@ function CancelOrderButton({
   const [otherText, setOtherText] = useState('');
   const cancelMutation = useCancelTrackedOrderMutation(orderId, phone);
   const isPending = cancelMutation.isPending;
+  useEscapeKey(open && !isPending, () => setOpen(false));
   const error = cancelMutation.error as {
     message?: string;
   } | null;
@@ -851,7 +881,7 @@ function CancelOrderButton({
       {open ? (
         <div className="fixed inset-0 z-100" role="dialog" aria-modal="true">
           <div
-            className="absolute inset-0 bg-black/40"
+            className="ux-scrim absolute inset-0 bg-black/40"
             aria-hidden="true"
             onClick={() => {
               if (!isPending) setOpen(false);
@@ -860,7 +890,7 @@ function CancelOrderButton({
           <div className="absolute inset-0 flex items-end sm:items-center justify-center p-0 sm:p-6">
             <div
               onClick={e => e.stopPropagation()}
-              className="w-full sm:max-w-md bg-white shadow-xl border border-gray-100 rounded-t-2xl sm:rounded-2xl p-6 dark:bg-gray-900 dark:border-gray-700"
+              className="ux-modal ux-modal-sheet w-full sm:max-w-md bg-white shadow-xl border border-gray-100 rounded-t-2xl sm:rounded-2xl p-6 dark:bg-gray-900 dark:border-gray-700"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -876,7 +906,7 @@ function CancelOrderButton({
                 <button
                   type="button"
                   aria-label="Close"
-                  className="shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="ux-hit shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                   onClick={() => {
                     if (!isPending) setOpen(false);
                   }}
@@ -927,7 +957,7 @@ function CancelOrderButton({
                     <p className="text-gray-500">Refund preview unavailable.</p>
                   )}
                   <ul className="mt-2 list-disc space-y-0.5 pl-4 text-gray-500 dark:text-gray-400">
-                    {refundPolicySummary(cutoffDays).map(line => (
+                    {refundPolicySummary(cutoffDays, downPaymentPercent).map(line => (
                       <li key={line}>{line}</li>
                     ))}
                   </ul>

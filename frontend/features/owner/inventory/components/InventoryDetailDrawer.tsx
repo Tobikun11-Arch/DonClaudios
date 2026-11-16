@@ -126,14 +126,14 @@ export function InventoryDetailDrawer({
 
   return (
     <div className="fixed inset-0 z-[100]" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/40" aria-hidden="true" />
+      <div className="ux-scrim absolute inset-0 bg-black/40" aria-hidden="true" />
       <div className="absolute inset-0 flex justify-end">
         <div
           onClick={e => e.stopPropagation()}
           className={cn(
             'flex h-full w-full flex-col bg-white dark:bg-gray-900 shadow-2xl border-l border-gray-100 dark:border-gray-700',
             'sm:w-[460px]',
-            'drawer-in-right'
+            'drawer-in-right ux-drawer-right'
           )}
         >
           {mode === 'activity' ? (

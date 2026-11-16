@@ -2,7 +2,7 @@ import {Router} from 'express';
 import {settingsController} from '../controllers/settings.controller';
 import {requireAdmin, requireAuth} from '../middleware/auth';
 import {validate} from '../middleware/validation';
-import {dashboardThemeDto, freeDeliveryDto, rewardsEarnDto} from '../dtos/settings.dto';
+import {dashboardThemeDto, downPaymentDto, freeDeliveryDto, rewardsEarnDto} from '../dtos/settings.dto';
 
 const router = Router();
 
@@ -32,6 +32,18 @@ router.put(
   requireAdmin,
   validate(rewardsEarnDto),
   settingsController.updateRewardsEarn
+);
+
+// Pre-order down payment percent. Public read so checkout and pre-order pages
+// can show the live share; only the owner can change it.
+router.get('/down-payment', settingsController.getDownPayment);
+
+router.put(
+  '/down-payment',
+  requireAuth,
+  requireAdmin,
+  validate(downPaymentDto),
+  settingsController.updateDownPayment
 );
 
 // Owner, cashier and customer dashboard colors. Read through GET /settings (dashboardTheme),

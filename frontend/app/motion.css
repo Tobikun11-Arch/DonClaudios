@@ -1,0 +1,393 @@
+/* ============================================================================
+   UX motion layer
+   ----------------------------------------------------------------------------
+   Visual only. Nothing here changes what a button does or where a flow goes.
+
+   Scope: every rule is gated on `:root[data-ux-motion]`, which <UxMotionScope />
+   sets on <html> for the guest order area (/order, /checkout, /track,
+   /order-confirmation, /order-history), the customer dashboard and the owner
+   dashboard. The homepage, the cashier dashboard and the auth pages never get
+   the attribute, so they look and move exactly as before.
+
+   One set of named numbers; every animation below uses them.
+   ========================================================================= */
+
+:root {
+  /* Curves */
+  --ux-ease-out: cubic-bezier(0.32, 0.72, 0, 1);     /* appearing */
+  --ux-ease-in: cubic-bezier(0.55, 0, 1, 0.45);      /* leaving */
+  --ux-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1); /* moving while on screen */
+  --ux-ease-hover: ease;                             /* hover and color */
+
+  /* Durations */
+  --ux-dur-press: 150ms;   /* press, hover, color */
+  --ux-dur-pop: 200ms;     /* dropdown, popover */
+  --ux-dur-modal: 260ms;   /* modal, drawer, sheet, toast */
+  --ux-dur-move: 250ms;    /* resizing in place, progress */
+  --ux-dur-travel: 380ms;  /* something flying to a new place */
+
+  /* Stagger */
+  --ux-stagger-copy: 40ms;    /* copies of one element (cards, rows) */
+  --ux-stagger-section: 90ms; /* distinct pieces of a section */
+}
+
+/* ---------------------------------------------------------------------------
+   Keyframes (pose to pose: each one is a set of explicit poses)
+   ------------------------------------------------------------------------ */
+
+@keyframes ux-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes ux-pop-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes ux-sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes ux-drawer-right {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes ux-rise-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Follow through: a child settles a beat after its container stops,
+   overshooting by under 4% of the travel. */
+@keyframes ux-settle {
+  0%   { opacity: 0; transform: translateY(6px); }
+  70%  { opacity: 1; transform: translateY(-0.5px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Squash & stretch on landing: volume kept (scaleX x scaleY ~ 1),
+   15% at most, recovered within ~200ms. */
+@keyframes ux-squash {
+  0%   { transform: scale(1, 1); }
+  30%  { transform: scale(1.15, 0.87); }
+  60%  { transform: scale(0.95, 1.05); }
+  100% { transform: scale(1, 1); }
+}
+
+/* Exaggerated feedback for a failed attempt: translateX 0,-10,10,-6,6,-3,0. */
+@keyframes ux-shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-10px); }
+  30% { transform: translateX(10px); }
+  45% { transform: translateX(-6px); }
+  60% { transform: translateX(6px); }
+  80% { transform: translateX(-3px); }
+}
+
+/* Secondary action: a ring that scales 1 -> 1.4 while fading, behind a
+   primary success mark. Moves at most a third as much as the primary. */
+@keyframes ux-ring-out {
+  from { opacity: 0.55; transform: scale(1); }
+  to   { opacity: 0; transform: scale(1.4); }
+}
+
+/* Anticipation wind-up for a rare moment: dip to 0.95, then go. */
+@keyframes ux-windup-pop {
+  0%   { opacity: 0; transform: scale(0.6); }
+  25%  { opacity: 1; transform: scale(0.55); }  /* wind-up */
+  75%  { transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes ux-appear-late {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ---------------------------------------------------------------------------
+   Anticipation (everyday form): press feedback
+   Buttons scale to 0.96 on press and glide back on release. Wide buttons
+   (full width) and anything carrying an image darken instead of scaling,
+   because 4% of a wide surface is a jump. Opt out with data-no-press.
+   ------------------------------------------------------------------------ */
+
+:root[data-ux-motion] :is(button, [role="button"], a[data-slot="button"]):not(:disabled):not([aria-disabled="true"]):not([data-no-press]):not([class*="inset-0"]):not([role="tab"]):not([role="menuitem"]):not([role="option"]):not([role="switch"]) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Elements styled with transition-colors: add the transform properties to the
+   list so the press glides, keep their own duration and curve. */
+:root[data-ux-motion] :is(button, [role="button"], a[data-slot="button"])[class*="transition-colors"]:not([data-no-press]) {
+  transition-property: color, background-color, border-color, outline-color,
+    text-decoration-color, fill, stroke, box-shadow, opacity, filter, transform,
+    translate, scale;
+}
+
+/* Elements with no transition at all: give them the press transition only. */
+:root[data-ux-motion] :is(button, [role="button"], a[data-slot="button"]):not([class*="transition"]):not([style*="transition"]):not([data-no-press]) {
+  transition: scale var(--ux-dur-press) var(--ux-ease-out),
+    filter var(--ux-dur-press) var(--ux-ease-out),
+    background-color var(--ux-dur-press) var(--ux-ease-hover),
+    color var(--ux-dur-press) var(--ux-ease-hover);
+}
+
+:root[data-ux-motion] :is(button, [role="button"], a[data-slot="button"]):not(:disabled):not([aria-disabled="true"]):not([data-no-press]):not([class*="inset-0"]):not([role="tab"]):not([role="menuitem"]):not([role="option"]):not([role="switch"]):not([class*="w-full"]):not(:has(img)):active {
+  scale: 0.96;
+}
+
+:root[data-ux-motion] :is(button, [role="button"], a[data-slot="button"]):is([class*="w-full"], :has(img)):not(:disabled):not([data-no-press]):active {
+  filter: brightness(0.93);
+}
+
+/* ---------------------------------------------------------------------------
+   Doherty threshold: a spinner inside a button waits 300ms before it shows,
+   so fast responses never flash it. The button is disabled at once, so the
+   press still registers on the same frame.
+   ------------------------------------------------------------------------ */
+
+:root[data-ux-motion] button .animate-spin {
+  animation: spin 1s linear infinite, ux-appear-late 120ms var(--ux-ease-out) 300ms both;
+}
+
+/* ---------------------------------------------------------------------------
+   Bigger hit areas: the clickable zone grows to 44px without changing what
+   people see. Apply .ux-hit to small icon buttons.
+   ------------------------------------------------------------------------ */
+
+:root[data-ux-motion] .ux-hit:not([class*="absolute"]):not([class*="fixed"]):not([class*="sticky"]) {
+  position: relative;
+}
+
+:root[data-ux-motion] .ux-hit::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  translate: -50% -50%;
+}
+
+/* ---------------------------------------------------------------------------
+   Overlays: scrim, modal, drawer, sheet, popover (slow in & slow out)
+   Entrances only; paired elements share one duration and one curve.
+   ------------------------------------------------------------------------ */
+
+:root[data-ux-motion] .ux-scrim {
+  animation: ux-fade-in var(--ux-dur-modal) var(--ux-ease-out) backwards;
+}
+
+/* Modal: grows from 0.95 on desktop, rises as a sheet on phones. */
+:root[data-ux-motion] .ux-modal {
+  animation: ux-pop-in var(--ux-dur-modal) var(--ux-ease-out) backwards;
+}
+
+@media (max-width: 639px) {
+  :root[data-ux-motion] .ux-modal.ux-modal-sheet {
+    animation: ux-sheet-up var(--ux-dur-modal) var(--ux-ease-out) backwards;
+  }
+}
+
+:root[data-ux-motion] .ux-drawer-right {
+  animation: ux-drawer-right var(--ux-dur-modal) var(--ux-ease-out) backwards;
+}
+
+/* The cart: a bottom sheet on phones, a right drawer from md up. */
+:root[data-ux-motion] .ux-drawer {
+  animation: ux-sheet-up var(--ux-dur-modal) var(--ux-ease-out) backwards;
+}
+
+@media (min-width: 768px) {
+  :root[data-ux-motion] .ux-drawer {
+    animation-name: ux-drawer-right;
+  }
+}
+
+/* Dropdowns and popovers scale from their trigger (top-right by default). */
+:root[data-ux-motion] .ux-pop {
+  transform-origin: var(--ux-origin, top right);
+  animation: ux-pop-in var(--ux-dur-pop) var(--ux-ease-out) backwards;
+}
+
+/* Follow through: non-text parts inside a container that just arrived. */
+:root[data-ux-motion] .ux-follow {
+  animation: ux-settle 320ms var(--ux-ease-out) 40ms backwards;
+}
+
+/* ---------------------------------------------------------------------------
+   Staging: entrances and stagger
+   Copies of one element enter 40ms apart, only the first six; the rest
+   arrive with the sixth. Sections enter piece by piece, 90ms apart.
+   ------------------------------------------------------------------------ */
+
+:root[data-ux-motion] .ux-enter {
+  animation: ux-rise-in 300ms var(--ux-ease-out) backwards;
+}
+
+:root[data-ux-motion] .ux-stagger > * {
+  animation: ux-rise-in 300ms var(--ux-ease-out) backwards;
+  animation-delay: calc(var(--ux-stagger-copy) * 5);
+}
+:root[data-ux-motion] .ux-stagger > :nth-child(1) { animation-delay: 0ms; }
+:root[data-ux-motion] .ux-stagger > :nth-child(2) { animation-delay: calc(var(--ux-stagger-copy) * 1); }
+:root[data-ux-motion] .ux-stagger > :nth-child(3) { animation-delay: calc(var(--ux-stagger-copy) * 2); }
+:root[data-ux-motion] .ux-stagger > :nth-child(4) { animation-delay: calc(var(--ux-stagger-copy) * 3); }
+:root[data-ux-motion] .ux-stagger > :nth-child(5) { animation-delay: calc(var(--ux-stagger-copy) * 4); }
+
+:root[data-ux-motion] .ux-stagger-section > * {
+  animation: ux-rise-in 320ms var(--ux-ease-out) backwards;
+  animation-delay: calc(var(--ux-stagger-section) * 3);
+}
+:root[data-ux-motion] .ux-stagger-section > :nth-child(1) { animation-delay: 0ms; }
+:root[data-ux-motion] .ux-stagger-section > :nth-child(2) { animation-delay: calc(var(--ux-stagger-section) * 1); }
+:root[data-ux-motion] .ux-stagger-section > :nth-child(3) { animation-delay: calc(var(--ux-stagger-section) * 2); }
+
+/* ---------------------------------------------------------------------------
+   Hover lift for cards: pointer devices only, so a tap never fires it.
+   ------------------------------------------------------------------------ */
+
+@media (hover: hover) and (pointer: fine) {
+  :root[data-ux-motion] .ux-lift {
+    transition: translate var(--ux-dur-modal) var(--ux-ease-out),
+      box-shadow var(--ux-dur-modal) var(--ux-ease-out);
+  }
+  :root[data-ux-motion] .ux-lift:hover {
+    translate: 0 -2px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Exaggerated feedback & squash: one-shot classes
+   ------------------------------------------------------------------------ */
+
+:root[data-ux-motion] .ux-shake {
+  animation: ux-shake 360ms var(--ux-ease-out) backwards;
+}
+
+:root[data-ux-motion] .ux-squash {
+  animation: ux-squash 220ms var(--ux-ease-out) backwards;
+}
+
+/* Rare moment: wind up, then pop (order placed, reward unlocked). */
+:root[data-ux-motion] .ux-windup {
+  animation: ux-windup-pop 480ms var(--ux-ease-out) backwards;
+}
+
+/* Secondary action ring behind a success mark. */
+:root[data-ux-motion] .ux-ring {
+  position: relative;
+}
+:root[data-ux-motion] .ux-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid currentColor;
+  opacity: 0;
+  animation: ux-ring-out 420ms var(--ux-ease-out) 360ms backwards;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Make it mean something: progress fills from the left with scaleX, numbers
+   never shift width.
+   ------------------------------------------------------------------------ */
+
+:root[data-ux-motion] .ux-progress {
+  transform-origin: left center;
+  transition: transform var(--ux-dur-move) var(--ux-ease-in-out);
+  will-change: transform;
+}
+
+.ux-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------------
+   Solid drawing in 3D: a card that tilts toward the pointer with real
+   perspective and a light that follows it. useTilt() feeds --ux-rx/--ux-ry.
+   ------------------------------------------------------------------------ */
+
+:root[data-ux-motion] .ux-tilt-scene {
+  perspective: 800px;
+}
+
+:root[data-ux-motion] .ux-tilt {
+  transform-style: preserve-3d;
+  transform: rotateX(var(--ux-rx, 0deg)) rotateY(var(--ux-ry, 0deg));
+  transition: transform 400ms var(--ux-ease-out), box-shadow 400ms var(--ux-ease-out);
+  will-change: transform;
+}
+
+:root[data-ux-motion] .ux-tilt[data-tilting="true"] {
+  transition: transform 80ms linear, box-shadow 80ms linear;
+  box-shadow: 0 18px 40px -18px rgb(0 0 0 / 0.45);
+}
+
+:root[data-ux-motion] .ux-tilt-light {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at var(--ux-lx, 50%) var(--ux-ly, 50%),
+    rgb(255 255 255 / 0.22),
+    transparent 55%
+  );
+  opacity: 0;
+  transition: opacity 300ms var(--ux-ease-out);
+}
+
+:root[data-ux-motion] .ux-tilt[data-tilting="true"] .ux-tilt-light {
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------------------
+   Compound motion: an ambient hero object drifts gently (y within +-4px and a
+   1-2% scale, out of phase), so it looks alive. Never on anything people read
+   or aim at.
+   ------------------------------------------------------------------------ */
+
+@keyframes ux-float-y {
+  from { translate: 0 -4px; }
+  to   { translate: 0 4px; }
+}
+
+@keyframes ux-float-scale {
+  from { scale: 1; }
+  to   { scale: 1.02; }
+}
+
+:root[data-ux-motion] .ux-float {
+  animation:
+    ux-float-y 2.6s cubic-bezier(0.37, 0, 0.63, 1) infinite alternate,
+    ux-float-scale 3.7s cubic-bezier(0.37, 0, 0.63, 1) infinite alternate;
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced motion: every animation off, end states identical. Spinners keep
+   spinning, because a frozen spinner looks like a hang.
+   ------------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-ux-motion] :is(.ux-scrim, .ux-modal, .ux-drawer, .ux-drawer-right,
+    .ux-pop, .ux-follow, .ux-enter, .ux-shake, .ux-squash, .ux-windup,
+    .ux-float, .ux-stagger > *, .ux-stagger-section > *, .ux-ring::before) {
+    animation: none !important;
+  }
+  :root[data-ux-motion] :is(.ux-progress, .ux-tilt, .ux-lift) {
+    transition: none !important;
+  }
+  :root[data-ux-motion] .ux-tilt {
+    transform: none !important;
+  }
+  :root[data-ux-motion] :is(button, [role="button"], a[data-slot="button"]):active {
+    scale: none !important;
+  }
+  :root[data-ux-motion] button .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+}

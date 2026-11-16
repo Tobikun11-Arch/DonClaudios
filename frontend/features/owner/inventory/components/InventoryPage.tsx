@@ -1,10 +1,11 @@
 'use client';
 
-import {useMemo, useState} from 'react';
+import {useDeferredValue, useMemo, useState} from 'react';
 import {toast} from 'sonner';
 import {useProductsQuery, useUpdateProductMutation} from '@/lib/hooks/products/useProducts';
 import {
   useMovementsQuery,
+  useInventoryProductsQuery,
   useRestockMutation,
   useAdjustMutation
 } from '@/lib/hooks/inventory/useInventory';
@@ -12,6 +13,9 @@ import {useTopProductsQuery} from '@/lib/hooks/dashboard/useDashboard';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {stockUnitLabel} from '@/lib/categories/categoryUtils';
 import {getStockStatus, type StockStatus} from '../utils/stockStatus';
+
+/** Rows per page in the inventory table. */
+const INVENTORY_PAGE_SIZE = 10;
 import {InventorySummaryCards} from './InventorySummaryCards';
 import {AttentionBanner, type AttentionItem} from './AttentionBanner';
 import {InventoryTable} from './InventoryTable';
@@ -61,6 +65,9 @@ export default function InventoryPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | StockStatus>('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [sort, setSort] = useState<SortOption>('attention');
+  const [page, setPage] = useState(1);
+  // Debounce-ish: typing doesn't fire a request per keystroke.
+  const deferredSearch = useDeferredValue(search.trim());
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [dialogNonce, setDialogNonce] = useState(0);
   const [dialog, setDialog] = useState<{
@@ -141,52 +148,30 @@ export default function InventoryPage() {
     });
   }, [products, topProductsQuery.data?.products]);
 
-  const visibleProducts = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const filtered = products.filter(p => {
-      if (statusFilter !== 'all' && getStockStatus(p.stock) !== statusFilter) {
-        return false;
-      }
-      if (categoryFilter !== 'all' && p.category !== categoryFilter) {
-        return false;
-      }
-      if (q && !p.name.toLowerCase().includes(q)) {
-        return false;
-      }
-      return true;
-    });
+  const inventoryPageQuery = useInventoryProductsQuery({
+    page,
+    limit: INVENTORY_PAGE_SIZE,
+    search: deferredSearch,
+    status: statusFilter,
+    category: categoryFilter,
+    sort
+  });
+  const pageData = inventoryPageQuery.data;
+  const visibleProducts = pageData?.products ?? [];
+  const pagination = pageData?.pagination;
 
-    const priorityOf = (stock: number) => (stock === 0 ? 0 : stock <= 10 ? 1 : 2);
+  // Any filter change starts over from page 1.
+  const withPageReset =
+    <T,>(setter: (v: T) => void) =>
+    (value: T) => {
+      setter(value);
+      setPage(1);
+    };
 
-    const sorted = filtered.slice();
-    switch (sort) {
-      case 'name_asc':
-        sorted.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case 'stock_asc':
-        sorted.sort((a, b) => a.stock - b.stock || a.name.localeCompare(b.name));
-        break;
-      case 'stock_desc':
-        sorted.sort((a, b) => b.stock - a.stock || a.name.localeCompare(b.name));
-        break;
-      case 'updated':
-        sorted.sort(
-          (a, b) =>
-            new Date(b.updatedAt ?? 0).getTime() -
-            new Date(a.updatedAt ?? 0).getTime()
-        );
-        break;
-      case 'attention':
-      default:
-        sorted.sort(
-          (a, b) =>
-            priorityOf(a.stock) - priorityOf(b.stock) ||
-            a.name.localeCompare(b.name)
-        );
-        break;
-    }
-    return sorted;
-  }, [products, search, statusFilter, categoryFilter, sort]);
+  // Keep `page` in range if rows disappear (e.g. last item on a page filtered out).
+  if (pagination && page > pagination.totalPages) {
+    setPage(pagination.totalPages);
+  }
 
   const toastError = (error: unknown, fallback: string) =>
     toast.error(getFriendlyErrorMessage(error, fallback));
@@ -300,6 +285,7 @@ export default function InventoryPage() {
 
   const applyAttentionFilter = (status: 'low_stock' | 'out_of_stock') => {
     setStatusFilter(status);
+    setPage(1);
     setCategoryFilter('all');
     setSearch('');
   };
@@ -370,25 +356,37 @@ export default function InventoryPage() {
         <section className="min-w-0">
           <InventoryTable
             products={visibleProducts}
-            hasAnyProducts={products.length > 0}
-            isLoading={productsQuery.isLoading}
-            isError={productsQuery.isError}
+            hasAnyProducts={productsQuery.isLoading || products.length > 0}
+            isLoading={inventoryPageQuery.isLoading}
+            isError={inventoryPageQuery.isError}
             errorMessage={getFriendlyErrorMessage(
-              productsQuery.error,
+              inventoryPageQuery.error,
               'Failed to load products'
             )}
-            onRetry={() => productsQuery.refetch()}
+            onRetry={() => inventoryPageQuery.refetch()}
+            pagination={
+              pagination
+                ? {
+                    page: pagination.page,
+                    totalPages: pagination.totalPages,
+                    total: pagination.total,
+                    pageSize: pagination.limit,
+                    isFetching: inventoryPageQuery.isFetching && inventoryPageQuery.isPlaceholderData,
+                    onPageChange: setPage
+                  }
+                : null
+            }
             toolbar={{
               search,
-              onSearchChange: setSearch,
+              onSearchChange: withPageReset(setSearch),
               counts,
               statusFilter,
-              onStatusFilterChange: setStatusFilter,
+              onStatusFilterChange: withPageReset(setStatusFilter),
               categories,
               categoryFilter,
-              onCategoryChange: setCategoryFilter,
+              onCategoryChange: withPageReset(setCategoryFilter),
               sort,
-              onSortChange: setSort
+              onSortChange: withPageReset(setSort)
             }}
             togglingId={togglingId}
             onToggleMenu={handleToggleMenu}

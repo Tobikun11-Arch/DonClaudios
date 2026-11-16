@@ -151,7 +151,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
           <div
             onClick={() => setOpen(false)}
             aria-hidden="true"
-            className="fixed inset-0 z-[55] overscroll-contain bg-black/30 sm:hidden"
+            className="ux-scrim fixed inset-0 z-[55] overscroll-contain bg-black/30 sm:hidden"
           />
           {/*
             Bottom sheet below `sm`. The `absolute right-16 w-72` panel is fine
@@ -162,7 +162,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
             ref={panelRef}
             role="dialog"
             aria-label={`Customize ${SECTION_LABELS[sectionId]} section`}
-            className="fixed inset-x-3 bottom-24 z-[60] max-h-[70vh] overflow-y-auto overscroll-contain rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-2xl sm:absolute sm:bottom-auto sm:left-auto sm:right-16 sm:top-4 sm:z-50 sm:max-h-none sm:w-72 sm:overflow-y-visible sm:overscroll-auto"
+            className="ux-pop [--ux-origin:bottom_center] sm:[--ux-origin:top_right] fixed inset-x-3 bottom-24 z-[60] max-h-[70vh] overflow-y-auto overscroll-contain rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-2xl sm:absolute sm:bottom-auto sm:left-auto sm:right-16 sm:top-4 sm:z-50 sm:max-h-none sm:w-72 sm:overflow-y-visible sm:overscroll-auto"
           >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">

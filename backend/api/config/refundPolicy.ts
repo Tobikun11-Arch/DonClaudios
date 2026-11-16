@@ -9,7 +9,8 @@
  *     -> self-service, 100% of the order amount paid is refunded.
  *   Customer asks to cancel after the cut-off (until pickup)
  *     -> a REQUEST the owner approves or declines. If approved, the store
- *        keeps the 50% down payment; anything paid above it is refunded.
+ *        keeps the down payment (the order's down payment %, default 50%);
+ *        anything paid above it is refunded.
  *   Store cancels (cannot fulfil, date closed, ...)
  *     -> 100% refunded, including the Xendit service fee.
  *   Xendit service fees are not refunded when the customer cancels (Xendit
@@ -62,6 +63,8 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
  */
 export function computeRefundPlan(input: {
   policy: RefundPolicyCase;
+  /** Down payment % kept on a late cancellation; defaults to lateRetainedRatio. */
+  retainedPercent?: number;
   totalAmount: number;
   amountPaid: number;
   onlinePayments: RefundablePayment[];
@@ -74,7 +77,9 @@ export function computeRefundPlan(input: {
   let retained = 0;
   if (input.policy === 'early') retained = paid * (1 - P.earlyRefundRatio);
   if (input.policy === 'late') {
-    retained = Math.min(paid, Math.ceil(input.totalAmount * P.lateRetainedRatio));
+    const ratio =
+      typeof input.retainedPercent === 'number' ? input.retainedPercent / 100 : P.lateRetainedRatio;
+    retained = Math.min(paid, Math.ceil(input.totalAmount * ratio));
   }
   retained = round2(retained);
 

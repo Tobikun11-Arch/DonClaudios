@@ -13,13 +13,13 @@ export type RefundPolicyCase = 'early' | 'late' | 'store';
 
 export const REFUND_POLICY_LABELS: Record<RefundPolicyCase, string> = {
   early: 'Cancelled before the cut-off: full refund of the order amount',
-  late: 'Late cancellation: the 50% down payment is kept',
+  late: 'Late cancellation: the down payment is kept',
   store: 'Cancelled by the store: full refund, service fees included'
 };
 
 /** Short policy summary shown next to every cancel button. */
-export function refundPolicySummary(cutoffDays: number): string[] {
-  const keep = Math.round(PRE_ORDER_REFUND_POLICY.lateRetainedRatio * 100);
+export function refundPolicySummary(cutoffDays: number, downPaymentPercent?: number): string[] {
+  const keep = downPaymentPercent ?? Math.round(PRE_ORDER_REFUND_POLICY.lateRetainedRatio * 100);
   return [
     `Up to ${cutoffDays} days before pickup: cancel any time and get back the full amount you paid. Online service fees are not refunded.`,
     `Less than ${cutoffDays} days before pickup: you can ask the store to cancel. If approved, the ${keep}% down payment is kept and anything paid above it is refunded.`,

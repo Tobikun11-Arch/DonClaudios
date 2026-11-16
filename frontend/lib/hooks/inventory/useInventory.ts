@@ -1,11 +1,13 @@
 ﻿'use client';
 
-import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {keepPreviousData, useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {
   adjustProduct,
+  listInventoryProducts,
   listMovements,
   restockProduct
 } from '@/lib/api/inventoryApi';
+import type {InventoryProductsParams} from '@/lib/types/inventory';
 import {PRODUCTS_QUERY_PREFIX} from '../products/useProducts';
 
 export const movementsQueryKey = (productId?: string) =>
@@ -16,6 +18,21 @@ export function useMovementsQuery(productId?: string) {
     queryKey: movementsQueryKey(productId),
     queryFn: () => listMovements(productId),
     enabled: productId ? productId.length > 0 : true,
+    refetchOnWindowFocus: false,
+    staleTime: 15_000
+  });
+}
+
+/**
+ * Paginated inventory table. Keyed under the shared `products` prefix so every
+ * product/stock mutation (which invalidates that prefix) refreshes it too.
+ * `keepPreviousData` keeps the current page on screen while the next loads.
+ */
+export function useInventoryProductsQuery(params: InventoryProductsParams) {
+  return useQuery({
+    queryKey: [...PRODUCTS_QUERY_PREFIX, 'inventory-page', params],
+    queryFn: () => listInventoryProducts(params),
+    placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,
     staleTime: 15_000
   });

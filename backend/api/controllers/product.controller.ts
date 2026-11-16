@@ -24,7 +24,9 @@ export const productController = {
     try {
       const customerId =
         req.auth?.type === 'customer' ? req.auth.userId : undefined;
-      const products = await productService.list(true, customerId);
+      const products = await productService.list(true, customerId, {
+        hideExpiredPromos: req.auth?.type !== 'admin'
+      });
       res.status(200).json({products});
     } catch (error) {
       next(error);

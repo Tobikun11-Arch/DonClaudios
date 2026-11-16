@@ -187,7 +187,7 @@ function TrackOrder() {
               width={160}
               height={160}
               priority
-              className="h-24 w-24 drop-shadow-xl sm:h-36 sm:w-36"
+              className="ux-float h-24 w-24 drop-shadow-xl sm:h-36 sm:w-36"
             />
           </div>
         </div>
@@ -205,7 +205,7 @@ function TrackOrder() {
               <div
                 className={`flex flex-1 items-center gap-2 rounded-2xl border-2 bg-gray-50 px-3 transition-colors focus-within:bg-white ${
                   error
-                    ? 'border-red-300 focus-within:border-red-400'
+                    ? 'ux-shake border-red-300 focus-within:border-red-400'
                     : looksValid
                       ? 'border-[#3c5e45]/60'
                       : 'border-gray-200 focus-within:border-[#3c5e45]'
@@ -236,7 +236,7 @@ function TrackOrder() {
                       inputRef.current?.focus();
                     }}
                     aria-label="Clear"
-                    className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                    className="ux-hit rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -260,7 +260,7 @@ function TrackOrder() {
               </button>
             </div>
             {error ? (
-              <p id="tracking-error" role="alert" className="mt-2 text-xs font-medium text-red-600">
+              <p id="tracking-error" role="alert" className="ux-enter mt-2 text-xs font-medium text-red-600">
                 {error}
               </p>
             ) : looksValid && !activeId ? (
@@ -319,7 +319,7 @@ function TrackOrder() {
 
         {/* Results */}
         {activeId ? (
-          <div ref={resultsRef} className="scroll-mt-24 space-y-3">
+          <div ref={resultsRef} className="ux-enter scroll-mt-24 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white px-4 py-3 shadow-sm">
               <p className="text-sm text-gray-600">
                 Tracking <span className="font-bold text-gray-900">order {shortCode(activeId)}</span>

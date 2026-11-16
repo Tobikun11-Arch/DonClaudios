@@ -82,7 +82,7 @@ export function StockChangeDialog({
   return (
     <div className="fixed inset-0 z-[100]">
       <div
-        className="absolute inset-0 bg-black/40"
+        className="ux-scrim absolute inset-0 bg-black/40"
         onClick={() => !isPending && onClose()}
         role="button"
         tabIndex={-1}
@@ -96,7 +96,7 @@ export function StockChangeDialog({
       >
         <div
           onClick={e => e.stopPropagation()}
-          className="w-full sm:max-w-[440px] max-h-[100dvh] sm:max-h-[90dvh] bg-white dark:bg-gray-900 shadow-xl border border-gray-100 dark:border-gray-700 rounded-t-2xl sm:rounded-2xl flex flex-col"
+          className="ux-modal ux-modal-sheet w-full sm:max-w-[440px] max-h-[100dvh] sm:max-h-[90dvh] bg-white dark:bg-gray-900 shadow-xl border border-gray-100 dark:border-gray-700 rounded-t-2xl sm:rounded-2xl flex flex-col"
         >
           <div className="flex items-start gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800">

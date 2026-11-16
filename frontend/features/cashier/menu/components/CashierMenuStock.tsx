@@ -1,5 +1,6 @@
 'use client';
 
+import {isProductPromoExpired} from '@/lib/utils/promoDates';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {
   Package,
@@ -220,7 +221,9 @@ export function CashierMenuStock() {
 
   const visibleProducts = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const now = new Date();
     return products.filter(p => {
+      if (isProductPromoExpired(p, now)) return false;
       if (category !== 'all' && p.category !== category) return false;
       if (!q) return true;
       return (
