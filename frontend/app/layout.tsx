@@ -28,9 +28,9 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.donclaudios.com'),
-  title: "Donclaudio's Lechon House",
+  title: "Donclaudio's Lechon House | Lechon in Tanza, Cavite",
   description:
-    "Donclaudio's Lechon House is a premier destination for delicious lechon and traditional Filipino cuisine.",
+    "Donclaudio's Lechon House in Tanza, Cavite – crispy, flavorful lechon and traditional Filipino dishes. Order online for pick-up or delivery, or reserve a table. Open Tue–Sun, 10 AM–10 PM.",
   appleWebApp: {
     capable: true,
     title: "DonClaudio's",
@@ -45,9 +45,9 @@ export const metadata: Metadata = {
     apple: '/icons/apple-touch-icon.png'
   },
   openGraph: {
-    title: "Donclaudio's Lechon House",
+    title: "Donclaudio's Lechon House | Lechon in Tanza, Cavite",
     description:
-      "Donclaudio's Lechon House is a premier destination for delicious lechon and traditional Filipino cuisine.",
+      "Crispy, flavorful lechon and traditional Filipino dishes in Tanza, Cavite. Order online for pick-up or delivery, or reserve a table.",
     url: 'https://www.donclaudios.com/',
     type: 'website',
     images: [
