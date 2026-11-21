@@ -30,9 +30,10 @@ import CourierPicker, {
 } from '@/features/order/components/CourierPicker';
 import OrderTypeSelector from '@/shared/components/order/OrderTypeSelector';
 import {
+  flushPendingQuantitySaves,
   useClearCustomerCartMutation,
-  useCustomerCartQuery,
-  useSetCustomerCartItemQuantityMutation
+  useCustomerCartQuantityUpdater,
+  useCustomerCartQuery
 } from '@/lib/hooks/cart/useCustomerCart';
 import {useCreateCustomerOrderMutation} from '@/lib/hooks/orders/useCustomerOrder';
 import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
@@ -70,7 +71,7 @@ export default function CustomerCheckoutPage() {
     [cartQuery.data]
   );
 
-  const setQtyMutation = useSetCustomerCartItemQuantityMutation();
+  const setQuantity = useCustomerCartQuantityUpdater();
   const clearCartMutation = useClearCustomerCartMutation();
   const createOrderMutation = useCreateCustomerOrderMutation();
 
@@ -213,6 +214,9 @@ export default function CustomerCheckoutPage() {
       );
       return;
     }
+
+    // Save any +/- taps still waiting out their delay.
+    flushPendingQuantitySaves();
 
     try {
       const created = await createOrderMutation.mutateAsync({
@@ -753,13 +757,12 @@ export default function CustomerCheckoutPage() {
                             type="button"
                             className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800"
                             onClick={() =>
-                              setQtyMutation.mutate({
-                                productId: getProductId(item.productId),
-                                quantity: Math.max(1, item.quantity - 1)
-                              })
+                              setQuantity(
+                                getProductId(item.productId),
+                                Math.max(1, item.quantity - 1)
+                              )
                             }
                             aria-label="Decrease"
-                            disabled={setQtyMutation.isPending}
                           >
                             <Minus className="h-4 w-4" />
                           </button>
@@ -770,13 +773,12 @@ export default function CustomerCheckoutPage() {
                             type="button"
                             className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800"
                             onClick={() =>
-                              setQtyMutation.mutate({
-                                productId: getProductId(item.productId),
-                                quantity: item.quantity + 1
-                              })
+                              setQuantity(
+                                getProductId(item.productId),
+                                item.quantity + 1
+                              )
                             }
                             aria-label="Increase"
-                            disabled={setQtyMutation.isPending}
                           >
                             <Plus className="h-4 w-4" />
                           </button>

@@ -339,13 +339,12 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
             : undefined
         },
         {
-          // Open the cart only once the item is really in it.
-          onSuccess: () => openCart(),
+          // The item is already shown in the cart; it is taken back out if
+          // the server refuses it.
           onError: err =>
             toast.error(getFriendlyErrorMessage(err, 'Could not add to cart. Please try again.'))
         }
       );
-      return;
     } else {
       addItem({
         productId: product._id,

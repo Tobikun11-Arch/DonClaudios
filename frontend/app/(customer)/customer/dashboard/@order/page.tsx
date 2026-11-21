@@ -173,18 +173,22 @@ export default function OrderSlot() {
       }
     }
 
-    try {
-      await addCustomerCartItem.mutateAsync({
+    // The item shows in the cart at once; it is taken back out if the server
+    // refuses it.
+    addCustomerCartItem.mutate(
+      {
         productId: item.id,
         name: item.name,
         price: item.price,
         imageUrl: item.imageUrl,
         quantity: 1
-      });
-      openCart();
-    } catch (err) {
-      toast.error(getFriendlyErrorMessage(err, 'Could not add to cart. Please try again.'));
-    }
+      },
+      {
+        onError: err =>
+          toast.error(getFriendlyErrorMessage(err, 'Could not add to cart. Please try again.'))
+      }
+    );
+    openCart();
   };
 
   return (
