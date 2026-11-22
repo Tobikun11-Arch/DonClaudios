@@ -1,8 +1,26 @@
 import mongoose, {Schema} from 'mongoose';
 
+/** What one unit of a bundle line contained when it was ordered. */
+export interface OrderItemBundleComponent {
+  productId: mongoose.Types.ObjectId;
+  name: string;
+  qty: number;
+}
+
 export interface OrderItemDocument extends mongoose.Document {
   orderId: mongoose.Types.ObjectId;
+  /**
+   * The product sold. For a bundle line this is the bundle promo's id (there
+   * is no product for it); `promoId` and `bundleItems` are then set and stock
+   * moves through the components instead (services/bundle.service.ts).
+   */
   productId: mongoose.Types.ObjectId;
+  /** Name at the time of ordering, so history survives renames and deletes. */
+  name?: string | null;
+  /** Set on bundle lines only. */
+  promoId?: mongoose.Types.ObjectId | null;
+  /** Set on bundle lines only: contents of ONE bundle. */
+  bundleItems?: OrderItemBundleComponent[] | null;
   quantity: number;
   price: number;
   prepTimeMinutes?: number;
@@ -22,6 +40,21 @@ const OrderItemSchema = new Schema<OrderItemDocument>(
   {
     orderId: {type: Schema.Types.ObjectId, ref: 'Order', required: true},
     productId: {type: Schema.Types.ObjectId, ref: 'Product', required: true},
+    name: {type: String, default: null},
+    promoId: {type: Schema.Types.ObjectId, ref: 'Promo', default: null},
+    bundleItems: {
+      type: [
+        new Schema<OrderItemBundleComponent>(
+          {
+            productId: {type: Schema.Types.ObjectId, ref: 'Product', required: true},
+            name: {type: String, required: true},
+            qty: {type: Number, required: true, min: 1}
+          },
+          {_id: false}
+        )
+      ],
+      default: undefined
+    },
     quantity: {type: Number, required: true},
     price: {type: Number, required: true},
     prepTimeMinutes: {type: Number, min: 0, max: 1440, default: null},

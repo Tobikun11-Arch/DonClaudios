@@ -86,9 +86,24 @@ export interface SiteSettingDocument extends mongoose.Document {
   rewardsEarnPesos?: number;
   /** Share of a pre-order the customer pays up front, in % (see config/paymentFees.ts). */
   downPaymentPercent?: number;
+  /** Down payment rule per order flow (see config/downPaymentRules.ts). */
+  downPaymentRules?: Partial<
+    Record<'preorder' | 'pickup' | 'delivery' | 'reservation', {mode: string; percent: number; minOrder: number}>
+  >;
+  /** Scheduling, lead-time and payment-deadline rules (see config/orderSchedule.ts). */
+  orderingRules?: Partial<Record<string, number>>;
   /** Per-dashboard colors (hex). Empty/unset means the default green. */
   dashboardTheme?: Partial<Record<DashboardTarget, DashboardColors>>;
 }
+
+const DownPaymentRuleSchema = new Schema(
+  {
+    mode: {type: String, enum: ['off', 'optional', 'required'], required: true},
+    percent: {type: Number, min: 1, max: 100, required: true},
+    minOrder: {type: Number, min: 0, required: true}
+  },
+  {_id: false}
+);
 
 const StatItemSchema = new Schema<StatItem>(
   {
@@ -209,6 +224,21 @@ const SiteSettingSchema = new Schema<SiteSettingDocument>(
     rewardsEarnPesos: {type: Number, min: 1},
     // No default: unset means DEFAULT_DOWN_PAYMENT_PERCENT (config/paymentFees.ts).
     downPaymentPercent: {type: Number, min: 1, max: 100},
+    // No defaults: an unset flow means DEFAULT_DOWN_PAYMENT_RULES (config/downPaymentRules.ts).
+    downPaymentRules: {
+      type: new Schema(
+        {
+          preorder: {type: DownPaymentRuleSchema, default: undefined},
+          pickup: {type: DownPaymentRuleSchema, default: undefined},
+          delivery: {type: DownPaymentRuleSchema, default: undefined},
+          reservation: {type: DownPaymentRuleSchema, default: undefined}
+        },
+        {_id: false}
+      ),
+      default: undefined
+    },
+    // No defaults: unset values mean DEFAULT_ORDERING_RULES (config/orderSchedule.ts).
+    orderingRules: {type: Schema.Types.Mixed, default: undefined},
     // No defaults: unset means "use the built-in DonClaudio's green".
     dashboardTheme: {
       owner: {type: DashboardColorsSchema, default: undefined},

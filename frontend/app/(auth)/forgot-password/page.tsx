@@ -7,6 +7,7 @@ import SuccessCheck from '@/components/ui/success-check';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 import {
   InputOTP,
   InputOTPGroup,
@@ -119,7 +120,7 @@ export default function ForgotPasswordPage() {
               Enter your email and we&apos;ll send you a 6-digit reset code.
             </p>
           </div>
-          <form onSubmit={handleSendCode} className="space-y-4">
+          <form onSubmit={handleSendCode} onKeyDown={enterNavigation} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -160,7 +161,7 @@ export default function ForgotPasswordPage() {
               We sent a 6-digit code to <span className="font-medium">{email}</span>.
             </p>
           </div>
-          <form onSubmit={handleVerifyCode} className="space-y-4">
+          <form onSubmit={handleVerifyCode} onKeyDown={enterNavigation} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="code">Reset code</Label>
               <InputOTP
@@ -211,7 +212,7 @@ export default function ForgotPasswordPage() {
               Code verified. Choose a new password for your account.
             </p>
           </div>
-          <form onSubmit={handleReset} className="space-y-4">
+          <form onSubmit={handleReset} onKeyDown={enterNavigation} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="newPassword">New password</Label>
               <Input

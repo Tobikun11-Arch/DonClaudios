@@ -15,6 +15,20 @@ import {
   resolveDownPaymentPercent
 } from '../config/paymentFees';
 import {
+  DEFAULT_DOWN_PAYMENT_RULES,
+  DOWN_PAYMENT_FLOWS,
+  DOWN_PAYMENT_MIN_ORDER_MAX,
+  resolveDownPaymentRules,
+  type DownPaymentFlow,
+  type DownPaymentRules
+} from '../config/downPaymentRules';
+import {
+  DEFAULT_ORDERING_RULES,
+  ORDERING_RULE_LIMITS,
+  resolveOrderingRules,
+  type OrderingRules
+} from '../config/orderSchedule';
+import {
   DEFAULT_REWARDS_EARN_RULE,
   REWARDS_EARN_PESOS_MAX,
   REWARDS_EARN_PESOS_MIN,
@@ -76,14 +90,18 @@ export const settingsService = {
       rewardsEarnPoints: _ignoredPoints,
       rewardsEarnPesos: _ignoredPesos,
       downPaymentPercent: _ignoredDownPayment,
+      downPaymentRules: _ignoredDownPaymentRules,
       dashboardTheme: _ignoredTheme,
+      orderingRules: _ignoredOrderingRules,
       ...rest
     } = data as Partial<SiteSettingDocument> & {
       freeDelivery?: unknown;
       rewardsEarnPoints?: unknown;
       rewardsEarnPesos?: unknown;
       downPaymentPercent?: unknown;
+      downPaymentRules?: unknown;
       dashboardTheme?: unknown;
+      orderingRules?: unknown;
     };
     return settingsRepository.update(rest);
   },
@@ -126,54 +144,71 @@ export const settingsService = {
     return DEFAULT_REWARDS_EARN_RULE;
   },
 
-  /** Live pre-order down payment percent (owner setting), default if never saved. */
-  async getDownPaymentPercent(): Promise<number> {
+  /** Live down payment rule of every order flow, defaults if never saved. */
+  async getDownPaymentRules(): Promise<DownPaymentRules> {
     const doc = await settingsRepository.findOrCreate();
-    return resolveDownPaymentPercent(doc.downPaymentPercent);
+    return resolveDownPaymentRules(doc);
+  },
+
+  /** Live down payment percent of one flow (pre-orders when not given). */
+  async getDownPaymentPercent(flow: DownPaymentFlow = 'preorder'): Promise<number> {
+    return (await this.getDownPaymentRules())[flow].percent;
   },
 
   /**
-   * Saves the new percent and stamps it on every open order that has not
-   * paid anything yet (reads of unpaid orders use the live setting anyway, see
-   * downPaymentPercentFor; this keeps the stored value in step). Orders that already paid a down payment (or in full)
-   * keep their percent. Orders with an open online invoice are skipped too:
-   * that invoice was issued for the old amount, so changing the percent under
-   * it would make the paid amount and the order disagree.
+   * Saves the rules and stamps each flow's percent on every open order of that
+   * flow that has not paid anything yet (reads of unpaid orders use the live
+   * setting anyway, see downPaymentPercentFor; this keeps the stored value in
+   * step). Orders that already paid a down payment (or in full) keep their
+   * percent. Orders with an open online invoice are skipped too: that invoice
+   * was issued for the old amount, so changing the percent under it would
+   * make the paid amount and the order disagree.
    */
-  async updateDownPaymentPercent(
-    percent: number
-  ): Promise<{percent: number; ordersUpdated: number}> {
+  async updateDownPaymentRules(
+    input: DownPaymentRules
+  ): Promise<{rules: DownPaymentRules; ordersUpdated: number}> {
     const doc = await settingsRepository.update({
-      downPaymentPercent: percent
+      downPaymentRules: input,
+      // Kept in step for anything still reading the old single setting.
+      downPaymentPercent: input.preorder.percent
     } as Partial<SiteSettingDocument>);
-    const saved = resolveDownPaymentPercent(doc?.downPaymentPercent);
+    const rules = resolveDownPaymentRules(doc ?? {});
 
     const withOpenInvoice = await PaymentModel.distinct('orderId', {status: 'PENDING'});
-    const result = await OrderModel.updateMany(
-      {
-        paymentStatus: {$in: ['unpaid', null]},
-        orderStatus: {$nin: ['cancelled', 'completed']},
-        _id: {$nin: withOpenInvoice},
-        downPaymentPercent: {$ne: saved}
-      },
-      {$set: {downPaymentPercent: saved}}
-    ).exec();
+    let ordersUpdated = 0;
+    for (const flow of DOWN_PAYMENT_FLOWS) {
+      const percent = rules[flow].percent;
+      const flowFilter =
+        flow === 'preorder' ? {isPreOrder: true} : {isPreOrder: {$ne: true}, orderType: flow};
+      const result = await OrderModel.updateMany(
+        {
+          ...flowFilter,
+          orderSource: {$ne: 'in-store'},
+          paymentStatus: {$in: ['unpaid', null]},
+          orderStatus: {$nin: ['cancelled', 'completed']},
+          _id: {$nin: withOpenInvoice},
+          downPaymentPercent: {$ne: percent}
+        },
+        {$set: {downPaymentPercent: percent}}
+      ).exec();
+      ordersUpdated += result.modifiedCount;
+    }
 
-    return {percent: saved, ordersUpdated: result.modifiedCount};
+    return {rules, ordersUpdated};
   },
 
   /**
-   * The down payment percent an order uses: the one snapshotted when it was
-   * placed, or the live setting for orders created before the snapshot existed.
+   * The down payment percent an order uses: the live setting of its flow
+   * while nothing is paid, else the percent the payment was made with.
    */
-  async downPaymentPercentFor(order: {
-    downPaymentPercent?: number | null;
-    paymentStatus?: string | null;
-  }): Promise<number> {
+  async downPaymentPercentFor(
+    order: {downPaymentPercent?: number | null; paymentStatus?: string | null},
+    flow: DownPaymentFlow
+  ): Promise<number> {
     // Nothing paid yet: always the owner's current setting, so a change in
     // Settings reaches every unpaid order (even ones saved with an old value).
     if ((order.paymentStatus ?? 'unpaid') === 'unpaid' || order.downPaymentPercent == null) {
-      return this.getDownPaymentPercent();
+      return this.getDownPaymentPercent(flow);
     }
     // Down payment or full payment made: the percent it was made with.
     return resolveDownPaymentPercent(order.downPaymentPercent);
@@ -183,8 +218,30 @@ export const settingsService = {
     return {
       default: DEFAULT_DOWN_PAYMENT_PERCENT,
       min: DOWN_PAYMENT_PERCENT_MIN,
-      max: DOWN_PAYMENT_PERCENT_MAX
+      max: DOWN_PAYMENT_PERCENT_MAX,
+      minOrderMax: DOWN_PAYMENT_MIN_ORDER_MAX
     };
+  },
+
+  defaultDownPaymentRules(): DownPaymentRules {
+    return DEFAULT_DOWN_PAYMENT_RULES;
+  },
+
+  /** Live scheduling / lead-time / payment-deadline rules, defaults if never saved. */
+  async getOrderingRules(): Promise<OrderingRules> {
+    const doc = await settingsRepository.findOrCreate();
+    return resolveOrderingRules(doc.orderingRules as Partial<OrderingRules> | undefined);
+  },
+
+  async updateOrderingRules(input: OrderingRules): Promise<OrderingRules> {
+    const doc = await settingsRepository.update({
+      orderingRules: resolveOrderingRules(input)
+    } as Partial<SiteSettingDocument>);
+    return resolveOrderingRules(doc?.orderingRules as Partial<OrderingRules> | undefined);
+  },
+
+  orderingRuleDefaults() {
+    return {defaults: DEFAULT_ORDERING_RULES, limits: ORDERING_RULE_LIMITS};
   },
 
   /** Saves one dashboard's colors; '' resets a color to the default. */

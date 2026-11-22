@@ -13,6 +13,10 @@
  *        anything paid above it is refunded.
  *   Store cancels (cannot fulfil, date closed, ...)
  *     -> 100% refunded, including the Xendit service fee.
+ *   Customer did not show up (any order that paid something; staff picks
+ *   "no-show" once the order is ready / the pre-order pickup time passed)
+ *     -> the store keeps the down payment (the order's down payment %);
+ *        anything paid above it is refunded. Service fees are not refunded.
  *   Xendit service fees are not refunded when the customer cancels (Xendit
  *   does not return them to the store).
  *   Online payments go back through Xendit; cash paid in store is refunded
@@ -27,7 +31,7 @@ export const PRE_ORDER_REFUND_POLICY = {
   refundFeeWhenCustomerCancels: false
 } as const;
 
-export type RefundPolicyCase = 'early' | 'late' | 'store';
+export type RefundPolicyCase = 'early' | 'late' | 'store' | 'no_show';
 
 export type RefundablePayment = {
   id: string;
@@ -76,7 +80,7 @@ export function computeRefundPlan(input: {
 
   let retained = 0;
   if (input.policy === 'early') retained = paid * (1 - P.earlyRefundRatio);
-  if (input.policy === 'late') {
+  if (input.policy === 'late' || input.policy === 'no_show') {
     const ratio =
       typeof input.retainedPercent === 'number' ? input.retainedPercent / 100 : P.lateRetainedRatio;
     retained = Math.min(paid, Math.ceil(input.totalAmount * ratio));

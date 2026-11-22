@@ -61,7 +61,7 @@ export type RefundStatus = 'none' | 'pending' | 'refunded' | 'failed';
 
 /** What the cancellation refund was, per config/refundPolicy.ts. */
 export interface OrderRefundInfo {
-  policy: 'early' | 'late' | 'store';
+  policy: 'early' | 'late' | 'store' | 'no_show';
   paid: number;
   retained: number;
   onlineTotal: number;
@@ -170,6 +170,25 @@ export interface OrderDocument extends mongoose.Document {
    * (paymentChoice in_store_*). Drives the UI countdown and auto-cancel.
    */
   paymentExpiresAt?: Date | null;
+  /**
+   * Customer-chosen timing. ASAP orders have timing 'asap' (or no schedule on
+   * older orders); scheduled ones carry the requested slot in `scheduledAt`.
+   * See config/orderSchedule.ts.
+   */
+  schedule?: {
+    timing: 'asap' | 'scheduled';
+    tier: 'standard' | 'bulk' | 'lechon';
+    leadMinutes: number;
+    slotLabel?: string | null;
+  } | null;
+  /** Requested pickup / dine-in / delivery time of a scheduled order. */
+  scheduledAt?: Date | null;
+  /**
+   * Deadline for the first payment (down payment or full) of a dated order,
+   * fixed when the cashier confirms. Missed -> reminder, then auto-cancel.
+   */
+  paymentDueAt?: Date | null;
+  paymentReminderSentAt?: Date | null;
   refundStatus?: RefundStatus;
   /** Who cancelled the order (drives the refund policy). */
   cancelledBy?: 'customer' | 'store' | 'system' | null;
@@ -327,6 +346,21 @@ const OrderSchema = new Schema<OrderDocument>(
     transactionFee: {type: Number, default: 0},
     paymentChannel: {type: String, default: null},
     paymentExpiresAt: {type: Date, default: null},
+    schedule: {
+      type: new Schema(
+        {
+          timing: {type: String, enum: ['asap', 'scheduled'], required: true},
+          tier: {type: String, enum: ['standard', 'bulk', 'lechon'], required: true},
+          leadMinutes: {type: Number, min: 0, required: true},
+          slotLabel: {type: String, default: null}
+        },
+        {_id: false}
+      ),
+      default: null
+    },
+    scheduledAt: {type: Date, default: null},
+    paymentDueAt: {type: Date, default: null},
+    paymentReminderSentAt: {type: Date, default: null},
     refundStatus: {
       type: String,
       enum: ['none', 'pending', 'refunded', 'failed'],
@@ -340,7 +374,7 @@ const OrderSchema = new Schema<OrderDocument>(
     refund: {
       type: new Schema(
         {
-          policy: {type: String, enum: ['early', 'late', 'store'], required: true},
+          policy: {type: String, enum: ['early', 'late', 'store', 'no_show'], required: true},
           paid: {type: Number, default: 0},
           retained: {type: Number, default: 0},
           onlineTotal: {type: Number, default: 0},
@@ -407,6 +441,7 @@ const OrderSchema = new Schema<OrderDocument>(
 OrderSchema.index({customerId: 1, createdAt: -1});
 OrderSchema.index({orderStatus: 1, createdAt: -1});
 OrderSchema.index({orderStatus: 1, overdueNotifiedAt: 1});
+OrderSchema.index({orderStatus: 1, paymentStatus: 1, paymentDueAt: 1});
 OrderSchema.index({orderSource: 1, createdAt: -1});
 OrderSchema.index({orderNumber: 1}, {unique: true, sparse: true});
 OrderSchema.index({clientRef: 1}, {unique: true, sparse: true});

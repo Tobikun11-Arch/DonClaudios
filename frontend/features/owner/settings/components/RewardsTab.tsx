@@ -19,6 +19,7 @@ import {
   REWARDS_EARN_POINTS_MIN
 } from '@/config/rewards';
 import {SettingRow} from './SettingRow';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 
 /** Form values. Kept as strings so the fields can be cleared while typing. */
 type Draft = {
@@ -94,7 +95,7 @@ export function RewardsTab() {
   const isSaving = updateMutation.isPending;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" onKeyDown={enterNavigation}>
       <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">
         {isError && (
           <p className="mb-2 rounded-lg bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
@@ -111,6 +112,7 @@ export function RewardsTab() {
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
+                required
                 aria-label="Points earned"
                 value={form.points}
                 onChange={e => edit({points: sanitizeInteger(e.target.value).slice(0, 4)})}
@@ -127,6 +129,7 @@ export function RewardsTab() {
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
+                required
                 aria-label="For every peso amount"
                 value={form.pesos}
                 onChange={e => edit({pesos: sanitizeInteger(e.target.value).slice(0, 6)})}
@@ -158,6 +161,7 @@ export function RewardsTab() {
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Button
             type="button"
+            data-enter-submit
             onClick={handleSave}
             disabled={!isDirty || isSaving}
             className="bg-[#2d4a35] hover:bg-[#3c5e45] dark:text-white"

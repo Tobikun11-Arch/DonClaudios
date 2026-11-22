@@ -709,7 +709,7 @@ function OrderCard({
   statusUpdating: boolean;
   cancelUpdating: boolean;
 }) {
-  const {percent: liveDownPaymentPercent} = useDownPaymentQuery();
+  const {percentForOrder} = useDownPaymentQuery();
   const messagesQuery = useAdminOrderMessagesQuery(order._id, expanded);
   const sendMutation = useSendCashierOrderMessageMutation();
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -795,7 +795,7 @@ function OrderCard({
               )}
               {!isWalkIn &&
                 (() => {
-                  const chip = paymentStatusChip(order, liveDownPaymentPercent);
+                  const chip = paymentStatusChip(order, percentForOrder(order));
                   return chip ? (
                     <span
                       className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-bold ${chip.className}`}
@@ -1112,7 +1112,8 @@ export function OrderPaymentPanel({
   canRefund?: boolean;
 }) {
   const markPaid = useMarkOnlineOrderPaidMutation();
-  const {percent: livePercent} = useDownPaymentQuery();
+  const {percentForOrder} = useDownPaymentQuery();
+  const livePercent = percentForOrder(order);
 
   if (order.orderSource === 'in-store') return null;
   if (order.orderStatus === 'pending') return null;

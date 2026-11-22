@@ -57,13 +57,10 @@ export default function OrderSlot() {
     [promosQuery.data?.promos]
   );
 
-  const categoryImageMap = useMemo(() => {
-    const map: Record<string, string | undefined> = {};
-    for (const c of publicCategoriesQuery.data?.categories ?? []) {
-      map[c.name] = c.imageUrl ?? undefined;
-    }
-    return map;
-  }, [publicCategoriesQuery.data]);
+  const categories = useMemo(
+    () => publicCategoriesQuery.data?.categories ?? [],
+    [publicCategoriesQuery.data]
+  );
 
   const cartUniqueCount = cartItems.length;
 
@@ -173,18 +170,22 @@ export default function OrderSlot() {
       }
     }
 
-    try {
-      await addCustomerCartItem.mutateAsync({
+    // The item shows in the cart at once; it is taken back out if the server
+    // refuses it.
+    addCustomerCartItem.mutate(
+      {
         productId: item.id,
         name: item.name,
         price: item.price,
         imageUrl: item.imageUrl,
         quantity: 1
-      });
-      openCart();
-    } catch (err) {
-      toast.error(getFriendlyErrorMessage(err, 'Could not add to cart. Please try again.'));
-    }
+      },
+      {
+        onError: err =>
+          toast.error(getFriendlyErrorMessage(err, 'Could not add to cart. Please try again.'))
+      }
+    );
+    openCart();
   };
 
   return (
@@ -271,7 +272,7 @@ export default function OrderSlot() {
       <MenuBrowser
         products={availableProducts}
         promos={promos}
-        categoryImages={categoryImageMap}
+        categories={categories}
         basePath="customer/dashboard"
         isLoading={isLoading}
         isError={isError}

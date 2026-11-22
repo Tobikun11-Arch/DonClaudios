@@ -7,6 +7,16 @@ import {STOCK_UNITS, type StockUnit} from './Category.model';
  */
 export type ProductAllergen = string;
 
+/** Units for "what one serving includes" (display only, never stock). */
+export const SERVING_UNITS = ['pcs', 'slices', 'cups', 'g', 'ml', 'kg', 'pax'] as const;
+export type ServingUnit = (typeof SERVING_UNITS)[number];
+
+/** One item inside a bundle product: which product, and how many of it. */
+export interface ProductBundleItem {
+  productId: mongoose.Types.ObjectId;
+  qty: number;
+}
+
 export interface ProductIngredient {
   name: string;
   iconKey: string;
@@ -36,7 +46,24 @@ export interface ProductDocument extends mongoose.Document {
   stockUnit?: StockUnit;
   description?: string;
   imageUrl?: string;
+  /**
+   * What one serving includes, e.g. 6 pcs (Buffalo Wings) or 4 pax. Shown on
+   * the menu only; not tied to inventory. Both set or both null.
+   */
+  servingQty?: number | null;
+  servingUnit?: ServingUnit | null;
+  /**
+   * Bundle Deal (category "Promo", promoType "bundle"): what one bundle
+   * contains. A bundle holds no stock of its own; orders take stock from
+   * these products (services/bundle.service.ts).
+   */
+  bundleItems?: ProductBundleItem[] | null;
   prepTimeMinutes?: number;
+  /**
+   * Minimum notice (hours) before this product can be picked up / served.
+   * Null = use the category's notice (see config/orderSchedule.ts).
+   */
+  minNoticeHours?: number | null;
   isAvailable: boolean;
   ingredients: ProductIngredient[];
   allergens: ProductAllergen[];
@@ -104,7 +131,22 @@ const ProductSchema = new Schema<ProductDocument>(
     stockUnit: {type: String, enum: [...STOCK_UNITS]},
     description: {type: String},
     imageUrl: {type: String},
+    servingQty: {type: Number, min: 0, max: 9999, default: null},
+    servingUnit: {type: String, enum: [...SERVING_UNITS, null], default: null},
+    bundleItems: {
+      type: [
+        new Schema<ProductBundleItem>(
+          {
+            productId: {type: Schema.Types.ObjectId, ref: 'Product', required: true},
+            qty: {type: Number, required: true, min: 1, max: 99}
+          },
+          {_id: false}
+        )
+      ],
+      default: undefined
+    },
     prepTimeMinutes: {type: Number, min: 0, max: 1440, default: null},
+    minNoticeHours: {type: Number, min: 0, max: 72, default: null},
     ingredients: {type: [ProductIngredientSchema], default: []},
     allergens: {type: [String], default: []},
     isAvailable: {type: Boolean, default: true},

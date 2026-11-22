@@ -19,9 +19,10 @@ import {Button} from '@/components/ui/button';
 import {cn} from '@/lib/utils';
 import {useCartUiStore} from '@/app/store/cartUiStore';
 import {
+  flushPendingQuantitySaves,
+  useCustomerCartQuantityUpdater,
   useCustomerCartQuery,
-  useRemoveCustomerCartItemMutation,
-  useSetCustomerCartItemQuantityMutation
+  useRemoveCustomerCartItemMutation
 } from '@/lib/hooks/cart/useCustomerCart';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
@@ -73,7 +74,7 @@ export default function CustomerCartDrawer() {
 
   const cartQuery = useCustomerCartQuery(isOpen);
 
-  const setQtyMutation = useSetCustomerCartItemQuantityMutation();
+  const setQuantity = useCustomerCartQuantityUpdater();
   const removeItemMutation = useRemoveCustomerCartItemMutation();
 
   const items = useMemo(
@@ -235,6 +236,9 @@ export default function CustomerCartDrawer() {
       return;
     }
 
+    // Save any +/- taps still waiting out their delay before leaving.
+    flushPendingQuantitySaves();
+
     const id =
       typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? crypto.randomUUID()
@@ -249,11 +253,12 @@ export default function CustomerCartDrawer() {
 
   const confirmRemoveItem = () => {
     if (!removeTarget) return;
+    // The item leaves the list at once; it comes back if the server refuses.
     removeItemMutation.mutate(removeTarget.productId, {
-      onSuccess: () => setRemoveTarget(null),
       onError: err =>
         toast.error(getFriendlyErrorMessage(err, 'Could not remove the item. Please try again.'))
     });
+    setRemoveTarget(null);
   };
 
   /**
@@ -323,10 +328,7 @@ export default function CustomerCartDrawer() {
       toast.error(blocked);
       return;
     }
-    setQtyMutation.mutate(
-      {productId: item.productId, quantity: item.quantity + 1},
-      {onError: err => toast.error(getFriendlyErrorMessage(err, 'Could not update the quantity.'))}
-    );
+    setQuantity(item.productId, item.quantity + 1);
   };
 
   const summaryText =
@@ -471,7 +473,6 @@ export default function CustomerCartDrawer() {
                           type="button"
                           className="mt-1 text-xs font-semibold text-[#c30010] dark:text-red-400"
                           onClick={() => requestRemoveItem(item)}
-                          disabled={removeItemMutation.isPending}
                         >
                           Remove
                         </button>
@@ -511,16 +512,9 @@ export default function CustomerCartDrawer() {
                               requestRemoveItem(item);
                               return;
                             }
-                            setQtyMutation.mutate(
-                              {productId: item.productId, quantity: item.quantity - 1},
-                              {
-                                onError: err =>
-                                  toast.error(getFriendlyErrorMessage(err, 'Could not update the quantity.'))
-                              }
-                            );
+                            setQuantity(item.productId, item.quantity - 1);
                           }}
                           aria-label="Decrease"
-                          disabled={setQtyMutation.isPending}
                         >
                           <Minus className="h-4 w-4" />
                         </button>
@@ -532,10 +526,7 @@ export default function CustomerCartDrawer() {
                           className="ux-hit h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed dark:hover:bg-gray-800"
                           onClick={() => increaseItem(item)}
                           aria-label="Increase"
-                          disabled={
-                            setQtyMutation.isPending ||
-                            increaseBlockedReason(item) !== null
-                          }
+                          disabled={increaseBlockedReason(item) !== null}
                         >
                           <Plus className="h-4 w-4" />
                         </button>

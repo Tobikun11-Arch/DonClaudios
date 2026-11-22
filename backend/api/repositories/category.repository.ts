@@ -20,5 +20,19 @@ export const categoryRepository = {
   updateById: (id: string, data: Partial<CategoryDocument>) =>
     CategoryModel.findByIdAndUpdate(id, data, {new: true}).exec(),
 
-  deleteById: (id: string) => CategoryModel.findByIdAndDelete(id).exec()
+  deleteById: (id: string) => CategoryModel.findByIdAndDelete(id).exec(),
+
+  /** Highest sortOrder in use, so a new category is appended at the end. */
+  maxSortOrder: async () => {
+    const last = await CategoryModel.findOne({}).sort({sortOrder: -1}).select('sortOrder').lean();
+    return typeof last?.sortOrder === 'number' ? last.sortOrder : 0;
+  },
+
+  /** sortOrder = position in `ids` (first = 0). */
+  setOrder: (ids: string[]) =>
+    CategoryModel.bulkWrite(
+      ids.map((id, index) => ({
+        updateOne: {filter: {_id: id}, update: {$set: {sortOrder: index}}}
+      }))
+    )
 };

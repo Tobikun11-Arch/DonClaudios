@@ -7,6 +7,7 @@ import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {cn} from '@/lib/utils';
 import {sanitizeInteger} from '@/lib/validation/numeric';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 import {stockUnitLabel} from '@/lib/categories/categoryUtils';import type {Product} from '@/lib/types/product';
 
 export type StockActionMode = 'restock' | 'remove';
@@ -138,7 +139,7 @@ export function StockChangeDialog({
             flex column, so the header and the confirm button stay reachable on
             a landscape phone instead of overflowing the capped panel.
           */}
-          <div className="min-h-0 flex-1 overflow-y-auto p-5 space-y-4">
+          <div className="min-h-0 flex-1 overflow-y-auto p-5 space-y-4" onKeyDown={enterNavigation}>
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-200">
                 {isRemove ? 'Quantity to remove *' : 'Quantity to add *'}
@@ -147,6 +148,8 @@ export function StockChangeDialog({
                 <Input
                   type="number"
                   min="1"
+                  max={isRemove ? Math.max(product.stock, 0) : undefined}
+                  required
                   step="1"
                   inputMode="numeric"
                   placeholder="0"
@@ -259,6 +262,7 @@ export function StockChangeDialog({
               </Button>
               <Button
                 type="button"
+                data-enter-submit
                 onClick={onSubmit}
                 disabled={isPending || !valid}
                 className={cn(

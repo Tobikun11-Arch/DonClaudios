@@ -54,6 +54,7 @@ export default function CourierPicker({
         <input
           value={value.name}
           onChange={e => onChange({...value, name: e.target.value.slice(0, 60)})}
+          required
           placeholder="Courier name (e.g. Angkas Padala, Toktok)"
           aria-label="Courier name"
           className="h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#3c5e45] focus:outline-none focus:ring-2 focus:ring-[#3c5e45]/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"

@@ -7,6 +7,18 @@ import {notificationService} from './notification.service';
 import {getPreOrderState, type PreOrderBatchStored} from '../config/preOrder';
 import type {StockMovementType} from '../models/StockMovement.model';
 import type {AdminDocument} from '../models/Admin.model';
+import {isBundleProduct, toStockLines} from './bundle.service';
+
+/** Bundles hold no stock: restock or adjust the items inside instead. */
+function assertNotBundle(product: Parameters<typeof isBundleProduct>[0] & {name?: string}) {
+  if (isBundleProduct(product)) {
+    throw new ApiError(
+      400,
+      'BUNDLE_HAS_NO_STOCK',
+      `"${product?.name}" is a bundle. Its stock comes from the items inside, so restock those instead.`
+    );
+  }
+}
 
 const LOW_STOCK_THRESHOLD = 10;
 
@@ -95,6 +107,7 @@ export const stockMovementService = {
     if (!product) {
       throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Product not found');
     }
+    assertNotBundle(product);
 
     const previousStock = product.stock;
     const newStock = previousStock + data.quantity;
@@ -124,6 +137,7 @@ export const stockMovementService = {
     if (!product) {
       throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Product not found');
     }
+    assertNotBundle(product);
 
     const previousStock = product.stock;
     const newStock = previousStock + data.quantity;
@@ -176,7 +190,29 @@ export const stockMovementService = {
     const affectedProducts: Array<{productId: string; name: string; stock: number}> = [];
     const now = new Date();
 
-    for (const item of items) {
+    // Bundle lines: no stock of their own, so take each component's share
+    // (never a pre-order, see bundle.service) straight from its product.
+    const isBundleLine = (i: (typeof items)[number]) => (i.bundleItems?.length ?? 0) > 0;
+    for (const line of toStockLines(items.filter(isBundleLine))) {
+      const product = await productRepository.findById(line.productId);
+      if (!product) {
+        throw new ApiError(404, 'PRODUCT_NOT_FOUND', `Product ${line.productId} not found`);
+      }
+      if (product.stock < line.quantity) {
+        throw new ApiError(
+          400,
+          'INSUFFICIENT_STOCK',
+          `Insufficient stock for "${product.name}". Available: ${product.stock}, needed: ${line.quantity}`
+        );
+      }
+      const previousStock = product.stock;
+      product.stock = previousStock - line.quantity;
+      await product.save();
+      movements.push({productId: line.productId, quantity: -line.quantity, previousStock, newStock: product.stock});
+      affectedProducts.push({productId: line.productId, name: product.name, stock: product.stock});
+    }
+
+    for (const item of items.filter(i => !isBundleLine(i))) {
       const product = await productRepository.findById(
         String(item.productId)
       );
@@ -258,7 +294,18 @@ export const stockMovementService = {
     }> = [];
     const now = new Date();
 
-    for (const item of items) {
+    // Bundle lines: give each component its share back.
+    const isBundleLine = (i: (typeof items)[number]) => (i.bundleItems?.length ?? 0) > 0;
+    for (const line of toStockLines(items.filter(isBundleLine))) {
+      const product = await productRepository.findById(line.productId);
+      if (!product) continue;
+      const previousStock = product.stock;
+      product.stock = previousStock + line.quantity;
+      await product.save();
+      movements.push({productId: line.productId, quantity: line.quantity, previousStock, newStock: product.stock});
+    }
+
+    for (const item of items.filter(i => !isBundleLine(i))) {
       const product = await productRepository.findById(
         String(item.productId)
       );

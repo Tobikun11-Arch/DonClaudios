@@ -86,6 +86,8 @@ export function IngredientChipsInput({
       e.preventDefault();
       setHighlight(h => (h - 1 + Math.max(1, rowCount)) % Math.max(1, rowCount));
     } else if (e.key === 'Enter') {
+      // Empty box: let the form's Enter navigation move to the next field.
+      if (!query.trim()) return;
       e.preventDefault();
       if (canAddNew && activeIndex === suggestions.length) {
         void handleAddNew();

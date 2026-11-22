@@ -8,7 +8,8 @@ import {type Category} from '@/lib/types/category';
 import {
   type Product,
   type ProductAllergen,
-  type ProductIngredient
+  type ProductIngredient,
+  type ServingUnit
 } from '@/lib/types/product';
 import {
   isPreOrderCategory,
@@ -76,8 +77,13 @@ export function useProductForm(categories: Category[] = []) {
       stock: String(data.stock ?? ''),
       description: data.description ?? '',
       imageUrl: data.imageUrl ?? '',
+      servingQty: data.servingQty == null ? '' : String(data.servingQty),
+      servingUnit: data.servingUnit ?? '',
+      bundleItems: (data.bundleItems ?? []).map(i => ({productId: String(i.productId), qty: i.qty})),
       prepTimeMinutes:
         data.prepTimeMinutes == null ? '' : String(data.prepTimeMinutes),
+      minNoticeHours:
+        data.minNoticeHours == null ? '' : String(data.minNoticeHours),
       ingredients: data.ingredients ?? [],
       allergens: data.allergens ?? [],
       isAvailable: data.isAvailable ?? true,
@@ -222,13 +228,33 @@ export function useProductForm(categories: Category[] = []) {
     if (file) handleIncomingFile(file);
   };
 
-  const validateAndGetPayload = (mode: 'create' | 'edit') => {
+  /**
+   * @param priceById regular product prices, used to check that a Bundle
+   *   Deal costs less than buying its items one by one.
+   */
+  const validateAndGetPayload = (mode: 'create' | 'edit', priceById?: ReadonlyMap<string, number>) => {
     const price = Number(form.price);
     let stock = Number(form.stock);
     const prepTime = form.prepTimeMinutes.trim();
     const prepTimeMinutes = prepTime === '' ? null : Number(prepTime);
+    const noticeStr = form.minNoticeHours.trim();
+    const minNoticeHours = noticeStr === '' ? null : Number(noticeStr);
     const pointsCostStr = form.pointsCost.trim();
     const pointsCost = pointsCostStr === '' ? null : Number(pointsCostStr);
+    const servingStr = form.servingQty.trim();
+    const servingQty = servingStr === '' ? null : Number(servingStr);
+    // Serving size is optional: no number means no serving size, whatever the
+    // unit dropdown says. A number does need a unit ("6" alone means nothing).
+    const servingUnit =
+      servingQty === null || form.servingUnit === '' ? null : form.servingUnit;
+    if (servingQty !== null && servingUnit === null) {
+      setFormError('Pick a unit for the serving size (e.g. pieces), or clear the number.');
+      return null;
+    }
+    if (servingQty !== null && (!Number.isFinite(servingQty) || servingQty <= 0 || servingQty > 9999)) {
+      setFormError('Serving size must be a number above 0');
+      return null;
+    }
     const isPromoCategory = form.category.toLowerCase() === 'promo';
 
     // Promo field validation
@@ -261,7 +287,27 @@ export function useProductForm(categories: Category[] = []) {
         }
         discountAmount = da;
       }
-      // Bundle type doesn't need discount fields
+      // A Bundle Deal lists its items and holds no stock of its own.
+      if (promoType === 'bundle') {
+        const totalQty = form.bundleItems.reduce((n, i) => n + i.qty, 0);
+        if (totalQty < 2) {
+          setFormError('A bundle needs at least 2 items. Add them under Included items.');
+          return null;
+        }
+        if (priceById) {
+          const itemsTotal = form.bundleItems.reduce(
+            (sum, i) => sum + (priceById.get(i.productId) ?? 0) * i.qty,
+            0
+          );
+          if (!(price < itemsTotal)) {
+            setFormError(
+              `Bundle price must be lower than the items' total (₱${itemsTotal.toLocaleString('en-PH')})`
+            );
+            return null;
+          }
+        }
+        stock = 0;
+      }
 
       if (form.promoStartDate.trim()) {
         promoStartDate = form.promoStartDate;
@@ -279,6 +325,12 @@ export function useProductForm(categories: Category[] = []) {
       }
       if (prepTimeMinutes > 1440) {
         setFormError('Prep time must be 1440 minutes (24 hours) or less');
+        return null;
+      }
+    }
+    if (minNoticeHours !== null) {
+      if (!Number.isInteger(minNoticeHours) || minNoticeHours < 0 || minNoticeHours > 72) {
+        setFormError('Minimum notice must be a whole number of hours from 0 to 72');
         return null;
       }
     }
@@ -442,6 +494,10 @@ export function useProductForm(categories: Category[] = []) {
       price,
       stock,
       prepTimeMinutes,
+      minNoticeHours,
+      servingQty,
+      servingUnit,
+      bundleItems: isPromoCategory && promoType === 'bundle' ? form.bundleItems : null,
       ingredients: form.ingredients,
       allergens: form.allergens,
       isBulkCategory,
@@ -460,6 +516,10 @@ export function useProductForm(categories: Category[] = []) {
       price: number;
       stock: number;
       prepTimeMinutes: number | null;
+      minNoticeHours: number | null;
+      servingQty: number | null;
+      servingUnit: ServingUnit | null;
+      bundleItems: Array<{productId: string; qty: number}> | null;
       ingredients: ProductIngredient[];
       allergens: ProductAllergen[];
       isBulkCategory: boolean;

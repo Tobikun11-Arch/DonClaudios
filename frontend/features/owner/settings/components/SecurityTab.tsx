@@ -8,6 +8,7 @@ import {Label} from '@/components/ui/label';
 import {useChangePasswordMutation, useSessionsQuery} from '@/lib/hooks/auth/useProfile';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {validatePassword} from '@/lib/utils/passwordRules';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 import {Monitor} from 'lucide-react';
 
 function PasswordField({
@@ -32,6 +33,7 @@ function PasswordField({
         <Input
           id={id}
           type="password"
+          required
           value={value}
           onChange={e => onChange(e.target.value)}
           className="min-h-[44px]"
@@ -98,7 +100,7 @@ export function SecurityTab() {
           </h2>
         </div>
 
-        <form onSubmit={onSubmit}>
+        <form onSubmit={onSubmit} onKeyDown={enterNavigation}>
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             <PasswordField
               id="currentPassword"

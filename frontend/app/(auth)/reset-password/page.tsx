@@ -7,6 +7,7 @@ import SuccessCheck from '@/components/ui/success-check';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 import {
   InputOTP,
   InputOTPGroup,
@@ -90,7 +91,7 @@ function ResetPasswordContent() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} onKeyDown={enterNavigation} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input

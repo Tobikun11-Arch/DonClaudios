@@ -37,7 +37,12 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
   },
   icons: {
+    // Google Search shows a favicon only if it is square and a multiple of
+    // 48px, so the 48/96 PNGs come first; /favicon.ico is the crawler fallback.
     icon: [
+      {url: '/favicon.ico', sizes: '48x48'},
+      {url: '/icons/favicon-48x48.png', type: 'image/png', sizes: '48x48'},
+      {url: '/icons/favicon-96x96.png', type: 'image/png', sizes: '96x96'},
       {url: '/icons/favicon-32x32.png', type: 'image/png', sizes: '32x32'},
       {url: '/icons/icon-192x192.png', type: 'image/png', sizes: '192x192'},
       {url: '/icons/icon-512x512.png', type: 'image/png', sizes: '512x512'}

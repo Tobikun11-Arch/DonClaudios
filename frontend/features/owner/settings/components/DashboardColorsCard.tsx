@@ -4,6 +4,7 @@ import {useState} from 'react';
 import {toast} from 'sonner';
 import {Check, Gift, LayoutDashboard, LogOut, Package, ShoppingCart, Star, Store} from 'lucide-react';
 import {cn} from '@/lib/utils';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {useSettingsQuery, useUpdateDashboardThemeMutation} from '@/lib/hooks/useSettings';
@@ -116,7 +117,7 @@ export function DashboardColorsCard() {
   };
 
   return (
-    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">
+    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6" onKeyDown={enterNavigation}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -281,6 +282,7 @@ export function DashboardColorsCard() {
         <Button
           type="button"
           size="sm"
+          data-enter-submit
           disabled={!dirty || invalid || busy}
           onClick={() => save(draft, `${targetInfo.label} dashboard colors saved.`)}
           className="bg-[#2d4a35] text-white hover:bg-[#3c5e45]"

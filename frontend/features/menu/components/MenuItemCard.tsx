@@ -3,24 +3,29 @@
 import {useState} from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import {Plus} from 'lucide-react';
+import {Layers, Plus, Utensils} from 'lucide-react';
 import {cn} from '@/lib/utils';
 import {useCartUiStore} from '@/app/store/cartUiStore';
 import {flyWhenCartOpens} from '@/shared/motion/flyToCart';
 import {useAllergenCatalog} from '@/lib/hooks/useAllergens';
 import {formatMenuPrice, type MenuItem} from '../menuItems';
 
-/** Chips shown before the rest collapse into "+N". */
+/** Allergen chips shown before the rest collapse into "+N". */
 const VISIBLE_ALLERGENS = 2;
 /** At or below this, the photo shows a "Few left" badge. */
 const LOW_STOCK = 5;
+
+/** Serving / allergen chips under the photo. */
+const chipBase =
+  'inline-flex items-center gap-1 rounded-full px-2 py-[3px] text-[11px] font-semibold leading-none';
 
 const pillBase =
   'pointer-events-none rounded-full px-2.5 py-1 text-[11px] sm:text-xs font-extrabold uppercase tracking-wide shadow-sm';
 
 /**
  * Fast-food style menu card: square photo with the add button on its corner,
- * then name, price and the allergens a customer should see before tapping.
+ * then (top to bottom) what a customer should know before tapping: serving
+ * size and allergens, the name, a short description, and the price.
  * Tapping anywhere else on the card opens the item's detail page.
  */
 export function MenuItemCard({
@@ -41,14 +46,16 @@ export function MenuItemCard({
   const allowanceReached =
     item.isPreOrder && item.preOrderAllowance != null && item.preOrderAllowance <= 0;
   const addDisabled =
-    guestLocked || !item.preOrderOrderable || item.preOrderClosed || allowanceReached;
+    item.soldOut || guestLocked || !item.preOrderOrderable || item.preOrderClosed || allowanceReached;
 
   const catalog = useAllergenCatalog();
   const allergens = catalog.sort(item.allergens);
   const shownAllergens = showAllAllergens ? allergens : allergens.slice(0, VISIBLE_ALLERGENS);
   const hiddenCount = allergens.length - shownAllergens.length;
   const fewLeft = item.stock != null && item.stock > 0 && item.stock <= LOW_STOCK && !item.isPreOrder;
-  const discounted = item.displayPrice < item.price;
+  // Struck-through "was" price: the regular price under a promo, or what a
+  // bundle's items cost bought one by one.
+  const wasPrice = item.wasPrice;
 
   const preOrderLine = item.isPreOrder
     ? guestLocked
@@ -91,6 +98,12 @@ export function MenuItemCard({
             </span>
           )}
           {fewLeft && <span className={cn(pillBase, 'bg-amber-400 text-amber-950')}>Few left</span>}
+          {item.soldOut && <span className={cn(pillBase, 'bg-gray-800 text-white')}>Sold out</span>}
+          {!item.soldOut && item.bundleSavings != null && (
+            <span className={cn(pillBase, 'bg-[#7ed4a0] text-[#1f3527]')}>
+              Save {formatMenuPrice(item.bundleSavings).replace(/\.00$/, '')}
+            </span>
+          )}
         </div>
 
         {cartQty > 0 && (
@@ -119,7 +132,9 @@ export function MenuItemCard({
           disabled={addDisabled}
           aria-label={
             addDisabled
-              ? guestLocked
+              ? item.soldOut
+                ? `${item.name} is sold out`
+                : guestLocked
                 ? `Sign in to order ${item.name}`
                 : item.preOrderClosed
                   ? `Pre-order closed for ${item.name}`
@@ -139,38 +154,28 @@ export function MenuItemCard({
         </button>
       </div>
 
-      <div className="flex flex-1 flex-col px-1.5 pb-1.5 pt-3 sm:px-2 sm:pb-2">
-        <p className="line-clamp-2 text-[15px] font-medium leading-snug text-gray-700 sm:text-base dark:text-gray-200">
-          {item.name}
-        </p>
-
-        {preOrderLine && (
-          <p
-            className={cn(
-              'mt-0.5 line-clamp-2 text-xs font-semibold leading-snug',
-              item.preOrderOrderable && !item.preOrderClosed && !guestLocked && !allowanceReached
-                ? 'text-purple-700 dark:text-purple-300'
-                : 'text-gray-500 dark:text-gray-400'
-            )}
-          >
-            {preOrderLine}
-          </p>
-        )}
-
-        <div className="mt-1 flex flex-wrap items-baseline gap-x-2">
-          <span className="text-xl font-extrabold tracking-tight text-gray-900 sm:text-2xl dark:text-gray-50">
-            {formatMenuPrice(item.displayPrice)}
-          </span>
-          {discounted && (
-            <span className="text-sm text-gray-400 line-through">{formatMenuPrice(item.price)}</span>
-          )}
-        </div>
-
-        {allergens.length > 0 && (
+      <div className="flex flex-1 flex-col px-1.5 pb-1.5 pt-2.5 sm:px-2 sm:pb-2">
+        {(item.serving || item.bundleItemCount || allergens.length > 0) && (
           <ul
-            className="mt-auto flex flex-wrap gap-1 pt-2.5"
-            aria-label={`Contains: ${allergens.map(a => catalog.label(a)).join(', ')}`}
+            className="mb-1.5 flex flex-wrap gap-1"
+            aria-label={
+              allergens.length > 0
+                ? `Contains: ${allergens.map(a => catalog.label(a)).join(', ')}`
+                : undefined
+            }
           >
+            {item.serving && (
+              <li className={cn(chipBase, 'bg-[#2d4a35]/[0.08] text-[#2d4a35] dark:bg-[#7ed4a0]/10 dark:text-[#7ed4a0]')}>
+                <Utensils className="h-3 w-3 shrink-0" aria-hidden />
+                {item.serving}
+              </li>
+            )}
+            {item.bundleItemCount != null && item.bundleItemCount > 0 && (
+              <li className={cn(chipBase, 'bg-[#2d4a35]/[0.08] text-[#2d4a35] dark:bg-[#7ed4a0]/10 dark:text-[#7ed4a0]')}>
+                <Layers className="h-3 w-3 shrink-0" aria-hidden />
+                {item.bundleItemCount} items
+              </li>
+            )}
             {shownAllergens.map(allergen => {
               const Icon = catalog.icon(allergen);
               const note = catalog.isDietary(allergen);
@@ -179,13 +184,13 @@ export function MenuItemCard({
                   key={allergen}
                   title={catalog.label(allergen)}
                   className={cn(
-                    'inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold leading-none sm:text-xs',
+                    chipBase,
                     note
                       ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'
                       : 'bg-red-50 text-[#c30010] dark:bg-red-500/10 dark:text-red-300'
                   )}
                 >
-                  <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <Icon className="h-3 w-3 shrink-0" aria-hidden />
                   {catalog.shortLabel(allergen)}
                 </li>
               );
@@ -197,7 +202,7 @@ export function MenuItemCard({
                   onClick={() => setShowAllAllergens(v => !v)}
                   aria-expanded={showAllAllergens}
                   aria-label={showAllAllergens ? 'Show fewer allergens' : `Show ${hiddenCount} more allergens`}
-                  className="inline-flex min-h-[24px] items-center rounded-full bg-gray-100 px-2 text-[11px] font-bold leading-none text-gray-700 hover:bg-gray-200 sm:text-xs dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                  className="inline-flex min-h-[22px] items-center rounded-full bg-gray-100 px-2 text-[11px] font-bold leading-none text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                 >
                   {showAllAllergens ? 'Less' : `+${hiddenCount}`}
                 </button>
@@ -205,6 +210,38 @@ export function MenuItemCard({
             )}
           </ul>
         )}
+
+        <p className="line-clamp-2 text-[15px] font-semibold leading-snug text-gray-800 sm:text-base dark:text-gray-100">
+          {item.name}
+        </p>
+
+        {item.note && item.note.trim().length > 0 && (
+          <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-gray-500 sm:text-[13px] dark:text-gray-400">
+            {item.note}
+          </p>
+        )}
+
+        {preOrderLine && (
+          <p
+            className={cn(
+              'mt-1 line-clamp-2 text-xs font-semibold leading-snug',
+              item.preOrderOrderable && !item.preOrderClosed && !guestLocked && !allowanceReached
+                ? 'text-purple-700 dark:text-purple-300'
+                : 'text-gray-500 dark:text-gray-400'
+            )}
+          >
+            {preOrderLine}
+          </p>
+        )}
+
+        <div className="mt-auto flex flex-wrap items-baseline gap-x-2 pt-1.5">
+          <span className="text-xl font-extrabold tracking-tight text-gray-900 sm:text-2xl dark:text-gray-50">
+            {formatMenuPrice(item.displayPrice)}
+          </span>
+          {wasPrice != null && (
+            <span className="text-sm text-gray-400 line-through">{formatMenuPrice(wasPrice)}</span>
+          )}
+        </div>
       </div>
     </div>
   );

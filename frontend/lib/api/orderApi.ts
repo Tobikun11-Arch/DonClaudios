@@ -23,6 +23,12 @@ export type CreateGuestOrderInput = {
   riderNotes?: string;
   /** Courier the guest will book (deliveries are always self-booked for guests). */
   courier?: {provider: 'lalamove' | 'grab_express' | 'move_it' | 'other'; name?: string};
+  /** ASAP (default) or a chosen slot; see lib/orders/orderSchedule.ts. */
+  timing?: 'asap' | 'scheduled';
+  /** Store-local "YYYY-MM-DD" of the chosen slot. */
+  scheduledDate?: string;
+  /** Store-local "HH:MM" of the chosen slot. */
+  scheduledTime?: string;
   /** Anti-spam honeypot: hidden field, must stay empty. */
   website?: string;
   /** Anti-spam: epoch ms when the checkout form was opened. */
@@ -44,6 +50,12 @@ export type CreateCustomerOrderInput = {
   deliveryLocation?: {lat: number; lng: number};
   /** Courier the customer will book when delivery is not free. */
   courier?: {provider: 'lalamove' | 'grab_express' | 'move_it' | 'other'; name?: string};
+  /** ASAP (default) or a chosen slot; see lib/orders/orderSchedule.ts. */
+  timing?: 'asap' | 'scheduled';
+  /** Store-local "YYYY-MM-DD" of the chosen slot. */
+  scheduledDate?: string;
+  /** Store-local "HH:MM" of the chosen slot. */
+  scheduledTime?: string;
 };
 
 export type CreatedGuestOrderResponse = {
@@ -105,7 +117,7 @@ export type OrderPreOrderInfo = {
 
 /** The refund decided when the order was cancelled (backend refundPolicy). */
 export type OrderRefundInfo = {
-  policy: 'early' | 'late' | 'store';
+  policy: 'early' | 'late' | 'store' | 'no_show';
   paid: number;
   retained: number;
   onlineTotal: number;
@@ -126,7 +138,7 @@ export type OrderCancelRequest = {
 };
 
 export type RefundPlan = {
-  policy: 'early' | 'late' | 'store';
+  policy: 'early' | 'late' | 'store' | 'no_show';
   paid: number;
   retained: number;
   online: Array<{paymentId: string; amount: number}>;
@@ -144,6 +156,8 @@ export type CancelQuote = {
   cancelDeadline: string | null;
   pickupAt: string | null;
   cancelRequest: OrderCancelRequest | null;
+  /** Staff only: whether the order can be cancelled as a no-show now. */
+  noShow?: {allowed: boolean; reason: string | null};
 };
 
 export type OrderHistoryEntry = {
@@ -185,6 +199,12 @@ export type OrderHistoryEntry = {
   cashRefundDue?: number;
   cashRefundedAt?: string | null;
   cancelRequest?: OrderCancelRequest | null;
+  /** ASAP vs scheduled, and why (bulk / lechon need advance notice). */
+  schedule?: import('@/lib/orders/orderSchedule').OrderSchedule | null;
+  /** Requested pickup / dine-in / delivery time of a scheduled order. */
+  scheduledAt?: string | null;
+  /** Deadline for the first payment of a dated order (set on confirmation). */
+  paymentDueAt?: string | null;
   /** Dated Holiday Pre-order (see `preOrder`). */
   isPreOrder?: boolean;
   preOrder?: OrderPreOrderInfo | null;
@@ -284,6 +304,18 @@ export async function createGuestOrder(body: CreateGuestOrderInput) {
   return res.data;
 }
 
+/** Which slots this cart may take (ASAP allowed? earliest pre-order time?). */
+export async function quoteOrderSchedule(body: {
+  orderType: 'pickup' | 'delivery' | 'reservation';
+  items: {productId: string; quantity: number}[];
+}) {
+  const res = await httpClient.post<import('@/lib/orders/orderSchedule').ScheduleQuote>(
+    '/orders/schedule/quote',
+    body
+  );
+  return res.data;
+}
+
 export async function createCustomerOrder(body: CreateCustomerOrderInput) {
   const res = await httpClient.post<CreatedGuestOrderResponse>(
     '/orders/me',
@@ -310,7 +342,7 @@ export async function getOrderById(orderId: string) {
 export async function updateOrderStatus(
   orderId: string,
   status: string,
-  extra?: {reason?: string; cancelledBy?: 'store' | 'customer'}
+  extra?: {reason?: string; cancelledBy?: 'store' | 'customer' | 'no_show'}
 ) {
   const res = await httpClient.patch<{order: OrderHistoryEntry}>(
     `/orders/${orderId}/status`,
@@ -322,7 +354,7 @@ export async function updateOrderStatus(
 /** What cancelling does right now and the refund per the policy. */
 export async function fetchCancelQuote(
   orderId: string,
-  opts: {by?: 'store' | 'customer'; phoneNumber?: string} = {}
+  opts: {by?: 'store' | 'customer' | 'no_show'; phoneNumber?: string} = {}
 ) {
   const params: Record<string, string> = {};
   if (opts.by) params.by = opts.by;
@@ -615,6 +647,10 @@ export type PaymentSummary = {
   /** Balance in cash at the store; dueAt null = before the order is released. */
   balanceInStore?: {dueAt: string | null} | null;
   downPaymentAllowed: boolean;
+  /** The owner requires at least the down payment (no "cash on pick-up" for the whole amount). */
+  downPaymentRequired?: boolean;
+  /** Which Settings > Payments rule the order follows. */
+  downPaymentFlow?: 'preorder' | 'pickup' | 'delivery' | 'reservation';
   downPaymentAmount: number;
   /** Percent behind `downPaymentAmount` (the order's own down payment %). */
   downPaymentPercent?: number;

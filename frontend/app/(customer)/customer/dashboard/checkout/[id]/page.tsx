@@ -1,6 +1,6 @@
 'use client';
 
-import {useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 import {useParams, useRouter} from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -17,6 +17,7 @@ import {Input} from '@/components/ui/input';
 import {useLocationStore} from '@/app/store/locationStore';
 import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
 import LocationPicker from '@/features/order/components/LocationPicker';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
@@ -30,9 +31,10 @@ import CourierPicker, {
 } from '@/features/order/components/CourierPicker';
 import OrderTypeSelector from '@/shared/components/order/OrderTypeSelector';
 import {
+  flushPendingQuantitySaves,
   useClearCustomerCartMutation,
-  useCustomerCartQuery,
-  useSetCustomerCartItemQuantityMutation
+  useCustomerCartQuantityUpdater,
+  useCustomerCartQuery
 } from '@/lib/hooks/cart/useCustomerCart';
 import {useCreateCustomerOrderMutation} from '@/lib/hooks/orders/useCustomerOrder';
 import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
@@ -42,6 +44,14 @@ import {ORDER_NOTES_COPY, hasNote, keepNotesFor, toggleNote} from '@/lib/orders/
 import {useQueryClient} from '@tanstack/react-query';
 import {PRODUCTS_QUERY_PREFIX} from '@/lib/hooks/products/useProducts';
 import {MIN_ORDER_MESSAGE, MIN_ORDER_TOTAL} from '@/lib/constants/orderLimits';
+import {CheckoutPaymentNote} from '@/features/order/components/CheckoutPaymentNote';
+import OrderTimingPicker, {
+  DEFAULT_TIMING,
+  timingProblem,
+  type TimingSelection
+} from '@/features/order/components/OrderTimingPicker';
+import {CheckoutOrderNotices} from '@/features/order/components/OrderNotices';
+import type {ScheduleQuote} from '@/lib/orders/orderSchedule';
 
 const STORE = {
   lat: 14.39092185435405,
@@ -70,7 +80,7 @@ export default function CustomerCheckoutPage() {
     [cartQuery.data]
   );
 
-  const setQtyMutation = useSetCustomerCartItemQuantityMutation();
+  const setQuantity = useCustomerCartQuantityUpdater();
   const clearCartMutation = useClearCustomerCartMutation();
   const createOrderMutation = useCreateCustomerOrderMutation();
 
@@ -84,14 +94,13 @@ export default function CustomerCheckoutPage() {
   const setLocation = useLocationStore(s => s.setLocation);
 
   const orderType = useOrderDetailsStore(s => s.orderType);
-  const reservationDate = useOrderDetailsStore(s => s.reservationDate);
-  const reservationTime = useOrderDetailsStore(s => s.reservationTime);
   const setOrderType = useOrderDetailsStore(s => s.setOrderType);
-  const setReservationDate = useOrderDetailsStore(s => s.setReservationDate);
-  const setReservationTime = useOrderDetailsStore(s => s.setReservationTime);
 
   const [address, setAddress] = useState(location?.address ?? '');
-  const [pickupTime, setPickupTime] = useState('12:00');
+  // ASAP or a pre-order slot (bulk / lechon carts must pre-order).
+  const [timing, setTiming] = useState<TimingSelection>(DEFAULT_TIMING);
+  const [scheduleQuote, setScheduleQuote] = useState<ScheduleQuote | undefined>();
+  const onQuote = useCallback((q: ScheduleQuote | undefined) => setScheduleQuote(q), []);
   const [notesToRider, setNotesToRider] = useState('');
   const [addressType, setAddressType] = useState<'Residential' | 'Office'>(
     'Residential'
@@ -100,7 +109,9 @@ export default function CustomerCheckoutPage() {
   const [checkoutError, setCheckoutError] = useState('');
 
   const storeStatusQuery = useStoreStatusQuery();
-  const isStoreClosed = storeStatusQuery.data?.status.isOpen === false;
+  // A closed store only blocks ASAP orders; pre-orders pick an open slot.
+  const isStoreClosed =
+    storeStatusQuery.data?.status.isOpen === false && timing.timing === 'asap';
   const storeClosedReason =
     storeStatusQuery.data?.status.isOpen === false
       ? storeStatusQuery.data.status.isManuallyClosed
@@ -167,6 +178,18 @@ export default function CustomerCheckoutPage() {
 
   const total = subtotal;
 
+  const scheduleItems = useMemo(
+    () => items.map(i => ({productId: getProductId(i.productId), quantity: i.quantity})),
+    [items]
+  );
+  const timingIssue = timingProblem(timing, scheduleQuote);
+  const selectedSlotAt =
+    timing.timing === 'scheduled'
+      ? scheduleQuote?.days
+          .find(d => d.day === timing.day)
+          ?.slots.find(s => s.time === timing.time)?.at ?? null
+      : null;
+
 
   const toggleNoteSuggestion = (suggestion: string) => {
     setNotesToRider(current => toggleNote(current, suggestion));
@@ -207,12 +230,20 @@ export default function CustomerCheckoutPage() {
       return;
     }
 
+    if (timingIssue) {
+      setCheckoutError(timingIssue);
+      return;
+    }
+
     if (!agreedToTerms) {
       setCheckoutError(
         'You must agree to the Terms, Return Policy, and Privacy Policy to place your order.'
       );
       return;
     }
+
+    // Save any +/- taps still waiting out their delay.
+    flushPendingQuantitySaves();
 
     try {
       const created = await createOrderMutation.mutateAsync({
@@ -249,7 +280,10 @@ export default function CustomerCheckoutPage() {
         },
         deliveryLocation:
           orderType === 'Delivery' && pinnedLocation ? pinnedLocation : undefined,
-        courier: courierPayload
+        courier: courierPayload,
+        timing: timing.timing,
+        scheduledDate: timing.timing === 'scheduled' ? timing.day ?? undefined : undefined,
+        scheduledTime: timing.timing === 'scheduled' ? timing.time ?? undefined : undefined
       });
 
       const orderId = created?.order?._id;
@@ -278,6 +312,7 @@ export default function CustomerCheckoutPage() {
   const checkoutButton = (
     <Button
       type="button"
+      data-enter-submit="focus"
       className="w-full h-12 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
       disabled={
         items.length === 0 ||
@@ -286,6 +321,7 @@ export default function CustomerCheckoutPage() {
         clearCartMutation.isPending ||
         !agreedToTerms ||
         courierMissing ||
+        Boolean(timingIssue) ||
         (orderType === 'Delivery' && !address.trim())
       }
       onClick={handleCheckout}
@@ -294,12 +330,14 @@ export default function CustomerCheckoutPage() {
         ? 'Placing order...'
         : isStoreClosed
           ? 'Store is Closed'
-          : 'Place order'}
+          : timing.timing === 'scheduled'
+            ? 'Place pre-order'
+            : 'Place order'}
     </Button>
   );
 
   return (
-    <div className="min-h-full min-w-0 py-6">
+    <div className="min-h-full min-w-0 py-6" onKeyDown={enterNavigation}>
       <div className="flex items-center justify-between">
         <Button
           type="button"
@@ -391,6 +429,17 @@ export default function CustomerCheckoutPage() {
                 />
               </div>
 
+              <OrderTimingPicker
+                orderType={orderType}
+                items={scheduleItems}
+                value={timing}
+                onChange={setTiming}
+                onQuote={onQuote}
+              />
+              {timingIssue && items.length > 0 ? (
+                <p className="text-xs font-medium text-amber-700 dark:text-amber-300">{timingIssue}</p>
+              ) : null}
+
               {orderType === 'Delivery' ? (
                 <div
                   className={
@@ -468,40 +517,16 @@ export default function CustomerCheckoutPage() {
                     </p>
                     <p className="text-xs text-gray-600 dark:text-gray-300">{STORE_ADDRESS}</p>
                   </div>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                      Pick-up time
-                    </p>
-                    <input
-                      type="time"
-                      value={pickupTime}
-                      onChange={e => setPickupTime(e.target.value)}
-                      className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900 dark:border-gray-700 dark:text-gray-100 dark:bg-gray-800 dark:scheme-dark"
-                    />
-                  </div>
                 </div>
               ) : null}
 
               {orderType === 'Reservation' ? (
-                <div className="flex flex-wrap items-center gap-3">
-                  <div>
-                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Date</p>
-                    <input
-                      type="date"
-                      value={reservationDate}
-                      onChange={e => setReservationDate(e.target.value)}
-                      className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900 dark:border-gray-700 dark:text-gray-100 dark:bg-gray-800 dark:scheme-dark"
-                    />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Time</p>
-                    <input
-                      type="time"
-                      value={reservationTime}
-                      onChange={e => setReservationTime(e.target.value)}
-                      className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900 dark:border-gray-700 dark:text-gray-100 dark:bg-gray-800 dark:scheme-dark"
-                    />
-                  </div>
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+                  <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Dine in at</p>
+                  <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    DonClaudio&apos;s Lechon House
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-300">{STORE_ADDRESS}</p>
                 </div>
               ) : null}
 
@@ -519,6 +544,7 @@ export default function CustomerCheckoutPage() {
                         For your courier booking and our records
                       </p>
                       <Input
+                        required
                         value={address}
                         onChange={e => handleAddressChange(e.target.value)}
                         placeholder={
@@ -662,16 +688,14 @@ export default function CustomerCheckoutPage() {
               <CreditCard className="h-5 w-5 text-[#3c5e45] dark:text-[#7ed4a0]" />
             </div>
 
-            <p className="mt-5 text-sm text-gray-600 leading-relaxed dark:text-gray-300">
-              Once your order is placed, our cashier will give you a call to
-              confirm the details and arrange the payment with you (down payment
-              or full payment &mdash; whatever you both agree on).
-            </p>
-            <p className="mt-3 text-sm text-gray-600 leading-relaxed dark:text-gray-300">
-              After the cashier confirms the order, the payment instructions and
-              the account details will appear on your order page, along with a
-              place to upload your proof of payment.
-            </p>
+            <CheckoutPaymentNote orderType={orderType} total={total} />
+            <CheckoutOrderNotices
+              className="mt-4"
+              orderType={orderType}
+              timing={timing.timing}
+              readyAt={selectedSlotAt}
+              advanceOnly={scheduleQuote?.requirement.advanceOnly}
+            />
           </div>
         </div>
 
@@ -753,13 +777,12 @@ export default function CustomerCheckoutPage() {
                             type="button"
                             className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800"
                             onClick={() =>
-                              setQtyMutation.mutate({
-                                productId: getProductId(item.productId),
-                                quantity: Math.max(1, item.quantity - 1)
-                              })
+                              setQuantity(
+                                getProductId(item.productId),
+                                Math.max(1, item.quantity - 1)
+                              )
                             }
                             aria-label="Decrease"
-                            disabled={setQtyMutation.isPending}
                           >
                             <Minus className="h-4 w-4" />
                           </button>
@@ -770,13 +793,12 @@ export default function CustomerCheckoutPage() {
                             type="button"
                             className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800"
                             onClick={() =>
-                              setQtyMutation.mutate({
-                                productId: getProductId(item.productId),
-                                quantity: item.quantity + 1
-                              })
+                              setQuantity(
+                                getProductId(item.productId),
+                                item.quantity + 1
+                              )
                             }
                             aria-label="Increase"
-                            disabled={setQtyMutation.isPending}
                           >
                             <Plus className="h-4 w-4" />
                           </button>

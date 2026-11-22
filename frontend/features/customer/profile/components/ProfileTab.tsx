@@ -9,6 +9,7 @@ import {uploadProfileImage} from '@/lib/api/uploadApi';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {Camera, Check, Pencil} from 'lucide-react';
 import type {MeUser} from '@/lib/api/authApi';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 
 type FieldDef = {
   label: string;
@@ -16,6 +17,7 @@ type FieldDef = {
   save: (v: string) => void;
   placeholder?: string;
   readOnly?: boolean;
+  required?: boolean;
 };
 
 function AvatarUpload({
@@ -128,15 +130,13 @@ function InlineField({field, editing}: {field: FieldDef; editing: boolean}) {
         <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
           {field.label}
         </label>
+        {/* Enter moves to the next field (see enterNavigation on the
+            section); leaving the field saves it through onBlur. */}
         <Input
           value={value}
+          required={field.required}
           onChange={e => setValue(e.target.value)}
           onBlur={commit}
-          onKeyDown={e => {
-            if (e.key === 'Enter') {
-              (e.target as HTMLInputElement).blur();
-            }
-          }}
           placeholder={field.placeholder}
           className="min-h-[44px] dark:bg-gray-800 dark:text-gray-100"
         />
@@ -174,12 +174,16 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-700 dark:bg-gray-900">
+    <div
+      className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 dark:border-gray-700 dark:bg-gray-900"
+      onKeyDown={enterNavigation}
+    >
       <div className="mb-5 flex items-center justify-between gap-2">
         <h2 className="text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">{title}</h2>
         <button
           type="button"
           onClick={onToggleEdit}
+          data-enter-submit={editing ? '' : undefined}
           aria-label={editing ? 'Finish editing' : 'Edit ' + title}
           className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-[#2d4a35] dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-[#7ed4a0]"
         >
@@ -232,11 +236,13 @@ export function ProfileTab() {
   const profileFields: FieldDef[] = [
     {
       label: 'First Name',
+      required: true,
       value: user.firstName ?? '',
       save: v => persist({firstName: v})
     },
     {
       label: 'Last Name',
+      required: true,
       value: user.lastName ?? '',
       save: v => persist({lastName: v})
     },

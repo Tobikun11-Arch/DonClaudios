@@ -137,9 +137,14 @@ export const paymentController = {
   async cancelQuote(req: Request, res: Response, next: NextFunction) {
     try {
       const order = await loadOrder(req.params.id);
-      let by: 'customer' | 'store' = 'customer';
+      let by: 'customer' | 'store' | 'no_show' = 'customer';
       if (isStaff(req)) {
-        by = req.query.by === 'customer' ? 'customer' : 'store';
+        by =
+          req.query.by === 'customer'
+            ? 'customer'
+            : req.query.by === 'no_show'
+              ? 'no_show'
+              : 'store';
       } else {
         assertOrderCustomerAccess(order, req);
       }

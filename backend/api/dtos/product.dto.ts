@@ -1,5 +1,6 @@
 import {z} from 'zod';
 import {STOCK_UNITS} from '../models/Category.model';
+import {SERVING_UNITS} from '../models/Product.model';
 
 /** Allergen keys; product.service checks each one against the catalog. */
 export type ProductAllergen = string;
@@ -27,7 +28,28 @@ export const createProductDto = z.object({
   stockUnit: z.enum(STOCK_UNITS).optional(),
   description: z.string().optional(),
   imageUrl: z.string().url().optional(),
+  // "What one serving includes" (e.g. 6 pcs). Display only, not stock.
+  // null/'' clears; product.service keeps the pair all-or-nothing.
+  servingQty: z.preprocess(
+    value => (value === '' || value === null ? null : value),
+    z.coerce.number().positive().max(9999).nullable().optional()
+  ),
+  servingUnit: z.preprocess(
+    value => (value === '' || value === null ? null : value),
+    z.enum(SERVING_UNITS).nullable().optional()
+  ),
   prepTimeMinutes: z.coerce.number().int().min(0).max(1440).optional(),
+  // Bundle Deal contents (Promo category, promoType "bundle"); null clears.
+  bundleItems: z
+    .array(z.object({productId: z.string().min(1), qty: z.coerce.number().int().min(1).max(99)}))
+    .max(30)
+    .nullable()
+    .optional(),
+  // Own minimum notice in hours; null/'' = use the category's.
+  minNoticeHours: z.preprocess(
+    value => (value === '' || value === null ? null : value),
+    z.coerce.number().int().min(0).max(72).nullable().optional()
+  ),
   ingredients: z.array(productIngredient).max(50).optional(),
   allergens: z.array(z.string().trim().min(1).max(40)).max(40).optional(),
   isAvailable: z.coerce.boolean().optional(),

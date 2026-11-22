@@ -24,6 +24,8 @@ import {guestOtpService} from '../services/guestOtp.service';
 import {guestOrderGuardService} from '../services/guestOrderGuard.service';
 import {
   customerCancelPolicy,
+  downPaymentPercentOf,
+  noShowAllowed,
   isInStoreChoice,
   paymentService
 } from '../services/payment.service';
@@ -48,7 +50,14 @@ import {customerStatusLabel, isStatusAllowed, parseCourier, staffFlowError} from
 import {settingsService} from '../services/settings.service';
 import {assertPreOrderItemsOrderable} from '../services/cart.service';
 import {isPositiveInteger, reserveOrderStock} from '../services/preOrder.service';
+import {
+  deliveryLinesOf,
+  snapshotOrderLines,
+  toStockLines
+} from '../services/bundle.service';
 import {applyServerPrices} from '../services/orderPricing.service';
+import {orderScheduleService} from '../services/orderSchedule.service';
+import {formatStoreDateTime} from '../config/orderSchedule';
 import type {ListAllOrdersQuery} from '../dtos/order.dto';
 import {sanitizeAcquisition} from '../config/acquisition';
 
@@ -191,19 +200,6 @@ async function notifyOverdueOrder(
     } catch (error) {
       console.error('Failed to create delayed customer notification', error);
     }
-  }
-}
-
-async function assertStoreOpen() {
-  const status = await storeStatusService.getStoreStatus();
-  if (!status.isOpen) {
-    throw new ApiError(
-      423,
-      'STORE_CLOSED',
-      status.isManuallyClosed
-         ? 'Store is temporarily closed'
-        : 'Store is currently closed'
-    );
   }
 }
 
@@ -627,8 +623,8 @@ export const orderController = {
         throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
       }
 
-      await assertStoreOpen();
-
+      // Store hours are checked with the timing below: ASAP needs the store
+      // open now, a pre-order only needs an open slot.
       const {
         orderType,
         items,
@@ -692,20 +688,14 @@ export const orderController = {
       // Price every line from the database (product price + active promo),
       // never from the request body.
       await applyServerPrices(normalizedItems);
+      // Names on every line; bundle lines also get the bundle's contents,
+      // and stock / lead time / delivery use the products inside (stockLines).
+      const lines = await snapshotOrderLines(normalizedItems);
+      const stockLines = toStockLines(lines);
 
-      const deliveryProducts = await productRepository.findManyByIds(
-        normalizedItems.map(i => i.productId)
-      );
-      const deliveryProductById = new Map(
-        deliveryProducts.map(p => [String(p._id), p])
-      );
       const freeDeliverySettings = await settingsService.getFreeDelivery();
       const deliveryMode = getDeliveryMode(
-        normalizedItems.map(i => ({
-          category: deliveryProductById.get(String(i.productId))?.category,
-          price: i.price,
-          quantity: i.quantity
-        })),
+        await deliveryLinesOf(lines),
         {
           buyer: 'customer',
           location: deliveryLocation,
@@ -726,7 +716,18 @@ export const orderController = {
 
       const productIds = normalizedItems.map(i => i.productId);
       const {itemPreps, estimatedPrepMinutes, estimatedReadyAt} =
-        await buildPrepSnapshot(productIds, orderType);
+        await buildPrepSnapshot(productIds, orderType, lines);
+
+      // ASAP or a chosen slot; validates store hours, lead time and the
+      // lechon / bulk notice (config/orderSchedule.ts).
+      const scheduleFields = await orderScheduleService.resolveForNewOrder({
+        // Bundle lines as they are: the schedule rules look inside them.
+        items: lines.map(i => ({productId: i.productId, quantity: i.quantity})),
+        orderType,
+        timing: req.body?.timing,
+        scheduledDate: req.body?.scheduledDate,
+        scheduledTime: req.body?.scheduledTime
+      });
 
       const offeredName = isNonEmptyString(contactInfo?.firstName)
         ? contactInfo.firstName
@@ -752,10 +753,7 @@ export const orderController = {
         try {
           await session.withTransaction(async () => {
             const stamps = await reserveOrderStock({
-              items: normalizedItems.map(i => ({
-                productId: i.productId,
-                quantity: i.quantity
-              })),
+              items: stockLines,
               customerId: req.auth!.userId as string,
               session
             });
@@ -785,15 +783,19 @@ export const orderController = {
                 statusHistory: [{status: 'pending', at: new Date()}],
                 estimatedPrepMinutes,
                 estimatedReadyAt,
+                ...scheduleFields,
                 isOnline: true,
                 stockDeducted: true
               },
               session
             );
 
-            const orderItems = normalizedItems.map((item, index) => ({
+            const orderItems = lines.map((item, index) => ({
               orderId: order._id,
               productId: item.productId as any,
+              name: item.name,
+              promoId: item.promoId as any,
+              bundleItems: item.bundleItems as any,
               quantity: item.quantity,
               price: item.price,
               prepTimeMinutes: itemPreps[index] ?? null,
@@ -809,10 +811,7 @@ export const orderController = {
       } catch (e: any) {
         if (e?.code === 20 || e?.codeName === 'IllegalOperation') {
           const stamps = await reserveOrderStock({
-            items: normalizedItems.map(i => ({
-              productId: i.productId,
-              quantity: i.quantity
-            })),
+            items: stockLines,
             customerId: req.auth!.userId as string
           });
 
@@ -836,13 +835,17 @@ export const orderController = {
             statusHistory: [{status: 'pending', at: new Date()}],
             estimatedPrepMinutes,
             estimatedReadyAt,
+            ...scheduleFields,
             isOnline: true,
             stockDeducted: true
           });
 
-          const orderItems = normalizedItems.map((item, index) => ({
+          const orderItems = lines.map((item, index) => ({
             orderId: order._id,
             productId: item.productId as any,
+            name: item.name,
+            promoId: item.promoId as any,
+            bundleItems: item.bundleItems as any,
             quantity: item.quantity,
             price: item.price,
             prepTimeMinutes: itemPreps[index] ?? null,
@@ -962,7 +965,7 @@ export const orderController = {
 
   async createGuestOrder(req: Request, res: Response, next: NextFunction) {
     try {
-      await assertStoreOpen();
+      // Store hours are checked with the timing (see resolveForNewOrder).
 
       const {
         guestInfo,
@@ -1081,24 +1084,29 @@ export const orderController = {
       // Price every line from the database (product price + active promo),
       // never from the request body.
       await applyServerPrices(normalizedItems);
+      // Names on every line; bundle lines also get the bundle's contents,
+      // and stock / lead time / delivery use the products inside (stockLines).
+      const lines = await snapshotOrderLines(normalizedItems);
+      const stockLines = toStockLines(lines);
 
       const productIds = normalizedItems.map(i => i.productId);
       const {itemPreps, estimatedPrepMinutes, estimatedReadyAt} =
-        await buildPrepSnapshot(productIds, orderType);
+        await buildPrepSnapshot(productIds, orderType, lines);
 
-      const guestDeliveryProducts = await productRepository.findManyByIds(
-        normalizedItems.map(i => i.productId)
-      );
-      const guestDeliveryProductById = new Map(
-        guestDeliveryProducts.map(p => [String(p._id), p])
-      );
+      // ASAP or a chosen slot; validates store hours, lead time and the
+      // lechon / bulk notice (config/orderSchedule.ts).
+      const scheduleFields = await orderScheduleService.resolveForNewOrder({
+        // Bundle lines as they are: the schedule rules look inside them.
+        items: lines.map(i => ({productId: i.productId, quantity: i.quantity})),
+        orderType,
+        timing: req.body?.timing,
+        scheduledDate: req.body?.scheduledDate,
+        scheduledTime: req.body?.scheduledTime
+      });
+
       // Guests never get free delivery: it is for customers with an account.
       const deliveryMode = getDeliveryMode(
-        normalizedItems.map(i => ({
-          category: guestDeliveryProductById.get(String(i.productId))?.category,
-          price: i.price,
-          quantity: i.quantity
-        })),
+        await deliveryLinesOf(lines),
         {
           buyer: 'guest',
           settings: await settingsService.getFreeDelivery()
@@ -1124,10 +1132,7 @@ export const orderController = {
         try {
           await session.withTransaction(async () => {
             const stamps = await reserveOrderStock({
-              items: normalizedItems.map(i => ({
-                productId: i.productId,
-                quantity: i.quantity
-              })),
+              items: stockLines,
               session
             });
 
@@ -1155,6 +1160,7 @@ export const orderController = {
                 statusHistory: [{status: 'pending', at: new Date()}],
                 estimatedPrepMinutes,
                 estimatedReadyAt,
+                ...scheduleFields,
                 isOnline: true,
                 stockDeducted: true,
                 acquisition
@@ -1162,9 +1168,12 @@ export const orderController = {
               session
             );
 
-            const orderItems = normalizedItems.map((item, index) => ({
+            const orderItems = lines.map((item, index) => ({
               orderId: order._id,
               productId: item.productId as any,
+              name: item.name,
+              promoId: item.promoId as any,
+              bundleItems: item.bundleItems as any,
               quantity: item.quantity,
               price: item.price,
               prepTimeMinutes: itemPreps[index] ?? null,
@@ -1180,10 +1189,7 @@ export const orderController = {
       } catch (e: any) {
         if (e?.code === 20 || e?.codeName === 'IllegalOperation') {
           const stamps = await reserveOrderStock({
-            items: normalizedItems.map(i => ({
-              productId: i.productId,
-              quantity: i.quantity
-            }))
+            items: stockLines
           });
 
           order = await orderRepository.create({
@@ -1207,14 +1213,18 @@ export const orderController = {
             statusHistory: [{status: 'pending', at: new Date()}],
             estimatedPrepMinutes,
             estimatedReadyAt,
+            ...scheduleFields,
             isOnline: true,
             stockDeducted: true,
             acquisition
           });
 
-          const orderItems = normalizedItems.map((item, index) => ({
+          const orderItems = lines.map((item, index) => ({
             orderId: order._id,
             productId: item.productId as any,
+            name: item.name,
+            promoId: item.promoId as any,
+            bundleItems: item.bundleItems as any,
             quantity: item.quantity,
             price: item.price,
             prepTimeMinutes: itemPreps[index] ?? null,
@@ -1264,8 +1274,8 @@ export const orderController = {
               hour: 'numeric',
               minute: '2-digit'
             }),
-            items: normalizedItems.map(i => ({
-              name: guestDeliveryProductById.get(String(i.productId))?.name ?? 'Item',
+            items: lines.map(i => ({
+              name: i.name ?? 'Item',
               quantity: i.quantity,
               lineTotal: i.price * i.quantity
             })),
@@ -1288,6 +1298,15 @@ export const orderController = {
       }
 
       res.status(201).json({order, transaction});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async quoteSchedule(req: Request, res: Response, next: NextFunction) {
+    try {
+      const quote = await orderScheduleService.quote(req.body.items, req.body.orderType);
+      res.status(200).json(quote);
     } catch (error) {
       next(error);
     }
@@ -1428,10 +1447,17 @@ export const orderController = {
         };
       });
 
+      // Price every line like the online menu does: active percentage /
+      // fixed promos and bundles. The cashier's price is never trusted (and
+      // the counter used to ignore promos and charge full price).
+      await applyServerPrices(normalizedItems);
+      const lines = await snapshotOrderLines(normalizedItems);
+      const stockLines = toStockLines(lines);
+
       // Pre-order items are not sold at the counter (no customer account to
       // scope the per-day allowance to).
       const counterProducts = await productRepository.findManyByIds(
-        normalizedItems.map(i => i.productId)
+        stockLines.map(l => l.productId)
       );
       const productById = new Map(
         counterProducts.map(p => [String(p._id), p])
@@ -1444,30 +1470,25 @@ export const orderController = {
           `"${preOrderProduct.name}" is a pre-order item and cannot be sold at the counter.`
         );
       }
-      for (const item of normalizedItems) {
-        const product = productById.get(item.productId);
+      for (const line of stockLines) {
+        const product = productById.get(line.productId);
         if (!product) {
           throw new ApiError(
             404,
             'PRODUCT_NOT_FOUND',
-            `Product ${item.productId} not found`
+            `Product ${line.productId} not found`
           );
         }
-        if (product.stock < item.quantity) {
+        if (product.stock < line.quantity) {
           throw new ApiError(
             400,
             'INSUFFICIENT_STOCK',
-            `Insufficient stock for "${product.name}". Available: ${product.stock}, needed: ${item.quantity}`
+            `Insufficient stock for "${product.name}". Available: ${product.stock}, needed: ${line.quantity}`
           );
         }
       }
 
-      // Recompute the total on the backend from product prices; never trust
-      // the client-supplied total or price.
-      const serverTotal = normalizedItems.reduce((sum, item) => {
-        const product = productById.get(item.productId);
-        return sum + (product?.price ?? item.price) * item.quantity;
-      }, 0);
+      const serverTotal = lines.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
       // Generate a human-friendly DC-### order number on the backend.
       const existingInStore = await orderRepository.listInStore();
@@ -1504,11 +1525,14 @@ export const orderController = {
         ...(clientRef ? {clientRef} : {})
       });
 
-      const orderItems = normalizedItems.map(item => ({
+      const orderItems = lines.map(item => ({
         orderId: order._id,
         productId: item.productId as any,
+        name: item.name,
+        promoId: item.promoId as any,
+        bundleItems: item.bundleItems as any,
         quantity: item.quantity,
-        price: productById.get(item.productId)?.price ?? item.price,
+        price: item.price,
         specialRequest: item.specialRequest
       }));
 
@@ -1583,7 +1607,7 @@ export const orderController = {
       }
 
       const cashAmount = inStoreDown
-        ? downPaymentAmount(order.totalAmount, await settingsService.downPaymentPercentFor(order))
+        ? downPaymentAmount(order.totalAmount, await downPaymentPercentOf(order))
         : Math.max(0, order.totalAmount - (order.amountPaid ?? 0));
       const paidAt = new Date();
       const result = await orderRepository.updatePaymentIfStatus(
@@ -1755,11 +1779,29 @@ export const orderController = {
         return {productId: i.productId as string, quantity};
       });
 
-      const products = await productRepository.findManyByIds(
-        normalizedItems.map(i => i.productId)
+      // Stock adjustment by difference. Old stock is already deducted, so the
+      // remaining stock is what is available for any INCREASE in quantity.
+      // Bundle lines count as the products inside them (toStockLines).
+      const oldItems = await orderItemRepository.listByOrderId(String(order._id));
+
+      // Price like a new sale (active promos and bundles), except bundle lines
+      // already on this order, which keep their price and contents even if the
+      // bundle has ended since.
+      const keptBundlePrice = new Map<string, number>();
+      for (const item of oldItems) {
+        if ((item.bundleItems?.length ?? 0) > 0) keptBundlePrice.set(String(item.productId), item.price);
+      }
+      const pricedItems = normalizedItems.map(i => ({...i, price: keptBundlePrice.get(i.productId) ?? 0}));
+      await applyServerPrices(pricedItems.filter(i => !keptBundlePrice.has(i.productId)));
+      const lines = await snapshotOrderLines(pricedItems, oldItems);
+
+      const stockProducts = await productRepository.findManyByIds(
+        toStockLines([...lines, ...oldItems]).map(l => l.productId)
       );
-      const productById = new Map(products.map(p => [String(p._id), p]));
-      const preOrderProduct = products.find(p => p.isPreOrder === true || p.preOrderOnly === true);
+      const productById = new Map(stockProducts.map(p => [String(p._id), p]));
+      const preOrderProduct = toStockLines(lines)
+        .map(l => productById.get(l.productId))
+        .find(p => p?.isPreOrder === true || p?.preOrderOnly === true);
       if (preOrderProduct) {
         throw new ApiError(
           400,
@@ -1767,35 +1809,9 @@ export const orderController = {
           `"${preOrderProduct.name}" is a pre-order item and cannot be sold at the counter.`
         );
       }
-      for (const item of normalizedItems) {
-        const product = productById.get(item.productId);
-        if (!product) {
-          throw new ApiError(
-            404,
-            'PRODUCT_NOT_FOUND',
-            `Product ${item.productId} not found`
-          );
-        }
-      }
 
-      // Stock adjustment by difference. Old stock is already deducted, so the
-      // remaining stock is what is available for any INCREASE in quantity.
-      const oldItems = await orderItemRepository.listByOrderId(String(order._id));
-      const oldQtyByProduct = new Map<string, number>();
-      for (const item of oldItems) {
-        const pid = String(item.productId);
-        oldQtyByProduct.set(
-          pid,
-          (oldQtyByProduct.get(pid) ?? 0) + item.quantity
-        );
-      }
-      const newQtyByProduct = new Map<string, number>();
-      for (const item of normalizedItems) {
-        newQtyByProduct.set(
-          item.productId,
-          (newQtyByProduct.get(item.productId) ?? 0) + item.quantity
-        );
-      }
+      const oldQtyByProduct = new Map(toStockLines(oldItems).map(l => [l.productId, l.quantity]));
+      const newQtyByProduct = new Map(toStockLines(lines).map(l => [l.productId, l.quantity]));
 
       const allProductIds = new Set([
         ...oldQtyByProduct.keys(),
@@ -1822,11 +1838,7 @@ export const orderController = {
         }
       }
 
-      // Recompute total on the backend from (current) product prices.
-      const serverTotal = normalizedItems.reduce((sum, item) => {
-        const product = productById.get(item.productId);
-        return sum + (product?.price ?? 0) * item.quantity;
-      }, 0);
+      const serverTotal = lines.reduce((sum, item) => sum + item.price * item.quantity, 0);
       if (!Number.isFinite(serverTotal) || serverTotal <= 0) {
         throw new ApiError(400, 'VALIDATION_ERROR', 'totalAmount is invalid');
       }
@@ -1868,11 +1880,14 @@ export const orderController = {
 
       // Replace order items.
       await orderItemRepository.deleteByOrderId(String(order._id));
-      const newOrderItems = normalizedItems.map(item => ({
+      const newOrderItems = lines.map(item => ({
         orderId: order._id,
         productId: item.productId as any,
+        name: item.name,
+        promoId: item.promoId as any,
+        bundleItems: item.bundleItems as any,
         quantity: item.quantity,
-        price: productById.get(item.productId)?.price ?? 0,
+        price: item.price,
         specialRequest: undefined
       }));
       await orderItemRepository.createMany(newOrderItems);
@@ -1989,6 +2004,12 @@ export const orderController = {
       // date itself) stays with the owner.
       if (req.auth.type === 'cashier' && order.isPreOrder && status === 'cancelled') {
         throw new ApiError(403, 'PREORDER_OWNER_ONLY', 'Only the owner can cancel a pre-order.');
+      }
+      if (status === 'cancelled' && req.body?.cancelledBy === 'no_show') {
+        const noShow = noShowAllowed(order);
+        if (!noShow.allowed) {
+          throw new ApiError(400, 'NO_SHOW_NOT_ALLOWED', noShow.reason ?? 'This order cannot be marked as a no-show');
+        }
       }
 
       // Each kind of order has its own steps (see config/orderFlow.ts): only
@@ -2144,14 +2165,18 @@ export const orderController = {
       // phone, or their late request is approved) -> the customer policy.
       const onCustomerRequest =
         status === 'cancelled' && req.body?.cancelledBy === 'customer';
-      const refundPolicy = onCustomerRequest
-        ? customerCancelPolicy(
-            order,
-            order.cancelRequest?.status === 'pending'
-              ? new Date(order.cancelRequest.requestedAt)
-              : new Date()
-          )
-        : 'store';
+      // The customer never came: the store keeps the down payment.
+      const asNoShow = status === 'cancelled' && req.body?.cancelledBy === 'no_show';
+      const refundPolicy = asNoShow
+        ? 'no_show'
+        : onCustomerRequest
+          ? customerCancelPolicy(
+              order,
+              order.cancelRequest?.status === 'pending'
+                ? new Date(order.cancelRequest.requestedAt)
+                : new Date()
+            )
+          : 'store';
       if (status === 'cancelled') {
         await orderRepository.updateFields(req.params.id, {
           cancelledBy: onCustomerRequest ? 'customer' : 'store'
@@ -2200,14 +2225,40 @@ export const orderController = {
         }
       }
 
+      // A dated order (scheduled or owner pre-order) gets its payment deadline
+      // when the cashier confirms it: reminder before it, auto-cancel after.
+      let paymentDueAt: Date | null = null;
+      if (
+        status === 'confirmed' &&
+        order.orderSource !== 'in-store' &&
+        (order.paymentStatus ?? 'unpaid') === 'unpaid'
+      ) {
+        try {
+          paymentDueAt = order.paymentDueAt
+            ? new Date(order.paymentDueAt)
+            : await orderScheduleService.paymentDueAt(order, new Date());
+          if (paymentDueAt && !order.paymentDueAt) {
+            await orderRepository.updateFields(req.params.id, {
+              paymentDueAt,
+              paymentReminderSentAt: null
+            });
+          }
+        } catch (error) {
+          console.error('Failed to set the payment deadline', error);
+        }
+      }
+
       const updated = await orderRepository.findById(req.params.id);
 
       if (order.customerId) {
+        const dueNote = paymentDueAt
+          ? ` Please pay the down payment or full amount by ${formatStoreDateTime(paymentDueAt)}, or the order will be cancelled automatically.`
+          : '';
         await notificationService.createForCustomer({
           customerId: String(order.customerId),
           type: 'order_status',
           title: 'Order Status Update',
-          message: `Your order (#${String(order._id).slice(-6).toUpperCase()}) is now ${customerStatusLabel(order, status)}.`,
+          message: `Your order (#${String(order._id).slice(-6).toUpperCase()}) is now ${customerStatusLabel(order, status)}.${dueNote}`,
           orderId: String(order._id),
           link: '/customer/dashboard?tab=history'
         });
@@ -2309,5 +2360,9 @@ export async function runOverdueCheck(): Promise<number> {
   await paymentService
     .expireOverdueInStorePayments(now)
     .catch(error => console.error('Failed to expire in-store payments', error));
+  // ...and sends payment reminders / cancels dated orders past their deadline.
+  await paymentService
+    .processPaymentDeadlines(now)
+    .catch(error => console.error('Failed to process payment deadlines', error));
   return preparing.length;
 }

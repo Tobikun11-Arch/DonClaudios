@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useParams, useRouter} from 'next/navigation';
 import Image from 'next/image';
 import {
@@ -56,8 +56,17 @@ import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {sanitizePhone, sanitizeName} from '@/lib/validation/numeric';
 import {normalizePH, detectCarrier, toAppCarrier} from '@/lib/phone';
 import {cn} from '@/lib/utils';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 import {HeardFromPicker} from '@/features/customer/components/HeardFromPicker';
 import {ORDER_NOTES_COPY, hasNote, keepNotesFor, toggleNote} from '@/lib/orders/orderNotes';
+import {CheckoutPaymentNote} from '@/features/order/components/CheckoutPaymentNote';
+import OrderTimingPicker, {
+  DEFAULT_TIMING,
+  timingProblem,
+  type TimingSelection
+} from '@/features/order/components/OrderTimingPicker';
+import {CheckoutOrderNotices} from '@/features/order/components/OrderNotices';
+import type {ScheduleQuote} from '@/lib/orders/orderSchedule';
 
 const STORE = {
   lat: 14.39092185435405,
@@ -98,14 +107,13 @@ export default function CheckoutGuestPage() {
   const setLocation = useLocationStore(s => s.setLocation);
 
   const orderType = useOrderDetailsStore(s => s.orderType);
-  const reservationDate = useOrderDetailsStore(s => s.reservationDate);
-  const reservationTime = useOrderDetailsStore(s => s.reservationTime);
   const setOrderType = useOrderDetailsStore(s => s.setOrderType);
-  const setReservationDate = useOrderDetailsStore(s => s.setReservationDate);
-  const setReservationTime = useOrderDetailsStore(s => s.setReservationTime);
 
   const [address, setAddress] = useState(location?.address ?? '');
-  const [pickupTime, setPickupTime] = useState('12:00');
+  // ASAP or a pre-order slot (bulk / lechon carts must pre-order).
+  const [timing, setTiming] = useState<TimingSelection>(DEFAULT_TIMING);
+  const [scheduleQuote, setScheduleQuote] = useState<ScheduleQuote | undefined>();
+  const onQuote = useCallback((q: ScheduleQuote | undefined) => setScheduleQuote(q), []);
   const [notesToRider, setNotesToRider] = useState('');
 
   const [firstName, setFirstName] = useState('');
@@ -196,7 +204,21 @@ export default function CheckoutGuestPage() {
   const createOrderMutation = useCreateGuestOrderMutation();
 
   const storeStatusQuery = useStoreStatusQuery();
-  const isStoreClosed = storeStatusQuery.data?.status.isOpen === false;
+  // A closed store only blocks ASAP orders; pre-orders pick an open slot.
+  const isStoreClosed =
+    storeStatusQuery.data?.status.isOpen === false && timing.timing === 'asap';
+
+  const scheduleItems = useMemo(
+    () => items.map(i => ({productId: i.productId, quantity: i.qty})),
+    [items]
+  );
+  const timingIssue = timingProblem(timing, scheduleQuote);
+  const selectedSlotAt =
+    timing.timing === 'scheduled'
+      ? scheduleQuote?.days
+          .find(d => d.day === timing.day)
+          ?.slots.find(s => s.time === timing.time)?.at ?? null
+      : null;
   const storeClosedReason =
     storeStatusQuery.data?.status.isOpen === false
       ? storeStatusQuery.data.status.isManuallyClosed
@@ -394,6 +416,11 @@ export default function CheckoutGuestPage() {
       setCheckoutError(GUEST_MAX_ORDER_MESSAGE);
       return;
     }
+
+    if (timingIssue) {
+      setCheckoutError(timingIssue);
+      return;
+    }
     const nextErrors: typeof errors = {};
     if (!firstName.trim()) nextErrors.firstName = 'First name is required.';
     if (!lastName.trim()) nextErrors.lastName = 'Last name is required.';
@@ -449,6 +476,9 @@ export default function CheckoutGuestPage() {
         totalAmount: total,
         riderNotes: notesToRider.trim().length ? notesToRider.trim() : undefined,
         courier: courierPayload,
+        timing: timing.timing,
+        scheduledDate: timing.timing === 'scheduled' ? timing.day ?? undefined : undefined,
+        scheduledTime: timing.timing === 'scheduled' ? timing.time ?? undefined : undefined,
         website: honeypot,
         formStartedAt
       });
@@ -473,6 +503,7 @@ export default function CheckoutGuestPage() {
     <div className="space-y-2">
       <Button
         type="button"
+        data-enter-submit="focus"
         className="w-full h-12 rounded-full bg-[#3c5e45] text-white shadow-lg shadow-[#3c5e45]/25 hover:bg-[#3c5e45]"
         disabled={
           items.length === 0 ||
@@ -481,6 +512,7 @@ export default function CheckoutGuestPage() {
           courierMissing ||
           !phoneVerified ||
           isStoreClosed ||
+          Boolean(timingIssue) ||
           createOrderMutation.isPending ||
           carrier === null ||
           (orderType === 'Delivery' && !address.trim())
@@ -491,12 +523,14 @@ export default function CheckoutGuestPage() {
           ? 'Placing order...'
           : isStoreClosed
             ? 'Store is Closed'
-            : 'Place order'}
+            : timing.timing === 'scheduled'
+              ? 'Place pre-order'
+              : 'Place order'}
       </Button>
       {isStoreClosed ? (
         <p className="text-center text-xs font-medium text-[#c30010]">
-          {storeClosedReason || 'Store is currently closed.'} You can still add
-          items to your cart.
+          {storeClosedReason || 'Store is currently closed.'} You can still
+          pre-order for a later time.
         </p>
       ) : checkoutError ? (
         <p className="ux-enter text-center text-xs font-medium text-[#c30010]">
@@ -519,7 +553,7 @@ export default function CheckoutGuestPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
+    <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0" onKeyDown={enterNavigation}>
       <div className="w-full max-w-6xl mx-auto px-4 py-12">
         <div className="flex items-center justify-between">
           <Button
@@ -564,6 +598,17 @@ export default function CheckoutGuestPage() {
                     }
                   />
                 </div>
+
+                <OrderTimingPicker
+                  orderType={orderType}
+                  items={scheduleItems}
+                  value={timing}
+                  onChange={setTiming}
+                  onQuote={onQuote}
+                />
+                {timingIssue && items.length > 0 ? (
+                  <p className="text-xs font-medium text-amber-700 dark:text-amber-300">{timingIssue}</p>
+                ) : null}
 
                 {orderType === 'Delivery' ? (
                   <div
@@ -643,44 +688,16 @@ export default function CheckoutGuestPage() {
                       </p>
                       <p className="text-xs text-gray-600">{STORE_ADDRESS}</p>
                     </div>
-                    <div>
-                      <p className="text-xs font-semibold text-gray-700">
-                        Pick-up time
-                      </p>
-                      <input
-                        type="time"
-                        value={pickupTime}
-                        onChange={e => setPickupTime(e.target.value)}
-                        className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
-                      />
-                    </div>
                   </div>
                 ) : null}
 
                 {orderType === 'Reservation' ? (
-                  <div className="flex flex-wrap items-center gap-3">
-                    <div>
-                      <p className="text-xs font-semibold text-gray-700">
-                        Date
-                      </p>
-                      <input
-                        type="date"
-                        value={reservationDate}
-                        onChange={e => setReservationDate(e.target.value)}
-                        className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
-                      />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-gray-700">
-                        Time
-                      </p>
-                      <input
-                        type="time"
-                        value={reservationTime}
-                        onChange={e => setReservationTime(e.target.value)}
-                        className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
-                      />
-                    </div>
+                  <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-xs font-semibold text-gray-700">Dine in at</p>
+                    <p className="mt-1 text-sm font-semibold text-gray-900">
+                      DonClaudio&apos;s Lechon House
+                    </p>
+                    <p className="text-xs text-gray-600">{STORE_ADDRESS}</p>
                   </div>
                 ) : null}
 
@@ -698,6 +715,7 @@ export default function CheckoutGuestPage() {
                           For your courier booking and our records
                         </p>
                         <Input
+                          required
                           value={address}
                           onChange={e => handleAddressChange(e.target.value)}
                           placeholder={
@@ -839,6 +857,7 @@ export default function CheckoutGuestPage() {
                     First Name
                   </p>
                   <Input
+                    required
                     value={firstName}
                     onChange={e => {
                        setFirstName(sanitizeName(e.target.value));
@@ -864,6 +883,7 @@ export default function CheckoutGuestPage() {
                     Last Name
                   </p>
                   <Input
+                    required
                     value={lastName}
                     onChange={e => {
                        setLastName(sanitizeName(e.target.value));
@@ -907,6 +927,7 @@ export default function CheckoutGuestPage() {
                   Your tracking number will be sent to this email.
                 </p>
                 <Input
+                  required
                   value={email}
                   onChange={e => {
                     setEmail(e.target.value);
@@ -939,6 +960,7 @@ export default function CheckoutGuestPage() {
                   Mobile Number
                 </p>
                 <Input
+                  required
                   value={mobileNumber}
                   onChange={e => {
                      setMobileNumber(sanitizePhone(e.target.value));
@@ -995,7 +1017,7 @@ export default function CheckoutGuestPage() {
                       </Button>
 
                       {codeSentAt ? (
-                        <div>
+                        <div data-enter-scope onKeyDown={enterNavigation}>
                           <div className="flex justify-center">
                             <InputOTP
                               maxLength={6}
@@ -1022,6 +1044,7 @@ export default function CheckoutGuestPage() {
                           <Button
                             type="button"
                             className="mt-3 w-full rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
+                            data-enter-submit
                             disabled={otpCode.length !== 6 || isVerifyingOtp}
                             onClick={handleVerifyOtp}
                           >
@@ -1069,16 +1092,14 @@ export default function CheckoutGuestPage() {
                 <CreditCard className="h-5 w-5 text-[#3c5e45]" />
               </div>
 
-              <p className="mt-5 text-sm text-gray-600 leading-relaxed">
-                Once your order is placed, our cashier will give you a call to
-                confirm the details and arrange the payment with you (down
-                payment or full payment &mdash; whatever you both agree on).
-              </p>
-              <p className="mt-3 text-sm text-gray-600 leading-relaxed">
-                After the cashier confirms the order, the payment instructions
-                and the account details will appear on your order page, along
-                with a place to upload your proof of payment.
-              </p>
+              <CheckoutPaymentNote orderType={orderType} total={total} />
+              <CheckoutOrderNotices
+                className="mt-4"
+                orderType={orderType}
+                timing={timing.timing}
+                readyAt={selectedSlotAt}
+                advanceOnly={scheduleQuote?.requirement.advanceOnly}
+              />
             </div>
           </div>
 

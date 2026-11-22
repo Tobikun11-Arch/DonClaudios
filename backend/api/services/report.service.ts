@@ -677,11 +677,46 @@ async function productSales(from: Date, to: Date) {
         _id: '$productId',
         // `order_items` stores no name snapshot, so a deleted product would
         // otherwise vanish from history. Keep the revenue and say so instead.
-        name: {$first: {$ifNull: ['$product.name', 'Deleted product']}},
-        category: {$first: {$ifNull: ['$product.category', 'Uncategorised']}},
+        // Bundle lines have no product: they use the line's name snapshot
+        // and are grouped under "Bundles".
+        name: {$first: {$ifNull: ['$product.name', '$name', 'Deleted product']}},
+        category: {
+          $first: {
+            $ifNull: [
+              '$product.category',
+              {$cond: [{$ifNull: ['$promoId', false]}, 'Bundles', 'Uncategorised']}
+            ]
+          }
+        },
         units: {$sum: '$quantity'},
         revenue: {$sum: {$multiply: ['$quantity', '$price']}},
         orderIds: {$addToSet: '$orderId'}
+      }
+    }
+  ]);
+}
+
+/**
+ * Units of each product sold INSIDE bundles (the bundle line itself is a row
+ * of its own in the sales table). Used by inventory health so a product that
+ * only sells through a bundle is not reported as a slow mover or dead stock.
+ */
+async function bundleComponentUnits(from: Date, to: Date) {
+  return OrderItemModel.aggregate<{_id: unknown; units: number}>([
+    {$match: {'bundleItems.0': {$exists: true}}},
+    {$lookup: {from: 'orders', localField: 'orderId', foreignField: '_id', as: 'order'}},
+    {$unwind: '$order'},
+    {
+      $match: {
+        'order.orderStatus': {$in: REALIZED_STATUSES},
+        'order.createdAt': rangeMatch(from, to).createdAt
+      }
+    },
+    {$unwind: '$bundleItems'},
+    {
+      $group: {
+        _id: '$bundleItems.productId',
+        units: {$sum: {$multiply: ['$quantity', '$bundleItems.qty']}}
       }
     }
   ]);
@@ -1141,7 +1176,7 @@ export async function getReportOperations(range: ResolvedRange): Promise<ReportO
 export async function getReportInventoryHealth(
   range: ResolvedRange
 ): Promise<ReportInventoryHealth> {
-  const [sales, products, wastage, stockValueRow] = await Promise.all([
+  const [sales, products, wastage, stockValueRow, inBundles] = await Promise.all([
     productSales(range.from, range.to),
     ProductModel.find({preOrderOnly: {$ne: true}}).select('name category stock price stockUnit isAvailable').lean(),
     StockMovementModel.aggregate([
@@ -1165,12 +1200,20 @@ export async function getReportInventoryHealth(
       },
       {$sort: {cost: 1}}
     ]),
-    ProductModel.aggregate([{$group: {_id: null, value: {$sum: {$multiply: ['$stock', '$price']}}}}])
+    ProductModel.aggregate([{$group: {_id: null, value: {$sum: {$multiply: ['$stock', '$price']}}}}]),
+    bundleComponentUnits(range.from, range.to)
   ]);
 
   const salesByProduct = new Map<string, {units: number; revenue: number}>(
     sales.map(s => [String(s._id), {units: s.units, revenue: s.revenue}])
   );
+  // Units sold inside bundles count as sold (their revenue stays on the
+  // bundle's own row).
+  for (const row of inBundles) {
+    const key = String(row._id);
+    const prev = salesByProduct.get(key) ?? {units: 0, revenue: 0};
+    salesByProduct.set(key, {units: prev.units + row.units, revenue: prev.revenue});
+  }
 
   const catalogue = products.map(p => {
     const key = String(p._id);

@@ -83,6 +83,22 @@ export default function ProductsPage() {
     [productsQuery.data?.products]
   );
 
+  // What a Bundle Deal may include: regular menu items only (no pre-orders,
+  // no other promos, never the bundle being edited).
+  const bundleChoices = useMemo(
+    () =>
+      products
+        .filter(
+          p =>
+            !p.isPreOrder &&
+            !p.preOrderOnly &&
+            !/^promos?$/i.test((p.category ?? '').trim()) &&
+            p._id !== editingId
+        )
+        .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)),
+    [products, editingId]
+  );
+
   const legacyCategoryProducts = useMemo(
     () =>
       products.filter(
@@ -231,12 +247,16 @@ export default function ProductsPage() {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setFormError(null);
-    const validated = validateAndGetPayload(mode);
+    const validated = validateAndGetPayload(
+      mode,
+      new Map(products.map(p => [p._id, p.price]))
+    );
     if (!validated) return;
     const {
       price,
       stock,
       prepTimeMinutes,
+      minNoticeHours,
       promoType,
       discountRate,
       discountAmount,
@@ -261,7 +281,11 @@ export default function ProductsPage() {
           price,
           stock,
           prepTimeMinutes,
+          minNoticeHours,
           description: form.description.trim() || undefined,
+          servingQty: validated.servingQty,
+          servingUnit: validated.servingUnit,
+          bundleItems: validated.bundleItems,
           imageUrl,
           ingredients: validated.isBulkCategory ? [] : validated.ingredients,
           allergens: validated.isBulkCategory ? [] : validated.allergens,
@@ -289,7 +313,11 @@ export default function ProductsPage() {
             price,
             stock,
             prepTimeMinutes,
+            minNoticeHours,
             description: form.description.trim() || undefined,
+            servingQty: validated.servingQty,
+            servingUnit: validated.servingUnit,
+            bundleItems: validated.bundleItems,
             imageUrl,
             ingredients: validated.isBulkCategory ? [] : validated.ingredients,
             allergens: validated.isBulkCategory ? [] : validated.allergens,
@@ -449,6 +477,7 @@ export default function ProductsPage() {
         submitStatus={submitStatus}
         isPending={createMutation.isPending || updateMutation.isPending}
         categories={menuCategories}
+        bundleChoices={bundleChoices}
         categoriesLoading={categoriesQuery.isLoading}
         ingredientLibrary={ingredientLibrary}
         ingredientLibraryLoading={ingredientsQuery.isLoading}

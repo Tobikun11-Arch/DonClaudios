@@ -2,18 +2,24 @@
 
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {getDownPaymentSettings, updateDownPaymentSettings} from '@/lib/api/settingsApi';
+import {
+  DEFAULT_DOWN_PAYMENT_PERCENT,
+  DEFAULT_DOWN_PAYMENT_RULES,
+  DOWN_PAYMENT_MIN_ORDER_MAX,
+  DOWN_PAYMENT_PERCENT_MAX,
+  DOWN_PAYMENT_PERCENT_MIN,
+  downPaymentFlowOf,
+  type DownPaymentRules
+} from '@/lib/payment/downPaymentRules';
 
-/** Mirrors backend config/paymentFees.ts. The backend enforces the range. */
-export const DEFAULT_DOWN_PAYMENT_PERCENT = 50;
-export const DOWN_PAYMENT_PERCENT_MIN = 10;
-export const DOWN_PAYMENT_PERCENT_MAX = 90;
+export {DEFAULT_DOWN_PAYMENT_PERCENT, DOWN_PAYMENT_PERCENT_MAX, DOWN_PAYMENT_PERCENT_MIN};
 
 export const downPaymentQueryKey = ['settings', 'down-payment'] as const;
 
 /**
- * The owner's pre-order down payment percent (public read). Falls back to the
- * default while loading. What an order actually owes is always computed on the
- * server from the percent saved on that order.
+ * The owner's down payment rules (public read). Falls back to the defaults
+ * while loading. `percent` is the pre-order percent. What an order actually
+ * owes is always computed on the server.
  */
 export function useDownPaymentQuery() {
   const query = useQuery({
@@ -21,19 +27,24 @@ export function useDownPaymentQuery() {
     queryFn: getDownPaymentSettings,
     staleTime: 5 * 60 * 1000
   });
-  const percent = query.data?.downPaymentPercent ?? DEFAULT_DOWN_PAYMENT_PERCENT;
+  const rules: DownPaymentRules = query.data?.rules ?? DEFAULT_DOWN_PAYMENT_RULES;
+  const percent = rules.preorder.percent;
   const limits = query.data?.limits ?? {
     default: DEFAULT_DOWN_PAYMENT_PERCENT,
     min: DOWN_PAYMENT_PERCENT_MIN,
-    max: DOWN_PAYMENT_PERCENT_MAX
+    max: DOWN_PAYMENT_PERCENT_MAX,
+    minOrderMax: DOWN_PAYMENT_MIN_ORDER_MAX
   };
-  return {...query, percent, limits};
+  /** Live percent of the flow an order belongs to. */
+  const percentForOrder = (order: {isPreOrder?: boolean | null; orderType?: string | null}) =>
+    rules[downPaymentFlowOf(order)].percent;
+  return {...query, rules, percent, limits, percentForOrder};
 }
 
 export function useUpdateDownPaymentMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (downPaymentPercent: number) => updateDownPaymentSettings({downPaymentPercent}),
+    mutationFn: (rules: DownPaymentRules) => updateDownPaymentSettings({rules}),
     onSuccess: data => {
       queryClient.setQueryData(downPaymentQueryKey, data);
     }

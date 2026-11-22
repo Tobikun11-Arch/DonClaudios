@@ -1,5 +1,7 @@
 import {DOWN_PAYMENT_PERCENT_MAX, DOWN_PAYMENT_PERCENT_MIN} from '../config/paymentFees';
+import {DOWN_PAYMENT_MIN_ORDER_MAX, DOWN_PAYMENT_MODES} from '../config/downPaymentRules';
 import {z} from 'zod';
+import {ORDERING_RULE_LIMITS, type OrderingRules} from '../config/orderSchedule';
 import {
   REWARDS_EARN_PESOS_MAX,
   REWARDS_EARN_PESOS_MIN,
@@ -42,12 +44,27 @@ export const rewardsEarnDto = z.object({
 
 export type RewardsEarnDto = z.infer<typeof rewardsEarnDto>;
 
-export const downPaymentDto = z.object({
-  downPaymentPercent: z
+const downPaymentRuleDto = z.object({
+  mode: z.enum(DOWN_PAYMENT_MODES, {errorMap: () => ({message: 'Choose Off, Customer chooses or Required'})}),
+  percent: z
     .number({invalid_type_error: 'Down payment must be a number'})
     .int('Down payment must be a whole percent')
     .min(DOWN_PAYMENT_PERCENT_MIN, `Down payment must be at least ${DOWN_PAYMENT_PERCENT_MIN}%`)
-    .max(DOWN_PAYMENT_PERCENT_MAX, `Down payment cannot be more than ${DOWN_PAYMENT_PERCENT_MAX}%`)
+    .max(DOWN_PAYMENT_PERCENT_MAX, `Down payment cannot be more than ${DOWN_PAYMENT_PERCENT_MAX}%`),
+  minOrder: z
+    .number({invalid_type_error: 'Minimum order must be a number'})
+    .int('Minimum order must be a whole peso amount')
+    .min(0, 'Minimum order cannot be negative')
+    .max(DOWN_PAYMENT_MIN_ORDER_MAX, `Minimum order cannot be more than ₱${DOWN_PAYMENT_MIN_ORDER_MAX.toLocaleString('en-PH')}`)
+});
+
+export const downPaymentDto = z.object({
+  rules: z.object({
+    preorder: downPaymentRuleDto,
+    pickup: downPaymentRuleDto,
+    delivery: downPaymentRuleDto,
+    reservation: downPaymentRuleDto
+  })
 });
 
 export type DownPaymentDto = z.infer<typeof downPaymentDto>;
@@ -65,3 +82,28 @@ export const dashboardThemeDto = z.object({
 });
 
 export type DashboardThemeDto = z.infer<typeof dashboardThemeDto>;
+
+const ruleNumber = (key: keyof OrderingRules, label: string) => {
+  const [min, max] = ORDERING_RULE_LIMITS[key];
+  return z
+    .number({invalid_type_error: `${label} must be a number`})
+    .int(`${label} must be a whole number`)
+    .min(min, `${label} must be at least ${min}`)
+    .max(max, `${label} cannot be more than ${max.toLocaleString('en-PH')}`);
+};
+
+export const orderingRulesDto = z.object({
+  bulkMinSubtotal: ruleNumber('bulkMinSubtotal', 'Bulk order amount'),
+  standardLeadMinutes: ruleNumber('standardLeadMinutes', 'Regular lead time'),
+  bulkLeadHours: ruleNumber('bulkLeadHours', 'Bulk lead time'),
+  nextDayEarliestHoursAfterOpen: ruleNumber('nextDayEarliestHoursAfterOpen', 'Next-day earliest time'),
+  deliveryExtraMinutes: ruleNumber('deliveryExtraMinutes', 'Delivery extra time'),
+  maxDaysAhead: ruleNumber('maxDaysAhead', 'Days ahead'),
+  lechonDefaultNoticeHours: ruleNumber('lechonDefaultNoticeHours', 'Lechon notice'),
+  paymentWindowHours: ruleNumber('paymentWindowHours', 'Payment window'),
+  paymentMinWindowHours: ruleNumber('paymentMinWindowHours', 'Minimum payment window'),
+  paymentCutoffHoursBeforeSlot: ruleNumber('paymentCutoffHoursBeforeSlot', 'Payment cutoff'),
+  reminderMinutesBefore: ruleNumber('reminderMinutesBefore', 'Reminder time')
+});
+
+export type OrderingRulesDto = z.infer<typeof orderingRulesDto>;

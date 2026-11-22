@@ -20,6 +20,32 @@ export function parsePromoDate(value: unknown, edge: 'start' | 'end'): Date | un
   return new Date(value);
 }
 
+/** The owner's promo category ("Promo"); its products are promos, not a menu section. */
+export function isPromoCategory(category?: string | null): boolean {
+  return typeof category === 'string' && /^promos?$/i.test(category.trim());
+}
+
+/**
+ * A Promo-category product can be sold right now: not switched off, and
+ * inside its start/end dates when set. Other products are always "live".
+ */
+export function isEmbeddedPromoLive(
+  product: {
+    category?: string | null;
+    isPromoActive?: boolean | null;
+    promoStartDate?: Date | string | null;
+    promoEndDate?: Date | string | null;
+  },
+  now: Date = new Date()
+): boolean {
+  if (!isPromoCategory(product.category)) return true;
+  if (product.isPromoActive === false) return false;
+  const t = now.getTime();
+  if (product.promoStartDate && new Date(product.promoStartDate).getTime() > t) return false;
+  if (product.promoEndDate && new Date(product.promoEndDate).getTime() < t) return false;
+  return true;
+}
+
 /**
  * A product's own (embedded) promo is over: it was flagged active and its end
  * date has passed. Such products are hidden from customers and the counter.
