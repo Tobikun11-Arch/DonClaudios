@@ -15,6 +15,8 @@ import type { KeyboardEvent } from 'react';
  *   (only when it is enabled), or the wrapping <form> is submitted.
  * - `data-enter-submit="focus"` only moves focus to the button (used for
  *   placing orders / paying, so Enter never places an order on its own).
+ * - `data-enter-mode="submit"` on the container: Enter in any field does the
+ *   last-field action straight away (inline edit cards: Enter = save).
  * - Shift+Enter moves to the previous field.
  * - A nested group with its own handler and submit button (OTP + Verify inside
  *   a bigger form) gets `data-enter-scope` so the outer form ignores its button.
@@ -162,8 +164,9 @@ export function enterNavigation(e: KeyboardEvent<HTMLElement>) {
     return;
   }
 
-  // Ctrl/Cmd+Enter from any field = save straight away.
-  if (e.ctrlKey || e.metaKey) {
+  // Ctrl/Cmd+Enter from any field = save straight away. Containers marked
+  // data-enter-mode="submit" (inline edit cards) save on plain Enter too.
+  if (e.ctrlKey || e.metaKey || container.dataset.enterMode === 'submit') {
     runSubmit(container);
     return;
   }
