@@ -101,7 +101,7 @@ const TAB_INFO: Record<TabId, {label: string; subtitle: string}> = {
   store: {label: 'Store Status', subtitle: 'Opening hours and manual close controls.'},
   delivery: {label: 'Delivery', subtitle: 'Free delivery minimum and area.'},
   rewards: {label: 'Rewards', subtitle: 'How customers earn loyalty points.'},
-  payments: {label: 'Payments', subtitle: 'Pre-order down payment percentage.'},
+  payments: {label: 'Payments', subtitle: 'Down payment rules for pre-orders, pick-up, delivery and reservations.'},
   categories: {label: 'Menu Categories', subtitle: 'Organize how products are grouped.'},
   security: {label: 'Security', subtitle: 'Password and active sessions.'},
   cashier: {label: 'Cashier', subtitle: 'Manage cashier accounts.'}

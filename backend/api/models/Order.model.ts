@@ -61,7 +61,7 @@ export type RefundStatus = 'none' | 'pending' | 'refunded' | 'failed';
 
 /** What the cancellation refund was, per config/refundPolicy.ts. */
 export interface OrderRefundInfo {
-  policy: 'early' | 'late' | 'store';
+  policy: 'early' | 'late' | 'store' | 'no_show';
   paid: number;
   retained: number;
   onlineTotal: number;
@@ -340,7 +340,7 @@ const OrderSchema = new Schema<OrderDocument>(
     refund: {
       type: new Schema(
         {
-          policy: {type: String, enum: ['early', 'late', 'store'], required: true},
+          policy: {type: String, enum: ['early', 'late', 'store', 'no_show'], required: true},
           paid: {type: Number, default: 0},
           retained: {type: Number, default: 0},
           onlineTotal: {type: Number, default: 0},

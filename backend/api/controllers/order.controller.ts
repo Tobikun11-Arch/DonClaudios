@@ -24,6 +24,8 @@ import {guestOtpService} from '../services/guestOtp.service';
 import {guestOrderGuardService} from '../services/guestOrderGuard.service';
 import {
   customerCancelPolicy,
+  downPaymentPercentOf,
+  noShowAllowed,
   isInStoreChoice,
   paymentService
 } from '../services/payment.service';
@@ -1583,7 +1585,7 @@ export const orderController = {
       }
 
       const cashAmount = inStoreDown
-        ? downPaymentAmount(order.totalAmount, await settingsService.downPaymentPercentFor(order))
+        ? downPaymentAmount(order.totalAmount, await downPaymentPercentOf(order))
         : Math.max(0, order.totalAmount - (order.amountPaid ?? 0));
       const paidAt = new Date();
       const result = await orderRepository.updatePaymentIfStatus(
@@ -1990,6 +1992,12 @@ export const orderController = {
       if (req.auth.type === 'cashier' && order.isPreOrder && status === 'cancelled') {
         throw new ApiError(403, 'PREORDER_OWNER_ONLY', 'Only the owner can cancel a pre-order.');
       }
+      if (status === 'cancelled' && req.body?.cancelledBy === 'no_show') {
+        const noShow = noShowAllowed(order);
+        if (!noShow.allowed) {
+          throw new ApiError(400, 'NO_SHOW_NOT_ALLOWED', noShow.reason ?? 'This order cannot be marked as a no-show');
+        }
+      }
 
       // Each kind of order has its own steps (see config/orderFlow.ts): only
       // the store's own rider goes "on the way"; pick-up, reservation and
@@ -2144,14 +2152,18 @@ export const orderController = {
       // phone, or their late request is approved) -> the customer policy.
       const onCustomerRequest =
         status === 'cancelled' && req.body?.cancelledBy === 'customer';
-      const refundPolicy = onCustomerRequest
-        ? customerCancelPolicy(
-            order,
-            order.cancelRequest?.status === 'pending'
-              ? new Date(order.cancelRequest.requestedAt)
-              : new Date()
-          )
-        : 'store';
+      // The customer never came: the store keeps the down payment.
+      const asNoShow = status === 'cancelled' && req.body?.cancelledBy === 'no_show';
+      const refundPolicy = asNoShow
+        ? 'no_show'
+        : onCustomerRequest
+          ? customerCancelPolicy(
+              order,
+              order.cancelRequest?.status === 'pending'
+                ? new Date(order.cancelRequest.requestedAt)
+                : new Date()
+            )
+          : 'store';
       if (status === 'cancelled') {
         await orderRepository.updateFields(req.params.id, {
           cancelledBy: onCustomerRequest ? 'customer' : 'store'

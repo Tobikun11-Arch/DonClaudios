@@ -59,6 +59,7 @@ import {cn} from '@/lib/utils';
 import {enterNavigation} from '@/shared/utils/enterNavigation';
 import {HeardFromPicker} from '@/features/customer/components/HeardFromPicker';
 import {ORDER_NOTES_COPY, hasNote, keepNotesFor, toggleNote} from '@/lib/orders/orderNotes';
+import {CheckoutPaymentNote} from '@/features/order/components/CheckoutPaymentNote';
 
 const STORE = {
   lat: 14.39092185435405,
@@ -1080,16 +1081,7 @@ export default function CheckoutGuestPage() {
                 <CreditCard className="h-5 w-5 text-[#3c5e45]" />
               </div>
 
-              <p className="mt-5 text-sm text-gray-600 leading-relaxed">
-                Once your order is placed, our cashier will give you a call to
-                confirm the details and arrange the payment with you (down
-                payment or full payment &mdash; whatever you both agree on).
-              </p>
-              <p className="mt-3 text-sm text-gray-600 leading-relaxed">
-                After the cashier confirms the order, the payment instructions
-                and the account details will appear on your order page, along
-                with a place to upload your proof of payment.
-              </p>
+              <CheckoutPaymentNote orderType={orderType} total={total} />
             </div>
           </div>
 

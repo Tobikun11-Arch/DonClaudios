@@ -41,6 +41,7 @@ export const returnPolicy: LegalPageProps = {
         "Regular orders may be cancelled while they are still pending (before the store confirms them).",
         "Pre-orders (e.g. whole lechon for a holiday date) follow the refund rules below. The cancellation cut-off is shown on your order (14 days before pickup unless the date says otherwise).",
         "Orders that are not paid within the time shown after confirmation (online payment link, or the in-store payment deadline) are cancelled automatically.",
+        "Some orders can be secured with a down payment (the percentage is shown at checkout and on your order). The rest is paid before or when you receive the order.",
       ],
       table: {
         columns: ["When", "What you get back"],
@@ -48,6 +49,7 @@ export const returnPolicy: LegalPageProps = {
           ["You cancel on or before the cut-off", "100% of the order amount you paid. Online service fees are not refunded."],
           ["You ask to cancel after the cut-off (until pickup)", "The store reviews your request. If approved, the down payment (the percentage shown at checkout) is kept and anything paid above it is refunded. If declined, the order stays as booked."],
           ["The store cancels your order", "Everything you paid, including online service fees."],
+          ["You do not show up for a paid order (pick-up, reservation, delivery or pre-order)", "The store keeps the down payment (the percentage shown on your order). Anything you paid above it is refunded. Online service fees are not refunded."],
         ],
       },
     },

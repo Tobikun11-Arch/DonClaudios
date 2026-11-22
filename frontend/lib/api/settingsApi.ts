@@ -1,4 +1,5 @@
 import {httpClient} from './httpClient';
+import type {DownPaymentRules} from '@/lib/payment/downPaymentRules';
 import type {
   GetSettingsResponse,
   SiteSetting,
@@ -76,19 +77,23 @@ export async function updateRewardsEarnSettings(
 }
 
 export type DownPaymentResponse = {
+  /** Down payment rule per order flow (lib/payment/downPaymentRules.ts). */
+  rules: DownPaymentRules;
+  /** Pre-order percent (same as rules.preorder.percent). */
   downPaymentPercent: number;
+  defaults: DownPaymentRules;
   /** PUT only: how many unpaid orders were moved to the new percent. */
   ordersUpdated?: number;
-  limits: {default: number; min: number; max: number};
+  limits: {default: number; min: number; max: number; minOrderMax: number};
 };
 
-/** Owner's pre-order down payment percent (public read). */
+/** Owner's down payment rules (public read). */
 export async function getDownPaymentSettings() {
   const res = await httpClient.get<DownPaymentResponse>('/settings/down-payment');
   return res.data;
 }
 
-export async function updateDownPaymentSettings(body: {downPaymentPercent: number}) {
+export async function updateDownPaymentSettings(body: {rules: DownPaymentRules}) {
   const res = await httpClient.put<DownPaymentResponse>('/settings/down-payment', body);
   return res.data;
 }

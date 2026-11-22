@@ -44,6 +44,7 @@ import {ORDER_NOTES_COPY, hasNote, keepNotesFor, toggleNote} from '@/lib/orders/
 import {useQueryClient} from '@tanstack/react-query';
 import {PRODUCTS_QUERY_PREFIX} from '@/lib/hooks/products/useProducts';
 import {MIN_ORDER_MESSAGE, MIN_ORDER_TOTAL} from '@/lib/constants/orderLimits';
+import {CheckoutPaymentNote} from '@/features/order/components/CheckoutPaymentNote';
 
 const STORE = {
   lat: 14.39092185435405,
@@ -672,16 +673,7 @@ export default function CustomerCheckoutPage() {
               <CreditCard className="h-5 w-5 text-[#3c5e45] dark:text-[#7ed4a0]" />
             </div>
 
-            <p className="mt-5 text-sm text-gray-600 leading-relaxed dark:text-gray-300">
-              Once your order is placed, our cashier will give you a call to
-              confirm the details and arrange the payment with you (down payment
-              or full payment &mdash; whatever you both agree on).
-            </p>
-            <p className="mt-3 text-sm text-gray-600 leading-relaxed dark:text-gray-300">
-              After the cashier confirms the order, the payment instructions and
-              the account details will appear on your order page, along with a
-              place to upload your proof of payment.
-            </p>
+            <CheckoutPaymentNote orderType={orderType} total={total} />
           </div>
         </div>
 

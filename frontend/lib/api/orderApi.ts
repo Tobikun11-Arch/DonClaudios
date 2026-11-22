@@ -105,7 +105,7 @@ export type OrderPreOrderInfo = {
 
 /** The refund decided when the order was cancelled (backend refundPolicy). */
 export type OrderRefundInfo = {
-  policy: 'early' | 'late' | 'store';
+  policy: 'early' | 'late' | 'store' | 'no_show';
   paid: number;
   retained: number;
   onlineTotal: number;
@@ -126,7 +126,7 @@ export type OrderCancelRequest = {
 };
 
 export type RefundPlan = {
-  policy: 'early' | 'late' | 'store';
+  policy: 'early' | 'late' | 'store' | 'no_show';
   paid: number;
   retained: number;
   online: Array<{paymentId: string; amount: number}>;
@@ -144,6 +144,8 @@ export type CancelQuote = {
   cancelDeadline: string | null;
   pickupAt: string | null;
   cancelRequest: OrderCancelRequest | null;
+  /** Staff only: whether the order can be cancelled as a no-show now. */
+  noShow?: {allowed: boolean; reason: string | null};
 };
 
 export type OrderHistoryEntry = {
@@ -310,7 +312,7 @@ export async function getOrderById(orderId: string) {
 export async function updateOrderStatus(
   orderId: string,
   status: string,
-  extra?: {reason?: string; cancelledBy?: 'store' | 'customer'}
+  extra?: {reason?: string; cancelledBy?: 'store' | 'customer' | 'no_show'}
 ) {
   const res = await httpClient.patch<{order: OrderHistoryEntry}>(
     `/orders/${orderId}/status`,
@@ -322,7 +324,7 @@ export async function updateOrderStatus(
 /** What cancelling does right now and the refund per the policy. */
 export async function fetchCancelQuote(
   orderId: string,
-  opts: {by?: 'store' | 'customer'; phoneNumber?: string} = {}
+  opts: {by?: 'store' | 'customer' | 'no_show'; phoneNumber?: string} = {}
 ) {
   const params: Record<string, string> = {};
   if (opts.by) params.by = opts.by;
@@ -615,6 +617,10 @@ export type PaymentSummary = {
   /** Balance in cash at the store; dueAt null = before the order is released. */
   balanceInStore?: {dueAt: string | null} | null;
   downPaymentAllowed: boolean;
+  /** The owner requires at least the down payment (no "cash on pick-up" for the whole amount). */
+  downPaymentRequired?: boolean;
+  /** Which Settings > Payments rule the order follows. */
+  downPaymentFlow?: 'preorder' | 'pickup' | 'delivery' | 'reservation';
   downPaymentAmount: number;
   /** Percent behind `downPaymentAmount` (the order's own down payment %). */
   downPaymentPercent?: number;

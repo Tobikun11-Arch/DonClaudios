@@ -34,8 +34,8 @@ router.put(
   settingsController.updateRewardsEarn
 );
 
-// Pre-order down payment percent. Public read so checkout and pre-order pages
-// can show the live share; only the owner can change it.
+// Down payment rule per order flow. Public read so checkout and pre-order pages
+// can show the live rules; only the owner can change them.
 router.get('/down-payment', settingsController.getDownPayment);
 
 router.put(

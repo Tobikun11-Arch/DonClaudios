@@ -58,8 +58,14 @@ export const settingsController = {
 
   async getDownPayment(_req: Request, res: Response, next: NextFunction) {
     try {
-      const downPaymentPercent = await settingsService.getDownPaymentPercent();
-      res.status(200).json({downPaymentPercent, limits: settingsService.downPaymentLimits()});
+      const rules = await settingsService.getDownPaymentRules();
+      res.status(200).json({
+        rules,
+        // Old single value, kept for callers that only know pre-orders.
+        downPaymentPercent: rules.preorder.percent,
+        defaults: settingsService.defaultDownPaymentRules(),
+        limits: settingsService.downPaymentLimits()
+      });
     } catch (error) {
       next(error);
     }
@@ -67,12 +73,12 @@ export const settingsController = {
 
   async updateDownPayment(req: Request, res: Response, next: NextFunction) {
     try {
-      const {percent, ordersUpdated} = await settingsService.updateDownPaymentPercent(
-        req.body.downPaymentPercent
-      );
+      const {rules, ordersUpdated} = await settingsService.updateDownPaymentRules(req.body.rules);
       res.status(200).json({
-        downPaymentPercent: percent,
+        rules,
+        downPaymentPercent: rules.preorder.percent,
         ordersUpdated,
+        defaults: settingsService.defaultDownPaymentRules(),
         limits: settingsService.downPaymentLimits()
       });
     } catch (error) {

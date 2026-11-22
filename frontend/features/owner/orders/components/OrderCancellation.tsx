@@ -82,9 +82,17 @@ export function StaffCancelDialog({
   onClose: () => void;
 }) {
   const hasRequest = order.cancelRequest?.status === 'pending';
-  const [by, setBy] = useState<'store' | 'customer'>(hasRequest ? 'customer' : 'store');
+  const [by, setBy] = useState<'store' | 'customer' | 'no_show'>(hasRequest ? 'customer' : 'store');
   const [reason, setReason] = useState(hasRequest ? order.cancelRequest?.reason ?? '' : '');
   const quote = useCancelQuoteQuery(order._id, {by});
+  // Every quote says whether a no-show is possible; keep the last answer while switching.
+  const [noShow, setNoShow] = useState<{allowed: boolean; reason: string | null} | null>(null);
+  const latestNoShow = quote.data?.noShow ?? null;
+  if (latestNoShow && JSON.stringify(latestNoShow) !== JSON.stringify(noShow)) {
+    setNoShow(latestNoShow);
+  }
+  const showNoShow = (order.amountPaid ?? 0) > 0 && !hasRequest;
+  const keepPercent = order.downPaymentPercent ?? 50;
   const cancel = useStaffCancelOrderMutation();
 
   const submit = async () => {
@@ -92,7 +100,13 @@ export function StaffCancelDialog({
       await cancel.mutateAsync({
         orderId: order._id,
         cancelledBy: by,
-        reason: reason.trim() || (by === 'store' ? 'Cancelled by the store' : "Cancelled at the customer's request")
+        reason:
+          reason.trim() ||
+          (by === 'store'
+            ? 'Cancelled by the store'
+            : by === 'no_show'
+              ? 'The customer did not show up'
+              : "Cancelled at the customer's request")
       });
       toast.success('Order cancelled. The refund follows the policy.');
       onClose();
@@ -117,14 +131,28 @@ export function StaffCancelDialog({
 
         <div className="mt-4 space-y-2">
           {([
-            ['store', 'The store is cancelling', 'Cannot fulfil, date closed, etc. Full refund incl. service fees.'],
-            ['customer', 'The customer asked to cancel', 'Customer policy: full amount before the cut-off, 50% kept after it.']
-          ] as const).map(([value, title, hint]) => (
+            ['store', 'The store is cancelling', 'Cannot fulfil, date closed, etc. Full refund incl. service fees.', false],
+            ['customer', 'The customer asked to cancel', 'Customer policy: full amount before the cut-off, the down payment kept after it.', false],
+            ...(showNoShow
+              ? ([
+                  [
+                    'no_show',
+                    'The customer did not show up',
+                    noShow && !noShow.allowed
+                      ? noShow.reason ?? 'Not available yet.'
+                      : `The store keeps the ${keepPercent}% down payment. Anything paid above it is refunded.`,
+                    noShow ? !noShow.allowed : true
+                  ]
+                ] as const)
+              : [])
+          ] as const).map(([value, title, hint, disabled]) => (
             <label
               key={value}
-              className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 px-3 py-2.5 has-[:checked]:border-[#2d4a35] has-[:checked]:bg-[#2d4a35]/5 dark:border-gray-700 dark:has-[:checked]:border-[#7ed4a0]/60"
+              className={`flex items-start gap-3 rounded-xl border border-gray-200 px-3 py-2.5 has-[:checked]:border-[#2d4a35] has-[:checked]:bg-[#2d4a35]/5 dark:border-gray-700 dark:has-[:checked]:border-[#7ed4a0]/60 ${
+                disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+              }`}
             >
-              <input type="radio" name="cancel-by" className="mt-1 accent-[#2d4a35]" checked={by === value} onChange={() => setBy(value)} />
+              <input type="radio" name="cancel-by" className="mt-1 accent-[#2d4a35]" checked={by === value} disabled={disabled} onChange={() => setBy(value)} />
               <span>
                 <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</span>
                 <span className="block text-xs text-gray-500 dark:text-gray-400">{hint}</span>
@@ -152,7 +180,7 @@ export function StaffCancelDialog({
         </div>
 
         <div className="mt-4 flex gap-2">
-          <Button type="button" variant="destructive" className="flex-1 text-white" disabled={cancel.isPending || !quote.data} onClick={submit}>
+          <Button type="button" variant="destructive" className="flex-1 text-white" disabled={cancel.isPending || !quote.data || (by === 'no_show' && quote.data.mode === 'closed')} onClick={submit}>
             {cancel.isPending ? 'Cancelling...' : 'Cancel & refund'}
           </Button>
           <Button type="button" variant="outline" className="flex-1" disabled={cancel.isPending} onClick={onClose}>

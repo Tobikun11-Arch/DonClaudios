@@ -16,7 +16,7 @@ import {
 
 export function useCancelQuoteQuery(
   orderId: string,
-  opts: {by?: 'store' | 'customer'; phoneNumber?: string; enabled?: boolean} = {}
+  opts: {by?: 'store' | 'customer' | 'no_show'; phoneNumber?: string; enabled?: boolean} = {}
 ) {
   return useQuery({
     queryKey: ['orders', orderId, 'cancel-quote', opts.by ?? 'customer', opts.phoneNumber ?? ''],
@@ -42,7 +42,7 @@ export function useStaffCancelOrderMutation() {
     mutationFn: (input: {
       orderId: string;
       reason?: string;
-      cancelledBy: 'store' | 'customer';
+      cancelledBy: 'store' | 'customer' | 'no_show';
     }) =>
       updateOrderStatus(input.orderId, 'cancelled', {
         reason: input.reason,

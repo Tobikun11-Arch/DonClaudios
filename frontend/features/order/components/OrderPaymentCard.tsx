@@ -35,8 +35,8 @@ import PaymentChannelTiles, {type PayOption} from './PaymentChannelTiles';
  * XENDIT PAYMENT card (customer side).
  *
  * Appears once the cashier confirms the order. The customer picks full
- * payment, a down payment (owner-set %, pre-order-only carts) or cash on pickup
- * (pickup only), then pays online or In-store (cash at the counter before a
+ * payment, a down payment (owner-set rule per order flow, Settings > Payments)
+ * or cash on pickup (pickup only), then pays online or In-store (cash at the counter before a
  * deadline, no service fee; see lib/payment/inStorePayment). Online options
  * show the per-channel service fee, then
  * redirect to Xendit's hosted checkout. Xendit's webhook marks the order paid;
@@ -551,9 +551,20 @@ function PayForm({
             active={plan === 'down_payment'}
             onClick={() => setPlan('down_payment')}
             title={`Pay ${summary.downPaymentPercent ?? 50}% down payment${where}`}
-            subtitle={`${peso(summary.downPaymentAmount)} now, ${peso(summary.totalAmount - summary.downPaymentAmount)} later`}
+            subtitle={`${peso(summary.downPaymentAmount)} now, ${peso(summary.totalAmount - summary.downPaymentAmount)} ${balanceWhen(summary)}`}
             disabled={!canPayPlan}
           />
+        ) : null}
+        {summary.downPaymentRequired && !summary.cashAllowed ? (
+          <p className="px-1 text-xs text-gray-500 dark:text-gray-400">
+            This order needs at least a {summary.downPaymentPercent ?? 50}% down payment before we
+            prepare it.
+          </p>
+        ) : null}
+        {plan === 'down_payment' && !payInStore && summary.configured ? (
+          <p className="px-1 text-xs text-gray-500 dark:text-gray-400">
+            Paying online in two parts means a service fee on each payment.
+          </p>
         ) : null}
         {summary.cashAllowed ? (
           <PlanOption
@@ -698,7 +709,7 @@ function BalanceForm({
           <PlanOption
             active={method === 'cash'}
             onClick={() => setMethod('cash')}
-            title="Cash on pickup"
+            title={summary.downPaymentFlow === 'reservation' ? 'Cash at the store' : 'Cash on pickup'}
             subtitle={`Pay ${peso(summary.balanceDue)} at the store`}
           />
         ) : null}
@@ -874,12 +885,29 @@ function InStoreNotice({
         <li>We start preparing your order once you have paid.</li>
         {down ? (
           <li>
-            The remaining {peso(summary.totalAmount - amount)} balance is paid later, online or in cash on pickup.
+            The remaining {peso(summary.totalAmount - amount)} balance is paid {balanceWhen(summary)},{' '}
+            {summary.downPaymentFlow === 'delivery'
+              ? 'online or at the store.'
+              : 'online or in cash at the store.'}
           </li>
         ) : null}
       </ul>
     </div>
   );
+}
+
+/** When the rest of a down payment order is paid, per order flow. */
+function balanceWhen(summary: PaymentSummary) {
+  switch (summary.downPaymentFlow) {
+    case 'delivery':
+      return 'before the rider leaves';
+    case 'pickup':
+      return 'at pick-up';
+    case 'reservation':
+      return 'before the order is completed';
+    default:
+      return 'later';
+  }
 }
 
 /** In-store balance disclaimer (after a down payment). No auto-cancel. */

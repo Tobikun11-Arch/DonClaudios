@@ -74,7 +74,12 @@ export const orderRepository = {
   create: async (data: Partial<OrderDocument>, session?: ClientSession) => {
     const withPercent: Partial<OrderDocument> =
       data.downPaymentPercent == null
-        ? {...data, downPaymentPercent: await settingsService.getDownPaymentPercent()}
+        ? {
+            ...data,
+            downPaymentPercent: await settingsService.getDownPaymentPercent(
+              data.isPreOrder ? 'preorder' : (data.orderType ?? 'pickup')
+            )
+          }
         : data;
     return session
       ? OrderModel.create([withPercent], {session}).then(rows => rows[0])
