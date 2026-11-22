@@ -28,6 +28,7 @@ import {useEscapeKey} from '@/shared/motion/useEscapeKey';
 import CustomerOrderFollowUp from '@/features/order/components/CustomerOrderFollowUp';
 import {courierLabel, customerStep, fulfillmentKind, fulfillmentLabel, statusFlow} from '@/lib/orders/orderFlow';
 import OrderPaymentCard from '@/features/order/components/OrderPaymentCard';
+import {OrderStatusNotices} from '@/features/order/components/OrderNotices';
 import {useCancelQuoteQuery} from '@/lib/hooks/orders/useOrderCancellation';
 import {refundPolicySummary} from '@/lib/payment/refundPolicy';
 import {PreOrderNextSteps} from '@/features/preorders/components/PreOrderNextSteps';
@@ -380,6 +381,7 @@ export default function OrderTracking({
             ) : (
               <StatusTrackerCard order={order} />
             )}
+            <OrderStatusNotices order={order} />
             <OrderSummaryCard order={order} />
             {!embedded ? (
               <CustomerOrderFollowUp

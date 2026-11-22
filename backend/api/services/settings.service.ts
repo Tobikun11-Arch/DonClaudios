@@ -23,6 +23,12 @@ import {
   type DownPaymentRules
 } from '../config/downPaymentRules';
 import {
+  DEFAULT_ORDERING_RULES,
+  ORDERING_RULE_LIMITS,
+  resolveOrderingRules,
+  type OrderingRules
+} from '../config/orderSchedule';
+import {
   DEFAULT_REWARDS_EARN_RULE,
   REWARDS_EARN_PESOS_MAX,
   REWARDS_EARN_PESOS_MIN,
@@ -86,6 +92,7 @@ export const settingsService = {
       downPaymentPercent: _ignoredDownPayment,
       downPaymentRules: _ignoredDownPaymentRules,
       dashboardTheme: _ignoredTheme,
+      orderingRules: _ignoredOrderingRules,
       ...rest
     } = data as Partial<SiteSettingDocument> & {
       freeDelivery?: unknown;
@@ -94,6 +101,7 @@ export const settingsService = {
       downPaymentPercent?: unknown;
       downPaymentRules?: unknown;
       dashboardTheme?: unknown;
+      orderingRules?: unknown;
     };
     return settingsRepository.update(rest);
   },
@@ -217,6 +225,23 @@ export const settingsService = {
 
   defaultDownPaymentRules(): DownPaymentRules {
     return DEFAULT_DOWN_PAYMENT_RULES;
+  },
+
+  /** Live scheduling / lead-time / payment-deadline rules, defaults if never saved. */
+  async getOrderingRules(): Promise<OrderingRules> {
+    const doc = await settingsRepository.findOrCreate();
+    return resolveOrderingRules(doc.orderingRules as Partial<OrderingRules> | undefined);
+  },
+
+  async updateOrderingRules(input: OrderingRules): Promise<OrderingRules> {
+    const doc = await settingsRepository.update({
+      orderingRules: resolveOrderingRules(input)
+    } as Partial<SiteSettingDocument>);
+    return resolveOrderingRules(doc?.orderingRules as Partial<OrderingRules> | undefined);
+  },
+
+  orderingRuleDefaults() {
+    return {defaults: DEFAULT_ORDERING_RULES, limits: ORDERING_RULE_LIMITS};
   },
 
   /** Saves one dashboard's colors; '' resets a color to the default. */

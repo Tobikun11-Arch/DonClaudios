@@ -9,6 +9,7 @@ type CategoryInput = {
   type?: CategoryType;
   stockUnit?: StockUnit;
   imageUrl?: string | null;
+  minNoticeHours?: number | null;
   key?: string;
 };
 

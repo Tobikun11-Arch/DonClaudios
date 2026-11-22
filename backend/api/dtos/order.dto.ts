@@ -46,6 +46,22 @@ export const listAllOrdersQueryDto = z.object({
   scope: z.enum(['queue']).optional()
 });
 
+/** Body of POST /orders/schedule/quote: the cart the slot picker is for. */
+export const scheduleQuoteDto = z.object({
+  orderType: z.enum(['pickup', 'delivery', 'reservation']),
+  items: z
+    .array(
+      z.object({
+        productId: z.string().min(1),
+        quantity: z.number().int().min(1).max(10_000)
+      })
+    )
+    .min(1)
+    .max(200)
+});
+
+export type ScheduleQuoteDto = z.infer<typeof scheduleQuoteDto>;
+
 export type ListAllOrdersQuery = z.infer<typeof listAllOrdersQueryDto>;
 export type GuestOtpSendDto = z.infer<typeof guestOtpSendDto>;
 export type GuestOtpVerifyDto = z.infer<typeof guestOtpVerifyDto>;

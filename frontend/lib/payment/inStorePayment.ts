@@ -35,6 +35,6 @@ export function inStoreRuleText(input: {
     return `In-store payment is due within ${r.regularHours} hours of the store confirming your order.`;
   }
   return input.hasPickupDate
-    ? `In-store payment is due within ${r.preOrderHours} hours of confirmation, and no later than ${r.daysBeforePickup} days before your pickup.`
+    ? 'Dated orders have one payment deadline (online or in store), set when the store confirmed your order and always before your time slot. Unpaid orders are cancelled automatically.'
     : `In-store payment is due within ${r.preOrderHours} hours of the store confirming your order.`;
 }

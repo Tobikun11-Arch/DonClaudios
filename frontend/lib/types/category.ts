@@ -10,6 +10,8 @@ export type Category = {
   stockUnit: StockUnit;
   sortOrder: number;
   imageUrl?: string | null;
+  /** Hours of notice customers must give (lechon). Null = none / default. */
+  minNoticeHours?: number | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -23,6 +25,7 @@ export type CreateCategoryBody = {
   type: CategoryType;
   stockUnit: StockUnit;
   imageUrl?: string | null;
+  minNoticeHours?: number | null;
 };
 
 export type CreateCategoryResponse = {

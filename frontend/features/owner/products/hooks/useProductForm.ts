@@ -78,6 +78,8 @@ export function useProductForm(categories: Category[] = []) {
       imageUrl: data.imageUrl ?? '',
       prepTimeMinutes:
         data.prepTimeMinutes == null ? '' : String(data.prepTimeMinutes),
+      minNoticeHours:
+        data.minNoticeHours == null ? '' : String(data.minNoticeHours),
       ingredients: data.ingredients ?? [],
       allergens: data.allergens ?? [],
       isAvailable: data.isAvailable ?? true,
@@ -227,6 +229,8 @@ export function useProductForm(categories: Category[] = []) {
     let stock = Number(form.stock);
     const prepTime = form.prepTimeMinutes.trim();
     const prepTimeMinutes = prepTime === '' ? null : Number(prepTime);
+    const noticeStr = form.minNoticeHours.trim();
+    const minNoticeHours = noticeStr === '' ? null : Number(noticeStr);
     const pointsCostStr = form.pointsCost.trim();
     const pointsCost = pointsCostStr === '' ? null : Number(pointsCostStr);
     const isPromoCategory = form.category.toLowerCase() === 'promo';
@@ -279,6 +283,12 @@ export function useProductForm(categories: Category[] = []) {
       }
       if (prepTimeMinutes > 1440) {
         setFormError('Prep time must be 1440 minutes (24 hours) or less');
+        return null;
+      }
+    }
+    if (minNoticeHours !== null) {
+      if (!Number.isInteger(minNoticeHours) || minNoticeHours < 0 || minNoticeHours > 72) {
+        setFormError('Minimum notice must be a whole number of hours from 0 to 72');
         return null;
       }
     }
@@ -442,6 +452,7 @@ export function useProductForm(categories: Category[] = []) {
       price,
       stock,
       prepTimeMinutes,
+      minNoticeHours,
       ingredients: form.ingredients,
       allergens: form.allergens,
       isBulkCategory,
@@ -460,6 +471,7 @@ export function useProductForm(categories: Category[] = []) {
       price: number;
       stock: number;
       prepTimeMinutes: number | null;
+      minNoticeHours: number | null;
       ingredients: ProductIngredient[];
       allergens: ProductAllergen[];
       isBulkCategory: boolean;

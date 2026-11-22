@@ -28,6 +28,11 @@ export const createProductDto = z.object({
   description: z.string().optional(),
   imageUrl: z.string().url().optional(),
   prepTimeMinutes: z.coerce.number().int().min(0).max(1440).optional(),
+  // Own minimum notice in hours; null/'' = use the category's.
+  minNoticeHours: z.preprocess(
+    value => (value === '' || value === null ? null : value),
+    z.coerce.number().int().min(0).max(72).nullable().optional()
+  ),
   ingredients: z.array(productIngredient).max(50).optional(),
   allergens: z.array(z.string().trim().min(1).max(40)).max(40).optional(),
   isAvailable: z.coerce.boolean().optional(),

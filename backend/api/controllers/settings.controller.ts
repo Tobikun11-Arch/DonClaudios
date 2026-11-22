@@ -56,6 +56,24 @@ export const settingsController = {
     }
   },
 
+  async getOrderingRules(_req: Request, res: Response, next: NextFunction) {
+    try {
+      const rules = await settingsService.getOrderingRules();
+      res.status(200).json({rules, ...settingsService.orderingRuleDefaults()});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateOrderingRules(req: Request, res: Response, next: NextFunction) {
+    try {
+      const rules = await settingsService.updateOrderingRules(req.body);
+      res.status(200).json({rules, ...settingsService.orderingRuleDefaults()});
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async getDownPayment(_req: Request, res: Response, next: NextFunction) {
     try {
       const rules = await settingsService.getDownPaymentRules();

@@ -97,3 +97,22 @@ export async function updateDownPaymentSettings(body: {rules: DownPaymentRules})
   const res = await httpClient.put<DownPaymentResponse>('/settings/down-payment', body);
   return res.data;
 }
+
+export type OrderingRulesResponse = {
+  rules: import('@/lib/orders/orderSchedule').OrderingRules;
+  defaults: import('@/lib/orders/orderSchedule').OrderingRules;
+  limits: Record<keyof import('@/lib/orders/orderSchedule').OrderingRules, [number, number]>;
+};
+
+/** Scheduling / lead-time / payment-deadline rules (public read). */
+export async function getOrderingRules() {
+  const res = await httpClient.get<OrderingRulesResponse>('/settings/ordering-rules');
+  return res.data;
+}
+
+export async function updateOrderingRules(
+  body: import('@/lib/orders/orderSchedule').OrderingRules
+) {
+  const res = await httpClient.put<OrderingRulesResponse>('/settings/ordering-rules', body);
+  return res.data;
+}

@@ -224,6 +224,26 @@ export const orderRepository = {
       {$set: {paymentExpiresAt: null}}
     ).exec(),
 
+  /** Claims the auto-cancel of a dated order whose payment deadline passed. */
+  claimPaymentDueExpiry: (orderId: string, now: Date) =>
+    OrderModel.updateOne(
+      {
+        _id: orderId,
+        orderStatus: 'confirmed',
+        paymentStatus: {$in: ['unpaid', null]},
+        paymentChoice: {$ne: 'cash_on_pickup'},
+        paymentDueAt: {$lte: now}
+      },
+      {$set: {paymentDueAt: null}}
+    ).exec(),
+
+  /** Claims the one "pay soon" reminder of an order. */
+  claimPaymentReminder: (orderId: string, now: Date) =>
+    OrderModel.updateOne(
+      {_id: orderId, paymentReminderSentAt: null},
+      {$set: {paymentReminderSentAt: now}}
+    ).exec(),
+
   updateFields: (orderId: string, patch: Record<string, unknown>) =>
     OrderModel.findByIdAndUpdate(orderId, {$set: patch}, {new: true}).exec()
 };

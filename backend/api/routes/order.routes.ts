@@ -20,7 +20,8 @@ import {
   guestOtpVerifyDto,
   guestEmailOtpSendDto,
   guestEmailOtpVerifyDto,
-  listAllOrdersQueryDto
+  listAllOrdersQueryDto,
+  scheduleQuoteDto
 } from '../dtos/order.dto';
 import type {Request, Response, NextFunction} from 'express';
 
@@ -84,6 +85,10 @@ router.post(
   validate(guestEmailOtpVerifyDto),
   orderController.verifyGuestEmailOtp
 );
+
+// Slot picker for checkout (customers and guests): what the cart needs (ASAP
+// or pre-order, lead time) and which hourly slots it may take.
+router.post('/schedule/quote', validate(scheduleQuoteDto), orderController.quoteSchedule);
 
 // Idempotent overdue check, invoked by the Vercel cron (and safe to call
 // manually). The atomic latch inside notifyOverdueOrder prevents duplicates.

@@ -51,6 +51,8 @@ import {settingsService} from '../services/settings.service';
 import {assertPreOrderItemsOrderable} from '../services/cart.service';
 import {isPositiveInteger, reserveOrderStock} from '../services/preOrder.service';
 import {applyServerPrices} from '../services/orderPricing.service';
+import {orderScheduleService} from '../services/orderSchedule.service';
+import {formatStoreDateTime} from '../config/orderSchedule';
 import type {ListAllOrdersQuery} from '../dtos/order.dto';
 import {sanitizeAcquisition} from '../config/acquisition';
 
@@ -193,19 +195,6 @@ async function notifyOverdueOrder(
     } catch (error) {
       console.error('Failed to create delayed customer notification', error);
     }
-  }
-}
-
-async function assertStoreOpen() {
-  const status = await storeStatusService.getStoreStatus();
-  if (!status.isOpen) {
-    throw new ApiError(
-      423,
-      'STORE_CLOSED',
-      status.isManuallyClosed
-         ? 'Store is temporarily closed'
-        : 'Store is currently closed'
-    );
   }
 }
 
@@ -629,8 +618,8 @@ export const orderController = {
         throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
       }
 
-      await assertStoreOpen();
-
+      // Store hours are checked with the timing below: ASAP needs the store
+      // open now, a pre-order only needs an open slot.
       const {
         orderType,
         items,
@@ -730,6 +719,16 @@ export const orderController = {
       const {itemPreps, estimatedPrepMinutes, estimatedReadyAt} =
         await buildPrepSnapshot(productIds, orderType);
 
+      // ASAP or a chosen slot; validates store hours, lead time and the
+      // lechon / bulk notice (config/orderSchedule.ts).
+      const scheduleFields = await orderScheduleService.resolveForNewOrder({
+        items: normalizedItems.map(i => ({productId: i.productId, quantity: i.quantity})),
+        orderType,
+        timing: req.body?.timing,
+        scheduledDate: req.body?.scheduledDate,
+        scheduledTime: req.body?.scheduledTime
+      });
+
       const offeredName = isNonEmptyString(contactInfo?.firstName)
         ? contactInfo.firstName
         : undefined;
@@ -787,6 +786,7 @@ export const orderController = {
                 statusHistory: [{status: 'pending', at: new Date()}],
                 estimatedPrepMinutes,
                 estimatedReadyAt,
+                ...scheduleFields,
                 isOnline: true,
                 stockDeducted: true
               },
@@ -838,6 +838,7 @@ export const orderController = {
             statusHistory: [{status: 'pending', at: new Date()}],
             estimatedPrepMinutes,
             estimatedReadyAt,
+            ...scheduleFields,
             isOnline: true,
             stockDeducted: true
           });
@@ -964,7 +965,7 @@ export const orderController = {
 
   async createGuestOrder(req: Request, res: Response, next: NextFunction) {
     try {
-      await assertStoreOpen();
+      // Store hours are checked with the timing (see resolveForNewOrder).
 
       const {
         guestInfo,
@@ -1088,6 +1089,16 @@ export const orderController = {
       const {itemPreps, estimatedPrepMinutes, estimatedReadyAt} =
         await buildPrepSnapshot(productIds, orderType);
 
+      // ASAP or a chosen slot; validates store hours, lead time and the
+      // lechon / bulk notice (config/orderSchedule.ts).
+      const scheduleFields = await orderScheduleService.resolveForNewOrder({
+        items: normalizedItems.map(i => ({productId: i.productId, quantity: i.quantity})),
+        orderType,
+        timing: req.body?.timing,
+        scheduledDate: req.body?.scheduledDate,
+        scheduledTime: req.body?.scheduledTime
+      });
+
       const guestDeliveryProducts = await productRepository.findManyByIds(
         normalizedItems.map(i => i.productId)
       );
@@ -1157,6 +1168,7 @@ export const orderController = {
                 statusHistory: [{status: 'pending', at: new Date()}],
                 estimatedPrepMinutes,
                 estimatedReadyAt,
+                ...scheduleFields,
                 isOnline: true,
                 stockDeducted: true,
                 acquisition
@@ -1209,6 +1221,7 @@ export const orderController = {
             statusHistory: [{status: 'pending', at: new Date()}],
             estimatedPrepMinutes,
             estimatedReadyAt,
+            ...scheduleFields,
             isOnline: true,
             stockDeducted: true,
             acquisition
@@ -1290,6 +1303,15 @@ export const orderController = {
       }
 
       res.status(201).json({order, transaction});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async quoteSchedule(req: Request, res: Response, next: NextFunction) {
+    try {
+      const quote = await orderScheduleService.quote(req.body.items, req.body.orderType);
+      res.status(200).json(quote);
     } catch (error) {
       next(error);
     }
@@ -2212,14 +2234,40 @@ export const orderController = {
         }
       }
 
+      // A dated order (scheduled or owner pre-order) gets its payment deadline
+      // when the cashier confirms it: reminder before it, auto-cancel after.
+      let paymentDueAt: Date | null = null;
+      if (
+        status === 'confirmed' &&
+        order.orderSource !== 'in-store' &&
+        (order.paymentStatus ?? 'unpaid') === 'unpaid'
+      ) {
+        try {
+          paymentDueAt = order.paymentDueAt
+            ? new Date(order.paymentDueAt)
+            : await orderScheduleService.paymentDueAt(order, new Date());
+          if (paymentDueAt && !order.paymentDueAt) {
+            await orderRepository.updateFields(req.params.id, {
+              paymentDueAt,
+              paymentReminderSentAt: null
+            });
+          }
+        } catch (error) {
+          console.error('Failed to set the payment deadline', error);
+        }
+      }
+
       const updated = await orderRepository.findById(req.params.id);
 
       if (order.customerId) {
+        const dueNote = paymentDueAt
+          ? ` Please pay the down payment or full amount by ${formatStoreDateTime(paymentDueAt)}, or the order will be cancelled automatically.`
+          : '';
         await notificationService.createForCustomer({
           customerId: String(order.customerId),
           type: 'order_status',
           title: 'Order Status Update',
-          message: `Your order (#${String(order._id).slice(-6).toUpperCase()}) is now ${customerStatusLabel(order, status)}.`,
+          message: `Your order (#${String(order._id).slice(-6).toUpperCase()}) is now ${customerStatusLabel(order, status)}.${dueNote}`,
           orderId: String(order._id),
           link: '/customer/dashboard?tab=history'
         });
@@ -2321,5 +2369,9 @@ export async function runOverdueCheck(): Promise<number> {
   await paymentService
     .expireOverdueInStorePayments(now)
     .catch(error => console.error('Failed to expire in-store payments', error));
+  // ...and sends payment reminders / cancels dated orders past their deadline.
+  await paymentService
+    .processPaymentDeadlines(now)
+    .catch(error => console.error('Failed to process payment deadlines', error));
   return preparing.length;
 }

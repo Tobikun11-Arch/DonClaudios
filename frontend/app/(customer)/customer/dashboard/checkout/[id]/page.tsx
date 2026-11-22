@@ -1,6 +1,6 @@
 'use client';
 
-import {useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 import {useParams, useRouter} from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -45,6 +45,13 @@ import {useQueryClient} from '@tanstack/react-query';
 import {PRODUCTS_QUERY_PREFIX} from '@/lib/hooks/products/useProducts';
 import {MIN_ORDER_MESSAGE, MIN_ORDER_TOTAL} from '@/lib/constants/orderLimits';
 import {CheckoutPaymentNote} from '@/features/order/components/CheckoutPaymentNote';
+import OrderTimingPicker, {
+  DEFAULT_TIMING,
+  timingProblem,
+  type TimingSelection
+} from '@/features/order/components/OrderTimingPicker';
+import {CheckoutOrderNotices} from '@/features/order/components/OrderNotices';
+import type {ScheduleQuote} from '@/lib/orders/orderSchedule';
 
 const STORE = {
   lat: 14.39092185435405,
@@ -87,14 +94,13 @@ export default function CustomerCheckoutPage() {
   const setLocation = useLocationStore(s => s.setLocation);
 
   const orderType = useOrderDetailsStore(s => s.orderType);
-  const reservationDate = useOrderDetailsStore(s => s.reservationDate);
-  const reservationTime = useOrderDetailsStore(s => s.reservationTime);
   const setOrderType = useOrderDetailsStore(s => s.setOrderType);
-  const setReservationDate = useOrderDetailsStore(s => s.setReservationDate);
-  const setReservationTime = useOrderDetailsStore(s => s.setReservationTime);
 
   const [address, setAddress] = useState(location?.address ?? '');
-  const [pickupTime, setPickupTime] = useState('12:00');
+  // ASAP or a pre-order slot (bulk / lechon carts must pre-order).
+  const [timing, setTiming] = useState<TimingSelection>(DEFAULT_TIMING);
+  const [scheduleQuote, setScheduleQuote] = useState<ScheduleQuote | undefined>();
+  const onQuote = useCallback((q: ScheduleQuote | undefined) => setScheduleQuote(q), []);
   const [notesToRider, setNotesToRider] = useState('');
   const [addressType, setAddressType] = useState<'Residential' | 'Office'>(
     'Residential'
@@ -103,7 +109,9 @@ export default function CustomerCheckoutPage() {
   const [checkoutError, setCheckoutError] = useState('');
 
   const storeStatusQuery = useStoreStatusQuery();
-  const isStoreClosed = storeStatusQuery.data?.status.isOpen === false;
+  // A closed store only blocks ASAP orders; pre-orders pick an open slot.
+  const isStoreClosed =
+    storeStatusQuery.data?.status.isOpen === false && timing.timing === 'asap';
   const storeClosedReason =
     storeStatusQuery.data?.status.isOpen === false
       ? storeStatusQuery.data.status.isManuallyClosed
@@ -170,6 +178,18 @@ export default function CustomerCheckoutPage() {
 
   const total = subtotal;
 
+  const scheduleItems = useMemo(
+    () => items.map(i => ({productId: getProductId(i.productId), quantity: i.quantity})),
+    [items]
+  );
+  const timingIssue = timingProblem(timing, scheduleQuote);
+  const selectedSlotAt =
+    timing.timing === 'scheduled'
+      ? scheduleQuote?.days
+          .find(d => d.day === timing.day)
+          ?.slots.find(s => s.time === timing.time)?.at ?? null
+      : null;
+
 
   const toggleNoteSuggestion = (suggestion: string) => {
     setNotesToRider(current => toggleNote(current, suggestion));
@@ -207,6 +227,11 @@ export default function CustomerCheckoutPage() {
 
     if (total < MIN_ORDER_TOTAL) {
       setCheckoutError(MIN_ORDER_MESSAGE);
+      return;
+    }
+
+    if (timingIssue) {
+      setCheckoutError(timingIssue);
       return;
     }
 
@@ -255,7 +280,10 @@ export default function CustomerCheckoutPage() {
         },
         deliveryLocation:
           orderType === 'Delivery' && pinnedLocation ? pinnedLocation : undefined,
-        courier: courierPayload
+        courier: courierPayload,
+        timing: timing.timing,
+        scheduledDate: timing.timing === 'scheduled' ? timing.day ?? undefined : undefined,
+        scheduledTime: timing.timing === 'scheduled' ? timing.time ?? undefined : undefined
       });
 
       const orderId = created?.order?._id;
@@ -293,6 +321,7 @@ export default function CustomerCheckoutPage() {
         clearCartMutation.isPending ||
         !agreedToTerms ||
         courierMissing ||
+        Boolean(timingIssue) ||
         (orderType === 'Delivery' && !address.trim())
       }
       onClick={handleCheckout}
@@ -301,7 +330,9 @@ export default function CustomerCheckoutPage() {
         ? 'Placing order...'
         : isStoreClosed
           ? 'Store is Closed'
-          : 'Place order'}
+          : timing.timing === 'scheduled'
+            ? 'Place pre-order'
+            : 'Place order'}
     </Button>
   );
 
@@ -398,6 +429,17 @@ export default function CustomerCheckoutPage() {
                 />
               </div>
 
+              <OrderTimingPicker
+                orderType={orderType}
+                items={scheduleItems}
+                value={timing}
+                onChange={setTiming}
+                onQuote={onQuote}
+              />
+              {timingIssue && items.length > 0 ? (
+                <p className="text-xs font-medium text-amber-700 dark:text-amber-300">{timingIssue}</p>
+              ) : null}
+
               {orderType === 'Delivery' ? (
                 <div
                   className={
@@ -475,43 +517,16 @@ export default function CustomerCheckoutPage() {
                     </p>
                     <p className="text-xs text-gray-600 dark:text-gray-300">{STORE_ADDRESS}</p>
                   </div>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                      Pick-up time
-                    </p>
-                    <input
-                      type="time"
-                      required
-                      value={pickupTime}
-                      onChange={e => setPickupTime(e.target.value)}
-                      className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900 dark:border-gray-700 dark:text-gray-100 dark:bg-gray-800 dark:scheme-dark"
-                    />
-                  </div>
                 </div>
               ) : null}
 
               {orderType === 'Reservation' ? (
-                <div className="flex flex-wrap items-center gap-3">
-                  <div>
-                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Date</p>
-                    <input
-                      type="date"
-                      required
-                      value={reservationDate}
-                      onChange={e => setReservationDate(e.target.value)}
-                      className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900 dark:border-gray-700 dark:text-gray-100 dark:bg-gray-800 dark:scheme-dark"
-                    />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Time</p>
-                    <input
-                      type="time"
-                      required
-                      value={reservationTime}
-                      onChange={e => setReservationTime(e.target.value)}
-                      className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900 dark:border-gray-700 dark:text-gray-100 dark:bg-gray-800 dark:scheme-dark"
-                    />
-                  </div>
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+                  <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Dine in at</p>
+                  <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    DonClaudio&apos;s Lechon House
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-300">{STORE_ADDRESS}</p>
                 </div>
               ) : null}
 
@@ -674,6 +689,13 @@ export default function CustomerCheckoutPage() {
             </div>
 
             <CheckoutPaymentNote orderType={orderType} total={total} />
+            <CheckoutOrderNotices
+              className="mt-4"
+              orderType={orderType}
+              timing={timing.timing}
+              readyAt={selectedSlotAt}
+              advanceOnly={scheduleQuote?.requirement.advanceOnly}
+            />
           </div>
         </div>
 

@@ -15,6 +15,12 @@ export interface CategoryDocument extends mongoose.Document {
   stockUnit: StockUnit;
   sortOrder: number;
   imageUrl?: string | null;
+  /**
+   * Minimum notice (hours) customers must give for products of this category
+   * (e.g. lechon takes hours to roast). Null = none, except the lechon
+   * categories, which fall back to the Ordering Rules default.
+   */
+  minNoticeHours?: number | null;
   createdBy?: mongoose.Types.ObjectId;
 }
 
@@ -34,6 +40,7 @@ const CategorySchema = new Schema<CategoryDocument>(
     },
     sortOrder: {type: Number, default: 0},
     imageUrl: {type: String, default: null},
+    minNoticeHours: {type: Number, min: 0, max: 72, default: null},
     createdBy: {type: Schema.Types.ObjectId, ref: 'Admin'}
   },
   {timestamps: true}

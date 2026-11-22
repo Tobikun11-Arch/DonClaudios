@@ -15,6 +15,7 @@ import {MenuCategoriesTab} from './MenuCategoriesTab';
 import {DeliveryTab} from './DeliveryTab';
 import {RewardsTab} from './RewardsTab';
 import {PaymentsTab} from './PaymentsTab';
+import {OrderingRulesTab} from './OrderingRulesTab';
 import AppearancePreview from '@/features/owner/appearance/components/AppearancePreview';
 import {
   UserRound,
@@ -34,7 +35,8 @@ import {
   Search,
   Truck,
   Gift,
-  Wallet
+  Wallet,
+  CalendarClock
 } from 'lucide-react';
 
 type TabId =
@@ -50,6 +52,7 @@ type TabId =
   | 'delivery'
   | 'rewards'
   | 'payments'
+  | 'ordering'
   | 'categories'
   | 'security'
   | 'cashier';
@@ -71,6 +74,7 @@ const TOP_ITEMS: TopItem[] = [
   {id: 'delivery', label: 'Delivery', icon: Truck, group: 1},
   {id: 'rewards', label: 'Rewards', icon: Gift, group: 1},
   {id: 'payments', label: 'Payments', icon: Wallet, group: 1},
+  {id: 'ordering', label: 'Ordering Rules', icon: CalendarClock, group: 1},
   {id: 'categories', label: 'Menu Categories', icon: Tags, group: 1},
   {id: 'security', label: 'Security', icon: ShieldCheck, group: 1}
 ];
@@ -102,6 +106,7 @@ const TAB_INFO: Record<TabId, {label: string; subtitle: string}> = {
   delivery: {label: 'Delivery', subtitle: 'Free delivery minimum and area.'},
   rewards: {label: 'Rewards', subtitle: 'How customers earn loyalty points.'},
   payments: {label: 'Payments', subtitle: 'Down payment rules for pre-orders, pick-up, delivery and reservations.'},
+  ordering: {label: 'Ordering Rules', subtitle: 'Pre-order time slots, lead time for bulk and lechon orders, and payment deadlines.'},
   categories: {label: 'Menu Categories', subtitle: 'Organize how products are grouped.'},
   security: {label: 'Security', subtitle: 'Password and active sessions.'},
   cashier: {label: 'Cashier', subtitle: 'Manage cashier accounts.'}
@@ -167,6 +172,8 @@ export function SettingsPage() {
         return <RewardsTab />;
       case 'payments':
         return <PaymentsTab />;
+      case 'ordering':
+        return <OrderingRulesTab />;
       case 'categories':
         return <MenuCategoriesTab />;
       case 'security':

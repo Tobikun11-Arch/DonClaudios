@@ -239,6 +239,7 @@ export const productService = {
       description?: string;
       imageUrl?: string;
       prepTimeMinutes?: number;
+      minNoticeHours?: number | null;
       ingredients?: ProductIngredient[];
       allergens?: ProductAllergen[];
       isAvailable?: boolean;
@@ -305,6 +306,7 @@ export const productService = {
       description?: string;
       imageUrl?: string;
       prepTimeMinutes?: number;
+      minNoticeHours?: number | null;
       ingredients?: ProductIngredient[];
       allergens?: ProductAllergen[];
       isAvailable?: boolean;

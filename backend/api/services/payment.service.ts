@@ -45,6 +45,8 @@ import {
   type XenditInvoice
 } from './xendit.service';
 import {ApiError} from '../utils/error';
+import {orderScheduleService} from './orderSchedule.service';
+import {formatStoreDateTime, paymentReminderAt} from '../config/orderSchedule';
 
 /*
  * Xendit payment flow for ONLINE orders (counter orders never come here).
@@ -89,6 +91,8 @@ async function getOrderProductFlags(order: OrderDocument) {
  */
 export async function downPaymentFlowOf(order: OrderDocument): Promise<DownPaymentFlow> {
   if (order.isPreOrder) return 'preorder';
+  // Bulk / lechon orders scheduled ahead follow the pre-order rule too.
+  if (needsAdvancePayment(order)) return 'preorder';
   const flags = await getOrderProductFlags(order);
   if (!flags.hasRegular) return 'preorder';
   return order.orderType;
@@ -125,6 +129,17 @@ export async function downPaymentPercentOf(order: OrderDocument) {
 const DOWN_PAYMENT_NOT_ALLOWED_MESSAGE =
   'A down payment is not available for this order. Please pay the full amount.';
 
+/**
+ * Bulk / lechon orders scheduled ahead: like pre-orders they need a down
+ * payment or full payment first (online or at the counter), no cash on pickup.
+ */
+export function needsAdvancePayment(order: Pick<OrderDocument, 'schedule'>) {
+  return (
+    order.schedule?.timing === 'scheduled' &&
+    (order.schedule.tier === 'bulk' || order.schedule.tier === 'lechon')
+  );
+}
+
 export function isInStoreChoice(choice?: PaymentChoice | null) {
   return choice === 'in_store_full' || choice === 'in_store_down_payment';
 }
@@ -143,12 +158,17 @@ function confirmedAtOf(order: OrderDocument) {
  */
 async function inStoreInfo(order: OrderDocument) {
   const isPreOrderCart =
-    order.isPreOrder === true || (await getOrderProductFlags(order)).hasPreOrder;
-  const pickupAt = order.preOrder?.pickupAt ? new Date(order.preOrder.pickupAt) : null;
+    order.isPreOrder === true ||
+    needsAdvancePayment(order) ||
+    (await getOrderProductFlags(order)).hasPreOrder;
+  const pickupAt = orderScheduleService.pickupAtOf(order);
   const chosen = isInStoreChoice(order.paymentChoice) && order.paymentExpiresAt;
+  // Dated orders: one deadline for every way of paying, fixed on confirmation.
   const dueAt = chosen
     ? new Date(order.paymentExpiresAt as Date)
-    : inStorePaymentDueAt({confirmedAt: confirmedAtOf(order), isPreOrderCart, pickupAt});
+    : order.paymentDueAt
+      ? new Date(order.paymentDueAt)
+      : inStorePaymentDueAt({confirmedAt: confirmedAtOf(order), isPreOrderCart, pickupAt});
   const open = inStorePaymentOpen(dueAt);
   return {
     allowed: open,
@@ -528,6 +548,7 @@ export const paymentService = {
       cashAllowed:
         order.orderType === 'pickup' &&
         !order.isPreOrder &&
+        !needsAdvancePayment(order) &&
         (!dpInfo.required || order.paymentChoice === 'cash_on_pickup'),
       balanceCashAllowed: order.orderType === 'pickup' || order.orderType === 'reservation',
       isPreOrder: order.isPreOrder === true,
@@ -537,7 +558,19 @@ export const paymentService = {
             slotLabel: order.preOrder.slotLabel,
             receiveMethod: order.preOrder.receiveMethod
           }
-        : null,
+        : order.scheduledAt
+          ? {
+              date: order.scheduledAt,
+              slotLabel: order.schedule?.slotLabel ?? null,
+              receiveMethod: order.orderType
+            }
+          : null,
+      // Scheduling + the one payment deadline of a dated order (null for ASAP).
+      schedule: order.schedule ?? null,
+      scheduledAt: order.scheduledAt ?? null,
+      pickupAt: orderScheduleService.pickupAtOf(order),
+      advancePayment: order.isPreOrder === true || needsAdvancePayment(order),
+      paymentDueAt: order.paymentDueAt ?? null,
       inStore: {
         allowed: inStore.allowed,
         dueAt: inStore.dueAt,
@@ -552,7 +585,7 @@ export const paymentService = {
               dueAt:
                 order.balanceChoice === 'in_store' && order.paymentExpiresAt
                   ? order.paymentExpiresAt
-                  : inStoreBalanceDueAt(order.preOrder?.pickupAt ?? null)
+                  : inStoreBalanceDueAt(orderScheduleService.pickupAtOf(order))
             }
           : null,
       downPaymentAllowed: allowsDownPayment,
@@ -652,10 +685,26 @@ export const paymentService = {
 
     const quote = computeCharge(amount, channel);
     const hasPreOrder = order.isPreOrder === true || (await getOrderProductFlags(order)).hasPreOrder;
-    const durationSeconds =
+    let durationSeconds =
       hasPreOrder || kind === 'balance'
         ? env.PREORDER_PAYMENT_EXPIRY_HOURS * 3600
         : env.PAYMENT_EXPIRY_MINUTES * 60;
+    // Dated orders: the link never outlives the payment deadline (first
+    // payment) or the pickup / dine-in time (balance), so re-opening the
+    // payment page cannot stretch the deadline.
+    const capAt =
+      kind === 'balance' ? orderScheduleService.pickupAtOf(order) : order.paymentDueAt ?? null;
+    if (capAt) {
+      const left = Math.floor((new Date(capAt).getTime() - Date.now()) / 1000);
+      if (kind !== 'balance' && left < 60) {
+        throw new ApiError(
+          409,
+          'PAYMENT_DEADLINE_PASSED',
+          'The payment deadline for this order has passed.'
+        );
+      }
+      if (left >= 60) durationSeconds = Math.min(durationSeconds, left);
+    }
 
     const label =
       kind === 'down_payment'
@@ -733,7 +782,7 @@ export const paymentService = {
     if (order.orderType !== 'pickup') {
       throw new ApiError(400, 'INVALID_OPERATION', 'Cash payment is only available for pick-up orders');
     }
-    if (order.isPreOrder) {
+    if (order.isPreOrder || needsAdvancePayment(order)) {
       throw new ApiError(
         400,
         'PREORDER_NEEDS_ONLINE_PAYMENT',
@@ -862,6 +911,78 @@ export const paymentService = {
     return cancelled;
   },
 
+  /**
+   * Dated orders (scheduled + owner pre-orders): sends the "pay soon"
+   * reminder once, then auto-cancels when the payment deadline passes with
+   * nothing paid. Cash on pickup never expires. Called from the overdue sweep.
+   */
+  async processPaymentDeadlines(now: Date = new Date()) {
+    const rules = await settingsService.getOrderingRules();
+    const horizon = new Date(now.getTime() + rules.reminderMinutesBefore * 60 * 1000);
+    const open = await orderRepository.listPaginated(
+      {
+        orderStatus: 'confirmed',
+        paymentStatus: {$in: ['unpaid', null]},
+        orderSource: {$ne: 'in-store'},
+        paymentChoice: {$ne: 'cash_on_pickup'},
+        paymentDueAt: {$ne: null, $lte: horizon}
+      },
+      1,
+      0
+    );
+    let cancelled = 0;
+    let reminded = 0;
+    for (const order of open) {
+      const orderId = String(order._id);
+      try {
+        const dueAt = new Date(order.paymentDueAt as Date);
+        if (dueAt.getTime() <= now.getTime()) {
+          // A PAID webhook may be in flight: ask Xendit first.
+          if (await paymentService.syncPendingFromXendit(orderId).catch(() => false)) continue;
+          const claim = await orderRepository.claimPaymentDueExpiry(orderId, now);
+          if (claim.modifiedCount === 0) continue;
+          await cancelPendingInvoices(orderId);
+          await autoCancelUnpaidOrder(
+            order,
+            `Payment was not made by the deadline (${formatStoreDateTime(dueAt)})`
+          );
+          cancelled++;
+          continue;
+        }
+        if (order.paymentReminderSentAt) continue;
+        const remindAt = paymentReminderAt({
+          confirmedAt: confirmedAtOf(order),
+          dueAt,
+          rules
+        });
+        if (remindAt.getTime() > now.getTime()) continue;
+        const claim = await orderRepository.claimPaymentReminder(orderId, now);
+        if (claim.modifiedCount === 0) continue;
+        const title = 'Payment reminder';
+        const message = `Order #${orderCode(orderId)} is waiting for your down payment or full payment. Please pay by ${formatStoreDateTime(dueAt)} (online or at the store), or the order will be cancelled automatically.`;
+        await notifyCustomer(order, title, message);
+        if (order.customerId) {
+          await pushService
+            .sendToUser(String(order.customerId), 'customer', {
+              title,
+              body: message,
+              url: '/customer/dashboard?tab=history'
+            })
+            .catch(() => undefined);
+        }
+        await notifyStaff(
+          'Payment due soon',
+          `Order #${orderCode(orderId)} has not been paid yet. Deadline: ${formatStoreDateTime(dueAt)}. It will be cancelled automatically if unpaid.`,
+          orderId
+        );
+        reminded++;
+      } catch (error) {
+        console.error(`[payment] deadline processing failed for ${orderId}`, error);
+      }
+    }
+    return {cancelled, reminded};
+  },
+
   /** After a down payment, the customer pays the balance in cash at the store. */
   async chooseInStoreBalance(order: OrderDocument) {
     if (order.orderStatus === 'cancelled' || order.orderStatus === 'completed') {
@@ -872,7 +993,7 @@ export const paymentService = {
     }
     const orderId = String(order._id);
     await cancelPendingInvoices(orderId, ['balance']);
-    const dueAt = inStoreBalanceDueAt(order.preOrder?.pickupAt ?? null);
+    const dueAt = inStoreBalanceDueAt(orderScheduleService.pickupAtOf(order));
     await orderRepository.updateFields(orderId, {
       balanceChoice: 'in_store',
       paymentExpiresAt: dueAt

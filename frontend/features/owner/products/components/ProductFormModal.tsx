@@ -279,6 +279,28 @@ export function ProductFormModal({
         </div>
 
         <div className="space-y-1.5">
+          <Label htmlFor="minNoticeHours">Minimum notice</Label>
+          <div className="relative">
+            <Input
+              id="minNoticeHours"
+              inputMode="numeric"
+              value={form.minNoticeHours}
+              onChange={e => onFormChange('minNoticeHours', sanitizeInteger(e.target.value).slice(0, 2))}
+              placeholder="Category default"
+              className="pr-16"
+            />
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">
+              hours
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            How much notice customers must give to order this (e.g. lechon). Orders that
+            include it cannot be ASAP. Leave blank to use the category&apos;s notice
+            (Settings &gt; Menu Categories / Ordering Rules).
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
           <Label htmlFor="prepTimeMinutes">Prep time</Label>
           <div className="relative">
             <Input

@@ -23,6 +23,12 @@ export type CreateGuestOrderInput = {
   riderNotes?: string;
   /** Courier the guest will book (deliveries are always self-booked for guests). */
   courier?: {provider: 'lalamove' | 'grab_express' | 'move_it' | 'other'; name?: string};
+  /** ASAP (default) or a chosen slot; see lib/orders/orderSchedule.ts. */
+  timing?: 'asap' | 'scheduled';
+  /** Store-local "YYYY-MM-DD" of the chosen slot. */
+  scheduledDate?: string;
+  /** Store-local "HH:MM" of the chosen slot. */
+  scheduledTime?: string;
   /** Anti-spam honeypot: hidden field, must stay empty. */
   website?: string;
   /** Anti-spam: epoch ms when the checkout form was opened. */
@@ -44,6 +50,12 @@ export type CreateCustomerOrderInput = {
   deliveryLocation?: {lat: number; lng: number};
   /** Courier the customer will book when delivery is not free. */
   courier?: {provider: 'lalamove' | 'grab_express' | 'move_it' | 'other'; name?: string};
+  /** ASAP (default) or a chosen slot; see lib/orders/orderSchedule.ts. */
+  timing?: 'asap' | 'scheduled';
+  /** Store-local "YYYY-MM-DD" of the chosen slot. */
+  scheduledDate?: string;
+  /** Store-local "HH:MM" of the chosen slot. */
+  scheduledTime?: string;
 };
 
 export type CreatedGuestOrderResponse = {
@@ -187,6 +199,12 @@ export type OrderHistoryEntry = {
   cashRefundDue?: number;
   cashRefundedAt?: string | null;
   cancelRequest?: OrderCancelRequest | null;
+  /** ASAP vs scheduled, and why (bulk / lechon need advance notice). */
+  schedule?: import('@/lib/orders/orderSchedule').OrderSchedule | null;
+  /** Requested pickup / dine-in / delivery time of a scheduled order. */
+  scheduledAt?: string | null;
+  /** Deadline for the first payment of a dated order (set on confirmation). */
+  paymentDueAt?: string | null;
   /** Dated Holiday Pre-order (see `preOrder`). */
   isPreOrder?: boolean;
   preOrder?: OrderPreOrderInfo | null;
@@ -282,6 +300,18 @@ export async function createGuestOrder(body: CreateGuestOrderInput) {
   const res = await httpClient.post<CreatedGuestOrderResponse>(
     '/orders/guest',
     {...body, acquisition: getAcquisitionPayload()}
+  );
+  return res.data;
+}
+
+/** Which slots this cart may take (ASAP allowed? earliest pre-order time?). */
+export async function quoteOrderSchedule(body: {
+  orderType: 'pickup' | 'delivery' | 'reservation';
+  items: {productId: string; quantity: number}[];
+}) {
+  const res = await httpClient.post<import('@/lib/orders/orderSchedule').ScheduleQuote>(
+    '/orders/schedule/quote',
+    body
   );
   return res.data;
 }

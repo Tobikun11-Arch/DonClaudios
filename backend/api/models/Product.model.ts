@@ -37,6 +37,11 @@ export interface ProductDocument extends mongoose.Document {
   description?: string;
   imageUrl?: string;
   prepTimeMinutes?: number;
+  /**
+   * Minimum notice (hours) before this product can be picked up / served.
+   * Null = use the category's notice (see config/orderSchedule.ts).
+   */
+  minNoticeHours?: number | null;
   isAvailable: boolean;
   ingredients: ProductIngredient[];
   allergens: ProductAllergen[];
@@ -105,6 +110,7 @@ const ProductSchema = new Schema<ProductDocument>(
     description: {type: String},
     imageUrl: {type: String},
     prepTimeMinutes: {type: Number, min: 0, max: 1440, default: null},
+    minNoticeHours: {type: Number, min: 0, max: 72, default: null},
     ingredients: {type: [ProductIngredientSchema], default: []},
     allergens: {type: [String], default: []},
     isAvailable: {type: Boolean, default: true},

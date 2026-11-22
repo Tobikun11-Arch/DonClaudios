@@ -41,7 +41,7 @@ export default function OrderTypeSelector({
             ? deliverySubtitle
             : type === 'Pick-up'
               ? 'Grab it at the shop'
-              : 'Book a table';
+              : 'Dine in at the store';
 
         return (
           <button

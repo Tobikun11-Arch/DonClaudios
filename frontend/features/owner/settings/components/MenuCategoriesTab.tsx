@@ -142,6 +142,8 @@ export function MenuCategoriesTab() {
   const [name, setName] = useState('');
   const [type, setType] = useState<CategoryType>('in_store');
   const [stockUnit, setStockUnit] = useState<StockUnit>('piece');
+  // Minimum notice in hours ('' = none); see Settings > Ordering Rules.
+  const [noticeHours, setNoticeHours] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
@@ -164,6 +166,7 @@ export function MenuCategoriesTab() {
     setName('');
     setType('in_store');
     setStockUnit('piece');
+    setNoticeHours('');
     setEditingId(null);
     if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImagePreview(null);
@@ -232,6 +235,11 @@ export function MenuCategoriesTab() {
     return undefined;
   };
 
+  const noticeValue = (): number | null => {
+    const n = Number(noticeHours);
+    return noticeHours.trim() === '' || !Number.isInteger(n) ? null : Math.min(72, n);
+  };
+
   const handleCreate = async () => {
     if (!name.trim()) {
       toast.error('Enter a category name.');
@@ -240,7 +248,13 @@ export function MenuCategoriesTab() {
     try {
       const imageUrl = await uploadImageIfNeeded();
       createMutation.mutate(
-        {name: name.trim(), type, stockUnit, imageUrl: imageUrl ?? undefined},
+        {
+          name: name.trim(),
+          type,
+          stockUnit,
+          imageUrl: imageUrl ?? undefined,
+          minNoticeHours: noticeValue()
+        },
         {
           onError: err =>
             toast.error(getFriendlyErrorMessage(err, 'Failed to add category')),
@@ -261,7 +275,7 @@ export function MenuCategoriesTab() {
     try {
       const imageUrl = await uploadImageIfNeeded();
       updateMutation.mutate(
-        {id, body: {name: name.trim(), type, stockUnit, imageUrl}},
+        {id, body: {name: name.trim(), type, stockUnit, imageUrl, minNoticeHours: noticeValue()}},
         {
           onError: err =>
             toast.error(getFriendlyErrorMessage(err, 'Failed to update category')),
@@ -298,6 +312,7 @@ export function MenuCategoriesTab() {
     setName(cat.name);
     setType(cat.type);
     setStockUnit(cat.stockUnit);
+    setNoticeHours(cat.minNoticeHours != null ? String(cat.minNoticeHours) : '');
     setConfirmingId(null);
     if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImagePreview(null);
@@ -328,7 +343,7 @@ export function MenuCategoriesTab() {
               <p className="text-sm font-semibold text-[#2d4a35] dark:text-[#7ed4a0] mb-3">
                 Edit category
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <Field id="cat-name-edit" label="Name">
                   <Input
                     id="cat-name-edit"
@@ -369,6 +384,22 @@ export function MenuCategoriesTab() {
                     ))}
                   </select>
                 </Field>
+                <Field id="cat-notice-edit" label="Min. notice (hours)">
+                  <Input
+                    id="cat-notice-edit"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={noticeHours}
+                    onChange={e => setNoticeHours(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                    placeholder="None"
+                    disabled={isBusy}
+                    aria-describedby="cat-notice-hint-edit"
+                  />
+                  <p id="cat-notice-hint-edit" className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                    e.g. 8 for lechon. Empty = no extra notice.
+                  </p>
+                </Field>
               </div>
               <div className="mt-4">
                 <CategoryImagePicker
@@ -404,7 +435,7 @@ export function MenuCategoriesTab() {
             </div>
           ) : (
             <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 p-4" onKeyDown={enterNavigation}>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <Field id="cat-name" label="New category name">
                   <Input
                     id="cat-name"
@@ -444,6 +475,22 @@ export function MenuCategoriesTab() {
                       </option>
                     ))}
                   </select>
+                </Field>
+                <Field id="cat-notice" label="Min. notice (hours)">
+                  <Input
+                    id="cat-notice"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={noticeHours}
+                    onChange={e => setNoticeHours(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                    placeholder="None"
+                    disabled={isBusy}
+                    aria-describedby="cat-notice-hint"
+                  />
+                  <p id="cat-notice-hint" className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                    e.g. 8 for lechon. Empty = no extra notice.
+                  </p>
                 </Field>
               </div>
               <div className="mt-4">
@@ -528,6 +575,11 @@ export function MenuCategoriesTab() {
                         {STOCK_UNIT_LABELS[cat.stockUnit]} ·{' '}
                         {STOCK_UNIT_HINTS[cat.stockUnit]}
                       </span>
+                      {cat.minNoticeHours ? (
+                        <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                          {cat.minNoticeHours} h notice
+                        </span>
+                      ) : null}
                     </div>
                   </div>
                 </div>

@@ -90,6 +90,8 @@ export interface SiteSettingDocument extends mongoose.Document {
   downPaymentRules?: Partial<
     Record<'preorder' | 'pickup' | 'delivery' | 'reservation', {mode: string; percent: number; minOrder: number}>
   >;
+  /** Scheduling, lead-time and payment-deadline rules (see config/orderSchedule.ts). */
+  orderingRules?: Partial<Record<string, number>>;
   /** Per-dashboard colors (hex). Empty/unset means the default green. */
   dashboardTheme?: Partial<Record<DashboardTarget, DashboardColors>>;
 }
@@ -235,6 +237,8 @@ const SiteSettingSchema = new Schema<SiteSettingDocument>(
       ),
       default: undefined
     },
+    // No defaults: unset values mean DEFAULT_ORDERING_RULES (config/orderSchedule.ts).
+    orderingRules: {type: Schema.Types.Mixed, default: undefined},
     // No defaults: unset means "use the built-in DonClaudio's green".
     dashboardTheme: {
       owner: {type: DashboardColorsSchema, default: undefined},

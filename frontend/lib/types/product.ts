@@ -21,6 +21,8 @@ export type Product = {
   description?: string;
   imageUrl?: string;
   prepTimeMinutes?: number | null;
+  /** Own minimum notice in hours (null = the category's). */
+  minNoticeHours?: number | null;
   ingredients?: ProductIngredient[];
   allergens?: ProductAllergen[];
   isAvailable: boolean;
@@ -75,6 +77,8 @@ export type CreateProductBody = {
   description?: string;
   imageUrl?: string;
   prepTimeMinutes?: number | null;
+  /** Own minimum notice in hours (null = the category's). */
+  minNoticeHours?: number | null;
   ingredients?: ProductIngredient[];
   allergens?: ProductAllergen[];
   isAvailable?: boolean;

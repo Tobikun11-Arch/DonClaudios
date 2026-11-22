@@ -5,7 +5,9 @@ export const createCategoryDto = z.object({
   name: z.string().min(1).max(40),
   type: z.enum(CATEGORY_TYPES),
   stockUnit: z.enum(STOCK_UNITS),
-  imageUrl: z.string().url().nullable().optional()
+  imageUrl: z.string().url().nullable().optional(),
+  // Hours of notice customers must give (lechon); null = none / default.
+  minNoticeHours: z.number().int().min(0).max(72).nullable().optional()
 });
 
 export type CreateCategoryDto = z.infer<typeof createCategoryDto>;

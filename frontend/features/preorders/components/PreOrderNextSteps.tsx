@@ -3,6 +3,8 @@
 import {CalendarCheck, CreditCard, PhoneCall, ShoppingBag} from 'lucide-react';
 import {cn} from '@/lib/utils';
 import {downPaymentFor} from '@/lib/hooks/useDownPayment';
+import {useOrderingRulesQuery} from '@/lib/hooks/useOrderSchedule';
+import {formatDuration} from '@/lib/orders/orderSchedule';
 import {peso} from '../utils';
 
 /** If the cut-off already passed when the order is placed, we call within this many days. */
@@ -58,6 +60,8 @@ export function PreOrderNextSteps({
   compact?: boolean;
   className?: string;
 }) {
+  const {rules} = useOrderingRulesQuery();
+  const payWindow = formatDuration(rules.paymentWindowHours * 60);
   const placed = placedAt ? new Date(placedAt) : new Date();
   const deadline = new Date(cancelDeadline);
   const beforeCutoff = deadline.getTime() > placed.getTime();
@@ -83,9 +87,7 @@ export function PreOrderNextSteps({
     {
       icon: CreditCard,
       title: `Pay ${downPaymentPercent}% down${dp !== null ? ` (${peso(dp)})` : ''} or the full amount`,
-      text: beforeCutoff
-        ? `After our call, pay online (GCash, Maya, card or bank) by ${lastDayBefore(deadline)}, ${span} before pickup, to lock in your order.`
-        : 'After our call, pay online (GCash, Maya, card or bank) to lock in your order.'
+      text: `Your pre-order is not final until our call. After it, you have up to ${payWindow} to pay online (GCash, Maya, card or bank) or at the store; the exact deadline shows on your order page and we remind you before it. Unpaid pre-orders are cancelled automatically. Any balance is due before your pickup time.`
     },
     {
       icon: CalendarCheck,

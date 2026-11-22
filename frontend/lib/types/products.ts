@@ -11,6 +11,8 @@ export type ProductFormState = {
   description: string;
   imageUrl: string;
   prepTimeMinutes: string;
+  /** Minimum notice in hours ('' = use the category's). */
+  minNoticeHours: string;
   ingredients: ProductIngredient[];
   allergens: ProductAllergen[];
   isAvailable: boolean;
@@ -45,6 +47,7 @@ export const emptyProductForm: ProductFormState = {
   description: '',
   imageUrl: '',
   prepTimeMinutes: '',
+  minNoticeHours: '',
   ingredients: [],
   allergens: [],
   isAvailable: true,
