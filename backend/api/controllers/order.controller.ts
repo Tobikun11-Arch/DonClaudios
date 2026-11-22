@@ -519,7 +519,7 @@ export const orderController = {
           try {
             await stockMovementService.restoreOrderStock(
               String(order._id),
-              (req.auth?.userId as string) ?? 'customer'
+              (req.auth?.userId as string) ?? String(order._id)
             );
           } catch (error) {
             await orderRepository.updateStockDeducted(String(order._id), true);
