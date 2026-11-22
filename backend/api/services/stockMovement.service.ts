@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import {ApiError} from '../utils/error';
 import {productRepository} from '../repositories/product.repository';
 import {stockMovementRepository} from '../repositories/stockMovement.repository';
@@ -350,19 +351,30 @@ export const stockMovementService = {
       });
     }
 
-    await Promise.all(
-      movements.map(m =>
-        stockMovementRepository.create({
-          productId: m.productId as any,
-          type: 'adjustment',
-          quantity: m.quantity,
-          previousStock: m.previousStock,
-          newStock: m.newStock,
-          note: 'Order cancelled — stock restored',
-          performedBy: adminId as any
-        })
-      )
-    );
+    // performedBy is an ObjectId. A guest cancel has no user id, so attribute
+    // it to the order itself rather than failing the cast.
+    const performedBy = mongoose.isValidObjectId(adminId) ? adminId : orderId;
+
+    // The stock is already back on the products at this point. A failed audit
+    // write must not bubble up: the caller would reset stockDeducted and a
+    // retry would restore the same stock a second time.
+    try {
+      await Promise.all(
+        movements.map(m =>
+          stockMovementRepository.create({
+            productId: m.productId as any,
+            type: 'adjustment',
+            quantity: m.quantity,
+            previousStock: m.previousStock,
+            newStock: m.newStock,
+            note: 'Order cancelled — stock restored',
+            performedBy: performedBy as any
+          })
+        )
+      );
+    } catch (error) {
+      console.error(`Failed to log stock restore for order ${orderId}`, error);
+    }
 
     return movements;
   }
