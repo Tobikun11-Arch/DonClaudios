@@ -89,6 +89,12 @@ export default function DeliveryZoneMap({
   const vertexLayerRef = useRef<Leaflet.LayerGroup | null>(null);
   const guideRef = useRef<Leaflet.Circle | null>(null);
   const heatRef = useRef<Leaflet.Layer | null>(null);
+  // Owner corner handles, one per zone corner, reused across re-renders.
+  const handlesRef = useRef<Leaflet.Marker[]>([]);
+  // A corner is being dragged: leave the handles and outline alone.
+  const draggingRef = useRef(false);
+  // Swallow the map click the browser may send right after a corner drag.
+  const ignoreClickUntilRef = useRef(0);
   const [ready, setReady] = useState(false);
 
   // Latest props for Leaflet event handlers registered once.
@@ -138,7 +144,19 @@ export default function DeliveryZoneMap({
 
       vertexLayerRef.current = L.layerGroup().addTo(map);
 
+      // Pressing a corner while the map is still gliding from a pan (inertia)
+      // or a zoom would keep moving the map under the held corner, so the
+      // corner drifts away from the pointer. Stop the map first. Capture phase
+      // runs before Leaflet's own drag handler reads the start position.
+      const stopMapUnderCorner = (e: Event) => {
+        if ((e.target as Element | null)?.closest?.('.zone-corner-handle')) map.stop();
+      };
+      containerRef.current.addEventListener('pointerdown', stopMapUnderCorner, true);
+      containerRef.current.addEventListener('mousedown', stopMapUnderCorner, true);
+      containerRef.current.addEventListener('touchstart', stopMapUnderCorner, {capture: true, passive: true});
+
       map.on('click', e => {
+        if (Date.now() < ignoreClickUntilRef.current) return;
         const p = {lat: e.latlng.lat, lng: e.latlng.lng};
         if (editableRef.current) {
           const current = zoneRef.current;
@@ -161,6 +179,8 @@ export default function DeliveryZoneMap({
       polygonRef.current = null;
       pinRef.current = null;
       vertexLayerRef.current = null;
+      handlesRef.current = [];
+      draggingRef.current = false;
       guideRef.current = null;
       heatRef.current = null;
     };
@@ -174,27 +194,64 @@ export default function DeliveryZoneMap({
     const map = mapRef.current;
     if (!ready || !L || !map || !polygonRef.current || !vertexLayerRef.current) return;
 
-    polygonRef.current.setLatLngs(zone.map(p => [p.lat, p.lng] as [number, number]));
-    vertexLayerRef.current.clearLayers();
-    if (!editableZone) return;
+    // Mid-drag the held handle owns its position; dragend commits it.
+    if (draggingRef.current) return;
 
-    zone.forEach((p, index) => {
+    polygonRef.current.setLatLngs(zone.map(p => [p.lat, p.lng] as [number, number]));
+
+    if (!editableZone) {
+      vertexLayerRef.current.clearLayers();
+      handlesRef.current = [];
+      return;
+    }
+
+    // Same number of corners: move the existing handles instead of
+    // recreating them, so a handle is never swapped out under the pointer.
+    if (handlesRef.current.length === zone.length) {
+      handlesRef.current.forEach((handle, i) => {
+        const cur = handle.getLatLng();
+        if (cur.lat !== zone[i].lat || cur.lng !== zone[i].lng) {
+          handle.setLatLng([zone[i].lat, zone[i].lng]);
+        }
+      });
+      return;
+    }
+
+    vertexLayerRef.current.clearLayers();
+    handlesRef.current = zone.map(p => {
       const handle = L.marker([p.lat, p.lng], {
         draggable: true,
+        // The 28px wrapper is the grab area; the 14px dot is centred on the
+        // corner, so the press lands on the handle even slightly off the dot.
         icon: L.divIcon({
-          className: '',
-          html: `<div style="width:14px;height:14px;transform:translate(-50%,-50%);border-radius:9999px;background:#fff;border:3px solid ${BRAND};box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:move"></div>`,
-          iconSize: [0, 0]
+          className: 'zone-corner-handle',
+          html: `<div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:move"><div style="width:14px;height:14px;box-sizing:border-box;border-radius:9999px;background:#fff;border:3px solid ${BRAND};box-shadow:0 1px 4px rgba(0,0,0,.35)"></div></div>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14]
         }),
         title: 'Drag to move · double-click to remove'
       });
-      handle.on('drag', e => {
-        const ll = (e.target as Leaflet.Marker).getLatLng();
-        const next = zoneRef.current.map((q, i) => (i === index ? [ll.lat, ll.lng] : [q.lat, q.lng])) as [number, number][];
-        polygonRef.current?.setLatLngs(next);
+      const indexOf = () => handlesRef.current.indexOf(handle);
+      handle.on('dragstart', () => {
+        draggingRef.current = true;
+        map.stop();
+        map.scrollWheelZoom.disable();
       });
-      handle.on('dragend', e => {
-        const ll = (e.target as Leaflet.Marker).getLatLng();
+      handle.on('drag', () => {
+        const index = indexOf();
+        const ll = handle.getLatLng();
+        polygonRef.current?.setLatLngs(
+          zoneRef.current.map((q, i) =>
+            i === index ? [ll.lat, ll.lng] : [q.lat, q.lng]
+          ) as [number, number][]
+        );
+      });
+      handle.on('dragend', () => {
+        draggingRef.current = false;
+        ignoreClickUntilRef.current = Date.now() + 400;
+        if (editableRef.current) map.scrollWheelZoom.enable();
+        const index = indexOf();
+        const ll = handle.getLatLng();
         onZoneChangeRef.current?.(
           zoneRef.current.map((q, i) => (i === index ? {lat: ll.lat, lng: ll.lng} : q))
         );
@@ -202,9 +259,11 @@ export default function DeliveryZoneMap({
       handle.on('dblclick', e => {
         L.DomEvent.stop(e);
         if (zoneRef.current.length <= 3) return;
+        const index = indexOf();
         onZoneChangeRef.current?.(zoneRef.current.filter((_, i) => i !== index));
       });
       vertexLayerRef.current?.addLayer(handle);
+      return handle;
     });
   }, [ready, zone, editableZone]);
 
