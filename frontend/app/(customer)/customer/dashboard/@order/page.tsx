@@ -57,13 +57,10 @@ export default function OrderSlot() {
     [promosQuery.data?.promos]
   );
 
-  const categoryImageMap = useMemo(() => {
-    const map: Record<string, string | undefined> = {};
-    for (const c of publicCategoriesQuery.data?.categories ?? []) {
-      map[c.name] = c.imageUrl ?? undefined;
-    }
-    return map;
-  }, [publicCategoriesQuery.data]);
+  const categories = useMemo(
+    () => publicCategoriesQuery.data?.categories ?? [],
+    [publicCategoriesQuery.data]
+  );
 
   const cartUniqueCount = cartItems.length;
 
@@ -275,7 +272,7 @@ export default function OrderSlot() {
       <MenuBrowser
         products={availableProducts}
         promos={promos}
-        categoryImages={categoryImageMap}
+        categories={categories}
         basePath="customer/dashboard"
         isLoading={isLoading}
         isError={isError}

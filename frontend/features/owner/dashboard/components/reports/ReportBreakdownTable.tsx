@@ -147,7 +147,10 @@ export function ReportBreakdownTable({
                   #
                 </th>
               )}
-              {columns.map(col => (
+              {/* Same fixed order as the body cells below. Mapping `columns` in
+                  the caller's order put "Units" over the orders figures
+                  (and vice versa) on the Products report. */}
+              {ALL_COLUMNS.filter(col => columns.includes(col)).map(col => (
                 <th
                   key={col}
                   className={cn(

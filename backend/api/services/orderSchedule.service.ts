@@ -18,6 +18,7 @@ import type {OrderDocument} from '../models/Order.model';
 import {productRepository} from '../repositories/product.repository';
 import {ApiError} from '../utils/error';
 import {applyServerPrices} from './orderPricing.service';
+import {loadActiveBundles} from './bundle.service';
 import {settingsService} from './settings.service';
 import {storeStatusService} from './storeStatus.service';
 
@@ -63,17 +64,31 @@ async function noticeByProductId(
   return out;
 }
 
-/** Cart lines priced server-side (promos applied) with their notice hours. */
+/**
+ * Cart lines priced server-side (promos applied) with their notice hours.
+ * A bundle line counts at the bundle's price and needs the longest notice of
+ * the products inside it (a lechon bundle still needs the lechon notice).
+ */
 async function ruleItems(items: ScheduleCartItem[], rules: OrderingRules) {
   const priced = items.map(i => ({productId: i.productId, quantity: i.quantity, price: 0}));
   await applyServerPrices(priced);
+  const bundles = await loadActiveBundles(priced.map(i => i.productId));
+  const componentIds = [...bundles.values()].flatMap(b => b.components.map(c => c.productId));
   const notices = await noticeByProductId(
-    priced.map(i => i.productId),
+    [...priced.map(i => i.productId), ...componentIds],
     rules
   );
+  const noticeOf = (productId: string): number | null => {
+    const bundle = bundles.get(productId);
+    if (!bundle) return notices.get(productId) ?? null;
+    const hours = bundle.components
+      .map(c => notices.get(c.productId))
+      .filter((h): h is number => typeof h === 'number');
+    return hours.length > 0 ? Math.max(...hours) : null;
+  };
   return priced.map(i => ({
     lineTotal: i.price * i.quantity,
-    noticeHours: notices.get(i.productId) ?? null
+    noticeHours: noticeOf(i.productId)
   }));
 }
 

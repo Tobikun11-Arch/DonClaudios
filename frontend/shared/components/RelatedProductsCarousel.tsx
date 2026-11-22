@@ -5,10 +5,12 @@ import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import RelatedProductCard from './RelatedProductCard';
 import RelatedProductCardSkeleton from './RelatedProductCardSkeleton';
 import {ChevronLeft, ChevronRight} from 'lucide-react';
-import {isPreOrderProduct, preOrderDisplay} from '@/lib/preOrder/preOrder';
+import {isPreOrderProduct} from '@/lib/preOrder/preOrder';
+
+/** "You may also like" only suggests from these categories (agreed with the advisor). */
+const SUGGESTED_CATEGORIES = ['rice meals', 'appetizers', 'drinks'];
 
 function RelatedProductsCarousel({
-  categoryName,
   currentProductId,
   basePath = ''
 }: {
@@ -26,15 +28,15 @@ function RelatedProductsCarousel({
   const relatedProducts = (() => {
     const now = new Date();
 
-    // First filter all orderable products
-    const orderableProducts = products.filter(p => {
-      // Exclude current product
+    // Only easy add-ons to an order: Rice Meals, Appetizers and Drinks. Never
+    // lechon, platters or other big-ticket / advance-notice items.
+    const orderable = products.filter(p => {
       if (p._id === currentProductId) return false;
-      // Only orderable items
-      if (!p.isAvailable) return false;
-      if (p.stock <= 0) return false;
-      // Exclude closed pre-orders
-      if (isPreOrderProduct(p) && preOrderDisplay(p).closed) return false;
+      if (!p.isAvailable || p.stock <= 0) return false;
+      if (!SUGGESTED_CATEGORIES.includes(p.category?.trim().toLowerCase())) return false;
+      // Pre-orders and anything that needs hours of notice are not impulse buys.
+      if (isPreOrderProduct(p) || p.preOrderOnly) return false;
+      if (typeof p.minNoticeHours === 'number' && p.minNoticeHours > 0) return false;
       // Filter out products with expired embedded promos
       if (
         p.isPromoActive &&
@@ -47,26 +49,19 @@ function RelatedProductsCarousel({
       return true;
     });
 
-    // Group by category
-    const productsByCategory: Record<string, typeof orderableProducts> = {};
-    orderableProducts.forEach(p => {
-      if (!productsByCategory[p.category]) {
-        productsByCategory[p.category] = [];
-      }
-      productsByCategory[p.category].push(p);
-    });
-
-    // Take 1 product from each category, up to 6 total
-    const selectedProducts: typeof orderableProducts = [];
-    for (const category in productsByCategory) {
-      if (selectedProducts.length >= 6) break;
-      const categoryProducts = productsByCategory[category];
-      if (categoryProducts.length > 0) {
-        selectedProducts.push(categoryProducts[0]);
+    // Take turns across the three categories (rice meal, appetizer, drink,
+    // rice meal, ...) so the row is a mix, up to 6 cards.
+    const queues = SUGGESTED_CATEGORIES.map(cat =>
+      orderable.filter(p => p.category.trim().toLowerCase() === cat)
+    );
+    const picked: typeof orderable = [];
+    for (let round = 0; picked.length < 6 && queues.some(q => q.length > round); round++) {
+      for (const q of queues) {
+        if (picked.length >= 6) break;
+        if (q[round]) picked.push(q[round]);
       }
     }
-
-    return selectedProducts;
+    return picked;
   })();
 
   // Check scroll position to enable/disable arrows
@@ -112,7 +107,7 @@ function RelatedProductsCarousel({
               You may also like
             </h2>
             <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">
-              More from {categoryName}
+              Rice meals, appetizers and drinks
             </p>
           </div>
         </div>
@@ -135,7 +130,7 @@ function RelatedProductsCarousel({
           <h2 className="text-[22px] font-bold text-gray-900 dark:text-gray-100">
             You may also like
           </h2>
-          <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">Browse our menu</p>
+          <p className="text-sm text-gray-500 mt-0.5 dark:text-gray-400">Rice meals, appetizers and drinks</p>
         </div>
         {hasOverflow && (
           <div className="hidden md:flex gap-2">

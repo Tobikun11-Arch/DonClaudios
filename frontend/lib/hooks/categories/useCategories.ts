@@ -5,8 +5,10 @@ import {
   deleteCategory,
   listCategories,
   listPublicCategories,
+  reorderCategories,
   updateCategory
 } from '@/lib/api/categoriesApi';
+import type {ListCategoriesResponse} from '@/lib/types/category';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 
 export const categoriesQueryKey = ['categories'] as const;
@@ -45,6 +47,36 @@ export function useUpdateCategoryMutation() {
   return useMutation({
     mutationFn: updateCategory,
     onSuccess: async () => {
+      await queryClient.invalidateQueries({queryKey: categoriesQueryKey});
+    }
+  });
+}
+
+/** Moves categories instantly, then saves; rolls back if the save fails. */
+export function useReorderCategoriesMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: reorderCategories,
+    onMutate: async (ids: string[]) => {
+      await queryClient.cancelQueries({queryKey: categoriesQueryKey});
+      const previous = queryClient.getQueryData<ListCategoriesResponse>(categoriesQueryKey);
+      if (previous) {
+        const byId = new Map(previous.categories.map(c => [c._id, c]));
+        queryClient.setQueryData<ListCategoriesResponse>(categoriesQueryKey, {
+          categories: ids
+            .map((id, index) => {
+              const c = byId.get(id);
+              return c ? {...c, sortOrder: index} : null;
+            })
+            .filter((c): c is NonNullable<typeof c> => c !== null)
+        });
+      }
+      return {previous};
+    },
+    onError: (_err, _ids, context) => {
+      if (context?.previous) queryClient.setQueryData(categoriesQueryKey, context.previous);
+    },
+    onSettled: async () => {
       await queryClient.invalidateQueries({queryKey: categoriesQueryKey});
     }
   });

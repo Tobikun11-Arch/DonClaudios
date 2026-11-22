@@ -1,5 +1,5 @@
 import {ApiError} from '../utils/error';
-import {isEmbeddedPromoExpired} from '../config/promoDates';
+import {isEmbeddedPromoExpired, isEmbeddedPromoLive} from '../config/promoDates';
 import {cartRepository} from '../repositories/cart.repository';
 import {productRepository} from '../repositories/product.repository';
 import {orderRepository} from '../repositories/order.repository';
@@ -161,6 +161,10 @@ export async function assertPreOrderOrderable(input: {
   const product = await productRepository.findById(input.productId);
   if (product && isEmbeddedPromoExpired(product)) {
     throw new ApiError(400, 'PROMO_ENDED', `The "${product.name}" promo has already ended.`);
+  }
+  // Switched off, or not started yet.
+  if (product && !isEmbeddedPromoLive(product)) {
+    throw new ApiError(400, 'PROMO_ENDED', `The "${product.name}" promo is not available right now.`);
   }
   if (product?.preOrderOnly === true) {
     throw new ApiError(400, 'PREORDER_ONLY_PRODUCT', `"${product.name}" is only available through Holiday Pre-orders. Please order it from the Pre-orders section.`);

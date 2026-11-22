@@ -35,6 +35,12 @@ export async function updateCategory(params: {
   return res.data;
 }
 
+/** Saves the menu order: every category id, first to last. */
+export async function reorderCategories(ids: string[]) {
+  const res = await httpClient.put<ListCategoriesResponse>('/categories/order', {ids});
+  return res.data;
+}
+
 export async function deleteCategory(id: string) {
   const res = await httpClient.delete<DeleteCategoryResponse>(
     `/categories/${id}`

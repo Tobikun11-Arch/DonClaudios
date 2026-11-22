@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import {useRouter} from 'next/navigation';
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {useCartStore} from '@/app/store/cartStore';
 import {usePathname} from 'next/navigation';
 import {useAddCustomerCartItemMutation} from '@/lib/hooks/cart/useCustomerCart';
@@ -41,6 +41,8 @@ import {
 import {toast} from 'sonner';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {AllergenBadges} from './AllergenBadges';
+import {formatServing, isBundleProduct, ownPromoPrice, promoDiscountedPrice} from '@/lib/menu/bundles';
+import {Utensils} from 'lucide-react';
 import {IngredientGrid} from './IngredientGrid';
 import ProductDetailSkeleton from './ProductDetailSkeleton';
 import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
@@ -57,6 +59,14 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
   const router = useRouter();
   const pathname = usePathname();
   const isCustomerRoute = pathname.startsWith('/customer');
+
+  // A Bundle Deal has its own page (included items, savings, stock).
+  const isBundle = isBundleProduct(product);
+  useEffect(() => {
+    if (!isBundle) return;
+    const base = isCustomerRoute ? '/customer/dashboard' : '/order';
+    router.replace(`${base}/promo/${encodeURIComponent(id)}`);
+  }, [isBundle, isCustomerRoute, id, router]);
   const {data: me} = useMeQuery();
   const isSignedIn = !!me;
 
@@ -169,15 +179,8 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
       });
     };
 
-    // Calculate discount price using product's embedded discount or promos array
-    let discountPrice = product.price;
-    if (activePromo) {
-      if (activePromo.discountAmount) {
-        discountPrice = Math.max(0, product.price - activePromo.discountAmount);
-      } else if (activePromo.discountRate) {
-        discountPrice = product.price * (1 - activePromo.discountRate / 100);
-      }
-    }
+    // The promo item's own discount, rounded like the server charges it.
+    const discountPrice = promoDiscountedPrice(product) ?? product.price;
 
     return {
       isUpcoming,
@@ -322,6 +325,8 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
 
   const handleAddToCart = () => {
     if (!product) return;
+    // What the server charges: a live promo item's own discount, else the price.
+    const chargedPrice = ownPromoPrice(product) ?? product.price;
     if (addBlockedReason) {
       toast.error(addBlockedReason);
       return;
@@ -331,7 +336,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
         {
           productId: product._id,
           name: product.name,
-          price: product.price,
+          price: chargedPrice,
           quantity: selectableQty,
           imageUrl: product.imageUrl,
           instructions: instructions.trim().length
@@ -349,7 +354,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
       addItem({
         productId: product._id,
         name: product.name,
-        price: product.price,
+        price: chargedPrice,
         imageUrl: product.imageUrl,
         qty: selectableQty,
         instructions: instructions.trim().length
@@ -552,6 +557,12 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                       <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
                         {product.category}
                       </p>
+                      {formatServing(product.servingQty, product.servingUnit) && (
+                        <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#2d4a35]/[0.08] px-2.5 py-1 text-xs font-semibold text-[#2d4a35] dark:bg-[#7ed4a0]/10 dark:text-[#7ed4a0]">
+                          <Utensils className="h-3.5 w-3.5" aria-hidden />
+                          {formatServing(product.servingQty, product.servingUnit)}
+                        </p>
+                      )}
                     </div>
                     <div className="shrink-0 text-right">
                       {(() => {

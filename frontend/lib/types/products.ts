@@ -1,6 +1,7 @@
 import {
   type ProductAllergen,
-  type ProductIngredient
+  type ProductIngredient,
+  type ServingUnit
 } from '@/lib/types/product';
 
 export type ProductFormState = {
@@ -10,6 +11,11 @@ export type ProductFormState = {
   stock: string;
   description: string;
   imageUrl: string;
+  /** What one serving includes, e.g. "6" + "pcs". Both blank = none. */
+  servingQty: string;
+  servingUnit: ServingUnit | '';
+  /** Bundle Deal (Promo category): the items one bundle includes. */
+  bundleItems: Array<{productId: string; qty: number}>;
   prepTimeMinutes: string;
   /** Minimum notice in hours ('' = use the category's). */
   minNoticeHours: string;
@@ -46,6 +52,9 @@ export const emptyProductForm: ProductFormState = {
   stock: '',
   description: '',
   imageUrl: '',
+  servingQty: '',
+  servingUnit: '',
+  bundleItems: [],
   prepTimeMinutes: '',
   minNoticeHours: '',
   ingredients: [],

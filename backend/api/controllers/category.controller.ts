@@ -33,6 +33,15 @@ export const categoryController = {
     }
   },
 
+  async reorder(req: Request, res: Response, next: NextFunction) {
+    try {
+      const categories = await categoryService.reorder(req.body.ids);
+      res.status(200).json({categories});
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async remove(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await categoryService.remove(req.params.id);

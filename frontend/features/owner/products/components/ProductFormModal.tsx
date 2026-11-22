@@ -16,10 +16,12 @@ import {
 } from '@/lib/types/product';
 import {cn} from '@/lib/utils';
 import {sanitizeDecimal, sanitizeInteger} from '@/lib/validation/numeric';
-import {useDefaultPrepMinutes} from '@/lib/hooks/useDefaultPrepMinutes';import {Upload} from 'lucide-react';
+import {useDefaultPrepMinutes} from '@/lib/hooks/useDefaultPrepMinutes';
+import {Minus, Plus, Upload, X} from 'lucide-react';
 import Image from 'next/image';
 import {type DragEvent, type FormEvent} from 'react';
 import {type ProductFormState} from '@/lib/types/products';
+import {SERVING_UNIT_LABELS, SERVING_UNITS, type Product} from '@/lib/types/product';
 import {
   isPreOrderCategory,
   PRE_ORDER_CATEGORIES,
@@ -41,6 +43,8 @@ interface Props {
   isPending: boolean;
   categories: Category[];
   categoriesLoading?: boolean;
+  /** Products a Bundle Deal may include. */
+  bundleChoices: Product[];
   ingredientLibrary: IngredientItem[];
   ingredientLibraryLoading: boolean;
   onAddIngredientToLibrary?: (name: string) => Promise<IngredientItem | null>;
@@ -48,7 +52,12 @@ interface Props {
   onSubmit: (e: FormEvent) => void;
   onFormChange: (
     field: keyof ProductFormState,
-    value: string | boolean | ProductIngredient[] | ProductAllergen[]
+    value:
+      | string
+      | boolean
+      | ProductIngredient[]
+      | ProductAllergen[]
+      | Array<{productId: string; qty: number}>
   ) => void;
   /** Routed through the hook so picking a non-eligible category clears pre-order. */
   onCategoryChange: (category: string) => void;
@@ -79,6 +88,7 @@ export function ProductFormModal({
   isPending,
   categories,
   categoriesLoading = false,
+  bundleChoices,
   ingredientLibrary,
   ingredientLibraryLoading,
   onAddIngredientToLibrary,
@@ -100,6 +110,31 @@ export function ProductFormModal({
   const legacyCategory =
     form.category && !selectedCategory ? form.category : null;
   const bulk = isCateringCategory(categories, form.category);
+  // A Bundle Deal: its stock, ingredients and allergens come from its items.
+  const promoBundle = form.category.toLowerCase() === 'promo' && form.promoType === 'bundle';
+  const choiceById = new Map(bundleChoices.map(p => [p._id, p]));
+  const bundleTotal = form.bundleItems.reduce(
+    (sum, i) => sum + (choiceById.get(i.productId)?.price ?? 0) * i.qty,
+    0
+  );
+  const bundlePrice = Number(form.price);
+  const hasBundlePrice = form.price.trim().length > 0 && Number.isFinite(bundlePrice);
+  const bundleSavings = bundleTotal - bundlePrice;
+  const peso = (n: number) => `\u20b1${n.toLocaleString('en-PH', {maximumFractionDigits: 2})}`;
+  const setBundleItems = (next: Array<{productId: string; qty: number}>) => onFormChange('bundleItems', next);
+  const addBundleItem = (productId: string) => {
+    if (!productId) return;
+    const existing = form.bundleItems.find(i => i.productId === productId);
+    setBundleItems(
+      existing
+        ? form.bundleItems.map(i => (i.productId === productId ? {...i, qty: Math.min(99, i.qty + 1)} : i))
+        : [...form.bundleItems, {productId, qty: 1}]
+    );
+  };
+  const setBundleQty = (productId: string, qty: number) =>
+    setBundleItems(form.bundleItems.map(i => (i.productId === productId ? {...i, qty: Math.min(99, Math.max(1, qty))} : i)));
+  const removeBundleItem = (productId: string) =>
+    setBundleItems(form.bundleItems.filter(i => i.productId !== productId));
   const canPreOrder = isPreOrderCategory(form.category);
   const preOrderOn = canPreOrder && form.isPreOrder === 'yes';
   const minDeadline = todayInStoreTimezone();
@@ -246,6 +281,15 @@ export function ProductFormModal({
               placeholder="e.g. 4500"
             />
           </div>
+          {promoBundle ? (
+            <div className="space-y-1.5">
+              <Label>Stock</Label>
+              <p className="rounded-md border border-dashed border-gray-200 px-3 py-2 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                Comes from the included items. Customers can order as many as
+                their stock can make.
+              </p>
+            </div>
+          ) : (
           <div className="space-y-1.5">
             <Label htmlFor="stock">Stock</Label>
             <div className="relative">
@@ -276,6 +320,7 @@ export function ProductFormModal({
               {preOrderOn ? 'Totals the batch windows below automatically.' : ''}
             </p>
           </div>
+          )}
         </div>
 
         <div className="space-y-1.5">
@@ -339,6 +384,43 @@ export function ProductFormModal({
             placeholder="Short description"
           />
         </div>
+
+        {/* A Bundle Deal shows its item count instead of a serving size. */}
+        {promoBundle ? null : (
+        <div className="space-y-1.5">
+          <Label htmlFor="servingQty">
+            Serving size <span className="font-normal text-gray-400">(optional)</span>
+          </Label>
+          <div className="flex gap-2">
+            <Input
+              id="servingQty"
+              inputMode="decimal"
+              value={form.servingQty}
+              onChange={e => onFormChange('servingQty', sanitizeDecimal(e.target.value))}
+              placeholder="e.g. 6"
+              className="w-28"
+            />
+            <select
+              id="servingUnit"
+              aria-label="Serving unit"
+              value={form.servingUnit}
+              onChange={e => onFormChange('servingUnit', e.target.value)}
+              className="h-9 flex-1 rounded-md border border-input bg-transparent px-2.5 py-1 text-base shadow-xs outline-none md:text-sm dark:bg-gray-900"
+            >
+              <option value="">No unit</option>
+              {SERVING_UNITS.map(unit => (
+                <option key={unit} value={unit}>
+                  {SERVING_UNIT_LABELS[unit]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            What one order includes, shown on the menu card (e.g. 6 pieces,
+            good for 4 pax). It does not change stock.
+          </p>
+        </div>
+        )}
 
         {/* Holiday Pre-orders: the product is sold only on dated pre-orders. */}
         <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 p-4">
@@ -584,6 +666,107 @@ export function ProductFormModal({
                   </select>
                 </div>
 
+                {promoBundle && (
+                  <div className="space-y-2">
+                    <Label htmlFor="bundleAdd">Included items</Label>
+                    <select
+                      id="bundleAdd"
+                      value=""
+                      onChange={e => addBundleItem(e.target.value)}
+                      disabled={isDisabled}
+                      data-enter="skip"
+                      className="h-9 w-full rounded-md border border-input bg-transparent dark:bg-gray-900 px-2.5 py-1 text-base shadow-xs outline-none disabled:opacity-50 md:text-sm"
+                    >
+                      <option value="">+ Add an item to the bundle</option>
+                      {bundleChoices.map(p => (
+                        <option key={p._id} value={p._id}>
+                          {`${p.name} (${p.category}) \u00b7 ${peso(p.price)}`}
+                        </option>
+                      ))}
+                    </select>
+
+                    {form.bundleItems.length === 0 ? (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Pick at least 2 items (or 2 of one item). Customers see
+                        each one on the bundle&apos;s page.
+                      </p>
+                    ) : (
+                      <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+                        <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+                          {form.bundleItems.map(i => {
+                            const p = choiceById.get(i.productId);
+                            return (
+                              <li key={i.productId} className="flex items-center gap-2 px-2.5 py-2">
+                                <span className="min-w-0 flex-1 truncate text-sm text-gray-800 dark:text-gray-100">
+                                  {p?.name ?? 'Removed item'}
+                                </span>
+                                <div className="flex items-center gap-1" data-enter="skip">
+                                  <button
+                                    type="button"
+                                    onClick={() => setBundleQty(i.productId, i.qty - 1)}
+                                    disabled={isDisabled || i.qty <= 1}
+                                    aria-label={`Fewer ${p?.name ?? 'items'}`}
+                                    className="grid h-7 w-7 place-items-center rounded-full border border-gray-200 disabled:opacity-40 dark:border-gray-700"
+                                  >
+                                    <Minus className="h-3 w-3" />
+                                  </button>
+                                  <span className="w-6 text-center text-sm font-semibold tabular-nums">{i.qty}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setBundleQty(i.productId, i.qty + 1)}
+                                    disabled={isDisabled || i.qty >= 99}
+                                    aria-label={`More ${p?.name ?? 'items'}`}
+                                    className="grid h-7 w-7 place-items-center rounded-full border border-gray-200 disabled:opacity-40 dark:border-gray-700"
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                  </button>
+                                </div>
+                                <span className="w-20 text-right text-xs tabular-nums text-gray-500 dark:text-gray-400">
+                                  {peso((p?.price ?? 0) * i.qty)}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => removeBundleItem(i.productId)}
+                                  disabled={isDisabled}
+                                  aria-label={`Remove ${p?.name ?? 'item'}`}
+                                  className="grid h-7 w-7 place-items-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                        <div className="space-y-1 border-t border-gray-100 bg-gray-50 px-2.5 py-2 text-sm dark:border-gray-700 dark:bg-gray-800/60">
+                          <div className="flex justify-between text-gray-600 dark:text-gray-300">
+                            <span>Items bought separately</span>
+                            <span className="tabular-nums">{peso(bundleTotal)}</span>
+                          </div>
+                          <div className="flex justify-between text-gray-600 dark:text-gray-300">
+                            <span>Bundle price (Price above)</span>
+                            <span className="tabular-nums">{hasBundlePrice ? peso(bundlePrice) : '\u2014'}</span>
+                          </div>
+                          {hasBundlePrice && (
+                            <div
+                              className={cn(
+                                'flex justify-between font-semibold',
+                                bundleSavings > 0 ? 'text-[#2d4a35] dark:text-[#7ed4a0]' : 'text-[#c30010] dark:text-red-400'
+                              )}
+                            >
+                              <span>{bundleSavings > 0 ? 'Customers save' : 'Not a deal: price must be lower'}</span>
+                              {bundleSavings > 0 && (
+                                <span className="tabular-nums">
+                                  {peso(bundleSavings)} ({Math.round((bundleSavings / bundleTotal) * 100)}%)
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {form.promoType === 'percentage' && (
                   <div className="space-y-1.5">
                     <Label htmlFor="discountRate">Discount Rate (%)</Label>
@@ -661,7 +844,7 @@ export function ProductFormModal({
           </>
         )}
 
-        {bulk ? null : (
+        {bulk || promoBundle ? null : (
           <>
             <div className="space-y-1.5">
               <Label>Ingredients</Label>

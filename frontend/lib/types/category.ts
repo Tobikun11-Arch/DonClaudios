@@ -8,7 +8,10 @@ export type Category = {
   name: string;
   type: CategoryType;
   stockUnit: StockUnit;
+  /** Menu position: lower first (Add-ons always last). */
   sortOrder: number;
+  /** Shown as a chip in the menu's top bar; the rest are in the Categories panel. */
+  showInTopBar?: boolean;
   imageUrl?: string | null;
   /** Hours of notice customers must give (lechon). Null = none / default. */
   minNoticeHours?: number | null;
@@ -26,6 +29,7 @@ export type CreateCategoryBody = {
   stockUnit: StockUnit;
   imageUrl?: string | null;
   minNoticeHours?: number | null;
+  showInTopBar?: boolean;
 };
 
 export type CreateCategoryResponse = {

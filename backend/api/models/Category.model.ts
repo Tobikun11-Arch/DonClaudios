@@ -13,7 +13,10 @@ export interface CategoryDocument extends mongoose.Document {
   name: string;
   type: CategoryType;
   stockUnit: StockUnit;
+  /** Menu position: lower first. Add-ons are always shown last regardless. */
   sortOrder: number;
+  /** Shown as a chip in the menu's top category bar (the rest are in the Categories panel). */
+  showInTopBar?: boolean;
   imageUrl?: string | null;
   /**
    * Minimum notice (hours) customers must give for products of this category
@@ -39,6 +42,7 @@ const CategorySchema = new Schema<CategoryDocument>(
       required: true
     },
     sortOrder: {type: Number, default: 0},
+    showInTopBar: {type: Boolean, default: false},
     imageUrl: {type: String, default: null},
     minNoticeHours: {type: Number, min: 0, max: 72, default: null},
     createdBy: {type: Schema.Types.ObjectId, ref: 'Admin'}

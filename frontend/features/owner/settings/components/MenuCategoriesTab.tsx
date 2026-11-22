@@ -15,6 +15,7 @@ import {
   useCategoriesQuery,
   useCreateCategoryMutation,
   useDeleteCategoryMutation,
+  useReorderCategoriesMutation,
   useUpdateCategoryMutation
 } from '@/lib/hooks/categories/useCategories';
 import type {
@@ -27,7 +28,10 @@ import {ImageCropModal} from '@/features/owner/products/components/ImageCropModa
 import {uploadCategoryImage} from '@/lib/api/uploadApi';
 import {
   Check,
+  ChevronDown,
+  ChevronUp,
   Loader2,
+  Pin,
   Pencil,
   Plus,
   Trash2,
@@ -136,6 +140,7 @@ export function MenuCategoriesTab() {
   const createMutation = useCreateCategoryMutation();
   const updateMutation = useUpdateCategoryMutation();
   const deleteMutation = useDeleteCategoryMutation();
+  const reorderMutation = useReorderCategoriesMutation();
 
   const categories = categoriesQuery.data?.categories ?? [];
 
@@ -305,6 +310,28 @@ export function MenuCategoriesTab() {
         setConfirmingId(null);
       }
     });
+  };
+
+  const move = (index: number, dir: -1 | 1) => {
+    const target = index + dir;
+    if (target < 0 || target >= categories.length) return;
+    const ids = categories.map(c => c._id);
+    [ids[index], ids[target]] = [ids[target], ids[index]];
+    reorderMutation.mutate(ids, {
+      onError: err => toast.error(getFriendlyErrorMessage(err, 'Failed to save the menu order'))
+    });
+  };
+
+  const toggleTopBar = (cat: Category) => {
+    const next = !cat.showInTopBar;
+    updateMutation.mutate(
+      {id: cat._id, body: {showInTopBar: next}},
+      {
+        onError: err => toast.error(getFriendlyErrorMessage(err, 'Failed to update category')),
+        onSuccess: () =>
+          toast.success(next ? `"${cat.name}" now shows in the menu bar.` : `"${cat.name}" now only shows under Categories.`)
+      }
+    );
   };
 
   const startEdit = (cat: Category) => {
@@ -525,6 +552,14 @@ export function MenuCategoriesTab() {
         <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">
           Current categories ({categories.length})
         </h3>
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          This is the order customers see on the menu. Use the arrows to move a
+          category, and <span className="font-semibold">Top bar</span> to pin it
+          as a tab above the menu (keep it to about 5). Every category is still
+          listed in the menu&apos;s <span className="font-semibold">Categories</span>{' '}
+          panel. Add-ons always show last. Promo items are not a section: they
+          show under <span className="font-semibold">Promos</span> while active.
+        </p>
 
         {categoriesQuery.isLoading ? (
           <div className="mt-3 space-y-2">
@@ -541,12 +576,32 @@ export function MenuCategoriesTab() {
           </p>
         ) : (
           <ul className="mt-3 divide-y divide-gray-100 dark:divide-gray-700">
-            {categories.map(cat => (
+            {categories.map((cat, index) => (
               <li
                 key={cat._id}
                 className="flex items-center justify-between gap-3 py-3"
               >
                 <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex shrink-0 flex-col">
+                    <button
+                      type="button"
+                      onClick={() => move(index, -1)}
+                      disabled={index === 0 || reorderMutation.isPending}
+                      aria-label={`Move ${cat.name} up`}
+                      className="grid h-6 w-7 place-items-center rounded-md text-gray-500 hover:bg-gray-100 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-800"
+                    >
+                      <ChevronUp className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => move(index, 1)}
+                      disabled={index === categories.length - 1 || reorderMutation.isPending}
+                      aria-label={`Move ${cat.name} down`}
+                      className="grid h-6 w-7 place-items-center rounded-md text-gray-500 hover:bg-gray-100 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-800"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </button>
+                  </div>
                   <div className="h-12 w-16 shrink-0 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
                     <Image
                       src={cat.imageUrl || CATEGORY_PLACEHOLDER}
@@ -622,6 +677,31 @@ export function MenuCategoriesTab() {
                   </div>
                 ) : (
                   <div className="flex shrink-0 items-center gap-1.5">
+                    {/^promos?$/i.test(cat.name.trim()) ? (
+                      <span
+                        className="inline-flex h-8 items-center rounded-full border border-dashed border-gray-200 px-2.5 text-xs font-semibold text-gray-500 dark:border-gray-700 dark:text-gray-400"
+                        title="Promo items show under the Promos tab while active and inside their dates"
+                      >
+                        Shown as Promos
+                      </span>
+                    ) : (
+                    <button
+                      type="button"
+                      onClick={() => toggleTopBar(cat)}
+                      disabled={isBusy}
+                      aria-pressed={!!cat.showInTopBar}
+                      title={cat.showInTopBar ? 'Shown as a tab above the menu' : 'Only listed in the Categories panel'}
+                      className={cn(
+                        'inline-flex h-8 items-center gap-1 rounded-full border px-2.5 text-xs font-semibold transition-colors disabled:opacity-50',
+                        cat.showInTopBar
+                          ? 'border-[#2d4a35] bg-[#2d4a35] text-white dark:border-[#7ed4a0] dark:bg-[#7ed4a0] dark:text-[#1f3527]'
+                          : 'border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800'
+                      )}
+                    >
+                      <Pin className="h-3.5 w-3.5" aria-hidden />
+                      Top bar
+                    </button>
+                    )}
                     <Button
                       type="button"
                       variant="ghost"

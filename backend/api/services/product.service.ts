@@ -5,7 +5,8 @@ import type {CategoryDocument} from '../models/Category.model';
 import type {StockUnit} from '../models/Category.model';
 import {
   type ProductAllergen,
-  type ProductIngredient
+  type ProductIngredient,
+  type ServingUnit
 } from '../models/Product.model';
 import {initialPointsCostForPrice} from '../config/rewards';
 import {allergenService} from './allergen.service';
@@ -18,7 +19,14 @@ import {
   validatePreOrderFields
 } from '../config/preOrder';
 import {notificationService} from './notification.service';
-import {isEmbeddedPromoExpired, parsePromoDate} from '../config/promoDates';
+import {
+  isEmbeddedPromoExpired,
+  isEmbeddedPromoLive,
+  isPromoCategory,
+  parsePromoDate
+} from '../config/promoDates';
+import {attachBundleStock, prepareBundleItems} from './bundle.service';
+import {ProductModel} from '../models/Product.model';
 import {attachPreOrderAllowance} from './preOrder.service';
 
 /**
@@ -186,6 +194,41 @@ async function resolveCategory(
   return category;
 }
 
+/**
+ * Serving size is all-or-nothing: "6" without a unit (or "pcs" without a
+ * number) means nothing on the menu, so a half-filled pair is cleared.
+ */
+function normalizeServing(
+  qty: number | null | undefined,
+  unit: ServingUnit | null | undefined
+): {servingQty: number | null; servingUnit: ServingUnit | null} {
+  if (typeof qty === 'number' && qty > 0 && unit) {
+    return {servingQty: qty, servingUnit: unit};
+  }
+  return {servingQty: null, servingUnit: null};
+}
+
+/**
+ * A Bundle Deal (category Promo + promoType "bundle") must list its items;
+ * it holds no stock of its own (orders use the items' stock), so stock is 0.
+ * Any other product never keeps bundle items.
+ */
+async function resolveBundleFields(
+  input: {
+    category?: string;
+    promoType?: string;
+    price?: number;
+    bundleItems?: Array<{productId: string; qty: number}> | null;
+  },
+  selfId?: string
+): Promise<{bundleItems: Array<{productId: string; qty: number}> | null; stock?: number}> {
+  if (!(isPromoCategory(input.category) && input.promoType === 'bundle')) {
+    return {bundleItems: null};
+  }
+  const items = await prepareBundleItems(Number(input.price), input.bundleItems ?? [], selfId);
+  return {bundleItems: items, stock: 0};
+}
+
 export const productService = {
   /**
    * `includePreOrder` defaults to true: pre-order products are visible to
@@ -206,11 +249,11 @@ export const productService = {
     const visible = products.filter(
       p =>
         (includePreOrder || p.isPreOrder !== true) &&
-        // Customers and the counter never see a product whose promo ended.
-        // The owner still does, so they can extend or remove it.
-        !(options.hideExpiredPromos && isEmbeddedPromoExpired(p, now))
+        // Customers and the counter only see Promo items that are switched
+        // on and inside their dates. The owner sees all, to edit them.
+        !(options.hideExpiredPromos && (isEmbeddedPromoExpired(p, now) || !isEmbeddedPromoLive(p, now)))
     );
-    return attachPreOrderAllowance(visible, customerId);
+    return attachBundleStock(await attachPreOrderAllowance(visible, customerId));
   },
 
   async getById(id: string, includePreOrder = true, customerId?: string) {
@@ -225,7 +268,8 @@ export const productService = {
       [product],
       customerId
     );
-    return withAllowance;
+    const [withStock] = await attachBundleStock([withAllowance]);
+    return withStock;
   },
 
   async create(
@@ -238,6 +282,9 @@ export const productService = {
       stockUnit?: StockUnit;
       description?: string;
       imageUrl?: string;
+      servingQty?: number | null;
+      servingUnit?: ServingUnit | null;
+      bundleItems?: Array<{productId: string; qty: number}> | null;
       prepTimeMinutes?: number;
       minNoticeHours?: number | null;
       ingredients?: ProductIngredient[];
@@ -260,6 +307,13 @@ export const productService = {
     if (data.allergens) {
       data = {...data, allergens: await allergenService.assertKnown(data.allergens)};
     }
+    data = {...data, ...normalizeServing(data.servingQty, data.servingUnit)};
+    data = {...data, ...(await resolveBundleFields({
+      category: data.category,
+      promoType: data.promoType,
+      price: data.price,
+      bundleItems: data.bundleItems
+    }))};
     const category = await resolveCategory(data.category);
     const preOrder = resolvePreOrderFields({
       category: data.category,
@@ -270,6 +324,7 @@ export const productService = {
     });
     const created = await productRepository.create({
       ...data,
+      bundleItems: data.bundleItems as any,
       // Batches own the stock; the client-sent total is only a fallback.
       stock: preOrder.stock ?? data.stock,
       stockUnit: category.stockUnit,
@@ -305,6 +360,9 @@ export const productService = {
       stockUnit?: StockUnit;
       description?: string;
       imageUrl?: string;
+      servingQty?: number | null;
+      servingUnit?: ServingUnit | null;
+      bundleItems?: Array<{productId: string; qty: number}> | null;
       prepTimeMinutes?: number;
       minNoticeHours?: number | null;
       ingredients?: ProductIngredient[];
@@ -338,6 +396,41 @@ export const productService = {
     if (data.category) {
       const category = await resolveCategory(data.category);
       data = {...data, stockUnit: category.stockUnit};
+    }
+
+    // Serving is a pair: only rewrite it when the form sent either half.
+    if (data.servingQty !== undefined || data.servingUnit !== undefined) {
+      data = {
+        ...data,
+        ...normalizeServing(
+          data.servingQty === undefined ? existing.servingQty : data.servingQty,
+          data.servingUnit === undefined ? existing.servingUnit : data.servingUnit
+        )
+      };
+    }
+
+    // Bundle Deal contents follow the effective category / type / price.
+    if (
+      data.bundleItems !== undefined ||
+      data.promoType !== undefined ||
+      data.category !== undefined ||
+      data.price !== undefined
+    ) {
+      data = {
+        ...data,
+        ...(await resolveBundleFields(
+          {
+            category: data.category ?? existing.category,
+            promoType: data.promoType ?? existing.promoType,
+            price: data.price ?? existing.price,
+            bundleItems:
+              data.bundleItems !== undefined
+                ? data.bundleItems
+                : (existing.bundleItems ?? []).map(i => ({productId: String(i.productId), qty: i.qty}))
+          },
+          id
+        ))
+      };
     }
 
     const effectiveCategory = data.category ?? existing.category;
@@ -398,6 +491,14 @@ export const productService = {
   },
 
   async remove(id: string) {
+    const inBundle = await ProductModel.findOne({'bundleItems.productId': id}).select('name').lean();
+    if (inBundle) {
+      throw new ApiError(
+        409,
+        'PRODUCT_IN_BUNDLE',
+        `This item is part of the "${inBundle.name}" bundle. Remove it from the bundle first.`
+      );
+    }
     const deleted = await productRepository.deleteById(id);
     if (!deleted) {
       throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Product not found');

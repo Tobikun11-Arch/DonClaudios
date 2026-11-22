@@ -56,17 +56,28 @@ export function estimateOrderPrepMinutes(itemPrepMinutes: number[]): number {
  */
 export async function buildPrepSnapshot(
   productIds: string[],
-  orderType: string
+  orderType: string,
+  /** Order lines; a bundle line's prep is its slowest component's. */
+  lines: Array<{productId: string; bundleItems?: Array<{productId: string}> | null}> = []
 ) {
   const fallback = await getDefaultPrepMinutes();
   const prepByProduct = new Map<string, number>();
+  const componentIds = lines.flatMap(l => (l.bundleItems ?? []).map(c => c.productId));
+  const lookupIds = Array.from(new Set([...productIds, ...componentIds]));
 
-  if (productIds.length > 0) {
-    const products = await productRepository.findByIds(productIds);
+  if (lookupIds.length > 0) {
+    const products = await productRepository.findByIds(lookupIds);
     for (const product of products) {
       const minutes = sanitizePrepMinutes(product.prepTimeMinutes) ?? fallback;
       prepByProduct.set(String(product._id), minutes);
     }
+  }
+  for (const line of lines) {
+    if (!line.bundleItems?.length) continue;
+    prepByProduct.set(
+      line.productId,
+      Math.max(...line.bundleItems.map(c => prepByProduct.get(c.productId) ?? fallback))
+    );
   }
 
   const itemPreps = productIds.map(

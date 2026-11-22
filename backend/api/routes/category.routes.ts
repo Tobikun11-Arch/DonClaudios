@@ -3,7 +3,11 @@ import {categoryController} from '../controllers/category.controller';
 import {requireAdmin, requireAuth} from '../middleware/auth';
 import {validate} from '../middleware/validation';
 import {publicCache} from '../middleware/publicCache';
-import {createCategoryDto, updateCategoryDto} from '../dtos/category.dto';
+import {
+  createCategoryDto,
+  reorderCategoriesDto,
+  updateCategoryDto
+} from '../dtos/category.dto';
 
 const router = Router();
 
@@ -17,6 +21,15 @@ router.post(
   requireAdmin,
   validate(createCategoryDto),
   categoryController.create
+);
+
+// Before '/:id' so "order" is not read as a category id.
+router.put(
+  '/order',
+  requireAuth,
+  requireAdmin,
+  validate(reorderCategoriesDto),
+  categoryController.reorder
 );
 
 router.patch(

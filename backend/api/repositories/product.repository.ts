@@ -43,7 +43,8 @@ export const productRepository = {
    * Products sold only through dated pre-orders are left out, as in the UI.
    */
   async listInventoryPage(query: InventoryPageQuery) {
-    const match: Record<string, unknown> = {preOrderOnly: {$ne: true}};
+    // Bundles hold no stock of their own (orders use their items' stock).
+    const match: Record<string, unknown> = {preOrderOnly: {$ne: true}, 'bundleItems.0': {$exists: false}};
     if (query.category && query.category !== 'all') {
       match.category = query.category;
     }

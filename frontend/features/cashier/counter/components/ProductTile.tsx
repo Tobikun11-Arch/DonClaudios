@@ -1,20 +1,37 @@
 'use client';
 
 import Image from 'next/image';
-import type {Product} from '@/lib/types/product';
 import {cn} from '@/lib/utils';
 import {FALLBACK_PRODUCT_IMAGE, peso} from '../counterShared';
 
 const LOW_STOCK = 5;
 
+/** What a tile needs: a product, or a bundle shaped like one. */
+export type TileItem = {
+  _id: string;
+  name: string;
+  imageUrl?: string;
+  /** The price charged (after any active promo). */
+  price: number;
+  /** For a bundle: how many the current stock can make. */
+  stock: number;
+  isAvailable: boolean;
+};
+
 export default function ProductTile({
   product,
   qtyInOrder,
-  onAdd
+  onAdd,
+  wasPrice,
+  badge
 }: {
-  product: Product;
+  product: TileItem;
   qtyInOrder: number;
   onAdd: () => void;
+  /** Struck-through regular price when a promo applies. */
+  wasPrice?: number;
+  /** e.g. "Bundle · 3 items" or "20% OFF". */
+  badge?: string;
 }) {
   const soldOut = product.stock <= 0;
   const disabled = soldOut || !product.isAvailable;
@@ -63,9 +80,18 @@ export default function ProductTile({
             {unavailableLabel}
           </span>
         )}
-        {lowStock && (
-          <span className="absolute left-2 top-2 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
-            {product.stock} left
+        {(lowStock || badge) && (
+          <span className="absolute left-2 top-2 flex flex-col items-start gap-1">
+            {badge && (
+              <span className="rounded-full bg-[#c30010] px-2 py-0.5 text-[11px] font-bold text-white">
+                {badge}
+              </span>
+            )}
+            {lowStock && (
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                {product.stock} left
+              </span>
+            )}
           </span>
         )}
       </div>
@@ -73,8 +99,11 @@ export default function ProductTile({
         <p className="line-clamp-2 text-sm font-semibold leading-snug text-gray-900">
           {product.name}
         </p>
-        <p className="mt-auto text-sm font-bold tabular-nums text-[#2d4a35]">
+        <p className="mt-auto flex flex-wrap items-baseline gap-x-1.5 text-sm font-bold tabular-nums text-[#2d4a35]">
           {peso(product.price)}
+          {wasPrice != null && wasPrice > product.price && (
+            <span className="text-xs font-medium text-gray-400 line-through">{peso(wasPrice)}</span>
+          )}
         </p>
       </div>
     </button>

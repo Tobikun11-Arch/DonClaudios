@@ -11,6 +11,7 @@ import {Input} from '@/components/ui/input';
 import {cn} from '@/lib/utils';
 import type {Product, ProductAllergen} from '@/lib/types/product';
 import type {Promo} from '@/lib/types/promo';
+import type {Category} from '@/lib/types/category';
 import {useBestSellerIds} from '@/lib/hooks/products/useBestSellers';
 import {
   buildMenu,
@@ -39,7 +40,7 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
 export function MenuBrowser({
   products,
   promos,
-  categoryImages,
+  categories,
   basePath,
   isLoading,
   isError,
@@ -52,7 +53,8 @@ export function MenuBrowser({
   /** Products the viewer may see (already filtered to available ones). */
   products: Product[];
   promos: Promo[];
-  categoryImages: Record<string, string | undefined>;
+  /** Category records: menu order, top-bar chips and photos. */
+  categories: Category[];
   /** Route prefix for detail pages: 'order' or 'customer/dashboard'. */
   basePath: string;
   isLoading: boolean;
@@ -84,18 +86,21 @@ export function MenuBrowser({
   const bestSellersQuery = useBestSellerIds();
   const bestSellerIds = bestSellersQuery.data ?? EMPTY_IDS;
 
-  const {tabs, featuredSections, categorySections} = useMemo(
-    () =>
-      buildMenu({products, promos, basePath, categoryImages, bestSellerIds}),
-    [products, promos, basePath, categoryImages, bestSellerIds]
+  const {tabs, allTabs, featuredSections, categorySections} = useMemo(
+    () => buildMenu({products, promos, basePath, categories, bestSellerIds}),
+    [products, promos, basePath, categories, bestSellerIds]
   );
 
-  // Featured is dropped when it has nothing, so fall back to the first tab.
-  const resolvedTab = tabs.some(t => t.id === activeTab) ? activeTab : (tabs[0]?.id ?? FEATURED_TAB_ID);
+  // Featured is dropped when it has nothing (and Promos when empty), so fall
+  // back to the first chip. A category picked from the Categories panel stays
+  // selected even though it has no chip of its own.
+  const resolvedTab = allTabs.some(t => t.id === activeTab)
+    ? activeTab
+    : (tabs[0]?.id ?? allTabs[0]?.id ?? FEATURED_TAB_ID);
   const onFeatured = resolvedTab === FEATURED_TAB_ID;
 
   const sections = useMemo(() => {
-    // Featured: best sellers. Promos and each category: just that tab.
+    // Featured: best sellers. Promos and each category: just that one.
     const source = onFeatured
       ? featuredSections
       : categorySections.filter(s => s.id === resolvedTab);
@@ -107,7 +112,7 @@ export function MenuBrowser({
       .filter(section => !onFeatured || section.items.length > 0);
   }, [onFeatured, resolvedTab, featuredSections, categorySections, query, excluded, sort]);
 
-  // Item counts per tab for the "All categories" panel.
+  // Item counts per tab for the category panel.
   const tabCounts = useMemo(() => {
     const out: Record<string, number> = {};
     for (const section of categorySections) out[section.id] = section.items.length;
@@ -178,7 +183,13 @@ export function MenuBrowser({
       </div>
 
       <div ref={barRef} className={cn('sticky z-30 mt-3 py-2', stickyClassName)}>
-        <MenuCategoryChips tabs={tabs} activeId={resolvedTab} onSelect={selectTab} counts={tabCounts} />
+        <MenuCategoryChips
+          tabs={tabs}
+          allTabs={allTabs}
+          activeId={resolvedTab}
+          onSelect={selectTab}
+          counts={tabCounts}
+        />
       </div>
 
       <div ref={resultsRef} className="scroll-mt-32 pt-3">

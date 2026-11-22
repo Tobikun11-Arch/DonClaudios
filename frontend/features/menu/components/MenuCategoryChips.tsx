@@ -8,7 +8,10 @@ import {cn} from '@/lib/utils';
 import {FEATURED_TAB_ID, PROMOS_TAB_ID, type MenuTab} from '../menuItems';
 
 /** Chips with no category photo get an icon instead. */
-const CHIP_ICONS = {[FEATURED_TAB_ID]: Sparkles, [PROMOS_TAB_ID]: Tag} as const;
+const CHIP_ICONS = {
+  [FEATURED_TAB_ID]: Sparkles,
+  [PROMOS_TAB_ID]: Tag
+} as const;
 
 /** Show the "find a category" search box once the list gets this long. */
 const SEARCH_THRESHOLD = 8;
@@ -54,26 +57,35 @@ function TabAvatar({tab, active, size}: {tab: MenuTab; active: boolean; size: 's
 }
 
 /**
- * Category navigation built for long lists (20+ categories):
+ * Category navigation built for long lists (16+ categories):
  *
- * - One sticky, horizontally scrolling chip row (the pattern used by most food
- *   delivery apps). The active chip is scrolled into the middle automatically.
+ * - One sticky chip row with only the main tabs (Featured, Promos and the
+ *   categories the owner pinned). The active chip is scrolled into view.
  * - Edge fades + arrow buttons on desktop show there is more to scroll.
- * - An "All" button opens a full grid of every category with item counts and
- *   a quick search, so nobody has to swipe through 20 chips to find one.
+ * - A "Categories" button opens a grid of EVERY category with item counts and
+ *   a quick search. A category picked there gets a chip until another tab is
+ *   chosen, so the customer can see where they are.
  */
 export function MenuCategoryChips({
-  tabs,
+  tabs: pinnedTabs,
+  allTabs,
   activeId,
   onSelect,
   counts
 }: {
+  /** The chips in the bar. */
   tabs: MenuTab[];
+  /** Every tab, for the panel. */
+  allTabs: MenuTab[];
   activeId: string;
   onSelect: (id: string) => void;
-  /** Item count per tab id, shown in the "All categories" panel. */
+  /** Item count per tab id, shown in the categories panel. */
   counts?: Record<string, number>;
 }) {
+  const pickedFromPanel = pinnedTabs.some(t => t.id === activeId)
+    ? null
+    : (allTabs.find(t => t.id === activeId) ?? null);
+  const tabs = pickedFromPanel ? [...pinnedTabs, pickedFromPanel] : pinnedTabs;
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState({left: false, right: false});
   const [panelOpen, setPanelOpen] = useState(false);
@@ -133,9 +145,10 @@ export function MenuCategoryChips({
     setFilter('');
   };
 
-  const activeTab = tabs.find(t => t.id === activeId);
+  const activeTab = allTabs.find(t => t.id === activeId);
   const q = filter.trim().toLowerCase();
-  const panelTabs = q ? tabs.filter(t => t.label.toLowerCase().includes(q)) : tabs;
+  const panelTabs = q ? allTabs.filter(t => t.label.toLowerCase().includes(q)) : allTabs;
+  const categoryCount = allTabs.filter(t => t.category !== null).length;
 
   return (
     <>
@@ -146,12 +159,13 @@ export function MenuCategoryChips({
           aria-haspopup="dialog"
           aria-expanded={panelOpen}
           className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-700 transition-colors hover:border-[#2d4a35]/40 hover:bg-[#2d4a35]/5 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
-          title="See all categories"
+          title="See every category"
+          aria-label={`See all ${categoryCount} categories`}
         >
           <LayoutGrid className="h-4 w-4 text-[#2d4a35] dark:text-[#7ed4a0]" />
-          <span className="hidden sm:inline">All</span>
+          <span className="hidden sm:inline">Categories</span>
           <span className="rounded-full bg-[#2d4a35]/10 px-1.5 text-[11px] font-bold text-[#2d4a35] dark:text-[#7ed4a0]">
-            {tabs.length}
+            {categoryCount}
           </span>
         </button>
 
@@ -266,7 +280,7 @@ export function MenuCategoryChips({
               </button>
             </div>
 
-            {tabs.length >= SEARCH_THRESHOLD && (
+            {allTabs.length >= SEARCH_THRESHOLD && (
               <div className="px-5 pb-3">
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />

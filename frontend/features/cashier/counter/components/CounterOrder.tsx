@@ -4,6 +4,16 @@ import {useEffect, useMemo, useState} from 'react';
 import {ChevronUp, Search, X} from 'lucide-react';
 import {toast} from 'sonner';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
+import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
+import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
+import {
+  isBundleProduct,
+  isPromoCategory,
+  isPromoProductLive,
+  ownPromoBadge,
+  ownPromoPrice,
+  summarizeBundle
+} from '@/lib/menu/bundles';
 import {
   useCounterOrdersQuery,
   useCreateCounterOrderMutation,
@@ -11,7 +21,6 @@ import {
   useUpdateCounterOrderMutation
 } from '@/lib/hooks/orders/useCashierCounterOrder';
 import type {CounterOrderEntry} from '@/lib/api/orderApi';
-import type {Product} from '@/lib/types/product';
 import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {FilterPills} from '@/shared/components/FilterPills';
@@ -23,7 +32,7 @@ import {
   type CartLine,
   type PaymentMethod
 } from '../counterShared';
-import ProductTile from './ProductTile';
+import ProductTile, {type TileItem} from './ProductTile';
 import OrderTicket, {type TicketBusy} from './OrderTicket';
 import RecentOrders from './RecentOrders';
 import CounterDialog from './CounterDialog';
@@ -47,6 +56,16 @@ type CompletedSale = {
 };
 
 const ALL = 'all';
+const BUNDLES = '__promos';
+
+/** One tile on the counter: a product, or a promo bundle. */
+type CounterTile = {
+  item: TileItem;
+  kind: 'product' | 'bundle';
+  wasPrice?: number;
+  badge?: string;
+  category: string | null;
+};
 
 export default function CounterOrder() {
   const {data: productsData, isLoading} = useProductsQuery();
@@ -54,11 +73,68 @@ export default function CounterOrder() {
     () => productsData?.products ?? [],
     [productsData?.products]
   );
-  // Pre-order items are never sold at the counter (the backend rejects them).
+  // Pre-order items are never sold at the counter (the backend rejects them),
+  // and Promo items only while switched on and inside their dates.
   // Sold-out / unavailable items stay visible as disabled tiles.
-  const menuProducts = useMemo(
-    () => products.filter(p => !p.isPreOrder && !p.preOrderOnly),
-    [products]
+  const menuProducts = useMemo(() => {
+    const now = new Date();
+    return products.filter(p => !p.isPreOrder && !p.preOrderOnly && isPromoProductLive(p, now));
+  }, [products]);
+
+  // Same prices as the online menu (the server re-prices every line anyway):
+  // a Promo item's own discount, else any promo record.
+  const promosQuery = usePublicPromosQuery();
+  const promos = useMemo(() => promosQuery.data?.promos ?? [], [promosQuery.data?.promos]);
+
+  const productTiles = useMemo<CounterTile[]>(
+    () =>
+      menuProducts
+        .filter(p => !isBundleProduct(p))
+        .map(p => {
+          const own = ownPromoPrice(p);
+          const {unitPrice, badge} =
+            own != null
+              ? {unitPrice: own, badge: {label: ownPromoBadge(p) ?? 'PROMO'}}
+              : getDiscountedUnitPrice({promos, productId: p._id, basePrice: p.price});
+          return {
+            kind: 'product',
+            item: {...p, price: unitPrice},
+            wasPrice: unitPrice < p.price ? p.price : undefined,
+            badge: badge?.label,
+            category: p.category
+          };
+        }),
+    [menuProducts, promos]
+  );
+
+  // Bundle Deals: no stock of their own; the server sends how many the items'
+  // stock can make, and one missing item makes the bundle unavailable.
+  const bundleTiles = useMemo<CounterTile[]>(() => {
+    const byId = new Map(products.map(p => [p._id, p]));
+    return menuProducts.filter(isBundleProduct).map(p => {
+      const summary = summarizeBundle(p, byId);
+      const count = summary.components.reduce((n, c) => n + c.qty, 0);
+      return {
+        kind: 'bundle' as const,
+        item: {
+          _id: p._id,
+          name: p.name,
+          imageUrl: p.imageUrl,
+          price: p.price,
+          stock: summary.maxOrderable,
+          isAvailable: p.isAvailable && summary.missingCount === 0
+        },
+        wasPrice: summary.savings > 0 ? summary.originalTotal : undefined,
+        badge: `Bundle · ${count} items`,
+        category: p.category
+      };
+    });
+  }, [menuProducts, products]);
+
+  // The "Promos" filter: Bundle Deals, then the other Promo items.
+  const promoTiles = useMemo(
+    () => [...bundleTiles, ...productTiles.filter(t => isPromoCategory(t.category))],
+    [bundleTiles, productTiles]
   );
 
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -109,7 +185,8 @@ export default function CounterOrder() {
         new Set(
           menuProducts
             .map(p => p.category)
-            .filter(c => typeof c === 'string' && c.trim().length > 0)
+            // Promo items have their own "Promos" filter.
+            .filter(c => typeof c === 'string' && c.trim().length > 0 && !isPromoCategory(c))
         )
       ).sort((a, b) => a.localeCompare(b)),
     [menuProducts]
@@ -118,24 +195,25 @@ export default function CounterOrder() {
   const categoryPills = useMemo(
     () => [
       {key: ALL, label: 'All'},
+      ...(promoTiles.length > 0 ? [{key: BUNDLES, label: 'Promos'}] : []),
       ...categories.map(c => ({key: c, label: c}))
     ],
-    [categories]
+    [categories, promoTiles.length]
   );
 
   const visibleProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    const sellable = (p: Product) => p.isAvailable && p.stock > 0;
-    return menuProducts
-      .filter(p => {
-        const matchesCategory =
-          activeCategory === ALL || p.category === activeCategory;
-        const matchesQuery =
-          !normalizedQuery || p.name.toLowerCase().includes(normalizedQuery);
-        return matchesCategory && matchesQuery;
-      })
+    const sellable = (t: CounterTile) => t.item.isAvailable && t.item.stock > 0;
+    const source =
+      activeCategory === BUNDLES
+        ? promoTiles
+        : activeCategory === ALL
+          ? [...bundleTiles, ...productTiles]
+          : productTiles.filter(t => t.category === activeCategory);
+    return source
+      .filter(t => !normalizedQuery || t.item.name.toLowerCase().includes(normalizedQuery))
       .sort((a, b) => Number(sellable(b)) - Number(sellable(a)));
-  }, [menuProducts, activeCategory, query]);
+  }, [promoTiles, bundleTiles, productTiles, activeCategory, query]);
 
   const qtyByProduct = useMemo(
     () => new Map(cart.map(c => [c.productId, c.qty])),
@@ -149,7 +227,7 @@ export default function CounterOrder() {
 
   // Stock checks (and their toasts) happen outside the setCart updater:
   // React may run updaters twice, which used to show the warning twice.
-  const addToCart = (product: Product) => {
+  const addToCart = (product: TileItem) => {
     if (!product.isAvailable || product.stock <= 0) return;
     const existing = cart.find(c => c.productId === product._id);
     if (existing && existing.qty + 1 > existing.maxQty) {
@@ -241,8 +319,9 @@ export default function CounterOrder() {
           ? item.productId
           : item.productId?._id ?? '';
       const product = products.find(p => p._id === pid);
+      const bundle = product ? undefined : bundleTiles.find(t => t.item._id === pid);
       const originalQty = item.quantity;
-      const stock = product?.stock ?? 0;
+      const stock = product?.stock ?? bundle?.item.stock ?? 0;
       const maxQty = Math.max(originalQty, stock + originalQty);
       return {
         productId: pid,
@@ -542,7 +621,7 @@ export default function CounterOrder() {
                 </button>
               )}
             </div>
-            {categories.length > 0 && (
+            {categoryPills.length > 1 && (
               <FilterPills
                 items={categoryPills}
                 value={activeCategory}
@@ -563,12 +642,14 @@ export default function CounterOrder() {
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                {visibleProducts.map(product => (
+                {visibleProducts.map(tile => (
                   <ProductTile
-                    key={product._id}
-                    product={product}
-                    qtyInOrder={qtyByProduct.get(product._id) ?? 0}
-                    onAdd={() => addToCart(product)}
+                    key={tile.item._id}
+                    product={tile.item}
+                    wasPrice={tile.wasPrice}
+                    badge={tile.badge}
+                    qtyInOrder={qtyByProduct.get(tile.item._id) ?? 0}
+                    onAdd={() => addToCart(tile.item)}
                   />
                 ))}
               </div>

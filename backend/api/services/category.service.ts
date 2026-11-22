@@ -10,6 +10,7 @@ type CategoryInput = {
   stockUnit?: StockUnit;
   imageUrl?: string | null;
   minNoticeHours?: number | null;
+  showInTopBar?: boolean;
   key?: string;
 };
 
@@ -35,6 +36,8 @@ export const categoryService = {
       ...data,
       name,
       key,
+      // New categories go to the end of the menu; the owner can move them.
+      sortOrder: (await categoryRepository.maxSortOrder()) + 1,
       createdBy: adminId as any
     });
   },
@@ -62,6 +65,22 @@ export const categoryService = {
       throw new ApiError(404, 'CATEGORY_NOT_FOUND', 'Category not found');
     }
     return updated;
+  },
+
+  /** Saves the owner's menu order. `ids` must be every category, once. */
+  async reorder(ids: string[]) {
+    const all = await categoryRepository.list();
+    const known = new Set(all.map(c => String(c._id)));
+    const unique = new Set(ids);
+    if (unique.size !== ids.length || ids.length !== known.size || ids.some(id => !known.has(id))) {
+      throw new ApiError(
+        400,
+        'INVALID_ORDER',
+        'The category list changed. Refresh the page and try again.'
+      );
+    }
+    await categoryRepository.setOrder(ids);
+    return categoryRepository.list();
   },
 
   async remove(id: string) {

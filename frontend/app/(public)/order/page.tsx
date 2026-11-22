@@ -38,13 +38,10 @@ function ProductsSection() {
     [promosQuery.data?.promos]
   );
 
-  const categoryImageMap = useMemo(() => {
-    const map: Record<string, string | undefined> = {};
-    for (const c of publicCategoriesQuery.data?.categories ?? []) {
-      map[c.name] = c.imageUrl ?? undefined;
-    }
-    return map;
-  }, [publicCategoriesQuery.data]);
+  const categories = useMemo(
+    () => publicCategoriesQuery.data?.categories ?? [],
+    [publicCategoriesQuery.data]
+  );
 
   const availableProducts = useMemo(() => {
     // A pre-order that is fully done (no live batch and no next batch) is
@@ -178,7 +175,7 @@ function ProductsSection() {
       <MenuBrowser
         products={availableProducts}
         promos={promos}
-        categoryImages={categoryImageMap}
+        categories={categories}
         basePath="order"
         isLoading={isLoading}
         isError={isError}

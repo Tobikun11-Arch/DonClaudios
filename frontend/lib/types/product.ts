@@ -11,6 +11,20 @@ export type ProductIngredient = {
  */
 export type ProductAllergen = string;
 
+/** "What one serving includes" units (display only, never stock). */
+export const SERVING_UNITS = ['pcs', 'slices', 'cups', 'g', 'ml', 'kg', 'pax'] as const;
+export type ServingUnit = (typeof SERVING_UNITS)[number];
+
+export const SERVING_UNIT_LABELS: Record<ServingUnit, string> = {
+  pcs: 'pieces',
+  slices: 'slices',
+  cups: 'cups',
+  g: 'grams',
+  ml: 'ml',
+  kg: 'kg',
+  pax: 'pax (people)'
+};
+
 export type Product = {
   _id: string;
   name: string;
@@ -20,6 +34,14 @@ export type Product = {
   stockUnit?: string;
   description?: string;
   imageUrl?: string;
+  /** What one serving includes, e.g. 6 pcs. Both set or both null. */
+  servingQty?: number | null;
+  servingUnit?: ServingUnit | null;
+  /**
+   * Bundle Deal (Promo category, promoType "bundle"): what one bundle holds.
+   * Its `stock` is worked out by the server from these items' stock.
+   */
+  bundleItems?: Array<{productId: string; qty: number}> | null;
   prepTimeMinutes?: number | null;
   /** Own minimum notice in hours (null = the category's). */
   minNoticeHours?: number | null;
@@ -76,6 +98,9 @@ export type CreateProductBody = {
   stock: number;
   description?: string;
   imageUrl?: string;
+  servingQty?: number | null;
+  servingUnit?: ServingUnit | null;
+  bundleItems?: Array<{productId: string; qty: number}> | null;
   prepTimeMinutes?: number | null;
   /** Own minimum notice in hours (null = the category's). */
   minNoticeHours?: number | null;
