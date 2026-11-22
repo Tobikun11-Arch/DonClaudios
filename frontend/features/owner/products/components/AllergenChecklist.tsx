@@ -176,7 +176,7 @@ export function AllergenChecklist({value, onChange, disabled}: Props) {
         </div>
       )}
 
-      <div className="rounded-xl border border-dashed border-gray-300 p-3 dark:border-gray-600">
+      <div data-enter="skip" className="rounded-xl border border-dashed border-gray-300 p-3 dark:border-gray-600">
         <p className="text-xs font-semibold text-gray-600 dark:text-gray-300">Not on the list? Add a new allergen</p>
         <div className="mt-2 flex flex-col gap-2 sm:flex-row">
           <input

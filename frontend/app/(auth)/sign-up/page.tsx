@@ -6,6 +6,7 @@ import {Eye, EyeOff, UserPlus, MapPin} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 import PasswordStrengthChecklist from '@/components/PasswordStrengthChecklist';
 import {validatePassword} from '@/lib/utils/passwordRules';
 import LocationPicker from '@/features/order/components/LocationPicker';
@@ -110,7 +111,7 @@ import {normalizePH, detectCarrier, toAppCarrier} from '@/lib/phone';export defa
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} onKeyDown={enterNavigation} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name</Label>
           <Input

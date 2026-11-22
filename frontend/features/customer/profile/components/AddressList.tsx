@@ -6,6 +6,7 @@ import {Plus, Trash2} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import type {CustomerAddress} from '@/lib/api/authApi';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 
 function emptyAddress(): CustomerAddress {
   return {label: '', line: '', landmark: '', riderNotes: '', isDefault: false};
@@ -90,9 +91,11 @@ export function AddressList({
           <div
             key={a._id ?? idx}
             className="rounded-xl border border-border p-4 space-y-3 dark:border-gray-700"
+            onKeyDown={enterNavigation}
           >
             <div className="flex items-center justify-between gap-2">
               <Input
+                required
                 value={a.label}
                 onChange={e => updateField(idx, 'label', e.target.value)}
                 placeholder="Label (Bahay, Opisina)"
@@ -108,6 +111,7 @@ export function AddressList({
               </button>
             </div>
             <Input
+              required
               value={a.line}
               onChange={e => updateField(idx, 'line', e.target.value)}
               placeholder="Street, barangay, city"
@@ -141,14 +145,20 @@ export function AddressList({
       </div>
 
       {adding && (
-        <div className="mt-4 rounded-xl border border-dashed border-border p-4 space-y-3 dark:border-gray-700">
+        <div
+          className="mt-4 rounded-xl border border-dashed border-border p-4 space-y-3 dark:border-gray-700"
+          onKeyDown={enterNavigation}
+        >
           <Input
+            required
+            autoFocus
             value={draft.label}
             onChange={e => setDraft({...draft, label: e.target.value})}
             placeholder="Label (Bahay, Opisina)"
             className="min-h-[44px] dark:bg-gray-800 dark:text-gray-100"
           />
           <Input
+            required
             value={draft.line}
             onChange={e => setDraft({...draft, line: e.target.value})}
             placeholder="Street, barangay, city"
@@ -167,7 +177,7 @@ export function AddressList({
             className="min-h-[44px] dark:bg-gray-800 dark:text-gray-100"
           />
           <div className="flex gap-2">
-            <Button type="button" size="sm" onClick={add}>
+            <Button type="button" size="sm" data-enter-submit onClick={add}>
               Save address
             </Button>
             <Button

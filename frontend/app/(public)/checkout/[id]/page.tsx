@@ -56,6 +56,7 @@ import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {sanitizePhone, sanitizeName} from '@/lib/validation/numeric';
 import {normalizePH, detectCarrier, toAppCarrier} from '@/lib/phone';
 import {cn} from '@/lib/utils';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 import {HeardFromPicker} from '@/features/customer/components/HeardFromPicker';
 import {ORDER_NOTES_COPY, hasNote, keepNotesFor, toggleNote} from '@/lib/orders/orderNotes';
 
@@ -473,6 +474,7 @@ export default function CheckoutGuestPage() {
     <div className="space-y-2">
       <Button
         type="button"
+        data-enter-submit="focus"
         className="w-full h-12 rounded-full bg-[#3c5e45] text-white shadow-lg shadow-[#3c5e45]/25 hover:bg-[#3c5e45]"
         disabled={
           items.length === 0 ||
@@ -519,7 +521,7 @@ export default function CheckoutGuestPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
+    <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0" onKeyDown={enterNavigation}>
       <div className="w-full max-w-6xl mx-auto px-4 py-12">
         <div className="flex items-center justify-between">
           <Button
@@ -649,6 +651,7 @@ export default function CheckoutGuestPage() {
                       </p>
                       <input
                         type="time"
+                        required
                         value={pickupTime}
                         onChange={e => setPickupTime(e.target.value)}
                         className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
@@ -665,6 +668,7 @@ export default function CheckoutGuestPage() {
                       </p>
                       <input
                         type="date"
+                        required
                         value={reservationDate}
                         onChange={e => setReservationDate(e.target.value)}
                         className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
@@ -676,6 +680,7 @@ export default function CheckoutGuestPage() {
                       </p>
                       <input
                         type="time"
+                        required
                         value={reservationTime}
                         onChange={e => setReservationTime(e.target.value)}
                         className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900"
@@ -698,6 +703,7 @@ export default function CheckoutGuestPage() {
                           For your courier booking and our records
                         </p>
                         <Input
+                          required
                           value={address}
                           onChange={e => handleAddressChange(e.target.value)}
                           placeholder={
@@ -839,6 +845,7 @@ export default function CheckoutGuestPage() {
                     First Name
                   </p>
                   <Input
+                    required
                     value={firstName}
                     onChange={e => {
                        setFirstName(sanitizeName(e.target.value));
@@ -864,6 +871,7 @@ export default function CheckoutGuestPage() {
                     Last Name
                   </p>
                   <Input
+                    required
                     value={lastName}
                     onChange={e => {
                        setLastName(sanitizeName(e.target.value));
@@ -907,6 +915,7 @@ export default function CheckoutGuestPage() {
                   Your tracking number will be sent to this email.
                 </p>
                 <Input
+                  required
                   value={email}
                   onChange={e => {
                     setEmail(e.target.value);
@@ -939,6 +948,7 @@ export default function CheckoutGuestPage() {
                   Mobile Number
                 </p>
                 <Input
+                  required
                   value={mobileNumber}
                   onChange={e => {
                      setMobileNumber(sanitizePhone(e.target.value));
@@ -995,7 +1005,7 @@ export default function CheckoutGuestPage() {
                       </Button>
 
                       {codeSentAt ? (
-                        <div>
+                        <div data-enter-scope onKeyDown={enterNavigation}>
                           <div className="flex justify-center">
                             <InputOTP
                               maxLength={6}
@@ -1022,6 +1032,7 @@ export default function CheckoutGuestPage() {
                           <Button
                             type="button"
                             className="mt-3 w-full rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
+                            data-enter-submit
                             disabled={otpCode.length !== 6 || isVerifyingOtp}
                             onClick={handleVerifyOtp}
                           >

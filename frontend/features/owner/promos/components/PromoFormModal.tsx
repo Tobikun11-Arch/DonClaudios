@@ -9,6 +9,7 @@ import {Upload} from 'lucide-react';import Image from 'next/image';
 import {type DragEvent, type FormEvent} from 'react';
 import {type PromoFormState} from '@/lib/types/promos';
 import {Modal} from './Modal';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 
 interface Props {
   open: boolean;
@@ -70,7 +71,7 @@ export function PromoFormModal({
       title={mode === 'create' ? 'Add Promo' : 'Edit Promo'}
       onClose={onClose}
     >
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={onSubmit} onKeyDown={enterNavigation} className="space-y-4">
         <input
           id="promoImage"
           type="file"
@@ -135,6 +136,7 @@ export function PromoFormModal({
             <Label htmlFor="title">Title</Label>
             <Input
               id="title"
+              required
               value={form.title}
               onChange={e => onFormChange('title', e.target.value)}
               placeholder="e.g. Fiesta Promo"
@@ -164,6 +166,7 @@ export function PromoFormModal({
               <Label htmlFor="price">Price (₱)</Label>
               <Input
                 id="price"
+              required
                 inputMode="decimal"
                 value={form.price}
                 onChange={e => onFormChange('price', sanitizeDecimal(e.target.value))}
@@ -178,6 +181,7 @@ export function PromoFormModal({
               <Label htmlFor="discountRate">Discount Rate (%)</Label>
               <Input
                 id="discountRate"
+              required
                 inputMode="decimal"
                 value={form.discountRate}
                 onChange={e => onFormChange('discountRate', sanitizeDecimal(e.target.value))}
@@ -192,6 +196,7 @@ export function PromoFormModal({
               <Label htmlFor="discountAmount">Discount Amount (₱)</Label>
               <Input
                 id="discountAmount"
+              required
                 inputMode="decimal"
                 value={form.discountAmount}
                 onChange={e => onFormChange('discountAmount', sanitizeDecimal(e.target.value))}
@@ -206,7 +211,7 @@ export function PromoFormModal({
               <Label>
                 {form.promoType === 'bundle' ? 'Included Products' : 'Products'}
               </Label>
-              <details className="relative">
+              <details className="relative" data-enter="skip">
                 <summary
                   className={cn(
                     'h-9 w-full rounded-md border border-input bg-transparent px-2.5 py-2 text-sm shadow-xs outline-none',
@@ -249,6 +254,7 @@ export function PromoFormModal({
             <Label htmlFor="startDate">Start Date</Label>
             <Input
               id="startDate"
+              required
               type="date"
               value={form.startDate}
               onChange={e => onFormChange('startDate', e.target.value)}
@@ -258,6 +264,7 @@ export function PromoFormModal({
             <Label htmlFor="endDate">End Date</Label>
             <Input
               id="endDate"
+              required
               type="date"
               value={form.endDate}
               onChange={e => onFormChange('endDate', e.target.value)}

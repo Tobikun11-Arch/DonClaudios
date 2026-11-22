@@ -13,6 +13,7 @@ import {
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {Clock, AlertTriangle, CheckCircle2, Loader2} from 'lucide-react';
 import {cn} from '@/lib/utils';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 import {sanitizeInteger} from '@/lib/validation/numeric';import type {StoreStatus} from '@/lib/api/storeStatusApi';
 
 function timeToMinutes(time: string): number {
@@ -146,7 +147,7 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
   const effectiveCloseTime = formatEffectiveClose(closingTime, advanceMinutes);
 
   return (
-    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">
+    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6" onKeyDown={enterNavigation}>
       <div className="mb-5 flex items-center justify-between gap-2">
         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Right now</p>
         <span
@@ -306,6 +307,7 @@ function StoreStatusForm({initial}: {initial: StoreStatus}) {
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <Button
           type="button"
+          data-enter-submit
           onClick={saveSchedule}
           disabled={isSubmitting}
           className="bg-[#2d4a35] hover:bg-[#3c5e45] dark:text-white"

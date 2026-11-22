@@ -35,6 +35,7 @@ import {
   X
 } from 'lucide-react';
 import {cn} from '@/lib/utils';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 
 const CATEGORY_PLACEHOLDER = '/assets/category_placeholder.svg';
 
@@ -323,7 +324,7 @@ export function MenuCategoriesTab() {
 
         <div className="mt-5">
           {editingId ? (
-            <div className="rounded-xl border border-[#2d4a35]/20 dark:border-[#7ed4a0]/30 bg-[#e9f5ee] dark:bg-[#1f3a2a]/50 p-4">
+            <div className="rounded-xl border border-[#2d4a35]/20 dark:border-[#7ed4a0]/30 bg-[#e9f5ee] dark:bg-[#1f3a2a]/50 p-4" onKeyDown={enterNavigation}>
               <p className="text-sm font-semibold text-[#2d4a35] dark:text-[#7ed4a0] mb-3">
                 Edit category
               </p>
@@ -331,6 +332,7 @@ export function MenuCategoriesTab() {
                 <Field id="cat-name-edit" label="Name">
                   <Input
                     id="cat-name-edit"
+                    required
                     value={name}
                     onChange={e => setName(e.target.value)}
                     placeholder="e.g. Rice Meals"
@@ -379,6 +381,7 @@ export function MenuCategoriesTab() {
               <div className="mt-4 flex items-center gap-2">
                 <Button
                   type="button"
+                  data-enter-submit
                   onClick={() => handleUpdate(editingId)}
                   disabled={isBusy}
                   className="bg-[#2d4a35] hover:bg-[#3c5e45] dark:text-white"
@@ -400,21 +403,16 @@ export function MenuCategoriesTab() {
               </div>
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 p-4">
+            <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 p-4" onKeyDown={enterNavigation}>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Field id="cat-name" label="New category name">
                   <Input
                     id="cat-name"
+                    required
                     value={name}
                     onChange={e => setName(e.target.value)}
                     placeholder="e.g. Rice Meals"
                     disabled={isBusy}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleCreate();
-                      }
-                    }}
                   />
                 </Field>
                 <Field id="cat-type" label="Type">
@@ -459,6 +457,7 @@ export function MenuCategoriesTab() {
               <div className="mt-4">
                 <Button
                   type="button"
+                  data-enter-submit
                   onClick={handleCreate}
                   disabled={isBusy}
                   className="bg-[#2d4a35] hover:bg-[#3c5e45] dark:text-white"

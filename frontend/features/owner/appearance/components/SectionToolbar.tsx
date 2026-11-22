@@ -4,6 +4,7 @@ import {useState, useRef, useEffect, useCallback} from 'react';
 import {Paintbrush, RotateCcw, X} from 'lucide-react';
 import type {SectionId, SectionStyle} from '@/lib/types/settings';
 import {cn} from '@/lib/utils';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 
 const FONT_OPTIONS = [
   {value: '', label: 'Default'},
@@ -177,7 +178,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
             </button>
           </div>
 
-          <div className="p-4 space-y-4">
+          <div className="p-4 space-y-4" onKeyDown={enterNavigation}>
             {/* Background color */}
             <div>
               <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">
@@ -319,6 +320,7 @@ export default function SectionToolbar({sectionId, style, defaultBgColor = '#fff
             {/* Save button */}
             <button
               onClick={save}
+              data-enter-submit
               disabled={!hasChanges}
               className={cn(
                 'w-full py-2 rounded-lg text-sm font-semibold transition-colors',

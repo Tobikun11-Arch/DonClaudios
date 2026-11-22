@@ -20,6 +20,7 @@ import {
   slotLabel
 } from '@/features/preorders/utils';
 import {todayInStoreTimezone} from '@/lib/preOrder/preOrder';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 
 const PAST_DATE_MESSAGE = 'Pickup date cannot be in the past';
 
@@ -227,7 +228,7 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
     !!form.pickupDate && form.pickupDate < today && form.pickupDate !== event?.pickupDate;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
+    <div className="mx-auto max-w-5xl space-y-5" onKeyDown={enterNavigation}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <button
@@ -254,6 +255,7 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
             Cancel
           </Button>
           <Button
+            data-enter-submit
             onClick={submit}
             disabled={save.isPending || pickupIsPast}
             className="bg-[#2d4a35] text-white hover:bg-[#3a5c44] dark:bg-[#4a7c59] dark:hover:bg-[#5a8f6a]"
@@ -270,6 +272,7 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
           <div className="sm:col-span-2">
             <label className={labelCls}>Title</label>
             <input
+              required
               className={inputCls}
               value={form.title}
               onChange={e => set('title', e.target.value)}
@@ -284,6 +287,7 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
             <input
               id="preorder-pickup-date"
               type="date"
+              required
               className={`${inputCls} ${pickupIsPast ? 'border-red-400 dark:border-red-500' : ''}`}
               value={form.pickupDate}
               min={today}
@@ -352,6 +356,7 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
             </p>
           </div>
           <select
+            data-enter="skip"
             className={`${inputCls} w-full sm:w-64`}
             value={picker}
             onChange={e => addProduct(e.target.value)}
@@ -435,6 +440,7 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
                       className="grid grid-cols-2 gap-2 rounded-lg bg-white dark:bg-gray-900 p-2 md:grid-cols-[1.6fr_1.4fr_0.75fr_0.6fr_0.6fr_auto] md:bg-transparent md:p-0 dark:md:bg-transparent"
                     >
                       <input
+                        required
                         className={`${inputCls} col-span-2 md:col-span-1`}
                         placeholder="Size, e.g. 4-5 KG"
                         value={s.label}
@@ -450,6 +456,7 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
                         type="number"
                         min={1}
                         className={inputCls}
+                        required
                         placeholder="Price"
                         aria-label="Price"
                         value={s.price}
@@ -460,6 +467,7 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
                           type="number"
                           min={Math.max(s.sold, 0)}
                           className={inputCls}
+                          required
                           aria-label="Limit (pieces)"
                           value={s.stock}
                           onChange={e => updateSize(p.key, s.key, {stock: e.target.value})}
@@ -558,6 +566,7 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
                     </span>
                     <input
                       type="time"
+                      required
                       className={inputCls}
                       value={s.startTime}
                       onChange={e => {
@@ -578,6 +587,7 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
                     <input
                       type="time"
                       className={inputCls}
+                      required
                       value={s.endTime}
                       min={s.startTime || undefined}
                       aria-invalid={!!showError}
@@ -591,6 +601,7 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
                     <input
                       type="number"
                       min={Math.max(s.booked, 1)}
+                      required
                       className={inputCls}
                       value={s.limit}
                       onChange={e => updateSlot(s.key, {limit: e.target.value})}

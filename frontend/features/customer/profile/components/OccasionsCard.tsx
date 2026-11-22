@@ -6,6 +6,7 @@ import {useRouter} from 'next/navigation';
 import {useAddCustomerCartItemMutation} from '@/lib/hooks/cart/useCustomerCart';
 import type {CustomerOccasion} from '@/lib/api/authApi';
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 
 const SYSTEM_OCCASIONS = [
   {label: "Noche Buena", month: 11, day: 24},
@@ -181,8 +182,10 @@ export function OccasionsCard({
       </div>
 
       {adding && (
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 space-y-3" onKeyDown={enterNavigation}>
           <input
+            required
+            autoFocus
             value={label}
             onChange={e => setLabel(e.target.value)}
             placeholder="Label (Mama's birthday)"
@@ -190,12 +193,14 @@ export function OccasionsCard({
           />
           <input
             type="date"
+            required
             value={date}
             onChange={e => setDate(e.target.value)}
             className="min-h-[44px] w-full rounded-lg border border-border px-3 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:scheme-dark"
           />
           <button
             type="button"
+            data-enter-submit
             onClick={add}
             className="inline-flex min-h-[44px] items-center rounded-lg bg-accent-warm px-4 text-sm font-semibold text-accent-warm-foreground"
           >

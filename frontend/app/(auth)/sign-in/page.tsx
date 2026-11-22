@@ -6,6 +6,7 @@ import {Eye, EyeOff, LogIn} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 import {useRouter} from 'next/navigation';
 import {useQueryClient} from '@tanstack/react-query';
 import {login} from '@/lib/api/authApi';
@@ -84,7 +85,7 @@ export default function SignInPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-0">
+      <form onSubmit={handleSubmit} onKeyDown={enterNavigation} className="space-y-0">
         <div className="space-y-2">
           <Label htmlFor="email">Email or Phone Number</Label>
           <Input

@@ -12,6 +12,7 @@ import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {Camera, Check, Pencil} from 'lucide-react';
 import type {MeUser} from '@/lib/api/authApi';
 import {DEFAULT_LOGO} from '@/lib/hooks/useBrand';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 
 type FieldDef = {
   label: string;
@@ -167,11 +168,6 @@ function InlineField({field, editing}: {field: FieldDef; editing: boolean}) {
             value={value}
             onChange={e => setValue(e.target.value)}
             onBlur={commit}
-            onKeyDown={e => {
-              if (e.key === 'Enter') {
-                (e.target as HTMLInputElement).blur();
-              }
-            }}
             placeholder={field.placeholder}
             className="min-h-[44px]"
           />
@@ -210,12 +206,16 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">
+    <div
+      className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6"
+      onKeyDown={enterNavigation}
+    >
       <div className="mb-5 flex items-center justify-between gap-2">
         <h2 className="text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">{title}</h2>
         <button
           type="button"
           onClick={onToggleEdit}
+          data-enter-submit={editing ? '' : undefined}
           aria-label={editing ? 'Finish editing' : 'Edit ' + title}
           className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-[#2d4a35] dark:hover:text-[#7ed4a0]"
         >

@@ -17,6 +17,7 @@ import {Input} from '@/components/ui/input';
 import {useLocationStore} from '@/app/store/locationStore';
 import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
 import LocationPicker from '@/features/order/components/LocationPicker';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
 import {useProductsQuery} from '@/lib/hooks/products/useProducts';
 import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
@@ -282,6 +283,7 @@ export default function CustomerCheckoutPage() {
   const checkoutButton = (
     <Button
       type="button"
+      data-enter-submit="focus"
       className="w-full h-12 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
       disabled={
         items.length === 0 ||
@@ -303,7 +305,7 @@ export default function CustomerCheckoutPage() {
   );
 
   return (
-    <div className="min-h-full min-w-0 py-6">
+    <div className="min-h-full min-w-0 py-6" onKeyDown={enterNavigation}>
       <div className="flex items-center justify-between">
         <Button
           type="button"
@@ -478,6 +480,7 @@ export default function CustomerCheckoutPage() {
                     </p>
                     <input
                       type="time"
+                      required
                       value={pickupTime}
                       onChange={e => setPickupTime(e.target.value)}
                       className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900 dark:border-gray-700 dark:text-gray-100 dark:bg-gray-800 dark:scheme-dark"
@@ -492,6 +495,7 @@ export default function CustomerCheckoutPage() {
                     <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Date</p>
                     <input
                       type="date"
+                      required
                       value={reservationDate}
                       onChange={e => setReservationDate(e.target.value)}
                       className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900 dark:border-gray-700 dark:text-gray-100 dark:bg-gray-800 dark:scheme-dark"
@@ -501,6 +505,7 @@ export default function CustomerCheckoutPage() {
                     <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Time</p>
                     <input
                       type="time"
+                      required
                       value={reservationTime}
                       onChange={e => setReservationTime(e.target.value)}
                       className="mt-1 h-10 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-gray-900 dark:border-gray-700 dark:text-gray-100 dark:bg-gray-800 dark:scheme-dark"
@@ -523,6 +528,7 @@ export default function CustomerCheckoutPage() {
                         For your courier booking and our records
                       </p>
                       <Input
+                        required
                         value={address}
                         onChange={e => handleAddressChange(e.target.value)}
                         placeholder={

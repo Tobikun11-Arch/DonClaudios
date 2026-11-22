@@ -20,6 +20,7 @@ import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {validatePassword} from '@/lib/utils/passwordRules';
 import PasswordStrengthChecklist from '@/components/PasswordStrengthChecklist';
 import {Z} from '@/lib/zIndex';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 
 const inputClass =
   'min-h-[44px] w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#3c5e45] focus:outline-none focus:ring-2 focus:ring-[#3c5e45]/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-[#7ed4a0] dark:focus:ring-[#7ed4a0]/20';
@@ -56,6 +57,7 @@ function PasswordInput({
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
       autoComplete={autoComplete}
+      required
       className={inputClass}
     />
   );
@@ -110,7 +112,7 @@ function ChangePasswordForm({email}: {email?: string}) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3" noValidate>
+    <form onSubmit={handleSubmit} onKeyDown={enterNavigation} className="space-y-3" noValidate>
       {/* Lets password managers save the new password against this account. */}
       <input type="hidden" name="username" autoComplete="username" value={email ?? ''} readOnly />
       <div className="flex items-center justify-between gap-2">
@@ -291,7 +293,7 @@ function DeleteAccountDialog({
           </p>
         </div>
 
-        <form onSubmit={handleDelete} className="mt-5 space-y-3">
+        <form onSubmit={handleDelete} onKeyDown={enterNavigation} className="mt-5 space-y-3">
           <div className="space-y-1.5">
             <label
               htmlFor="delete-password"
@@ -302,6 +304,7 @@ function DeleteAccountDialog({
             <input
               id="delete-password"
               type="password"
+              required
               autoComplete="current-password"
               value={password}
               onChange={e => setPassword(e.target.value)}
@@ -318,6 +321,7 @@ function DeleteAccountDialog({
             </label>
             <input
               id="delete-confirm"
+              required
               value={confirmText}
               onChange={e => setConfirmText(e.target.value)}
               autoComplete="off"
@@ -346,8 +350,10 @@ function DeleteAccountDialog({
             >
               Cancel
             </button>
+            {/* Enter only focuses this button: deleting needs a deliberate press. */}
             <button
               type="submit"
+              data-enter-submit="focus"
               disabled={!canDelete}
               className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
             >

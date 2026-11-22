@@ -27,6 +27,7 @@ import {
 } from '@/lib/preOrder/preOrder';
 import {AllergenChecklist} from './AllergenChecklist';
 import {IngredientChipsInput} from './IngredientChipsInput';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 import {Modal} from './Modal';
 
 interface Props {
@@ -116,7 +117,7 @@ export function ProductFormModal({
       title={mode === 'create' ? 'Add Product' : 'Edit Product'}
       onClose={onClose}
     >
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={onSubmit} onKeyDown={enterNavigation} className="space-y-4">
         <input
           id="productImage"
           type="file"
@@ -184,6 +185,7 @@ export function ProductFormModal({
             <Label htmlFor="name">Name</Label>
             <Input
               id="name"
+              required
               value={form.name}
               onChange={e => onFormChange('name', e.target.value)}
               placeholder="e.g. Lechon Belly 1kg"
@@ -193,6 +195,7 @@ export function ProductFormModal({
             <Label htmlFor="category">Category</Label>
             <select
               id="category"
+              required
               value={form.category}
               onChange={e => onCategoryChange(e.target.value)}
               disabled={isDisabled || categoriesLoading}
@@ -236,6 +239,7 @@ export function ProductFormModal({
             <Label htmlFor="price">Price</Label>
             <Input
               id="price"
+              required
               inputMode="decimal"
               value={form.price}
               onChange={e => onFormChange('price', sanitizeDecimal(e.target.value))}

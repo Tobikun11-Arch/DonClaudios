@@ -17,6 +17,7 @@ import {useDeliveryHeatmapQuery} from '@/lib/hooks/report/useReport';
 import type {DeliveryHeatmapDays} from '@/lib/types/report';
 import {sanitizeInteger} from '@/lib/validation/numeric';
 import {cn} from '@/lib/utils';
+import {enterNavigation} from '@/shared/utils/enterNavigation';
 
 const MAX_MIN_SUBTOTAL = 1_000_000;
 const MIN_RANGE_KM = 0.5;
@@ -192,7 +193,7 @@ export function DeliveryTab() {
   const isCircle = guideKm !== null && sameZone(form.zone, circleZone(STORE_LOCATION, guideKm));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" onKeyDown={enterNavigation}>
       <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">
         <h2 className="mb-1 text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">
           Free Delivery
@@ -444,6 +445,7 @@ export function DeliveryTab() {
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Button
             type="button"
+            data-enter-submit
             onClick={handleSave}
             disabled={!isDirty || isSaving}
             className="bg-[#2d4a35] hover:bg-[#3c5e45] dark:text-white"
