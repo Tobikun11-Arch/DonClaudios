@@ -23,16 +23,41 @@ export const privacy: LegalPageProps = {
       },
     },
     {
-      heading: "Google Sign-In",
-      summary: "What we receive from Google when you sign in with Google, how we use, store, share, and delete it.",
+      heading: "Google User Data",
+      summary: "What Google user data we access, how we use, share, store, protect, retain, and delete it.",
       body: [
-        "You can create an account or sign in with \"Continue with Google\". This is optional; you can also sign up with an email and password.",
-        "When you use it, Google shares only your basic profile with us: your Google account ID, name, email address, and profile picture. We do not request access to your Gmail, Contacts, Drive, Calendar, or any other Google data, and we never see your Google password.",
-        "We use this information only to create and sign in to your DonClaudio's Lechon House account, to fill in your name and profile photo, and to send you order updates at that email address. We do not sell it, use it for advertising, or share it with anyone except the service providers listed below that host our website and database.",
-        "We do not use information received from Google to develop, improve, or train artificial intelligence or machine learning models, and we do not use Google APIs to generate images or any other AI content.",
-        "DonClaudio's Lechon House's use and transfer of information received from Google APIs adheres to the Google API Services User Data Policy (https://developers.google.com/terms/api-services-user-data-policy), including the Limited Use requirements.",
-        "You can unlink Google from your account at any time in your profile's account settings, or remove our access from your Google Account at https://myaccount.google.com/permissions. To have your account and its Google information deleted, contact us using the details in the Contact Us section.",
+        "This section explains how DonClaudio's Lechon House (https://www.donclaudios.com) accesses, uses, stores, shares, protects, retains, and deletes Google user data when you choose \"Continue with Google\" to sign up or sign in. Signing in with Google is optional; you can also create an account with an email address and password.",
+        "DonClaudio's Lechon House's use and transfer to any other app of information received from Google APIs will adhere to the Google API Services User Data Policy (https://developers.google.com/terms/api-services-user-data-policy), including the Limited Use requirements.",
       ],
+      table: {
+        columns: ["Topic", "How we handle Google user data"],
+        rows: [
+          [
+            "Data accessed",
+            "We request only the basic sign-in scopes (openid, email, profile). From your Google Account we receive: your Google account ID, your name, your email address, whether that email is verified, and your profile picture. We do not access your Gmail, Contacts, Drive, Calendar, or any other Google service, and we never see your Google password.",
+          ],
+          [
+            "Data usage",
+            "We use Google user data only to provide our ordering service to you: to create your DonClaudio's Lechon House customer account or sign you in to it, to link it to an existing account with the same email, to show your name and profile picture in your account, and to send you order confirmations and order updates by email. We do not use Google user data for advertising, we do not sell it, and we do not use it to develop, improve, or train artificial intelligence or machine learning models.",
+          ],
+          [
+            "Data sharing",
+            "We do not sell, rent, or share Google user data with third parties for their own purposes. It is processed only by the service providers that run our website and database (Vercel for hosting, MongoDB for the database, and Gmail SMTP to send your order emails), only to provide our service to you. We may disclose it only if required by law.",
+          ],
+          [
+            "Data storage and protection",
+            "Google user data is stored in our MongoDB database together with your customer account. All connections between your browser, our website, and our servers use HTTPS (TLS encryption). The database requires authentication, access is limited to authorized staff who need it to handle your orders, and Google sign-in tokens are verified on our server and are not stored.",
+          ],
+          [
+            "Data retention",
+            "We keep Google user data only while your account is active. Order records linked to your account are kept for 3 years as described in the Retention section.",
+          ],
+          [
+            "Data deletion",
+            "You can unlink Google at any time in your account settings, which deletes your stored Google account ID and Google email from our database. You can also remove our access at https://myaccount.google.com/permissions. To delete your account and all of its Google user data, email donclaudioslechonhouse@gmail.com; we will delete it within 30 days, except order records we must keep by law.",
+          ],
+        ],
+      },
     },
     {
       heading: "Why We Collect It",
@@ -49,7 +74,7 @@ export const privacy: LegalPageProps = {
       table: {
         columns: ["Service provider", "Purpose"],
         rows: [
-          ["Google", "Optional sign-in with Google and site analytics (Google Analytics)"],
+          ["Google", "Optional sign-in with Google (we receive your basic profile from Google) and website traffic statistics (Google Analytics)"],
           ["Vercel", "Website hosting"],
           ["MongoDB", "Database"],
           ["Gmail (SMTP)", "Email notifications"],
@@ -97,7 +122,10 @@ export const privacy: LegalPageProps = {
     {
       heading: "Changes to This Policy",
       summary: "The latest version is always on this page.",
-      body: ["We may update this policy. The latest version will always be on this page with its updated date."],
+      body: [
+        "We may update this policy. The latest version will always be on this page with its updated date.",
+        "If we change how we access, use, share, or store Google user data, we will update this policy and notify you by email or on the website before the change takes effect.",
+      ],
     },
     {
       heading: "Contact Us",
