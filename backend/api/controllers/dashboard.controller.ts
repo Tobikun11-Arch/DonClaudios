@@ -1,3 +1,4 @@
+import {staffActivityService} from '../services/staffActivity.service';
 import {Request, Response, NextFunction} from 'express';
 import {OrderModel} from '../models/Order.model';
 import {ProductModel} from '../models/Product.model';
@@ -44,6 +45,16 @@ function manilaWeekStart(): Date {
 }
 
 export const dashboardController = {
+  /** Home > Staff activity: who is on shift, orders handled today, latest events. */
+  async staffActivity(_req: Request, res: Response, next: NextFunction) {
+    try {
+      const since = manilaDayStartUtc(new Date());
+      res.status(200).json(await staffActivityService.overview(since));
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async summary(req: Request, res: Response, next: NextFunction) {
     try {
       const range = resolveRange({preset: normalizePreset(req.query.days)});

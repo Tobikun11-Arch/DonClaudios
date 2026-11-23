@@ -4,6 +4,7 @@ import {useState} from 'react';
 import {ChevronDown, MessageCircle} from 'lucide-react';
 import {toast} from 'sonner';
 import OrderChatThread from '@/features/order/components/OrderChatThread';
+import {CourierBookingAction} from '@/features/order/components/CourierBooking';
 import {
   useOrderMessagesQuery,
   useSendOrderMessageMutation
@@ -61,6 +62,7 @@ export default function CustomerOrderFollowUp({
         </div>
       ) : (
         <>
+          <CourierBookingAction order={order} asGuest={asGuest} />
           {messages.length === 0 ? (
             <div className="mb-3 space-y-2">
               <p className="text-xs text-gray-500 dark:text-gray-400">

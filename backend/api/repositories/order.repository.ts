@@ -1,6 +1,6 @@
 import {settingsService} from '../services/settings.service';
 import {OrderModel, OrderDocument} from '../models/Order.model';
-import type {OrderStatus, PaymentStatus} from '../models/Order.model';
+import type {OrderActor, OrderStatus, PaymentStatus} from '../models/Order.model';
 import type {FilterQuery, ClientSession} from 'mongoose';
 
 export const orderRepository = {
@@ -97,13 +97,18 @@ export const orderRepository = {
     orderId: string,
     orderStatus: OrderStatus,
     at: Date,
-    cancelReason?: string
+    cancelReason?: string,
+    by?: OrderActor | null
   ) =>
     OrderModel.updateOne(
       {_id: orderId},
       {
         $set: {
           orderStatus,
+          // The first staff member to confirm "takes" the order.
+          ...(orderStatus === 'confirmed' && by && by.type !== 'customer' && by.type !== 'guest'
+            ? {handledBy: by}
+            : {}),
           ...(orderStatus === 'preparing'
             ? {overdueNotifiedAt: null}
             : {}),
@@ -111,9 +116,18 @@ export const orderRepository = {
             ? {cancelReason}
             : {})
         },
-        $push: {statusHistory: {status: orderStatus, at}}
+        $push: {statusHistory: {status: orderStatus, at, by: by ?? null}}
       }
     ).exec(),
+
+  /** Claims one status email: true only for the first caller per status. */
+  claimStatusEmail: async (orderId: string, status: string) => {
+    const res = await OrderModel.updateOne(
+      {_id: orderId, emailedStatuses: {$ne: status}},
+      {$addToSet: {emailedStatuses: status}}
+    ).exec();
+    return res.modifiedCount === 1;
+  },
 
   /**
    * Atomic idempotency latch. Exactly one caller can flip overdueNotifiedAt
@@ -126,12 +140,12 @@ export const orderRepository = {
       {$set: {overdueNotifiedAt: at}}
     ).exec(),
 
-  cancel: (orderId: string, reason?: string) =>
+  cancel: (orderId: string, reason?: string, by?: OrderActor | null) =>
     OrderModel.updateOne(
       {_id: orderId},
       {
         $set: {orderStatus: 'cancelled', cancelReason: reason},
-        $push: {statusHistory: {status: 'cancelled', at: new Date()}}
+        $push: {statusHistory: {status: 'cancelled', at: new Date(), by: by ?? null}}
       }
     ).exec(),
 

@@ -41,6 +41,8 @@ const envSchema = z.object({
   XENDIT_API_BASE_URL: z.string().url().default('https://api.xendit.co'),
   // Public URL of the Next.js app, used for Xendit's redirect URLs.
   FRONTEND_URL: z.string().optional(),
+  /** OAuth client id for "Continue with Google" (same value as the frontend's NEXT_PUBLIC_GOOGLE_CLIENT_ID). */
+  GOOGLE_CLIENT_ID: z.string().optional(),
   PAYMENT_EXPIRY_MINUTES: z.coerce.number().int().min(1).default(30),
   PREORDER_PAYMENT_EXPIRY_HOURS: z.coerce.number().int().min(1).default(24)
 });

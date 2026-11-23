@@ -502,22 +502,19 @@ export const authService = {
     }
 
     for (const {user, type} of verifiedCandidates) {
+      // Google-only customers have no password yet.
+      if (!user.passwordHash) continue;
       const match = await bcrypt.compare(password, user.passwordHash);
       if (!match) continue;
+      return {user, userType: type};
+    }
 
-      const accessToken: string = jwt.sign(
-        {userId: user.id, type},
-        env.JWT_SECRET,
-        {expiresIn: '15m'}
+    if (verifiedCandidates.some(c => c.type === 'customer' && !c.user.passwordHash)) {
+      throw new ApiError(
+        401,
+        'USE_GOOGLE_SIGN_IN',
+        'This account signs in with Google. Use "Continue with Google", or set a password in your profile.'
       );
-
-      const refreshToken = jwt.sign(
-        {userId: user.id, type},
-        env.JWT_REFRESH_SECRET,
-        {expiresIn: '7d'}
-      );
-
-      return {accessToken, refreshToken, user, userType: type};
     }
 
     throw new ApiError(
@@ -620,6 +617,9 @@ export const authService = {
       throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
     }
 
+    if (!user.passwordHash) {
+      throw new ApiError(400, 'NO_PASSWORD', 'You sign in with Google. Use "Set a password" instead.');
+    }
     const match = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!match) {
       throw new ApiError(
@@ -738,9 +738,12 @@ export const authService = {
       throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
     }
 
-    const match = await bcrypt.compare(password, customer.passwordHash);
-    if (!match) {
-      throw new ApiError(400, 'INVALID_PASSWORD', 'Password is incorrect');
+    // Google-only accounts have no password: being signed in + typing DELETE confirms.
+    if (customer.passwordHash) {
+      const match = await bcrypt.compare(password ?? '', customer.passwordHash);
+      if (!match) {
+        throw new ApiError(400, 'INVALID_PASSWORD', 'Password is incorrect');
+      }
     }
 
     const [

@@ -101,8 +101,27 @@ function MessageBubble({
   teamOnRight: boolean;
   sending?: boolean;
 }) {
+  if (message.authorType === 'system') {
+    return (
+      <div className="flex justify-center">
+        <div className="max-w-[90%] rounded-2xl border border-[#3c5e45]/20 bg-[#e9f5ee] px-4 py-2 text-center dark:border-[#7ed4a0]/20 dark:bg-[#7ed4a0]/10">
+          <p className="text-[11px] font-bold text-[#2d4a35] dark:text-[#7ed4a0]">
+            {message.senderName || "DonClaudio's"} · automatic reply
+          </p>
+          <p className="text-sm whitespace-pre-wrap text-gray-800 dark:text-gray-100">{message.body}</p>
+          <p className="mt-0.5 text-[10px] text-gray-500 dark:text-gray-400">
+            {message.createdAt ? new Date(message.createdAt).toLocaleString() : ''}
+          </p>
+        </div>
+      </div>
+    );
+  }
   const isTeam = message.authorType === 'admin';
   const onRight = teamOnRight ? isTeam : !isTeam;
+  const teamName =
+    message.senderName && message.senderName !== "DonClaudio's Team"
+      ? `${message.senderName} · DonClaudio's`
+      : "DonClaudio's Team";
   return (
     <div className={`flex ${onRight ? 'justify-end' : 'justify-start'}`}>
       <div
@@ -117,7 +136,7 @@ function MessageBubble({
             onRight ? 'text-[#b8d4c0]' : 'text-gray-500 dark:text-gray-400'
           }`}
         >
-          {isTeam ? "DonClaudio's Team" : message.senderName || 'You'}
+          {isTeam ? teamName : message.senderName || 'You'}
         </p>
         <p className="text-sm whitespace-pre-wrap">{message.body}</p>
         {!sending && (

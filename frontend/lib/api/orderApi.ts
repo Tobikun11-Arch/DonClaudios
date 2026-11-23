@@ -160,6 +160,29 @@ export type CancelQuote = {
   noShow?: {allowed: boolean; reason: string | null};
 };
 
+export type OrderActor = {
+  id?: string | null;
+  type: 'admin' | 'cashier' | 'customer' | 'guest' | 'system';
+  name?: string | null;
+};
+
+export type OrderCourierBooking = {
+  bookedAt: string;
+  riderName?: string | null;
+  plateNumber?: string | null;
+  trackingLink?: string | null;
+  eta?: string | null;
+  acknowledgedAt?: string | null;
+  acknowledgedBy?: OrderActor | null;
+};
+
+export type CourierBookingInput = {
+  riderName?: string;
+  plateNumber?: string;
+  trackingLink?: string;
+  eta?: string;
+};
+
 export type OrderHistoryEntry = {
   _id: string;
   orderType: 'pickup' | 'delivery' | 'reservation';
@@ -178,7 +201,11 @@ export type OrderHistoryEntry = {
   cancelReason?: string;
   estimatedPrepMinutes?: number | null;
   estimatedReadyAt?: string | null;
-  statusHistory?: Array<{status: string; at: string}>;
+  statusHistory?: Array<{status: string; at: string; by?: OrderActor | null}>;
+  /** Staff member who confirmed (took) the order. */
+  handledBy?: OrderActor | null;
+  /** The courier the customer booked themself (courier orders only). */
+  courierBooking?: OrderCourierBooking | null;
   prepTiming?: OrderPrepTiming;
   /** Payment summary ('unpaid' | 'down_payment' | 'paid'). */
   paymentStatus?: 'unpaid' | 'down_payment' | 'paid' | null;
@@ -262,7 +289,8 @@ export type OrderDetailResponse = {
 export type OrderMessage = {
   _id: string;
   orderId: string;
-  authorType: 'customer' | 'admin';
+  /** `admin` = anyone at the store; `system` = automatic replies. */
+  authorType: 'customer' | 'admin' | 'system';
   senderName: string;
   body: string;
   createdAt: string;
@@ -474,6 +502,24 @@ export async function sendOrderMessage(orderId: string, body: string, asGuest = 
   const res = await httpClient.post<{message: OrderMessage}>(
     asGuest ? `/orders/${orderId}/messages/guest` : `/orders/${orderId}/messages`,
     {body}
+  );
+  return res.data;
+}
+
+/** Customer / guest: "I've booked my courier". */
+export async function bookCourier(orderId: string, input: CourierBookingInput, asGuest = false) {
+  const res = await httpClient.post<{order: OrderHistoryEntry}>(
+    asGuest ? `/orders/${orderId}/courier-booking/guest` : `/orders/${orderId}/courier-booking`,
+    input
+  );
+  return res.data;
+}
+
+/** Staff quick reply: "Got it, we'll have it ready". */
+export async function acknowledgeCourier(orderId: string, body?: string) {
+  const res = await httpClient.post<{order: OrderHistoryEntry}>(
+    `/orders/${orderId}/courier-booking/ack`,
+    body ? {body} : {}
   );
   return res.data;
 }

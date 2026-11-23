@@ -9,5 +9,6 @@ router.get('/sales-trend', requireAuth, requireAdmin, dashboardController.salesT
 router.get('/inventory-by-category', requireAuth, requireAdmin, dashboardController.inventoryByCategory);
 router.get('/top-products', requireAuth, requireAdmin, dashboardController.topProducts);
 router.get('/low-stock', requireAuth, requireAdmin, dashboardController.lowStock);
+router.get('/staff-activity', requireAuth, requireAdmin, dashboardController.staffActivity);
 
 export default router;

@@ -132,10 +132,47 @@ export const changePasswordDto = z
   });
 
 export const deleteAccountDto = z.object({
-  password: z.string().min(1, 'Enter your password to confirm'),
+  // Google-only accounts have no password; the server checks when it's needed.
+  password: z.string().optional().default(''),
   confirmation: z.literal('DELETE', {
     errorMap: () => ({message: 'Type DELETE to confirm'})
   })
+});
+
+export const googleSignInDto = z.object({
+  credential: z.string().min(20, 'Missing Google credential'),
+  acquisition: z.unknown().optional()
+});
+
+export const setPasswordDto = z.object({
+  newPassword: passwordSchema
+});
+
+export const phoneSendCodeDto = z.object({
+  phoneNumber: z.string().min(7).max(20)
+});
+
+export const phoneVerifyDto = z.object({
+  phoneNumber: z.string().min(7).max(20),
+  code: z.string().regex(/^\d{6}$/, 'Enter the 6-digit code').optional(),
+  viaEmail: z.boolean().optional()
+});
+
+export const mfaCodeDto = z.object({
+  code: z.string().trim().min(6).max(20)
+});
+
+export const mfaChallengeDto = z.object({
+  challengeToken: z.string().min(20)
+});
+
+export const mfaVerifyDto = z.object({
+  challengeToken: z.string().min(20),
+  code: z.string().trim().min(6).max(20)
+});
+
+export const orderEmailPrefDto = z.object({
+  orderEmailUpdates: z.boolean()
 });
 
 export type RegisterDto = z.infer<typeof registerDto>;

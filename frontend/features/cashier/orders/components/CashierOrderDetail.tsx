@@ -5,9 +5,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {toast} from 'sonner';
 import {ArrowLeft, Package, User, Phone, MapPin} from 'lucide-react';
+import {DeliveryDestination, hasDeliveryDestination} from '@/features/order/components/DeliveryDestination';
 import {Button} from '@/components/ui/button';
 import {Modal} from '@/features/owner/cashiers/components/Modal';
 import OrderChatThread from '@/features/order/components/OrderChatThread';
+import {CourierBookingStaffPanel} from '@/features/order/components/CourierBooking';
+import {OrderTimeline} from '@/features/order/components/OrderTimeline';
 import {
   useOrderDetailQuery,
   useUpdateOrderStatusMutation,
@@ -189,7 +192,9 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
               <span className="text-sm text-gray-600">{order.guestInfo.phoneNumber}</span>
             </div>
           )}
-          {order.guestInfo?.address ? (
+          {hasDeliveryDestination(order) ? (
+            <DeliveryDestination order={order} showNotes={false} className="sm:col-span-2" />
+          ) : order.guestInfo?.address ? (
             <div className="flex items-center gap-2 rounded-xl border border-gray-100 p-3 sm:col-span-2">
               <MapPin size={16} className="shrink-0 text-[#2d4a35]" />
               <span className="text-sm text-gray-600">{order.guestInfo.address}</span>
@@ -212,6 +217,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
         ) : null}
 
         <OrderPaymentPanel order={order} />
+        <OrderTimeline order={order} className="mt-5" />
       </div>
 
       <div className="rounded-2xl bg-white shadow p-5 sm:p-6">
@@ -255,6 +261,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
         <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">
           Conversation with {customer}
         </p>
+        <CourierBookingStaffPanel order={order} />
         {messagesQuery.isLoading ? (
           <SectionLoader label="Loading conversation" size={72} className="py-4" />
         ) : messagesQuery.isError ? (

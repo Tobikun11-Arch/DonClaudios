@@ -9,6 +9,7 @@ export type AboutStat = StatItem;
 export interface NotificationPreferences {
   account?: {
     'New login'?: boolean;
+    'Cashier sign-ins'?: boolean;
     'Password change'?: boolean;
   };
   reports?: {

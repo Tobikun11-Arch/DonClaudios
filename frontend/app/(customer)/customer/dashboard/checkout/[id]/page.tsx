@@ -1,5 +1,6 @@
 'use client';
 
+import {PhoneGateNotice, usePhoneVerificationRequired} from '@/features/account/components/PhoneVerifyPrompt';
 import {useCallback, useMemo, useState} from 'react';
 import {useParams, useRouter} from 'next/navigation';
 import Link from 'next/link';
@@ -74,6 +75,8 @@ export default function CustomerCheckoutPage() {
 
   const cartQuery = useCustomerCartQuery(true);
   const meQuery = useMeQuery();
+  // Google accounts verify a phone before ordering (the server checks too).
+  const phoneRequired = usePhoneVerificationRequired();
   const customer = meQuery.data?.user;
   const items = useMemo(
     () => cartQuery.data?.cart?.items ?? [],
@@ -310,6 +313,7 @@ export default function CustomerCheckoutPage() {
   };
 
   const checkoutButton = (
+    <>
     <Button
       type="button"
       data-enter-submit="focus"
@@ -321,6 +325,7 @@ export default function CustomerCheckoutPage() {
         clearCartMutation.isPending ||
         !agreedToTerms ||
         courierMissing ||
+        phoneRequired ||
         Boolean(timingIssue) ||
         (orderType === 'Delivery' && !address.trim())
       }
@@ -334,6 +339,8 @@ export default function CustomerCheckoutPage() {
             ? 'Place pre-order'
             : 'Place order'}
     </Button>
+    <PhoneGateNotice className="mt-2" />
+    </>
   );
 
   return (

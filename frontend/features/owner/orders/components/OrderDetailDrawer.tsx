@@ -10,6 +10,9 @@ import {OrderPaymentPanel} from '@/features/cashier/orders/components/CashierOrd
 import {PreOrderBadge, withSize} from '@/shared/components/PreOrderBadge';
 import {CancelRequestPanel, StaffCancelDialog} from './OrderCancellation';
 import SectionLoader from '@/shared/components/SectionLoader';
+import {DeliveryDestination, hasDeliveryDestination} from '@/features/order/components/DeliveryDestination';
+import {OrderTimeline} from '@/features/order/components/OrderTimeline';
+import {CourierBookingStaffPanel} from '@/features/order/components/CourierBooking';
 import {fulfillmentLabel, statusFlow, staffStatusLabel} from '@/lib/orders/orderFlow';
 
 function formatDateTime(iso?: string) {
@@ -304,28 +307,13 @@ export function OrderDetailDrawer({
             {order.guestInfo?.phoneNumber && (
               <p className="text-[0.82rem] text-[#6B7280] dark:text-gray-400">{order.guestInfo.phoneNumber}</p>
             )}
-            {order.guestInfo?.address && (
-              <p className="mt-1 text-[0.82rem] leading-relaxed text-[#6B7280] dark:text-gray-400">
-                {order.guestInfo.address}
-              </p>
-            )}
-            {order.deliveryLocation &&
-              Number.isFinite(order.deliveryLocation.lat) &&
-              Number.isFinite(order.deliveryLocation.lng) && (
-                <a
-                  href={`https://www.google.com/maps?q=${order.deliveryLocation.lat},${order.deliveryLocation.lng}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-1 inline-block text-[0.82rem] font-semibold text-[#2d4a35] dark:text-[#7ed4a0] underline-offset-2 hover:underline"
-                >
-                  Open pinned location
-                </a>
-              )}
-            {order.riderNotes && (
+            {hasDeliveryDestination(order) ? (
+              <DeliveryDestination order={order} className="mt-2" />
+            ) : order.riderNotes ? (
               <p className="mt-2 rounded-lg bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-[0.8rem] text-amber-800 dark:text-amber-200">
                 Note: {order.riderNotes}
               </p>
-            )}
+            ) : null}
             {order.changeFor && (
               <p className="mt-2 rounded-lg bg-sky-50 dark:bg-sky-500/10 px-3 py-2 text-[0.8rem] text-sky-800 dark:text-sky-200">
                 Change for: {order.changeFor}
@@ -397,23 +385,8 @@ export function OrderDetailDrawer({
             </section>
           )}
 
-          {order.statusHistory && order.statusHistory.length > 0 && (
-            <section>
-              <h3 className="mb-2 text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[#6B7280] dark:text-gray-400">
-                Timeline
-              </h3>
-              <ol className="space-y-2 border-l-2 border-[#E5E7EB] dark:border-gray-700 pl-3">
-                {order.statusHistory.map((entry, index) => (
-                  <li key={`${entry.status}-${index}`} className="text-[0.8rem]">
-                    <span className="font-semibold text-[#1A1A1A] dark:text-gray-100">
-                      {staffStatusLabel(order, entry.status)}
-                    </span>
-                    <span className="ml-2 text-[#6B7280] dark:text-gray-400">{formatDateTime(entry.at)}</span>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          )}
+          <CourierBookingStaffPanel order={order} />
+          <OrderTimeline order={order} />
         </div>
       </aside>
       {cancelFor === order._id ? (

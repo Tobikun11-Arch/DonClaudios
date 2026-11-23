@@ -21,7 +21,8 @@ import {
   guestEmailOtpSendDto,
   guestEmailOtpVerifyDto,
   listAllOrdersQueryDto,
-  scheduleQuoteDto
+  scheduleQuoteDto,
+  courierBookingDto
 } from '../dtos/order.dto';
 import type {Request, Response, NextFunction} from 'express';
 
@@ -214,6 +215,26 @@ router.post(
   '/:id/messages/guest',
   guestMessageLimiter,
   orderMessageController.sendByGuest
+);
+// Customer-booked courier: "I've booked my courier" + staff quick reply.
+router.post(
+  '/:id/courier-booking',
+  requireAuth,
+  requireCustomer,
+  validate(courierBookingDto),
+  orderMessageController.bookCourier
+);
+router.post(
+  '/:id/courier-booking/guest',
+  guestMessageLimiter,
+  validate(courierBookingDto),
+  orderMessageController.bookCourierAsGuest
+);
+router.post(
+  '/:id/courier-booking/ack',
+  requireAuth,
+  requireStaff,
+  orderMessageController.acknowledgeCourier
 );
 router.get(
   '/:id/messages/admin',

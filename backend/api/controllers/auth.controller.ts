@@ -8,16 +8,21 @@ import {adminRepository} from '../repositories/admin.repository';
 import {cashierRepository} from '../repositories/cashier.repository';
 import {CustomerModel, type CustomerDocument} from '../models/Customer.model';
 import type {CashierDocument} from '../models/Cashier.model';
+import jwt from 'jsonwebtoken';
+import {extractAccessToken} from '../middleware/auth';
+import {signSessionTokens, accountSecurityService, needsPhoneVerification} from '../services/accountSecurity.service';
+import {staffActivityService} from '../services/staffActivity.service';
+import {lookupUserName} from '../utils/actor';
 
 const ACCESS_COOKIE = 'dc_access_token';
 const REFRESH_COOKIE = 'dc_refresh_token';
 
 /** The Expo cashier app sends `X-Client: mobile` on login and refresh. */
-function isMobileClient(req: Request): boolean {
+export function isMobileClient(req: Request): boolean {
   return req.get('x-client') === 'mobile';
 }
 
-function getCookieOptions(): CookieOptions {
+export function getCookieOptions(): CookieOptions {
   const isProduction =
     env.NODE_ENV === 'production' || process.env.VERCEL === '1';
   const rawSameSite =
@@ -39,6 +44,68 @@ function getCookieOptions(): CookieOptions {
     sameSite: sameSite as 'strict' | 'lax' | 'none',
     path: '/'
   };
+}
+
+/**
+ * Last step of every sign-in (password, Google, or after the MFA code): sets
+ * the session cookies, logs cashier sign-ins for the owner, and answers with
+ * the user (plus the tokens for the mobile POS).
+ */
+export async function completeSignIn(
+  req: Request,
+  res: Response,
+  user: any,
+  userType: 'customer' | 'cashier' | 'admin',
+  extra: Record<string, unknown> = {}
+) {
+  const {accessToken, refreshToken} = signSessionTokens(String(user._id ?? user.id), userType);
+  const opts = getCookieOptions();
+  res.cookie(ACCESS_COOKIE, accessToken, {...opts, maxAge: 15 * 60 * 1000});
+  res.cookie(REFRESH_COOKIE, refreshToken, {...opts, maxAge: 7 * 24 * 60 * 60 * 1000});
+
+  if (userType === 'cashier') {
+    await staffActivityService.recordSession(
+      {
+        id: String(user._id),
+        type: 'cashier',
+        name: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username
+      },
+      'login',
+      req
+    );
+  }
+
+  res.status(200).json({
+    user: {
+      id: String(user._id),
+      email: user.email,
+      type: userType,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phoneNumber: user.phoneNumber,
+      address: user.address
+    },
+    ...extra,
+    // Native apps cannot rely on httpOnly cookies; they ask for the
+    // tokens in the body and keep them in the device's secure store.
+    ...(isMobileClient(req) ? {accessToken, refreshToken} : {})
+  });
+}
+
+/** Who a sign-out belongs to (logout needs no valid access token). */
+function sessionOwner(req: Request): {userId: string; type?: string} | null {
+  const tryVerify = (token: string | undefined, secret: string) => {
+    if (!token) return null;
+    try {
+      return jwt.verify(token, secret, {ignoreExpiration: true}) as {userId: string; type?: string};
+    } catch {
+      return null;
+    }
+  };
+  return (
+    tryVerify(extractAccessToken(req), env.JWT_SECRET) ??
+    tryVerify(req.cookies?.[REFRESH_COOKIE] ?? req.body?.refreshToken, env.JWT_REFRESH_SECRET)
+  );
 }
 
 export const authController = {
@@ -89,6 +156,20 @@ export const authController = {
           occasions: customer?.occasions ?? [],
           // First-login dashboard guide: shown until finished or skipped once.
           onboardingTourDone: customer ? !!customer.onboardingTourDoneAt : true,
+          // Account & security (customers only).
+          ...(customer
+            ? {
+                phoneVerified: customer.phoneVerified === true,
+                needsPhoneVerification: needsPhoneVerification(customer),
+                orderEmailUpdates: customer.orderEmailUpdates !== false,
+                googleLinked: !!customer.googleId,
+                googleEmail: customer.googleEmail ?? null,
+                hasPassword: !!customer.passwordHash,
+                mfaEnabled: customer.mfa?.enabled === true,
+                mfaMethod: customer.mfa?.enabled ? customer.mfa.method ?? 'email' : null,
+                backupCodesLeft: customer.mfa?.enabled ? customer.mfa.backupCodes?.length ?? 0 : 0
+              }
+            : {}),
           businessName: admin?.businessName,
           businessLogo: admin?.businessLogo,
           storeAddress: admin?.storeAddress,
@@ -407,34 +488,15 @@ export const authController = {
 
   async login(req: Request, res: Response, next: NextFunction) {
     try {
-      const {accessToken, refreshToken, user, userType} =
-        await authService.login(req.body.email, req.body.password);
+      const {user, userType} = await authService.login(req.body.email, req.body.password);
 
-      const opts = getCookieOptions();
+      // Two-step sign-in: no session yet, just a short-lived challenge.
+      if (accountSecurityService.isMfaOn(user, userType)) {
+        res.status(200).json(await accountSecurityService.beginSignInChallenge(user));
+        return;
+      }
 
-      res.cookie(ACCESS_COOKIE, accessToken, {
-        ...opts,
-        maxAge: 15 * 60 * 1000
-      });
-      res.cookie(REFRESH_COOKIE, refreshToken, {
-        ...opts,
-        maxAge: 7 * 24 * 60 * 60 * 1000
-      });
-
-      res.status(200).json({
-        user: {
-          id: user._id.toString(),
-          email: user.email,
-          type: userType,
-          firstName: 'firstName' in user ? user.firstName : undefined,
-          lastName: 'lastName' in user ? user.lastName : undefined,
-          phoneNumber: 'phoneNumber' in user ? user.phoneNumber : undefined,
-          address: 'address' in user ? user.address : undefined
-        },
-        // Native apps cannot rely on httpOnly cookies; they ask for the
-        // tokens in the body and keep them in the device's secure store.
-        ...(isMobileClient(req) ? {accessToken, refreshToken} : {})
-      });
+      await completeSignIn(req, res, user, userType);
     } catch (error) {
       next(error);
     }
@@ -481,8 +543,16 @@ export const authController = {
     }
   },
 
-  async logout(_req: Request, res: Response, next: NextFunction) {
+  async logout(req: Request, res: Response, next: NextFunction) {
     try {
+      const owner = sessionOwner(req);
+      if (owner?.type === 'cashier' && owner.userId) {
+        await staffActivityService.recordSession(
+          {id: owner.userId, type: 'cashier', name: await lookupUserName('cashier', owner.userId)},
+          'logout',
+          req
+        );
+      }
       const opts = getCookieOptions();
       res.clearCookie(ACCESS_COOKIE, opts);
       res.clearCookie(REFRESH_COOKIE, opts);

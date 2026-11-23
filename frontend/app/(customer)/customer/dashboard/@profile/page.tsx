@@ -5,6 +5,7 @@ import {useRouter} from 'next/navigation';
 import {LogOut} from 'lucide-react';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {useLogout} from '@/lib/hooks/auth/useLogout';
+import {SecurityCard} from '@/features/customer/profile/components/SecurityCard';
 import {ProfileHeader, UsualOrderCard, AddressList, OccasionsCard, PreferencesForm, PromosCard, AccountSection, AppearanceCard, useCustomerProfileData} from '@/features/customer/profile';
 
 export default function ProfileSlot() {
@@ -61,6 +62,7 @@ export default function ProfileSlot() {
       <div className="space-y-6">
         <ProfileHeader user={user} orders={orders} />
         <AddressList addresses={addresses} onSave={saveAddresses} />
+        <SecurityCard user={user} />
         <AccountSection user={user} />
       </div>
       <div className="space-y-6">

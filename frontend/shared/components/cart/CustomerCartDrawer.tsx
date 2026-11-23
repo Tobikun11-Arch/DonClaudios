@@ -1,5 +1,6 @@
 'use client';
 
+import {PhoneGateNotice, usePhoneVerificationRequired} from '@/features/account/components/PhoneVerifyPrompt';
 import {useEffect, useMemo, useState} from 'react';
 import {createPortal} from 'react-dom';
 import Image from 'next/image';
@@ -71,6 +72,8 @@ export default function CustomerCartDrawer() {
 
   const storeStatusQuery = useStoreStatusQuery();
   const storeClosed = storeStatusQuery.data?.status.isOpen === false;
+  // Google accounts verify a phone before ordering (the server checks too).
+  const phoneRequired = usePhoneVerificationRequired();
 
   const cartQuery = useCustomerCartQuery(isOpen);
 
@@ -557,11 +560,12 @@ export default function CustomerCartDrawer() {
           <Button
             type="button"
             className="mt-4 w-full h-12 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
-            disabled={items.length === 0 || storeClosed}
+            disabled={items.length === 0 || storeClosed || phoneRequired}
             onClick={goToCheckout}
           >
-            {storeClosed ? 'Store is Closed' : 'Go To Checkout'}
+            {storeClosed ? 'Store is Closed' : phoneRequired ? 'Verify phone to order' : 'Go To Checkout'}
           </Button>
+          <PhoneGateNotice className="mt-2" />
         </div>
       </div>
 

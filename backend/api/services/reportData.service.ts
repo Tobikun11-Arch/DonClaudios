@@ -27,7 +27,7 @@ import {
 const OPEN_STATUSES = ['pending', 'confirmed', 'preparing', 'ready', 'on_the_way'];
 
 /** Mongo filter for a recognised sale (see the basis above). */
-const SALE_MATCH = {
+export const SALE_MATCH = {
   orderStatus: 'completed',
   $or: [
     {orderSource: {$ne: 'in-store'}},
@@ -36,18 +36,18 @@ const SALE_MATCH = {
   ]
 };
 
-const ORDER_TYPE_LABELS: Record<string, string> = {
+export const ORDER_TYPE_LABELS: Record<string, string> = {
   pickup: 'Pick-up',
   delivery: 'Delivery',
   reservation: 'Reservation'
 };
 
-const SOURCE_LABELS: Record<string, string> = {
+export const SOURCE_LABELS: Record<string, string> = {
   online: 'Online',
   'in-store': 'Walk-in (counter)'
 };
 
-const PAYMENT_LABELS: Record<string, string> = {
+export const PAYMENT_LABELS: Record<string, string> = {
   cash: 'Cash',
   card: 'Credit/Debit card',
   gcash: 'GCash',
@@ -59,7 +59,7 @@ const PAYMENT_LABELS: Record<string, string> = {
   psbank: 'PSBank transfer'
 };
 
-const STATUS_LABELS: Record<string, string> = {
+export const STATUS_LABELS: Record<string, string> = {
   pending: 'Pending (awaiting confirmation)',
   confirmed: 'Confirmed',
   preparing: 'Preparing',

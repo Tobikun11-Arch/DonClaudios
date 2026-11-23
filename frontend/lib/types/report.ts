@@ -3,7 +3,7 @@
  * Mirrors the interfaces exported by `backend/api/services/report.service.ts`.
  */
 
-export type ReportView = 'overview' | 'sales' | 'operations' | 'products' | 'customers';
+export type ReportView = 'overview' | 'sales' | 'operations' | 'products' | 'customers' | 'staff';
 
 export type ReportPreset =
   | 'today'
@@ -30,7 +30,8 @@ export const REPORT_VIEWS: ReadonlyArray<{key: ReportView; label: string}> = [
   {key: 'sales', label: 'Sales'},
   {key: 'operations', label: 'Operations'},
   {key: 'products', label: 'Products'},
-  {key: 'customers', label: 'Customers'}
+  {key: 'customers', label: 'Customers'},
+  {key: 'staff', label: 'Staff'}
 ];
 
 export const REPORT_PRESETS: ReadonlyArray<{key: ReportPreset; label: string}> = [

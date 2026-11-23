@@ -10,7 +10,11 @@ import {enterNavigation} from '@/shared/utils/enterNavigation';
 import {useRouter} from 'next/navigation';
 import {useQueryClient} from '@tanstack/react-query';
 import {login} from '@/lib/api/authApi';
-import {meQueryKey} from '@/lib/hooks/auth/useMeQuery';
+import {signInWithGoogle, type SignInResult} from '@/lib/api/accountSecurityApi';
+import {getAcquisitionPayload} from '@/lib/acquisition';
+import {GoogleSignInButton} from '@/features/account/components/GoogleSignInButton';
+import {MfaSignInStep} from '@/features/account/components/MfaSignInStep';
+import {finishSignIn} from '@/features/account/signIn';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {BrandLogo} from '@/shared/components/BrandLogo';
 import {usePublicBrand} from '@/lib/hooks/useBrand';
@@ -21,6 +25,7 @@ export default function SignInPage() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [mfa, setMfa] = useState<{challengeToken: string; sentTo: string | null; method: 'email' | 'totp'} | null>(null);
   const router = useRouter();
   const queryClient = useQueryClient();
   const brand = usePublicBrand();
@@ -37,23 +42,49 @@ export default function SignInPage() {
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
-      const user = await login({email, password});
-      // Clear any stale cached /auth/me (e.g. a previous 401) so the dashboard
-      // guard re-fetches and sees the new session instead of redirecting back.
-      queryClient.removeQueries({queryKey: meQueryKey});
-      if (user.user.type === 'admin') {
-        router.push('/owner/dashboard');
-      } else if (user.user.type === 'cashier') {
-        router.push('/cashier/dashboard');
-      } else {
-        router.push('/customer/dashboard');
-      }
+      handleResult(await login({email, password}));
     } catch (error) {
       setErrorMessage(getFriendlyErrorMessage(error, 'Failed to sign in'));
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Signed in, or two-step verification asks for the emailed code first.
+  const handleResult = (result: SignInResult) => {
+    if (result.mfaRequired) {
+      setMfa({challengeToken: result.challengeToken, sentTo: result.sentTo, method: result.method ?? 'email'});
+      return;
+    }
+    finishSignIn(result.user, router, queryClient);
+  };
+
+  const handleGoogle = async (credential: string) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      handleResult(await signInWithGoogle(credential, getAcquisitionPayload()));
+    } catch (error) {
+      setErrorMessage(getFriendlyErrorMessage(error, 'Google sign-in failed'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (mfa) {
+    return (
+      <div className="mx-auto w-full max-w-[400px]">
+        <MfaSignInStep
+          challengeToken={mfa.challengeToken}
+          sentTo={mfa.sentTo}
+          method={mfa.method}
+          onSignedIn={handleResult}
+          onCancel={() => setMfa(null)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-[400px]">
@@ -145,6 +176,10 @@ export default function SignInPage() {
           </div>
         )}
       </form>
+
+      <div className="mt-5 space-y-3">
+        <GoogleSignInButton onCredential={handleGoogle} disabled={isSubmitting} />
+      </div>
 
       <p className="mt-6 text-center text-[15px] text-muted-foreground">
         Don&apos;t have an account?{' '}

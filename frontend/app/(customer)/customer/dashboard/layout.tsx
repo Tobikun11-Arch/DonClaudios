@@ -14,6 +14,7 @@ import {useDashboardThemeStyle} from '@/lib/hooks/useSettings';
 import {Toaster} from '@/components/ui/sonner';
 import CustomerOnboardingTour from '@/features/customer/onboarding/components/CustomerOnboardingTour';
 import {BrandLogo} from '@/shared/components/BrandLogo';
+import {PhoneVerifyBanner} from '@/features/account/components/PhoneVerifyPrompt';
 
 const TABS = [
   {
@@ -328,6 +329,7 @@ export default function DashboardLayout({
           top-right (y=12..52).
         */}
         <div className="px-4 pt-4 pb-24 sm:px-6 sm:pt-6 md:pt-10 md:pb-8">
+          <PhoneVerifyBanner />
           {content}
         </div>
       </main>

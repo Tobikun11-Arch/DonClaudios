@@ -7,7 +7,8 @@ import {
   reportDeliveryHeatmapQueryDto,
   reportPdfQueryDto,
   reportRangeQueryDto,
-  reportTimeseriesQueryDto
+  reportTimeseriesQueryDto,
+  reportDetailQueryDto
 } from '../dtos/report.dto';
 
 const router = Router();
@@ -66,6 +67,14 @@ router.get(
   requireAdmin,
   validateQuery(reportDeliveryHeatmapQueryDto),
   reportController.deliveryHeatmap
+);
+
+router.get(
+  '/detail',
+  requireAuth,
+  requireAdmin,
+  validateQuery(reportDetailQueryDto),
+  reportController.detail
 );
 
 router.get('/dimensions', requireAuth, requireAdmin, reportController.dimensions);

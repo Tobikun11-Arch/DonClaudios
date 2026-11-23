@@ -1,3 +1,5 @@
+import {getReportDetail, detailToCsv, type DetailView} from '../services/reportDetail.service';
+import {buildDetailPdf} from '../services/reportDetailPdf.service';
 import {Request, Response, NextFunction} from 'express';
 import {
   REPORT_DIMENSIONS,
@@ -168,6 +170,58 @@ export const reportController = {
   /** Dimensions the UI is allowed to request, so the client can render filters. */
   async dimensions(_req: Request, res: Response) {
     res.status(200).json({dimensions: REPORT_DIMENSIONS});
+  },
+
+  /** Reports > Detailed: JSON for the table, or CSV / PDF of every matching row. */
+  async detail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const q = readQuery<any>(req);
+      const range = toRange(q);
+      const format = (q.format ?? 'json') as 'json' | 'csv' | 'pdf';
+      const result = await getReportDetail(
+        q.view as DetailView,
+        range,
+        {
+          cashierId: q.cashierId || undefined,
+          orderType: q.orderType || undefined,
+          paymentMethod: q.paymentMethod || undefined,
+          status: q.status || undefined
+        },
+        {page: q.page ?? 1, pageSize: q.pageSize ?? 50, all: format !== 'json'}
+      );
+      if (format === 'json') {
+        res.status(200).json({...result, rangeLabel: range.label});
+        return;
+      }
+      const stamp = new Date().toISOString().slice(0, 10);
+      const name = `donclaudios-${q.view}-detailed-${stamp}`;
+      if (format === 'csv') {
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${name}.csv"`);
+        // BOM so Excel opens the peso sign and names correctly.
+        res.status(200).send('\uFEFF' + detailToCsv(result));
+        return;
+      }
+      const admin = req.auth?.userId ? await adminRepository.findById(req.auth.userId) : null;
+      const titles: Record<string, string> = {
+        sales: 'Sales — every order',
+        operations: 'Operations — order timing',
+        products: 'Products — by day',
+        customers: 'Customers',
+        staff: 'Staff activity'
+      };
+      const pdf = await buildDetailPdf(result, {
+        title: titles[q.view] ?? 'Detailed report',
+        rangeLabel: range.label,
+        business: admin?.businessName || "DonClaudio's Lechon House"
+      });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${name}.pdf"`);
+      res.setHeader('Content-Length', String(pdf.length));
+      res.status(200).end(pdf);
+    } catch (error) {
+      next(error);
+    }
   },
 
   async pdf(req: Request, res: Response, next: NextFunction) {

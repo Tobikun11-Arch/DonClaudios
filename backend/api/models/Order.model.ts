@@ -31,9 +31,30 @@ export interface GuestInfo {
   email?: string;
 }
 
+/** Who made a change on an order (staff member, the customer, or the system). */
+export interface OrderActor {
+  id?: string | null;
+  type: 'admin' | 'cashier' | 'customer' | 'guest' | 'system';
+  name?: string | null;
+}
+
 export interface OrderStatusEntry {
   status: OrderStatus;
   at: Date;
+  /** Missing on entries written before staff tracking. */
+  by?: OrderActor | null;
+}
+
+/** Details of the courier a customer booked themself (courier_delivery only). */
+export interface OrderCourierBooking {
+  bookedAt: Date;
+  riderName?: string | null;
+  plateNumber?: string | null;
+  trackingLink?: string | null;
+  eta?: string | null;
+  /** When a staff member acknowledged it ("Got it, we'll have it ready"). */
+  acknowledgedAt?: Date | null;
+  acknowledgedBy?: OrderActor | null;
 }
 
 /**
@@ -219,6 +240,11 @@ export interface OrderDocument extends mongoose.Document {
   paidAt?: Date | null;
   /** Cashier/admin id that marked the walk-in order as paid. */
   paidBy?: string | null;
+  /** Staff member who confirmed (took) the order. */
+  handledBy?: OrderActor | null;
+  /** Statuses already emailed to the customer (one email per status). */
+  emailedStatuses?: string[];
+  courierBooking?: OrderCourierBooking | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -230,6 +256,32 @@ const GuestInfoSchema = new Schema<GuestInfo>(
     phoneNumber: {type: String},
     address: {type: String},
     email: {type: String}
+  },
+  {_id: false}
+);
+
+const OrderActorSchema = new Schema<OrderActor>(
+  {
+    id: {type: String, default: null},
+    type: {
+      type: String,
+      enum: ['admin', 'cashier', 'customer', 'guest', 'system'],
+      required: true
+    },
+    name: {type: String, default: null}
+  },
+  {_id: false}
+);
+
+const CourierBookingSchema = new Schema<OrderCourierBooking>(
+  {
+    bookedAt: {type: Date, required: true},
+    riderName: {type: String, trim: true, maxlength: 80, default: null},
+    plateNumber: {type: String, trim: true, maxlength: 20, default: null},
+    trackingLink: {type: String, trim: true, maxlength: 500, default: null},
+    eta: {type: String, trim: true, maxlength: 40, default: null},
+    acknowledgedAt: {type: Date, default: null},
+    acknowledgedBy: {type: OrderActorSchema, default: null}
   },
   {_id: false}
 );
@@ -249,7 +301,8 @@ const OrderStatusEntrySchema = new Schema<OrderStatusEntry>(
       ],
       required: true
     },
-    at: {type: Date, required: true, default: Date.now}
+    at: {type: Date, required: true, default: Date.now},
+    by: {type: OrderActorSchema, default: null}
   },
   {_id: false}
 );
@@ -314,6 +367,9 @@ const OrderSchema = new Schema<OrderDocument>(
       default: 'pending'
     },
     statusHistory: {type: [OrderStatusEntrySchema], default: []},
+    handledBy: {type: OrderActorSchema, default: null},
+    emailedStatuses: {type: [String], default: []},
+    courierBooking: {type: CourierBookingSchema, default: null},
     estimatedPrepMinutes: {type: Number, default: null},
     estimatedReadyAt: {type: Date, default: null},
     overdueNotifiedAt: {type: Date, default: null},
