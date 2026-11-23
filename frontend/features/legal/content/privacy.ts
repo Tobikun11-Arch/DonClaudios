@@ -3,7 +3,7 @@ import type { LegalPageProps } from "../components/LegalLayout";
 export const privacy: LegalPageProps = {
   slug: "privacy",
   title: "Privacy Policy",
-  lastUpdated: "November 7, 2026",
+  lastUpdated: "November 23, 2026",
   intro:
     "DonClaudio's Lechon House respects your privacy. This policy explains what personal data we collect, why we collect it, and your rights under the Data Privacy Act of 2012 (RA 10173).",
   sections: [
@@ -15,11 +15,23 @@ export const privacy: LegalPageProps = {
         columns: ["Type of data", "Examples"],
         rows: [
           ["Account information", "Name, email address, and password (stored in encrypted form)"],
+          ["Google account information (only if you choose \"Continue with Google\")", "Your Google account ID, name, email address, and profile picture"],
           ["Order information", "Items ordered, order history, delivery address, and contact number"],
           ["Payment information", "Payment status and channel used. Card and e-wallet details are entered on Xendit's page and are not stored by us"],
           ["Technical information", "Browser type and cookies needed for the site to work. We use Google Analytics for site performance monitoring"],
         ],
       },
+    },
+    {
+      heading: "Google Sign-In",
+      summary: "What we receive from Google when you sign in with Google, and how we use it.",
+      body: [
+        "You can create an account or sign in with \"Continue with Google\". This is optional; you can also sign up with an email and password.",
+        "When you use it, Google shares only your basic profile with us: your Google account ID, name, email address, and profile picture. We do not request access to your Gmail, Contacts, Drive, Calendar, or any other Google data, and we never see your Google password.",
+        "We use this information only to create and sign in to your DonClaudio's Lechon House account, to fill in your name and profile photo, and to send you order updates at that email address. We do not sell it, use it for advertising, or share it with anyone except the service providers listed below that host our website and database.",
+        "DonClaudio's Lechon House's use and transfer of information received from Google APIs adheres to the Google API Services User Data Policy (https://developers.google.com/terms/api-services-user-data-policy), including the Limited Use requirements.",
+        "You can unlink Google from your account at any time in your profile's account settings, or remove our access from your Google Account at https://myaccount.google.com/permissions. To have your account and its Google information deleted, contact us using the details in the Contact Us section.",
+      ],
     },
     {
       heading: "Why We Collect It",
@@ -36,6 +48,7 @@ export const privacy: LegalPageProps = {
       table: {
         columns: ["Service provider", "Purpose"],
         rows: [
+          ["Google", "Optional sign-in with Google and site analytics (Google Analytics)"],
           ["Vercel", "Website hosting"],
           ["MongoDB", "Database"],
           ["Gmail (SMTP)", "Email notifications"],

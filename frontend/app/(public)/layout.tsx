@@ -12,12 +12,12 @@ import {UxMotionScope} from '@/shared/motion/UxMotionScope';
 const restaurantJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Restaurant',
-  name: "Donclaudio's Lechon House",
+  name: "DonClaudio's Lechon House",
   url: 'https://www.donclaudios.com/',
   image: 'https://www.donclaudios.com/assets/logo.png',
   logo: 'https://www.donclaudios.com/assets/logo.png',
   description:
-    "Donclaudio's Lechon House in Tanza, Cavite serves crispy, flavorful lechon and traditional Filipino dishes. Order online for pick-up or delivery, or reserve a table.",
+    "DonClaudio's Lechon House in Tanza, Cavite serves crispy, flavorful lechon and traditional Filipino dishes. Order online for pick-up or delivery, or reserve a table.",
   servesCuisine: ['Filipino', 'Lechon'],
   telephone: '+63-915-532-1169',
   contactPoint: [
