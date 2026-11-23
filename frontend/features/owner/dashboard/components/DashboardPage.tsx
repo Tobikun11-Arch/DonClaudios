@@ -16,6 +16,7 @@ import {InventoryDonut} from './InventoryDonut';
 import {TopProductsTable} from './TopProductsTable';
 import {LowStockAlert} from './LowStockAlert';
 import {StuckOrdersAlert} from './StuckOrdersAlert';
+import {StaffActivityCard} from './StaffActivityCard';
 import {
   DEFAULT_REPORT_RANGE,
   isValidView,
@@ -124,6 +125,8 @@ function DashboardPageContent() {
               isError={inventoryQuery.isError}
             />
           </div>
+
+          <StaffActivityCard />
 
           <TopProductsTable
             products={topProductsQuery.data?.products ?? []}

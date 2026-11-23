@@ -1,7 +1,13 @@
 type AccountNoticeEmailParams = {
   appName?: string;
   recipientName?: string;
-  kind: 'password_changed' | 'account_deleted';
+  kind:
+    | 'password_changed'
+    | 'account_deleted'
+    | 'mfa_enabled'
+    | 'mfa_disabled'
+    | 'google_linked'
+    | 'google_unlinked';
 };
 
 function escapeHtml(value: string) {
@@ -28,23 +34,56 @@ export function accountNoticeEmailTemplate({
     timeStyle: 'short'
   });
 
-  const title =
-    kind === 'password_changed'
-      ? `Your ${appName} password was changed`
-      : `Your ${appName} account was deleted`;
-
-  const lines =
-    kind === 'password_changed'
-      ? [
-          `The password for your ${appName} account was changed on ${when} (Philippine time).`,
-          'For your security, every other device signed in to your account has been signed out.',
-          'If you did not make this change, reset your password right away using "Forgot password" on the sign-in page, and contact the store.'
-        ]
-      : [
-          `Your ${appName} account was deleted on ${when} (Philippine time), as you requested.`,
-          'Your profile, saved addresses, occasions, preferences, cart, notifications and reward points have been removed. Past orders are kept only as anonymous sales records, as required for the store’s accounting.',
-          'If you did not request this, please contact the store right away.'
-        ];
+  const notIt =
+    'If you did not make this change, reset your password right away using "Forgot password" on the sign-in page, and contact the store.';
+  const notices: Record<AccountNoticeEmailParams['kind'], {title: string; lines: string[]}> = {
+    password_changed: {
+      title: `Your ${appName} password was changed`,
+      lines: [
+        `The password for your ${appName} account was changed on ${when} (Philippine time).`,
+        'For your security, every other device signed in to your account has been signed out.',
+        notIt
+      ]
+    },
+    account_deleted: {
+      title: `Your ${appName} account was deleted`,
+      lines: [
+        `Your ${appName} account was deleted on ${when} (Philippine time), as you requested.`,
+        'Your profile, saved addresses, occasions, preferences, cart, notifications and reward points have been removed. Past orders are kept only as anonymous sales records, as required for the store’s accounting.',
+        'If you did not request this, please contact the store right away.'
+      ]
+    },
+    mfa_enabled: {
+      title: `Two-step verification is on for your ${appName} account`,
+      lines: [
+        `Two-step verification was turned on on ${when} (Philippine time). From now on, signing in also needs a second code, from your email or your authenticator app.`,
+        'Keep your backup codes somewhere safe. Each one works once if you cannot get the email.',
+        notIt
+      ]
+    },
+    mfa_disabled: {
+      title: `Two-step verification is off for your ${appName} account`,
+      lines: [
+        `Two-step verification was turned off on ${when} (Philippine time). Signing in now needs only your password or Google account.`,
+        notIt
+      ]
+    },
+    google_linked: {
+      title: `Google sign-in was linked to your ${appName} account`,
+      lines: [
+        `A Google account was linked on ${when} (Philippine time). You can now use "Continue with Google" to sign in.`,
+        notIt
+      ]
+    },
+    google_unlinked: {
+      title: `Google sign-in was removed from your ${appName} account`,
+      lines: [
+        `Google sign-in was unlinked on ${when} (Philippine time). Sign in with your email and password from now on.`,
+        notIt
+      ]
+    }
+  };
+  const {title, lines} = notices[kind];
 
   const text = `${greeting}\n\n${lines.join('\n\n')}\n\nThe ${appName} Team`;
 

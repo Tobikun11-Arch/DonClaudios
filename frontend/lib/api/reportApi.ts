@@ -81,6 +81,58 @@ export async function getReportInventoryHealth(range: ReportRange) {
  * so the access cookie is sent; a plain link would 401 because the token is
  * httpOnly and SameSite'd against a separate API origin.
  */
+export type DetailView = 'sales' | 'operations' | 'products' | 'customers' | 'staff';
+
+export type DetailFilters = {
+  cashierId?: string;
+  orderType?: string;
+  paymentMethod?: string;
+  status?: string;
+};
+
+export type ReportDetail = {
+  view: DetailView;
+  columns: Array<{key: string; label: string; type?: 'text' | 'money' | 'number' | 'datetime' | 'date'}>;
+  rows: Array<Record<string, string | number | null>>;
+  totals: Record<string, number>;
+  total: number;
+  page: number;
+  pageSize: number;
+  cashiers: Array<{id: string; name: string}>;
+  rangeLabel: string;
+};
+
+/** Reports > Detailed: one page of rows for a tab. */
+export async function getReportDetail(
+  view: DetailView,
+  range: ReportRange,
+  filters: DetailFilters,
+  page: number,
+  pageSize = 50
+) {
+  const res = await httpClient.get<ReportDetail>('/report/detail', {
+    params: {...toParams(range), view, page, pageSize, ...filters}
+  });
+  return res.data;
+}
+
+/** Every matching row as CSV or PDF (same columns as the screen). */
+export async function downloadReportDetail(
+  view: DetailView,
+  range: ReportRange,
+  filters: DetailFilters,
+  format: 'csv' | 'pdf'
+) {
+  const res = await httpClient.get<Blob>('/report/detail', {
+    params: {...toParams(range), view, ...filters, format},
+    responseType: 'blob',
+    timeout: 60_000
+  });
+  const disposition = String(res.headers?.['content-disposition'] ?? '');
+  const match = disposition.match(/filename="?([^";]+)"?/i);
+  return {blob: res.data, filename: match?.[1] ?? `donclaudios-${view}-detailed.${format}`};
+}
+
 export async function getReportPdf(view: ReportView, range: ReportRange) {
   const res = await httpClient.get<Blob>('/report/pdf', {
     params: {...toParams(range), view},

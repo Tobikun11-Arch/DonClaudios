@@ -45,6 +45,7 @@ import {
   type XenditInvoice
 } from './xendit.service';
 import {ApiError} from '../utils/error';
+import {sendOrderStatusEmail} from './orderStatusEmail.service';
 import {orderScheduleService} from './orderSchedule.service';
 import {formatStoreDateTime, paymentReminderAt} from '../config/orderSchedule';
 
@@ -1562,8 +1563,9 @@ async function autoCancelUnpaidOrder(
     }
   }
 
-  await orderRepository.cancel(orderId, reason);
+  await orderRepository.cancel(orderId, reason, {id: null, type: 'system', name: 'Auto-cancel'});
   await orderRepository.updateFields(orderId, {paymentExpiresAt: null, cancelledBy: 'system'});
+  await sendOrderStatusEmail(orderId, 'cancelled');
   console.info(`[audit] order ${orderId} auto-cancelled: ${reason}`);
 
   await notifyStaff(

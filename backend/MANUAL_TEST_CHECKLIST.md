@@ -248,3 +248,61 @@ All tests passing means:
 - ✅ Fallback mechanisms work on errors
 - ✅ Backward compatibility maintained
 - ✅ UI/UX smooth and responsive
+
+---
+
+# Manual Test Checklist - Accounts, Order Tracking & Detailed Reports
+
+Use a test database (not the shared Atlas cluster) and test email/SMS settings.
+Set `GOOGLE_CLIENT_ID` (backend) and `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (frontend)
+to the same Google OAuth "Web application" client id, with
+`http://localhost:3000` added as an authorised JavaScript origin.
+
+### A. Delivery address in order details
+- [ ] Delivery order: customer order page, cashier order page and owner order drawer all show "Delivery to" with the address, map link, rider notes and who delivers.
+- [ ] Pick-up / reservation order: no "Delivery to" block.
+- [ ] Edit the customer's saved address after ordering: the order still shows the old address.
+
+### B. Order status emails
+- [ ] Pick-up order -> Ready: customer gets "ready for pick-up" (account email, or guest email).
+- [ ] Store-rider delivery -> On the way: "on the way" email with the delivery address.
+- [ ] Customer-booked courier -> Ready: "ready for your courier" email.
+- [ ] Cancel (store, customer, and payment auto-cancel): "cancelled" email with the reason.
+- [ ] Press the same status twice: only one email.
+- [ ] Profile > Sign-in & security > Order update emails OFF: no emails. Walk-in orders never email.
+
+### C. Courier booked
+- [ ] Courier order, confirmed: "I've booked my courier" appears in "Message the store" (account and guest).
+- [ ] Send with/without rider details: customer message + automatic reply appear in the chat; cashiers get a notification + push; order card shows "Courier booked · ETA".
+- [ ] Cashier clicks "Got it, we'll have it ready": staff reply appears in the customer's chat with the cashier's name; panel shows "Replied by ...".
+- [ ] Pending, completed or non-courier order: button hidden, and the API refuses.
+
+### D. Staff logs
+- [ ] Cashier signs in / out (web and mobile POS): owner gets a notification (unless Settings > Notifications > Cashier sign-ins is off).
+- [ ] Owner home > Staff activity: on shift now, orders handled today, recent events.
+- [ ] Order timeline (owner drawer, cashier order page) shows who moved each status; old orders show times only.
+
+### E. Google sign-in & phone prompt
+- [ ] New Google user: account created, signed in, phone banner + one-time pop-up shown.
+- [ ] Ordering (regular and holiday pre-order) is refused until the phone is verified (Globe/DITO by SMS code; Smart/TNT saved via the verified email).
+- [ ] Google with an email that already has a password account: accounts linked, no duplicate.
+- [ ] Google with a cashier/owner email: refused.
+- [ ] Unverified Google user: cart "Go To Checkout", "Place order" and "Place pre-order" are greyed out with a "Verify now" link; they work again right after verifying.
+- [ ] Profile: link / unlink Google (unlink blocked until a password is set), Set a password for Google-only accounts.
+- [ ] Google-only account: email+password sign-in says to use Google; Delete account works without a password field.
+
+### F. Two-step verification (MFA)
+- [ ] Turn on: code emailed, 8 backup codes shown once, notice email sent.
+- [ ] Sign in (password and Google): code step appears; wrong code x5 locks until a new code; resend works.
+- [ ] Backup code signs in once and can't be reused.
+- [ ] Turn off with a code or backup code; notice email sent.
+- [ ] Authenticator app: choose it, scan the QR with Google/Microsoft Authenticator, enter the app code -> on, backup codes shown.
+- [ ] Sign in with the app on: the code page says to open the app (no email sent, no Resend); the same app code can't be used twice.
+- [ ] Email user can "Switch to authenticator app"; app user turns off with an app code or backup code.
+
+### G. Detailed reports
+- [ ] Reports > Sales/Operations/Products/Customers: Summary | Detailed switch; `?mode=detailed` survives refresh.
+- [ ] Staff tab always shows the detailed log.
+- [ ] Filters (cashier, order type, payment, status), 50 rows per page, totals over all rows.
+- [ ] Export CSV and Export PDF contain the same rows as the screen (all pages).
+- [ ] Phone width: rows become tap-to-expand cards, no sideways page scroll.

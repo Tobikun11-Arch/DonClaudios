@@ -63,5 +63,12 @@ export const scheduleQuoteDto = z.object({
 export type ScheduleQuoteDto = z.infer<typeof scheduleQuoteDto>;
 
 export type ListAllOrdersQuery = z.infer<typeof listAllOrdersQueryDto>;
+export const courierBookingDto = z.object({
+  riderName: z.string().trim().max(80).optional().nullable(),
+  plateNumber: z.string().trim().max(20).optional().nullable(),
+  trackingLink: z.string().trim().max(500).optional().nullable(),
+  eta: z.string().trim().max(40).optional().nullable()
+});
+
 export type GuestOtpSendDto = z.infer<typeof guestOtpSendDto>;
 export type GuestOtpVerifyDto = z.infer<typeof guestOtpVerifyDto>;

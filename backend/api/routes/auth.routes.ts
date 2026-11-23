@@ -14,14 +14,23 @@ import {
   deleteAccountDto,
   forgotPasswordDto,
   verifyResetCodeDto,
-  resetPasswordDto
+  resetPasswordDto,
+  googleSignInDto,
+  setPasswordDto,
+  phoneSendCodeDto,
+  phoneVerifyDto,
+  mfaCodeDto,
+  mfaChallengeDto,
+  mfaVerifyDto,
+  orderEmailPrefDto
 } from '../dtos/auth.dto';
 import {
   authLimiter,
   loginLimiter,
   sessionLimiter
 } from '../middleware/rateLimit';
-import {requireAuth, requireAdmin} from '../middleware/auth';
+import {requireAuth, requireAdmin, requireCustomer} from '../middleware/auth';
+import {accountController} from '../controllers/account.controller';
 
 const router = Router();
 
@@ -52,6 +61,24 @@ router.post(
 );
 
 router.post('/login', loginLimiter, validate(loginDto), authController.login);
+
+// "Continue with Google" (customers) and the second sign-in step (MFA).
+router.post('/google', loginLimiter, validate(googleSignInDto), accountController.googleSignIn);
+router.post('/mfa/verify', loginLimiter, validate(mfaVerifyDto), accountController.mfaVerify);
+router.post('/mfa/resend', authLimiter, validate(mfaChallengeDto), accountController.mfaResend);
+
+// Signed-in customer: connected accounts, password, phone, MFA, email prefs.
+router.post('/google/link', sessionLimiter, requireAuth, requireCustomer, validate(googleSignInDto), accountController.linkGoogle);
+router.post('/google/unlink', sessionLimiter, requireAuth, requireCustomer, accountController.unlinkGoogle);
+router.post('/password/set', authLimiter, requireAuth, requireCustomer, validate(setPasswordDto), accountController.setPassword);
+router.post('/phone/send-code', authLimiter, requireAuth, requireCustomer, validate(phoneSendCodeDto), accountController.sendPhoneCode);
+router.post('/phone/verify', authLimiter, requireAuth, requireCustomer, validate(phoneVerifyDto), accountController.verifyPhone);
+router.post('/mfa/send-code', authLimiter, requireAuth, requireCustomer, accountController.sendMfaCode);
+router.post('/mfa/enable', authLimiter, requireAuth, requireCustomer, validate(mfaCodeDto), accountController.enableMfa);
+router.post('/mfa/totp/setup', authLimiter, requireAuth, requireCustomer, accountController.startTotpSetup);
+router.post('/mfa/totp/enable', authLimiter, requireAuth, requireCustomer, validate(mfaCodeDto), accountController.enableTotp);
+router.post('/mfa/disable', authLimiter, requireAuth, requireCustomer, validate(mfaCodeDto), accountController.disableMfa);
+router.put('/me/order-emails', sessionLimiter, requireAuth, requireCustomer, validate(orderEmailPrefDto), accountController.setOrderEmails);
 
 router.post(
   '/forgot-password',

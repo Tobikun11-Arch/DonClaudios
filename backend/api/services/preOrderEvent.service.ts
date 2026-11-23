@@ -16,6 +16,7 @@ import {notificationRepository} from '../repositories/notification.repository';
 import {notificationService} from './notification.service';
 import {notifyOwners} from './ownerNotify.service';
 import {ApiError} from '../utils/error';
+import {needsPhoneVerification} from './accountSecurity.service';
 
 /*
  * Dated pre-orders ("Holiday pre-orders").
@@ -694,6 +695,10 @@ export const preOrderEventService = {
   },
 
   async placeOrderUnlocked(customerId: string, eventId: string, input: PlacePreOrderInput) {
+    const buyer = await CustomerModel.findById(customerId).select('signupMethod phoneVerified phoneNumber phoneConfirmedByEmail').lean().exec();
+    if (buyer && needsPhoneVerification(buyer as any)) {
+      throw new ApiError(409, 'PHONE_NOT_VERIFIED', 'Verify your phone number in your profile before placing an order.');
+    }
     const event = await this.findOrThrow(eventId);
     if (event.status !== 'published') {
       throw new ApiError(409, 'PREORDER_NOT_OPEN', 'This pre-order date is not accepting orders');

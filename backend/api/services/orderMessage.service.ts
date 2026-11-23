@@ -200,13 +200,17 @@ export const orderMessageService = {
     const admin = (await adminRepository.findById(adminId)) as
       | (AdminDocument & {_id: unknown})
       | null;
-    const senderName = admin
-      ? [admin.firstName, admin.lastName].filter(Boolean).join(' ')
+    const cashier = admin
+      ? null
+      : ((await cashierRepository.findById(adminId)) as (CashierDocument & {_id: unknown}) | null);
+    const staff = admin ?? cashier;
+    const senderName = staff
+      ? [staff.firstName, staff.lastName].filter(Boolean).join(' ')
       : "DonClaudio's Team";
 
     const message = await orderMessageRepository.create({
       orderId: order._id as any,
-      adminId: adminId as any,
+      adminId: admin ? (adminId as any) : null,
       authorType: 'admin',
       senderName: senderName || "DonClaudio's Team",
       body: body.trim()

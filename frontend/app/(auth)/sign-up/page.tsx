@@ -13,6 +13,11 @@ import LocationPicker from '@/features/order/components/LocationPicker';
 import {HeardFromPicker} from '@/features/customer/components/HeardFromPicker';
 import {useRouter} from 'next/navigation';
 import {registerCustomer} from '@/lib/api/authApi';
+import {useQueryClient} from '@tanstack/react-query';
+import {signInWithGoogle} from '@/lib/api/accountSecurityApi';
+import {getAcquisitionPayload} from '@/lib/acquisition';
+import {GOOGLE_CLIENT_ID, GoogleSignInButton} from '@/features/account/components/GoogleSignInButton';
+import {finishSignIn} from '@/features/account/signIn';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {sanitizePhone, sanitizeName} from '@/lib/validation/numeric';
 import {normalizePH, detectCarrier, toAppCarrier} from '@/lib/phone';export default function SignUpPage() {
@@ -31,6 +36,8 @@ import {normalizePH, detectCarrier, toAppCarrier} from '@/lib/phone';export defa
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const [googleError, setGoogleError] = useState<string | null>(null);
 
   const passwordCheck = useMemo(() => validatePassword(password), [password]);
   const passwordValid = passwordCheck.valid;
@@ -100,6 +107,26 @@ import {normalizePH, detectCarrier, toAppCarrier} from '@/lib/phone';export defa
     }
   };
 
+  // Google: the account is created (or linked) and signed in at once. A
+  // phone number is asked for afterwards, before the first order.
+  const handleGoogle = async (credential: string) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setGoogleError(null);
+    try {
+      const result = await signInWithGoogle(credential, getAcquisitionPayload());
+      if (result.mfaRequired) {
+        router.push('/sign-in');
+        return;
+      }
+      finishSignIn(result.user, router, queryClient);
+    } catch (error) {
+      setGoogleError(getFriendlyErrorMessage(error, 'Google sign-up failed. Please try again.'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -109,6 +136,22 @@ import {normalizePH, detectCarrier, toAppCarrier} from '@/lib/phone';export defa
         <p className="text-muted-foreground">
           Join DonClaudio&apos;s and start ordering
         </p>
+      </div>
+
+      <div className="space-y-3">
+        <GoogleSignInButton text="signup_with" onCredential={handleGoogle} disabled={isSubmitting} />
+        {googleError ? (
+          <div className="rounded-md border border-destructive/30 px-3 py-2 text-sm text-destructive">
+            {googleError}
+          </div>
+        ) : null}
+        {GOOGLE_CLIENT_ID ? (
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-[#D9DCD5]" />
+            <span className="text-[13px] text-[#6B736D]">or sign up with email</span>
+            <div className="h-px flex-1 bg-[#D9DCD5]" />
+          </div>
+        ) : null}
       </div>
 
       <form onSubmit={handleSubmit} onKeyDown={enterNavigation} className="space-y-4">

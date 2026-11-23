@@ -199,10 +199,12 @@ function ChangePasswordForm({email}: {email?: string}) {
 
 function DeleteAccountDialog({
   open,
-  onClose
+  onClose,
+  hasPassword = true
 }: {
   open: boolean;
   onClose: () => void;
+  hasPassword?: boolean;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -222,7 +224,7 @@ function DeleteAccountDialog({
 
   if (!open) return null;
 
-  const canDelete = password.length > 0 && confirmText === 'DELETE' && !isDeleting;
+  const canDelete = (!hasPassword || password.length > 0) && confirmText === 'DELETE' && !isDeleting;
 
   const handleDelete = async (e: FormEvent) => {
     e.preventDefault();
@@ -294,6 +296,7 @@ function DeleteAccountDialog({
         </div>
 
         <form onSubmit={handleDelete} onKeyDown={enterNavigation} className="mt-5 space-y-3">
+          {hasPassword ? (
           <div className="space-y-1.5">
             <label
               htmlFor="delete-password"
@@ -312,6 +315,7 @@ function DeleteAccountDialog({
               autoFocus
             />
           </div>
+          ) : null}
           <div className="space-y-1.5">
             <label
               htmlFor="delete-confirm"
@@ -410,9 +414,11 @@ export function AccountSection({user}: {user: MeUser | undefined}) {
         </div>
       </div>
 
-      <div className="border-t border-gray-100 pt-4 dark:border-gray-700">
-        <ChangePasswordForm email={user?.email} />
-      </div>
+      {user?.hasPassword !== false ? (
+        <div className="border-t border-gray-100 pt-4 dark:border-gray-700">
+          <ChangePasswordForm email={user?.email} />
+        </div>
+      ) : null}
 
       <div className="space-y-3 border-t border-gray-100 pt-4 dark:border-gray-700">
         <div>
@@ -447,7 +453,11 @@ export function AccountSection({user}: {user: MeUser | undefined}) {
         </div>
       </div>
 
-      <DeleteAccountDialog open={deleteOpen} onClose={() => setDeleteOpen(false)} />
+      <DeleteAccountDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        hasPassword={user?.hasPassword !== false}
+      />
     </div>
   );
 }

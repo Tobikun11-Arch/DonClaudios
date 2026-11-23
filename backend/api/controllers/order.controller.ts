@@ -60,6 +60,10 @@ import {orderScheduleService} from '../services/orderSchedule.service';
 import {formatStoreDateTime} from '../config/orderSchedule';
 import type {ListAllOrdersQuery} from '../dtos/order.dto';
 import {sanitizeAcquisition} from '../config/acquisition';
+import {resolveActor} from '../utils/actor';
+import {needsPhoneVerification} from '../services/accountSecurity.service';
+import {sendOrderStatusEmail} from '../services/orderStatusEmail.service';
+import {staffActivityService} from '../services/staffActivity.service';
 
 async function notifyCashiersOfNewOrder(orderId: string, totalAmount: number) {
   try {
@@ -530,8 +534,9 @@ export const orderController = {
 
       const reason = reasonText;
 
-      await orderRepository.cancel(String(order._id), reason);
+      await orderRepository.cancel(String(order._id), reason, await resolveActor(req.auth));
       await orderRepository.updateFields(String(order._id), {cancelledBy: 'customer'});
+      await sendOrderStatusEmail(String(order._id), 'cancelled');
 
       if (order.isPreOrder) {
         // Close open payment links and refund per the policy (before the
@@ -713,6 +718,14 @@ export const orderController = {
         req.auth.userId as string
       ]);
       const customerProfile = customerList[0];
+      // Google accounts start without a phone: verify one before ordering.
+      if (customerProfile && needsPhoneVerification(customerProfile as any)) {
+        throw new ApiError(
+          409,
+          'PHONE_NOT_VERIFIED',
+          'Verify your phone number in your profile before placing an order.'
+        );
+      }
 
       const productIds = normalizedItems.map(i => i.productId);
       const {itemPreps, estimatedPrepMinutes, estimatedReadyAt} =
@@ -1964,7 +1977,9 @@ export const orderController = {
       await orderRepository.updateStatusWithHistory(
         String(order._id),
         'cancelled',
-        new Date()
+        new Date(),
+        undefined,
+        await resolveActor(req.auth)
       );
 
       const updated = await orderRepository.findById(req.params.id);
@@ -2153,12 +2168,23 @@ export const orderController = {
           ? req.body.reason.trim()
           : undefined;
 
+      const actor = await resolveActor(req.auth);
       await orderRepository.updateStatusWithHistory(
         req.params.id,
         status,
         new Date(),
-        cancelReason
+        cancelReason,
+        actor
       );
+      if (actor.type === 'cashier' || actor.type === 'admin') {
+        await staffActivityService.record({
+          actor,
+          action: 'order_status',
+          orderId: req.params.id,
+          meta: {status, ...(cancelReason ? {reason: cancelReason} : {})},
+          req
+        });
+      }
 
       // Who is cancelling decides the refund (config/refundPolicy.ts):
       // the store -> everything back incl. fees; the customer asked (by
@@ -2247,6 +2273,9 @@ export const orderController = {
           console.error('Failed to set the payment deadline', error);
         }
       }
+
+      // Email the customer (ready / on the way / cancelled). Never throws.
+      await sendOrderStatusEmail(req.params.id, status);
 
       const updated = await orderRepository.findById(req.params.id);
 

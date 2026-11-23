@@ -4,6 +4,7 @@ import {BaseUserDocument, createBaseUserSchema} from './base/BaseUser.schema';
 export interface NotificationPreferences {
   account?: {
     'New login'?: boolean;
+    'Cashier sign-ins'?: boolean;
     'Password change'?: boolean;
   };
   reports?: {
@@ -74,7 +75,8 @@ const AdminSchema = new Schema<AdminDocument>(
         account: {
           type: {
             'New login': {type: Boolean, default: true},
-            'Password change': {type: Boolean, default: true}
+            'Password change': {type: Boolean, default: true},
+            'Cashier sign-ins': {type: Boolean, default: true}
           },
           default: undefined
         },

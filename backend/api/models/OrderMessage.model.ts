@@ -1,6 +1,7 @@
 import mongoose, {Schema} from 'mongoose';
 
-export type OrderMessageAuthorType = 'customer' | 'admin';
+/** `admin` = anyone at the store (owner or cashier); `system` = automatic replies. */
+export type OrderMessageAuthorType = 'customer' | 'admin' | 'system';
 
 export interface OrderMessageDocument extends mongoose.Document {
   orderId: mongoose.Types.ObjectId;
@@ -19,7 +20,7 @@ const OrderMessageSchema = new Schema<OrderMessageDocument>(
     adminId: {type: Schema.Types.ObjectId, ref: 'Admin', default: null},
     authorType: {
       type: String,
-      enum: ['customer', 'admin'],
+      enum: ['customer', 'admin', 'system'],
       required: true
     },
     senderName: {type: String, required: true, trim: true},

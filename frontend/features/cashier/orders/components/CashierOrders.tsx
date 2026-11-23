@@ -7,6 +7,7 @@ import {toast} from 'sonner';
 import {MessageCircle, Package, ChevronRight, ChevronDown, ChevronUp, User, Phone, MapPin, Clock, Globe, Store} from 'lucide-react';
 import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
 import OrderChatThread from '@/features/order/components/OrderChatThread';
+import {CourierBookedBadge, CourierBookingStaffPanel} from '@/features/order/components/CourierBooking';
 import {effectiveDownPaymentPercent, useDownPaymentQuery} from '@/lib/hooks/useDownPayment';
 import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
 import {Modal} from '@/features/owner/cashiers/components/Modal';
@@ -787,6 +788,7 @@ function OrderCard({
                   {orderStatusLabel(order)}
                 </span>
               )}
+              {!isWalkIn && <CourierBookedBadge order={order} />}
               {!isWalkIn && (
                 <OrderPrepBadge
                   timing={order.prepTiming}
@@ -1068,6 +1070,7 @@ function OrderCard({
           <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">
             Conversation with {customerDisplay(order)}
           </p>
+          <CourierBookingStaffPanel order={order} />
           {messagesQuery.isLoading ? (
             <SectionLoader label="Loading conversation" size={72} className="py-4" />
           ) : messagesQuery.isError ? (

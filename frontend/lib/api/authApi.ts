@@ -38,13 +38,7 @@ type RegisterResponse = {
   email: string;
 };
 
-type LoginResponse = {
-  user: {
-    id: string;
-    email: string;
-    type: 'admin' | 'cashier' | 'customer';
-  };
-};
+type LoginResponse = import('./accountSecurityApi').SignInResult;
 type LogoutResponse = {message: string};
 
 type MeResponse = {
@@ -64,6 +58,17 @@ type MeResponse = {
   occasions?: CustomerOccasion[];
   /** Customers only: false until the first-login dashboard guide is done. */
   onboardingTourDone?: boolean;
+  /** Customers only: account & security. */
+  phoneVerified?: boolean;
+  /** Google accounts must add and verify a phone before ordering. */
+  needsPhoneVerification?: boolean;
+  orderEmailUpdates?: boolean;
+  googleLinked?: boolean;
+  googleEmail?: string | null;
+  hasPassword?: boolean;
+  mfaEnabled?: boolean;
+  mfaMethod?: 'email' | 'totp' | null;
+  backupCodesLeft?: number;
   businessName?: string;
     businessLogo?: string;
     storeAddress?: string;
@@ -233,7 +238,7 @@ export async function getSessions() {
 }
 
 /** Permanently deletes the signed-in customer's account (password re-checked). */
-export async function deleteAccount(body: {password: string; confirmation: 'DELETE'}) {
+export async function deleteAccount(body: {password?: string; confirmation: 'DELETE'}) {
   const res = await httpClient.delete<{message: string}>('/auth/account', {
     data: body
   });

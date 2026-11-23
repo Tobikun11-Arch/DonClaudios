@@ -1,12 +1,15 @@
 'use client';
 
 import {
+  acknowledgeCourier,
+  bookCourier,
   listAdminOrderMessages,
   listFollowUpOrders,
   listOrderMessages,
   sendAdminOrderMessage,
   sendOrderMessage
 } from '@/lib/api/orderApi';
+import type {CourierBookingInput} from '@/lib/api/orderApi';
 import {
   adminNotificationsQueryKey,
   notificationsQueryKey
@@ -63,6 +66,31 @@ export function useSendAdminOrderMessageMutation() {
     onSuccess: async ({message}) => {
       await queryClient.invalidateQueries({queryKey: orderMessagesKey(message.orderId)});
       await queryClient.invalidateQueries({queryKey: notificationsQueryKey});
+      await queryClient.invalidateQueries({queryKey: followUpOrdersKey});
+    }
+  });
+}
+
+/** Customer / guest booked their courier: refresh the chat and the order. */
+export function useBookCourierMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({orderId, input, asGuest}: {orderId: string; input: CourierBookingInput; asGuest?: boolean}) =>
+      bookCourier(orderId, input, asGuest),
+    onSuccess: async (_data, {orderId}) => {
+      await queryClient.invalidateQueries({queryKey: orderMessagesKey(orderId)});
+      await queryClient.invalidateQueries({queryKey: ['orders']});
+    }
+  });
+}
+
+export function useAcknowledgeCourierMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({orderId, body}: {orderId: string; body?: string}) => acknowledgeCourier(orderId, body),
+    onSuccess: async (_data, {orderId}) => {
+      await queryClient.invalidateQueries({queryKey: orderMessagesKey(orderId)});
+      await queryClient.invalidateQueries({queryKey: ['orders']});
       await queryClient.invalidateQueries({queryKey: followUpOrdersKey});
     }
   });

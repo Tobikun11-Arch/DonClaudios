@@ -1,5 +1,6 @@
 'use client';
 
+import {PhoneGateNotice, usePhoneVerificationRequired} from '@/features/account/components/PhoneVerifyPrompt';
 import {useMemo, useState} from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -280,6 +281,7 @@ function OrderPanel({
       >
         {placing ? 'Placing pre-order…' : 'Place pre-order'}
       </button>
+      <PhoneGateNotice className="mt-2" />
 
       <PreOrderNextSteps
         className="mt-4"
@@ -340,6 +342,7 @@ export default function PreOrderCheckout({eventId}: {eventId: string}) {
   const router = useRouter();
   const {data: event, isLoading, isError} = useOpenPreOrder(eventId);
   const place = usePlacePreOrder(eventId);
+  const phoneRequired = usePhoneVerificationRequired();
   const [picked, setPicked] = useState<Map<string, Picked>>(new Map());
   const [receive, setReceive] = useState<Receive | null>(null);
   const [slotId, setSlotId] = useState<string | null>(null);
@@ -405,7 +408,7 @@ export default function PreOrderCheckout({eventId}: {eventId: string}) {
     });
   };
 
-  const canPlace = items.length > 0 && !!receive && !!slot;
+  const canPlace = items.length > 0 && !!receive && !!slot && !phoneRequired;
 
   const submit = async () => {
     if (!canPlace || !receive || !slot) return;

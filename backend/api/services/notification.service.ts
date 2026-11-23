@@ -139,7 +139,7 @@ export const notificationService = {
 
   async createForAdmin(data: {
     adminId: string;
-    type: 'review_submitted' | 'order_message' | 'low_stock' | 'new_order' | 'support_message' | 'points_adjustment' | 'order_status';
+    type: 'review_submitted' | 'order_message' | 'low_stock' | 'new_order' | 'support_message' | 'points_adjustment' | 'order_status' | 'staff_activity' | 'courier_booked';
     title: string;
     message: string;
     reviewId?: string;
@@ -151,7 +151,7 @@ export const notificationService = {
       try {
         const preferences = await adminRepository.getNotificationPreferences(data.adminId);
         const [section, item] = data.preferenceKey.split('.');
-        const isEnabled = preferences?.[section as keyof typeof preferences]?.[item as keyof typeof preferences[section]];
+        const isEnabled = (preferences as Record<string, Record<string, boolean | undefined> | undefined> | undefined)?.[section]?.[item];
         if (isEnabled === false) {
           return null;
         }
@@ -174,7 +174,7 @@ export const notificationService = {
 
   async createForCashier(data: {
     cashierId: string;
-    type: 'order_message' | 'order_status' | 'new_order' | 'order_overdue';
+    type: 'order_message' | 'order_status' | 'new_order' | 'order_overdue' | 'courier_booked';
     title: string;
     message: string;
     orderId?: string;

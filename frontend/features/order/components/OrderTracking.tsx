@@ -26,6 +26,7 @@ import {
 import {toast} from 'sonner';
 import {useEscapeKey} from '@/shared/motion/useEscapeKey';
 import CustomerOrderFollowUp from '@/features/order/components/CustomerOrderFollowUp';
+import {DeliveryDestination, hasDeliveryDestination} from '@/features/order/components/DeliveryDestination';
 import {courierLabel, customerStep, fulfillmentKind, fulfillmentLabel, statusFlow} from '@/lib/orders/orderFlow';
 import OrderPaymentCard from '@/features/order/components/OrderPaymentCard';
 import {OrderStatusNotices} from '@/features/order/components/OrderNotices';
@@ -383,6 +384,11 @@ export default function OrderTracking({
             )}
             <OrderStatusNotices order={order} />
             <OrderSummaryCard order={order} />
+            {hasDeliveryDestination(order) ? (
+              <div className="rounded-2xl bg-white shadow p-4 dark:bg-gray-900">
+                <DeliveryDestination order={order} className="border-0 p-0" />
+              </div>
+            ) : null}
             {!embedded ? (
               <CustomerOrderFollowUp
                 order={order}
