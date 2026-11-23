@@ -26,7 +26,8 @@ function SiteIntro() {
         <p>
           Creating an account is optional. You can sign up with your email or with &quot;Continue with
           Google&quot;, which only shares your name, email address and profile picture with us so we can set up
-          your account and send you order updates. Read our{' '}
+          your account and send you order updates. We use Google only for this sign-in. We do not use Google
+          APIs or your Google data to generate images, to create any AI content, or to train AI models. Read our{' '}
           <Link href="/privacy" className="underline font-medium">Privacy Policy</Link> and{' '}
           <Link href="/terms" className="underline font-medium">Terms &amp; Conditions</Link>.
         </p>

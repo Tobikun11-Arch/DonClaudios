@@ -24,11 +24,12 @@ export const privacy: LegalPageProps = {
     },
     {
       heading: "Google Sign-In",
-      summary: "What we receive from Google when you sign in with Google, and how we use it.",
+      summary: "What we receive from Google when you sign in with Google, how we use, store, share, and delete it.",
       body: [
         "You can create an account or sign in with \"Continue with Google\". This is optional; you can also sign up with an email and password.",
         "When you use it, Google shares only your basic profile with us: your Google account ID, name, email address, and profile picture. We do not request access to your Gmail, Contacts, Drive, Calendar, or any other Google data, and we never see your Google password.",
         "We use this information only to create and sign in to your DonClaudio's Lechon House account, to fill in your name and profile photo, and to send you order updates at that email address. We do not sell it, use it for advertising, or share it with anyone except the service providers listed below that host our website and database.",
+        "We do not use information received from Google to develop, improve, or train artificial intelligence or machine learning models, and we do not use Google APIs to generate images or any other AI content.",
         "DonClaudio's Lechon House's use and transfer of information received from Google APIs adheres to the Google API Services User Data Policy (https://developers.google.com/terms/api-services-user-data-policy), including the Limited Use requirements.",
         "You can unlink Google from your account at any time in your profile's account settings, or remove our access from your Google Account at https://myaccount.google.com/permissions. To have your account and its Google information deleted, contact us using the details in the Contact Us section.",
       ],
@@ -59,12 +60,19 @@ export const privacy: LegalPageProps = {
     {
       heading: "Storage & Security",
       summary: "The measures we use to protect your data.",
-      body: ["We use reasonable organizational and technical measures to protect your data. No system is completely secure, but we work to prevent unauthorized access, loss, or misuse."],
+      body: [
+        "We use reasonable organizational and technical measures to protect your data, including the information we receive from Google Sign-In.",
+        "Your data, including your Google account ID, name, email address, and profile picture, is stored in our MongoDB database. All traffic between your browser, our website, and our servers is encrypted with HTTPS (TLS), and passwords are stored only as one-way hashes. Access to customer data is limited to our authorized staff and only as needed to handle your orders.",
+        "No system is completely secure, but we work to prevent unauthorized access, loss, or misuse.",
+      ],
     },
     {
       heading: "Retention",
       summary: "How long we keep your data. Order records are kept for 3 years.",
-      body: ["We keep your data only as long as needed for the purposes above or as required by law. Order records are retained for 3 years."],
+      body: [
+        "We keep your data only as long as needed for the purposes above or as required by law. Order records are retained for 3 years.",
+        "Information we received from Google Sign-In is kept only while your account is active. If you unlink Google from your account, we delete your stored Google account ID and Google email. If you ask us to delete your account, we delete your Google information along with your account within 30 days, except order records we must keep by law.",
+      ],
     },
     {
       heading: "Your Rights",
