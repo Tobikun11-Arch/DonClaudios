@@ -79,6 +79,17 @@ export default function Footer({
           </div>
         </div>
 
+        {/* Plain statement of the site's purpose. Google's OAuth branding review
+            reads it on the home page, so keep it in the server-rendered footer. */}
+        <p className="border-t border-white/20 pt-6 mb-6 text-xs leading-relaxed opacity-75 max-w-4xl">
+          This is the official online ordering website of DonClaudio&apos;s Lechon House in Tanza, Cavite,
+          Philippines, for browsing the menu, ordering for pick-up or delivery, pre-orders, online payment and
+          order tracking. An account is optional. &quot;Continue with Google&quot; is used only to sign in and
+          shares only your name, email address and profile picture. We do not use Google APIs or Google data to
+          generate images, create AI content or train AI models. See our{' '}
+          <Link href="/privacy" className="underline hover:opacity-100">Privacy Policy</Link>.
+        </p>
+
         <div className="border-t border-white/20 pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm opacity-75">
             &copy; 2026 {footer.brandName}. All rights reserved.
