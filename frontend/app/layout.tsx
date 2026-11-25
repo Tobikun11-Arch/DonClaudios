@@ -49,18 +49,25 @@ export const metadata: Metadata = {
     ],
     apple: '/icons/apple-touch-icon.png'
   },
+  // './' resolves against each route's own path, so every page gets a
+  // self-referencing canonical (e.g. /order -> https://www.donclaudios.com/order)
+  // instead of all pages pointing at the homepage.
+  alternates: {canonical: './'},
+  robots: {index: true, follow: true, googleBot: {index: true, follow: true}},
   openGraph: {
     title: "DonClaudio's Lechon House | Lechon in Tanza, Cavite",
     description:
       "Crispy, flavorful lechon and traditional Filipino dishes in Tanza, Cavite. Order online for pick-up or delivery, or reserve a table.",
     url: 'https://www.donclaudios.com/',
+    siteName: "DonClaudio's Lechon House",
+    locale: 'en_PH',
     type: 'website',
     images: [
       {
         url: '/assets/logo.png',
-        width: 1200,
-        height: 630,
-        alt: "DonClaudio's Lechon House Preview"
+        width: 500,
+        height: 499,
+        alt: "DonClaudio's Lechon House logo"
       }
     ]
   }
