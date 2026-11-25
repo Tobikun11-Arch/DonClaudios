@@ -44,12 +44,26 @@ const restaurantJsonLd = {
   acceptsReservations: true
 };
 
+// WebSite structured data tells Google the site's name for the search result
+// header (instead of the bare "donclaudios.com").
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: "DonClaudio's Lechon House",
+  alternateName: ["DonClaudio's", 'Don Claudios'],
+  url: 'https://www.donclaudios.com/'
+};
+
 export default function PublicLayout({children}: {children: React.ReactNode}) {
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{__html: JSON.stringify(restaurantJsonLd)}}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{__html: JSON.stringify(websiteJsonLd)}}
       />
       <UxMotionScope exceptHome />
       <Header />
