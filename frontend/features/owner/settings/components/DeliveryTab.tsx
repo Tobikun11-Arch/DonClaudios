@@ -15,9 +15,9 @@ import {STORE_LOCATION, isPointInZone, type LatLng} from '@/lib/orders/deliveryM
 import {circleZone, farthestCornerKm} from '@/lib/orders/zoneGeometry';
 import {useDeliveryHeatmapQuery} from '@/lib/hooks/report/useReport';
 import type {DeliveryHeatmapDays} from '@/lib/types/report';
-import {sanitizeInteger} from '@/lib/validation/numeric';
 import {cn} from '@/lib/utils';
 import {enterNavigation} from '@/shared/utils/enterNavigation';
+import {MoneyInput} from '@/shared/components/MoneyInput';
 
 const MAX_MIN_SUBTOTAL = 1_000_000;
 const MIN_RANGE_KM = 0.5;
@@ -241,15 +241,14 @@ export function DeliveryTab() {
               </div>
             </div>
             <div className="shrink-0 sm:w-[200px]">
-              <Input
+              <MoneyInput
                 id="free-delivery-min"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
+                allowCents={false}
+                maxDigits={7}
                 value={form.minSubtotal}
-                onChange={e => edit({minSubtotal: sanitizeInteger(e.target.value).slice(0, 7)})}
+                onValueChange={n => edit({minSubtotal: n == null ? '' : String(n)})}
                 className="min-h-[44px]"
-                placeholder="0"
+                placeholder="0.00"
               />
             </div>
           </div>

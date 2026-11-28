@@ -31,6 +31,7 @@ import {AllergenChecklist} from './AllergenChecklist';
 import {IngredientChipsInput} from './IngredientChipsInput';
 import {enterNavigation} from '@/shared/utils/enterNavigation';
 import {Modal} from './Modal';
+import {MoneyInput} from '@/shared/components/MoneyInput';
 
 interface Props {
   open: boolean;
@@ -272,13 +273,12 @@ export function ProductFormModal({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="price">Price</Label>
-            <Input
+            <MoneyInput
               id="price"
               required
-              inputMode="decimal"
               value={form.price}
-              onChange={e => onFormChange('price', sanitizeDecimal(e.target.value))}
-              placeholder="e.g. 4500"
+              onValueChange={n => onFormChange('price', n == null ? '' : String(n))}
+              placeholder="e.g. 4,500.00"
             />
           </div>
           {promoBundle ? (
@@ -786,14 +786,11 @@ export function ProductFormModal({
                 {form.promoType === 'fixed_amount' && (
                   <div className="space-y-1.5">
                     <Label htmlFor="discountAmount">Discount Amount (₱)</Label>
-                    <Input
+                    <MoneyInput
                       id="discountAmount"
-                      inputMode="decimal"
                       value={form.discountAmount}
-                      onChange={e =>
-                        onFormChange('discountAmount', sanitizeDecimal(e.target.value))
-                      }
-                      placeholder="e.g. 50"
+                      onValueChange={n => onFormChange('discountAmount', n == null ? '' : String(n))}
+                      placeholder="e.g. 50.00"
                       disabled={isDisabled}
                     />
                   </div>

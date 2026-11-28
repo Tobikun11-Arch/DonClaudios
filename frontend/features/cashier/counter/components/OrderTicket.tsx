@@ -9,6 +9,8 @@ import {
   type CartLine,
   type PaymentMethod
 } from '../counterShared';
+import {MoneyInput} from '@/shared/components/MoneyInput';
+import {formatMoney} from '@/lib/utils/formatNumber';
 
 export type TicketBusy = 'charge' | 'save' | null;
 
@@ -194,13 +196,11 @@ export default function OrderTicket({
             <label className="flex items-center gap-2 rounded-xl border border-gray-200 px-3 focus-within:border-[#2d4a35] focus-within:ring-2 focus-within:ring-[#2d4a35]/20">
               <span className="shrink-0 text-sm text-gray-500">Cash received</span>
               <span className="ml-auto text-sm text-gray-400">₱</span>
-              <input
-                inputMode="decimal"
+              <MoneyInput
+                plain
                 value={cashReceived}
-                onChange={event =>
-                  onCashReceivedChange(event.target.value.replace(/[^0-9.]/g, ''))
-                }
-                placeholder={String(total)}
+                onValueChange={n => onCashReceivedChange(n == null ? '' : String(n))}
+                placeholder={formatMoney(total)}
                 disabled={isBusy}
                 className="h-11 w-24 bg-transparent text-right text-base font-semibold tabular-nums text-gray-900 outline-none placeholder:text-gray-300"
               />

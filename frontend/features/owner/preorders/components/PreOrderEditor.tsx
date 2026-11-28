@@ -22,6 +22,7 @@ import {
 import {todayInStoreTimezone} from '@/lib/preOrder/preOrder';
 import {findSizeConflicts} from '@/lib/preOrder/sizeOverlap';
 import {enterNavigation} from '@/shared/utils/enterNavigation';
+import {MoneyInput} from '@/shared/components/MoneyInput';
 
 const PAST_DATE_MESSAGE = 'Pickup date cannot be in the past';
 
@@ -516,15 +517,15 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
                           value={s.description}
                           onChange={e => updateSize(p.key, s.key, {description: e.target.value})}
                         />
-                        <input
-                          type="number"
+                        <MoneyInput
+                          plain
                           min={1}
                           className={inputCls}
                           required
                           placeholder="Price"
                           aria-label="Price"
                           value={s.price}
-                          onChange={e => updateSize(p.key, s.key, {price: e.target.value})}
+                          onValueChange={n => updateSize(p.key, s.key, {price: n == null ? '' : String(n)})}
                         />
                         <div>
                           <input

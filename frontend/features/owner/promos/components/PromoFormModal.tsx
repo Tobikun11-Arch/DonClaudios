@@ -10,6 +10,7 @@ import {type DragEvent, type FormEvent} from 'react';
 import {type PromoFormState} from '@/lib/types/promos';
 import {Modal} from './Modal';
 import {enterNavigation} from '@/shared/utils/enterNavigation';
+import {MoneyInput} from '@/shared/components/MoneyInput';
 
 interface Props {
   open: boolean;
@@ -164,13 +165,12 @@ export function PromoFormModal({
           {form.promoType === 'bundle' && (
             <div className="space-y-1.5">
               <Label htmlFor="price">Price (₱)</Label>
-              <Input
+              <MoneyInput
                 id="price"
-              required
-                inputMode="decimal"
+                required
                 value={form.price}
-                onChange={e => onFormChange('price', sanitizeDecimal(e.target.value))}
-                placeholder="e.g. 499"
+                onValueChange={n => onFormChange('price', n == null ? '' : String(n))}
+                placeholder="e.g. 499.00"
                 disabled={isDisabled}
               />
             </div>
@@ -194,13 +194,12 @@ export function PromoFormModal({
           {form.promoType === 'fixed_amount' && (
             <div className="space-y-1.5">
               <Label htmlFor="discountAmount">Discount Amount (₱)</Label>
-              <Input
+              <MoneyInput
                 id="discountAmount"
-              required
-                inputMode="decimal"
+                required
                 value={form.discountAmount}
-                onChange={e => onFormChange('discountAmount', sanitizeDecimal(e.target.value))}
-                placeholder="e.g. 50"
+                onValueChange={n => onFormChange('discountAmount', n == null ? '' : String(n))}
+                placeholder="e.g. 50.00"
                 disabled={isDisabled}
               />
             </div>

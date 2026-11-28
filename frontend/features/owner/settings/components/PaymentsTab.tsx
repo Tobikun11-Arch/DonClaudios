@@ -20,6 +20,7 @@ import {
 import {sanitizeInteger} from '@/lib/validation/numeric';
 import {SettingDivider, SettingRow} from './SettingRow';
 import {enterNavigation} from '@/shared/utils/enterNavigation';
+import {MoneyInput} from '@/shared/components/MoneyInput';
 
 const PRESETS = [20, 30, 50, 70];
 const EXAMPLE_TOTAL = 10_000;
@@ -279,13 +280,12 @@ export function PaymentsTab() {
                       <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-400">
                         ₱
                       </span>
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
+                      <MoneyInput
+                        allowCents={false}
+                        maxDigits={7}
                         aria-label={`${meta.title} minimum order for a down payment`}
                         value={r.minOrder}
-                        onChange={e => patch(flow, {minOrder: sanitizeInteger(e.target.value).slice(0, 7)})}
+                        onValueChange={n => patch(flow, {minOrder: n == null ? '' : String(n)})}
                         className="min-h-[44px] pl-7"
                         placeholder="All orders"
                       />

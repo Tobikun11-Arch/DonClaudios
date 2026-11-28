@@ -20,6 +20,7 @@ import {
 } from '@/config/rewards';
 import {SettingRow} from './SettingRow';
 import {enterNavigation} from '@/shared/utils/enterNavigation';
+import {MoneyInput} from '@/shared/components/MoneyInput';
 
 /** Form values. Kept as strings so the fields can be cleared while typing. */
 type Draft = {
@@ -125,16 +126,15 @@ export function RewardsTab() {
             title="For every (₱)"
             description="The amount spent to earn those points. Delivery fees never earn points."
             control={
-              <Input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
+              <MoneyInput
+                allowCents={false}
+                maxDigits={6}
                 required
                 aria-label="For every peso amount"
                 value={form.pesos}
-                onChange={e => edit({pesos: sanitizeInteger(e.target.value).slice(0, 6)})}
+                onValueChange={n => edit({pesos: n == null ? '' : String(n)})}
                 className="min-h-[44px]"
-                placeholder="1"
+                placeholder="1.00"
               />
             }
           />
