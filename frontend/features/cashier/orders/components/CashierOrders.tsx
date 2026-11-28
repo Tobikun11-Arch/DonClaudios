@@ -34,6 +34,7 @@ import {
   staffStatusLabel
 } from '@/lib/orders/orderFlow';
 import SectionLoader from '@/shared/components/SectionLoader';
+import {formatPeso} from '@/lib/utils/formatNumber';
 
 export const ORDER_STATUSES = [
   'pending',
@@ -812,7 +813,7 @@ function OrderCard({
                 ? `Order ${order.orderNumber}`
                 : `Order #${String(order._id).slice(-6).toUpperCase()}`}
               {!isWalkIn && ` • ${orderKindLabel(order)}`}
-              {' • '}₱{order.totalAmount}.00
+              {' • '}{formatPeso(order.totalAmount, true)}
               <PreOrderBadge order={order} className="ml-2" />
               {order.isGuest && (
                 <span className="ml-2 rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
@@ -1218,8 +1219,5 @@ function getItemImage(item: OrderHistoryItem) {
 }
 
 function money(value: number) {
-  return `₱${(Number.isFinite(value) ? value : 0).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })}`;
+  return formatPeso(value, true);
 }

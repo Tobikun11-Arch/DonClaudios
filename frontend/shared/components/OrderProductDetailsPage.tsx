@@ -398,7 +398,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
               </span>
               {cartUniqueCount > 0 && (
                 <span className="ml-2 text-sm font-semibold text-[#2d4a35] dark:text-[#7ed4a0]">
-                  ₱{cartSubtotal}.00
+                  {formatPeso(cartSubtotal, true)}
                 </span>
               )}
             </Button>
@@ -461,11 +461,11 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                       {product.name}
                     </div>
                     <div className="text-[32px] leading-[1.15] font-medium mt-1 break-words">
-                      ₱{promoState.discountPrice}.00
+                      {formatPeso(promoState.discountPrice, true)}
                     </div>
                     {promoState.originalPrice > promoState.discountPrice && (
                       <p className="text-[15px] text-[#C9D8CD] line-through mt-1">
-                        ₱{promoState.originalPrice}.00
+                        {formatPeso(promoState.originalPrice, true)}
                       </p>
                     )}
                     {promoState.countdown && (
@@ -538,7 +538,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                         onClick={handleAddToCart}
                         className="flex-1 h-13.5 rounded-full text-[17px] font-medium bg-[#2F4A3A] text-white"
                       >
-                        Add to cart · ₱{promoState.discountPrice * qty}.00
+                        Add to cart · {formatPeso(promoState.discountPrice * qty, true)}
                       </Button>
                     </div>
                     <p className="mt-5 text-[13px] leading-relaxed text-gray-500 dark:text-gray-400">
@@ -575,11 +575,11 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                         return (
                           <div>
                             <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                              ₱{unitPrice}.00
+                              {formatPeso(unitPrice, true)}
                             </p>
                             {isDiscounted ? (
                               <p className="text-[11px] text-gray-400 line-through">
-                                ₱{product.price}.00
+                                {formatPeso(product.price, true)}
                               </p>
                             ) : null}
                           </div>
@@ -659,7 +659,7 @@ export default function OrderProductDetailsPage({id}: {id: string}) {
                         ? 'Pre-order closed'
                         : isPreOrder && !preOrderOrderable
                           ? preOrder.statusLine || 'Pre-order not open yet'
-                          : `Add to Cart - ₱${total}.00`}
+                          : `Add to Cart - ${formatPeso(total, true)}`}
                     </Button>
                   </div>
                 </div>

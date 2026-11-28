@@ -57,6 +57,7 @@ import OrderTimingPicker, {
 } from '@/features/order/components/OrderTimingPicker';
 import {CheckoutOrderNotices} from '@/features/order/components/OrderNotices';
 import type {ScheduleQuote} from '@/lib/orders/orderSchedule';
+import {formatPeso} from '@/lib/utils/formatNumber';
 
 const STORE = {
   lat: 14.39092185435405,
@@ -768,17 +769,17 @@ export default function CustomerCheckoutPage() {
                             {item.name}
                           </p>
                           <p className="shrink-0 text-sm font-extrabold text-gray-900 dark:text-gray-100">
-                            ₱{unitPrice * item.quantity}.00
+                            {formatPeso(unitPrice * item.quantity, true)}
                           </p>
                         </div>
 
                         <div className="mt-0.5">
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            ₱{unitPrice}.00 each
+                            {formatPeso(unitPrice, true)} each
                           </p>
                           {isDiscounted ? (
                             <p className="text-[11px] text-gray-400 line-through">
-                              ₱{item.price}.00
+                              {formatPeso(item.price, true)}
                             </p>
                           ) : null}
                         </div>
@@ -829,7 +830,7 @@ export default function CustomerCheckoutPage() {
               <div className="pt-1 space-y-2">
                 <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
                   <span className="text-gray-500 dark:text-gray-400">Subtotal</span>
-                  <span className="font-semibold">₱{subtotal}.00</span>
+                  <span className="font-semibold">{formatPeso(subtotal, true)}</span>
                 </div>
               </div>
 
@@ -838,7 +839,7 @@ export default function CustomerCheckoutPage() {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Total</span>
                 <span className="text-2xl font-extrabold text-gray-900 dark:text-gray-100">
-                  ₱{total}.00
+                  {formatPeso(total, true)}
                 </span>
               </div>
               {orderType === 'Delivery' && deliveryMode === 'LALAMOVE' ? (
@@ -902,7 +903,7 @@ export default function CustomerCheckoutPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Total</span>
                   <span className="text-2xl font-extrabold text-gray-900 dark:text-gray-100">
-                    ₱{total}.00
+                    {formatPeso(total, true)}
                   </span>
                 </div>
                 {checkoutButton}

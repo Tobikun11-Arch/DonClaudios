@@ -3,29 +3,14 @@
 import type {ReactNode} from 'react';
 import {cn} from '@/lib/utils';
 import type {ReportKpi} from '@/lib/types/report';
+import {formatNumber, formatPeso} from '@/lib/utils/formatNumber';
 
-const PESO = new Intl.NumberFormat('en-PH', {
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0
-});
-const PESO_CENTS = new Intl.NumberFormat('en-PH', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2
-});
-const NUM = new Intl.NumberFormat('en-PH');
-
-export function formatPeso(value: number, cents = false) {
-  return `₱${(cents ? PESO_CENTS : PESO).format(value)}`;
-}
+export {formatNumber, formatPeso};
 
 export function formatCompactPeso(value: number) {
   if (Math.abs(value) >= 1_000_000) return `₱${(value / 1_000_000).toFixed(1)}M`;
   if (Math.abs(value) >= 1_000) return `₱${(value / 1_000).toFixed(value >= 10_000 ? 0 : 1)}k`;
-  return `₱${PESO.format(value)}`;
-}
-
-export function formatNumber(value: number) {
-  return NUM.format(value);
+  return formatPeso(value);
 }
 
 /** Applies the KPI's own `format` so a percent never renders without its sign. */
@@ -34,7 +19,7 @@ export function formatKpiValue(kpi: ReportKpi) {
     case 'peso':
       return formatPeso(kpi.value, kpi.value % 1 !== 0);
     case 'percent':
-      return `${NUM.format(Math.round(kpi.value * 10) / 10)}%`;
+      return `${formatNumber(Math.round(kpi.value * 10) / 10)}%`;
     case 'minutes':
       return `${Math.round(kpi.value)} min`;
     default:
@@ -45,7 +30,7 @@ export function formatKpiValue(kpi: ReportKpi) {
 export function formatDelta(delta?: number | null) {
   if (delta === null || delta === undefined) return null;
   if (delta === 0) return 'No change';
-  return `${delta > 0 ? '+' : ''}${NUM.format(Math.round(delta * 10) / 10)}%`;
+  return `${delta > 0 ? '+' : ''}${formatNumber(Math.round(delta * 10) / 10)}%`;
 }
 
 export function formatBucketLabel(bucket: string, granularity: string) {

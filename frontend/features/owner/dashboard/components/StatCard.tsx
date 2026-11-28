@@ -1,5 +1,6 @@
 import {TrendingUp, Wallet, Package, Users} from 'lucide-react';
 import type {StatCardData} from '@/lib/types/dashboard';
+import {formatNumber, formatPeso} from '@/lib/utils/formatNumber';
 
 const iconMap: Record<StatCardData['key'], typeof TrendingUp> = {
   todaySales: TrendingUp,
@@ -31,8 +32,8 @@ export function StatCard({data}: Props) {
           </p>
           <p className="ux-num text-[1.5rem] font-bold text-[#1A1A1A] dark:text-gray-100 leading-none">
             {data.key === 'todaySales' || data.key === 'totalRevenue'
-              ? `₱${data.value.toLocaleString()}`
-              : data.value.toLocaleString()}
+              ? formatPeso(data.value, data.value % 1 !== 0)
+              : formatNumber(data.value)}
           </p>
           {data.delta !== undefined ? (
             <p className={`text-[0.75rem] font-medium ${

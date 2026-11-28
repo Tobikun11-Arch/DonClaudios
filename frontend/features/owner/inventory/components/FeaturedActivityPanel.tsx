@@ -5,7 +5,7 @@ import Image from 'next/image';
 import {Loader2, Package, History, ShoppingBag} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {cn} from '@/lib/utils';
-import {formatPeso} from '@/features/owner/products/utils/formatPeso';
+import {formatNumber, formatPeso} from '@/lib/utils/formatNumber';
 import {getStockStatus, stockStatusConfig} from '../utils/stockStatus';
 import {ActivityRow, movementProductId} from './ActivityRow';
 import type {StockMovement} from '@/lib/types/inventory';
@@ -113,7 +113,7 @@ function FastestMoversList({
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold text-gray-900 dark:text-gray-100">{item.name}</p>
               <p className="truncate text-xs text-gray-400">
-                {item.unitsSold} sold · {formatPeso(item.revenue)}
+                {formatNumber(item.unitsSold)} sold · {formatPeso(item.revenue)}
               </p>
               {flagged && (
                 <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">

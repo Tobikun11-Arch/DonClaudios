@@ -1,4 +1,5 @@
 import type {Promo} from '@/lib/types/promo';
+import {formatPeso} from '@/lib/utils/formatNumber';
 
 export type PromoBadge =
   | {kind: 'bundle'; label: string}
@@ -26,7 +27,7 @@ export function getPromoBadgeForProduct(params: {
   }
 
   if (p.promoType === 'fixed_amount' && typeof p.discountAmount === 'number') {
-    return {kind: 'discount', label: `₱${p.discountAmount} OFF`};
+    return {kind: 'discount', label: `${formatPeso(p.discountAmount, p.discountAmount % 1 !== 0)} OFF`};
   }
 
   return {kind: 'discount', label: 'PROMO'};

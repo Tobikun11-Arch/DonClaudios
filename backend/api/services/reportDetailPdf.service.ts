@@ -1,10 +1,11 @@
 import PDFDocument from 'pdfkit';
 import type {DetailResult} from './reportDetail.service';
+import {formatNumber} from '../utils/numberFormat';
 
 function fmt(value: unknown, type?: string) {
   if (value === null || value === undefined || value === '') return '—';
   if (type === 'money' && typeof value === 'number') {
-    return `PHP ${value.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    return `PHP ${formatNumber(value, 2)}`;
   }
   if (type === 'datetime' && typeof value === 'string') {
     return new Date(value).toLocaleString('en-PH', {
@@ -15,6 +16,7 @@ function fmt(value: unknown, type?: string) {
       minute: '2-digit'
     });
   }
+  if (type === 'number' && typeof value === 'number') return formatNumber(value);
   return String(value);
 }
 
@@ -55,7 +57,7 @@ export function buildDetailPdf(result: DetailResult, meta: {title: string; range
     };
 
     doc.font('Helvetica-Bold').fontSize(14).fillColor('#2d4a35').text(meta.title, left, doc.y);
-    doc.font('Helvetica').fontSize(9).fillColor('#6b7280').text(`${meta.business} · ${meta.rangeLabel} · ${result.total} rows`);
+    doc.font('Helvetica').fontSize(9).fillColor('#6b7280').text(`${meta.business} · ${meta.rangeLabel} · ${formatNumber(result.total)} rows`);
     doc.moveDown(0.8);
     header();
 

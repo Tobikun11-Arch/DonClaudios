@@ -45,6 +45,7 @@ import {useStoreStatusQuery} from '@/lib/hooks/useStoreStatus';
 import {Z} from '@/lib/zIndex';
 import CartRemoveConfirmModal from './CartRemoveConfirmModal';
 import {MIN_ORDER_MESSAGE, MIN_ORDER_TOTAL} from '@/lib/constants/orderLimits';
+import {formatPeso} from '@/lib/utils/formatNumber';
 
 export default function CustomerCartDrawer() {
   const router = useRouter();
@@ -493,11 +494,11 @@ export default function CustomerCartDrawer() {
                         return (
                           <div className="shrink-0 text-right">
                             <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                              ₱{unitPrice}.00
+                              {formatPeso(unitPrice, true)}
                             </p>
                             {isDiscounted ? (
                               <p className="text-[11px] text-gray-400 line-through">
-                                ₱{item.price}.00
+                                {formatPeso(item.price, true)}
                               </p>
                             ) : null}
                           </div>
@@ -542,7 +543,7 @@ export default function CustomerCartDrawer() {
               <div className="pt-2 space-y-2">
                 <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
                   <span>Subtotal</span>
-                  <span className="font-semibold">₱{subtotal}.00</span>
+                  <span className="font-semibold">{formatPeso(subtotal, true)}</span>
                 </div>
               </div>
             </div>
@@ -553,7 +554,7 @@ export default function CustomerCartDrawer() {
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Total</p>
             <p className="text-lg font-extrabold text-gray-900 dark:text-gray-100">
-              ₱{items.length > 0 ? total : 0}.00
+              {formatPeso(items.length > 0 ? total : 0, true)}
             </p>
           </div>
 

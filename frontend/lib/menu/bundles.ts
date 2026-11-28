@@ -1,4 +1,5 @@
 import type {Product, ProductAllergen, ServingUnit} from '@/lib/types/product';
+import {formatPeso} from '@/lib/utils/formatNumber';
 
 /**
  * Promo-category products on the customer side. Mirrors the backend
@@ -71,7 +72,7 @@ export function ownPromoPrice(product: Product, now: Date = new Date()): number 
 export function ownPromoBadge(product: Pick<Product, 'category' | 'promoType' | 'discountRate' | 'discountAmount'>): string | null {
   if (!isPromoCategory(product.category)) return null;
   if (product.promoType === 'percentage' && product.discountRate) return `${product.discountRate}% OFF`;
-  if (product.promoType === 'fixed_amount' && product.discountAmount) return `₱${product.discountAmount} OFF`;
+  if (product.promoType === 'fixed_amount' && product.discountAmount) return `${formatPeso(product.discountAmount, product.discountAmount % 1 !== 0)} OFF`;
   return null;
 }
 

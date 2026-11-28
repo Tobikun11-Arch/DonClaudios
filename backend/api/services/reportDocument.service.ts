@@ -2,6 +2,7 @@ import type {ResolvedRange} from '../utils/dateRange';
 import {formatRangeLabel} from '../utils/dateRange';
 import {ReportCounterModel, ReportExportModel} from '../models/ReportExport.model';
 import type {ReportBlock, ReportDocument, TableColumn} from './reportPdf.service';
+import {formatNumber} from '../utils/numberFormat';
 import {
   fetchSales,
   formatManilaDate,
@@ -36,11 +37,11 @@ const SALES_BASIS =
 // ---------------------------------------------------------------------------
 
 export function money(value: number) {
-  const abs = Math.abs(value).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  const abs = formatNumber(Math.abs(value), 2);
   return value < 0 ? `(${abs})` : abs;
 }
 const less = (value: number) => (value === 0 ? '0.00' : `(${money(Math.abs(value))})`);
-const int = (value: number) => Math.round(value).toLocaleString('en-PH');
+const int = (value: number) => formatNumber(value, 0);
 const pct = (value: number) => `${value.toFixed(1)}%`;
 const minutes = (value: number) => (value > 0 ? `${Math.round(value)} min` : '-');
 

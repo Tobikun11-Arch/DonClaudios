@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import type {SalesDay} from '@/lib/types/dashboard';
 import {useChartColors} from './chartTheme';
+import {formatCompactPeso, formatPeso} from './reports/reportPrimitives';
 
 interface Props {
   data: SalesDay[];
@@ -31,8 +32,7 @@ function CustomTooltip({active, payload, label}: CustomTooltipProps) {
       <p className="font-medium">{label}</p>
       {payload.map(entry => (
         <p key={entry.dataKey}>
-          {entry.dataKey === 'openRevenue' ? 'Still open' : 'Collected'}: ₱
-          {entry.value.toLocaleString()}
+          {entry.dataKey === 'openRevenue' ? 'Still open' : 'Collected'}: {formatPeso(entry.value)}
         </p>
       ))}
     </div>
@@ -92,7 +92,7 @@ export function SalesTrendChart({data, isLoading, isError}: Props) {
               tick={{fontSize: 11, fill: chart.tick}}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(val: number) => `₱${(val / 1000).toFixed(0)}k`}
+              tickFormatter={(val: number) => formatCompactPeso(val)}
             />
             <Tooltip content={<CustomTooltip />} />
             <Area

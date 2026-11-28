@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import {assertOrderTotalWithinLimits} from '../config/orderLimits';
 import {ApiError} from '../utils/error';
 import {phoneVariants} from '../utils/phone';
+import {formatPeso} from '../utils/numberFormat';
 import {orderRepository} from '../repositories/order.repository';
 import {orderItemRepository} from '../repositories/orderItem.repository';
 import {transactionRepository} from '../repositories/transaction.repository';
@@ -78,7 +79,7 @@ async function notifyCashiersOfNewOrder(orderId: string, totalAmount: number) {
           cashierId: String(cashier._id),
           type: 'new_order',
           title: 'New order',
-          message: `A new order (#${String(orderId).slice(-6).toUpperCase()}) worth ₱${totalAmount}.00 has been placed.`,
+          message: `A new order (#${String(orderId).slice(-6).toUpperCase()}) worth ${formatPeso(totalAmount)} has been placed.`,
           orderId: orderId,
           link: '/cashier/dashboard?tab=orders'
         });
@@ -90,7 +91,7 @@ async function notifyCashiersOfNewOrder(orderId: string, totalAmount: number) {
     try {
       await pushService.sendToRole('cashier', {
         title: 'New order',
-        body: `A new order (#${String(orderId).slice(-6).toUpperCase()}) worth ₱${totalAmount}.00 has been placed.`,
+        body: `A new order (#${String(orderId).slice(-6).toUpperCase()}) worth ${formatPeso(totalAmount)} has been placed.`,
         url: '/cashier/dashboard?tab=orders'
       });
     } catch (error) {
@@ -99,7 +100,7 @@ async function notifyCashiersOfNewOrder(orderId: string, totalAmount: number) {
     try {
       await pushService.sendToRole('admin', {
         title: 'New order',
-        body: `A new order (#${String(orderId).slice(-6).toUpperCase()}) worth ₱${totalAmount}.00 has been placed.`,
+        body: `A new order (#${String(orderId).slice(-6).toUpperCase()}) worth ${formatPeso(totalAmount)} has been placed.`,
         url: '/owner/dashboard?tab=orders'
       });
     } catch (error) {

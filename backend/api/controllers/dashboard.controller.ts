@@ -1,6 +1,7 @@
 import {staffActivityService} from '../services/staffActivity.service';
 import {Request, Response, NextFunction} from 'express';
 import {OrderModel} from '../models/Order.model';
+import {formatPeso} from '../utils/numberFormat';
 import {ProductModel} from '../models/Product.model';
 import {CustomerModel} from '../models/Customer.model';
 import {OrderItemModel} from '../models/OrderItem.model';
@@ -136,7 +137,7 @@ export const dashboardController = {
             deltaLabel: `vs previous ${days}d`,
             context:
               rangeOpen.total > 0
-                ? `+${rangeOpen.total.toLocaleString()} still open`
+                ? `+${formatPeso(rangeOpen.total)} still open`
                 : 'Nothing left open'
           },
           {

@@ -14,6 +14,7 @@ import type {ReportRange} from '@/lib/types/report';
 import {triggerBlobDownload} from '@/lib/utils/csvExport';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {cn} from '@/lib/utils';
+import {formatNumber, formatPeso} from '@/lib/utils/formatNumber';
 
 const PAGE_SIZE = 50;
 /** The staff log is read event by event, so it pages in tens. */
@@ -53,9 +54,9 @@ type Column = {key: string; label: string; type?: 'text' | 'money' | 'number' | 
 function formatCell(value: unknown, type?: Column['type']) {
   if (value === null || value === undefined || value === '') return '—';
   if (type === 'money' && typeof value === 'number') {
-    return `₱${value.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    return formatPeso(value, true);
   }
-  if (type === 'number' && typeof value === 'number') return value.toLocaleString('en-PH');
+  if (type === 'number' && typeof value === 'number') return formatNumber(value);
   if (type === 'datetime' && typeof value === 'string') {
     return new Date(value).toLocaleString('en-PH', {month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'});
   }
@@ -255,7 +256,7 @@ export function DetailedReportView({view, range}: {view: DetailView; range: Repo
                     <tr className="border-t-2 border-[#2d4a35]/30 bg-[#F7F8F6] font-semibold dark:bg-gray-800">
                       {columns.map((c, i) => (
                         <td key={c.key} className={cn('px-3 py-2 tabular-nums', isNumeric(c) && 'text-right')}>
-                          {i === 0 ? `Total (${data.total} rows)` : c.key in data.totals ? formatCell(data.totals[c.key], c.type) : ''}
+                          {i === 0 ? `Total (${formatNumber(data.total)} rows)` : c.key in data.totals ? formatCell(data.totals[c.key], c.type) : ''}
                         </td>
                       ))}
                     </tr>
@@ -308,7 +309,7 @@ export function DetailedReportView({view, range}: {view: DetailView; range: Repo
               })}
               {Object.keys(data.totals).length ? (
                 <li className="bg-[#F7F8F6] px-4 py-3 text-xs dark:bg-gray-800">
-                  <p className="font-semibold text-[#1A1A1A] dark:text-gray-100">Total ({data.total} rows)</p>
+                  <p className="font-semibold text-[#1A1A1A] dark:text-gray-100">Total ({formatNumber(data.total)} rows)</p>
                   {columns
                     .filter(c => c.key in data.totals)
                     .map(c => (
@@ -322,7 +323,7 @@ export function DetailedReportView({view, range}: {view: DetailView; range: Repo
 
             <div className="flex items-center justify-between gap-2 border-t border-gray-100 px-4 py-2 text-sm dark:border-gray-800">
               <span className="text-[#6B7280] dark:text-gray-400">
-                Page {data.page} of {totalPages} · {data.total} rows
+                Page {data.page} of {totalPages} · {formatNumber(data.total)} rows
               </span>
               <div className="flex gap-1">
                 <button
