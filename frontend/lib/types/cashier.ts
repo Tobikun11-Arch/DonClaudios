@@ -7,7 +7,11 @@ export type Cashier = {
   phoneNumber?: string;
   address?: string;
   profilePhoto?: string;
+  /** Worked out by the API from `lastSeenAt` (cashier app heartbeat, 3 min timeout). */
   isOnline: boolean;
+  lastSeenAt?: string | null;
+  /** Owner turned the account off: can't sign in, shown as Disabled. */
+  isDisabled?: boolean;
   isVerified: boolean;
   createdAt?: string;
   updatedAt?: string;

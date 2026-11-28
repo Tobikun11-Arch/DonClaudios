@@ -81,8 +81,12 @@ export async function enableMfa(code: string) {
 }
 
 /** Authenticator app setup: QR code + the secret for typing in by hand. */
-export async function startTotpSetup() {
-  const res = await httpClient.post<{qrDataUrl: string; otpauthUrl: string; secret: string}>('/auth/mfa/totp/setup');
+/** `currentCode` is required when two-step is already on (switching methods). */
+export async function startTotpSetup(currentCode?: string) {
+  const res = await httpClient.post<{qrDataUrl: string; otpauthUrl: string; secret: string}>(
+    '/auth/mfa/totp/setup',
+    currentCode ? {code: currentCode} : {}
+  );
   return res.data;
 }
 
@@ -98,5 +102,16 @@ export async function disableMfa(code: string) {
 
 export async function setOrderEmails(orderEmailUpdates: boolean) {
   const res = await httpClient.put<{orderEmailUpdates: boolean}>('/auth/me/order-emails', {orderEmailUpdates});
+  return res.data;
+}
+
+export async function setNewsletter(newsletterOptIn: boolean) {
+  const res = await httpClient.put<{newsletterOptIn: boolean}>('/auth/me/newsletter', {newsletterOptIn});
+  return res.data;
+}
+
+/** Public: one-click unsubscribe with the signed token from a newsletter email. */
+export async function unsubscribeNewsletter(token: string) {
+  const res = await httpClient.post<{unsubscribed: true}>('/auth/newsletter/unsubscribe', {token});
   return res.data;
 }

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import {Package, X, Plus, Minus, Trash2, History} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {cn} from '@/lib/utils';
-import {formatPeso} from '@/features/owner/products/utils/formatPeso';
+import {formatPeso} from '@/lib/utils/formatNumber';
 import {stockUnitLabel} from '@/lib/categories/categoryUtils';
 import {useAllergenCatalog} from '@/lib/hooks/useAllergens';
 import {ingredientIconByKey} from '@/lib/ingredients/ingredientIcons';

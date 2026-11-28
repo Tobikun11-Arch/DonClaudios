@@ -28,6 +28,7 @@ import {
 import {attachBundleStock, prepareBundleItems} from './bundle.service';
 import {ProductModel} from '../models/Product.model';
 import {attachPreOrderAllowance} from './preOrder.service';
+import {newsletterService} from './newsletter.service';
 
 /**
  * Tell signed-in customers a pre-order just opened.
@@ -339,6 +340,8 @@ export const productService = {
       isPromoActive: data.isPromoActive,
       // Spread last so the normalised values win over the raw string input.
       ...preOrder,
+      // null = not emailed yet (see newsletterService.announceProduct).
+      newsletterSentAt: null,
       createdBy: adminId as any
     });
 
@@ -346,6 +349,7 @@ export const productService = {
     if (created.isPreOrder === true) {
       await announcePreOrder(created);
     }
+    newsletterService.announceProduct(created);
 
     return created;
   },
@@ -483,9 +487,12 @@ export const productService = {
     // already a pre-order (e.g. bumping the price) is not "turning it on", so
     // it stays quiet. Toggling off and back on announces again.
     const wasPreOrder = existing.isPreOrder === true;
-    if (updated.isPreOrder === true && !wasPreOrder) {
+    const preOrderJustOpened = updated.isPreOrder === true && !wasPreOrder;
+    if (preOrderJustOpened) {
       await announcePreOrder(updated);
     }
+    // Emails once, e.g. when a hidden product is made available.
+    newsletterService.announceProduct(updated, {preOrderJustOpened});
 
     return updated;
   },

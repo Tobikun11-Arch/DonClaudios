@@ -1,5 +1,6 @@
 import mongoose, {Schema} from 'mongoose';
 import {BaseUserDocument, createBaseUserSchema} from './base/BaseUser.schema';
+import {mfaField, type AccountMfa} from './base/Mfa.schema';
 
 export interface NotificationPreferences {
   account?: {
@@ -48,6 +49,8 @@ export interface AdminDocument extends BaseUserDocument {
   isManuallyClosed?: boolean;
   isManuallyOpen?: boolean;
   notificationPreferences?: NotificationPreferences;
+  /** Optional two-step sign-in (same as customers). */
+  mfa?: AccountMfa | null;
 }
 
 const BaseSchema = createBaseUserSchema<AdminDocument>();
@@ -70,6 +73,7 @@ const AdminSchema = new Schema<AdminDocument>(
     defaultPrepMinutes: {type: Number, default: 20, min: 1, max: 1440},
     isManuallyClosed: {type: Boolean, default: false},
     isManuallyOpen: {type: Boolean, default: false},
+    mfa: mfaField,
     notificationPreferences: {
       type: {
         account: {

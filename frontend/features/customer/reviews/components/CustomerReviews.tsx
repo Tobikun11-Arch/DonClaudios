@@ -187,15 +187,6 @@ export default function CustomerReviews() {
       toast.error('Please write your review.');
       return;
     }
-    if (profanityHint.hasMatch) {
-      toast.error(
-        profanityHint.severe
-          ? 'Please remove inappropriate language before submitting.'
-          : 'Please reword your review. Rude or insulting words are not accepted.'
-      );
-      return;
-    }
-
     const uploadedUrls: string[] = [];
     try {
       if (images.length > 0) {
@@ -210,13 +201,11 @@ export default function CustomerReviews() {
         comment,
         images: uploadedUrls
       });
-      if (review?.isAutoRejected) {
-        toast.error(
-          'Your review was not published because it contained inappropriate language. Please edit it and submit again.'
-        );
-      } else {
-        toast.success('Review submitted! It will appear after approval.');
-      }
+      toast.success(
+        review?.status === 'pending'
+          ? 'Review submitted! 1-star reviews are checked by the owner before they appear.'
+          : 'Review posted! It is now on the homepage.'
+      );
       setRating(0);
       setComment('');
       setImages(prev => {
@@ -228,10 +217,6 @@ export default function CustomerReviews() {
       const code = err?.code;
       if (code === 'REVIEW_NOT_ELIGIBLE') {
         toast.error('You can only leave one review per completed order.');
-      } else if (code === 'PROFANITY_DETECTED') {
-        toast.error(
-          getFriendlyErrorMessage(err, 'Please remove inappropriate language before submitting.')
-        );
       } else {
         toast.error(getFriendlyErrorMessage(err, 'Failed to submit review.'));
       }
@@ -296,11 +281,7 @@ export default function CustomerReviews() {
       const err = error as NormalizedApiError;
       setReplyingId(review._id);
       setDrafts(prev => ({...prev, [review._id]: text}));
-      toast.error(
-        err?.code === 'PROFANITY_DETECTED'
-          ? getFriendlyErrorMessage(err, 'Please remove inappropriate language.')
-          : getFriendlyErrorMessage(err, 'Failed to send reply.')
-      );
+      toast.error(getFriendlyErrorMessage(err, 'Failed to send reply.'));
     }
   };
 
@@ -311,7 +292,7 @@ export default function CustomerReviews() {
           <h1 className="text-2xl font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">My Reviews</h1>
           <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
             Share your experience with DonClaudio&apos;s. Reviews appear on the
-            homepage once approved.
+            homepage right away (1-star reviews are checked by the owner first).
           </p>
         </div>
       </div>
@@ -359,20 +340,19 @@ export default function CustomerReviews() {
                 placeholder="Tell us about your experience..."
                 className={`w-full rounded-xl border px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b8a6e] dark:text-gray-100 dark:bg-gray-800 ${
                   profanityHint.hasMatch
-                    ? 'border-red-300 focus:ring-red-200 dark:border-red-500/30'
+                    ? 'border-amber-300 focus:ring-amber-200 dark:border-amber-500/30'
                     : 'border-gray-200 dark:border-gray-700'
                 }`}
               />
               {profanityHint.hasMatch ? (
-                <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-300">
-                  {profanityHint.severe
-                    ? 'This review will be blocked. Please remove the inappropriate language.'
-                    : 'This review will be held for review. Please reword any rude or insulting words.'}
+                <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+                  Rude words will be shown with asterisks (like
+                  &ldquo;g***&rdquo;) on the homepage.
                 </p>
               ) : (
                 <p className="mt-2 text-xs text-gray-400">
                   Please keep it respectful. Rude or insulting words are
-                  automatically held or blocked.
+                  masked with asterisks.
                 </p>
               )}
             </div>
@@ -505,8 +485,7 @@ export default function CustomerReviews() {
                   <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
                     <p className="font-semibold">Not published</p>
                     <p className="mt-1">
-                      {review.moderation &&
-                      review.moderation.action !== 'allow' ? (
+                      {review.isAutoRejected ? (
                         <>
                           This review was held back because it contained
                           inappropriate language. Write a new review for this
@@ -525,7 +504,8 @@ export default function CustomerReviews() {
 
                 {review.status === 'pending' && (
                   <p className="mt-3 text-xs font-medium text-amber-600 dark:text-amber-300">
-                    Pending approval — not visible to other customers yet.
+                    Waiting for the owner to check this 1-star review — not
+                    visible to other customers yet.
                   </p>
                 )}
 

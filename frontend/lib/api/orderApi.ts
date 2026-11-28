@@ -33,6 +33,8 @@ export type CreateGuestOrderInput = {
   website?: string;
   /** Anti-spam: epoch ms when the checkout form was opened. */
   formStartedAt?: number;
+  /** Cloudflare Turnstile token (omitted while Turnstile is not configured). */
+  turnstileToken?: string;
 };
 
 export type CreateCustomerOrderInput = {
@@ -56,6 +58,8 @@ export type CreateCustomerOrderInput = {
   scheduledDate?: string;
   /** Store-local "HH:MM" of the chosen slot. */
   scheduledTime?: string;
+  /** Cloudflare Turnstile token (omitted while Turnstile is not configured). */
+  turnstileToken?: string;
 };
 
 export type CreatedGuestOrderResponse = {

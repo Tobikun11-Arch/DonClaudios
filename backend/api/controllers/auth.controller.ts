@@ -6,6 +6,7 @@ import {ApiError} from '../utils/error';
 import {customerRepository} from '../repositories/customer.repository';
 import {adminRepository} from '../repositories/admin.repository';
 import {cashierRepository} from '../repositories/cashier.repository';
+import {cashierService} from '../services/cashier.service';
 import {CustomerModel, type CustomerDocument} from '../models/Customer.model';
 import type {CashierDocument} from '../models/Cashier.model';
 import jwt from 'jsonwebtoken';
@@ -13,6 +14,7 @@ import {extractAccessToken} from '../middleware/auth';
 import {signSessionTokens, accountSecurityService, needsPhoneVerification} from '../services/accountSecurity.service';
 import {staffActivityService} from '../services/staffActivity.service';
 import {lookupUserName} from '../utils/actor';
+import {updateProfileDto} from '../dtos/auth.dto';
 
 const ACCESS_COOKIE = 'dc_access_token';
 const REFRESH_COOKIE = 'dc_refresh_token';
@@ -58,10 +60,7 @@ export async function completeSignIn(
   userType: 'customer' | 'cashier' | 'admin',
   extra: Record<string, unknown> = {}
 ) {
-  const {accessToken, refreshToken} = signSessionTokens(String(user._id ?? user.id), userType);
-  const opts = getCookieOptions();
-  res.cookie(ACCESS_COOKIE, accessToken, {...opts, maxAge: 15 * 60 * 1000});
-  res.cookie(REFRESH_COOKIE, refreshToken, {...opts, maxAge: 7 * 24 * 60 * 60 * 1000});
+  const mobileTokens = setSessionCookies(req, res, String(user._id ?? user.id), userType);
 
   if (userType === 'cashier') {
     await staffActivityService.recordSession(
@@ -88,8 +87,27 @@ export async function completeSignIn(
     ...extra,
     // Native apps cannot rely on httpOnly cookies; they ask for the
     // tokens in the body and keep them in the device's secure store.
-    ...(isMobileClient(req) ? {accessToken, refreshToken} : {})
+    ...mobileTokens
   });
+}
+
+/**
+ * Signs a fresh session for this device and sets its cookies. Used at sign-in,
+ * and after other sessions were revoked (passwordChangedAt moved forward) so
+ * the device that made the change stays signed in. Returns the tokens only
+ * for mobile clients.
+ */
+export function setSessionCookies(
+  req: Request,
+  res: Response,
+  userId: string,
+  userType: 'customer' | 'cashier' | 'admin'
+) {
+  const {accessToken, refreshToken} = signSessionTokens(userId, userType);
+  const opts = getCookieOptions();
+  res.cookie(ACCESS_COOKIE, accessToken, {...opts, maxAge: 15 * 60 * 1000});
+  res.cookie(REFRESH_COOKIE, refreshToken, {...opts, maxAge: 7 * 24 * 60 * 60 * 1000});
+  return isMobileClient(req) ? {accessToken, refreshToken} : {};
 }
 
 /** Who a sign-out belongs to (logout needs no valid access token). */
@@ -162,12 +180,21 @@ export const authController = {
                 phoneVerified: customer.phoneVerified === true,
                 needsPhoneVerification: needsPhoneVerification(customer),
                 orderEmailUpdates: customer.orderEmailUpdates !== false,
+                newsletterOptIn: customer.newsletterOptIn === true,
                 googleLinked: !!customer.googleId,
                 googleEmail: customer.googleEmail ?? null,
                 hasPassword: !!customer.passwordHash,
                 mfaEnabled: customer.mfa?.enabled === true,
                 mfaMethod: customer.mfa?.enabled ? customer.mfa.method ?? 'email' : null,
                 backupCodesLeft: customer.mfa?.enabled ? customer.mfa.backupCodes?.length ?? 0 : 0
+              }
+            : {}),
+          // Owner two-step sign-in (Settings > Security).
+          ...(admin
+            ? {
+                mfaEnabled: admin.mfa?.enabled === true,
+                mfaMethod: admin.mfa?.enabled ? admin.mfa.method ?? 'email' : null,
+                backupCodesLeft: admin.mfa?.enabled ? admin.mfa.backupCodes?.length ?? 0 : 0
               }
             : {}),
           businessName: admin?.businessName,
@@ -229,9 +256,11 @@ export const authController = {
       ];
 
       if (req.auth.type === 'admin') {
+        // Only the profile fields in the DTO: the raw body could otherwise
+        // rewrite passwordHash or switch off two-step sign-in (mfa).
         const updated = await adminRepository.updateProfile(
           req.auth.userId,
-          req.body
+          updateProfileDto.parse(req.body)
         );
 
         if (!updated) {
@@ -491,8 +520,8 @@ export const authController = {
       const {user, userType} = await authService.login(req.body.email, req.body.password);
 
       // Two-step sign-in: no session yet, just a short-lived challenge.
-      if (accountSecurityService.isMfaOn(user, userType)) {
-        res.status(200).json(await accountSecurityService.beginSignInChallenge(user));
+      if (userType !== 'cashier' && accountSecurityService.isMfaOn(user, userType)) {
+        res.status(200).json(await accountSecurityService.beginSignInChallenge(user, userType));
         return;
       }
 
@@ -539,6 +568,16 @@ export const authController = {
       const opts = getCookieOptions();
       res.clearCookie(ACCESS_COOKIE, opts);
       res.clearCookie(REFRESH_COOKIE, opts);
+      next(error);
+    }
+  },
+
+  /** POST /auth/heartbeat: a signed-in cashier app is open (see utils/presence). */
+  async heartbeat(req: Request, res: Response, next: NextFunction) {
+    try {
+      await cashierService.heartbeat(req.auth!.userId);
+      res.status(204).end();
+    } catch (error) {
       next(error);
     }
   },

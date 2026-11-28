@@ -1,5 +1,6 @@
 import {Star} from 'lucide-react';
 import type {TopProduct} from '@/lib/types/dashboard';
+import {formatNumber, formatPeso} from '@/lib/utils/formatNumber';
 import {ReportRowPicker} from './reports/ReportRowPicker';
 
 interface Props {
@@ -52,8 +53,8 @@ export function TopProductsTable({products, isLoading, isError}: Props) {
               const product = products.find(entry => String(entry.rank) === option.value);
               if (!product) return [];
               return [
-                {label: 'Units Sold', value: product.unitsSold.toLocaleString()},
-                {label: 'Revenue', value: `₱${product.revenue.toLocaleString()}`}
+                {label: 'Units Sold', value: formatNumber(product.unitsSold)},
+                {label: 'Revenue', value: formatPeso(product.revenue)}
               ];
             }}
             pickerLabel="Select a product to see its figures"
@@ -92,10 +93,10 @@ export function TopProductsTable({products, isLoading, isError}: Props) {
                       {product.name}
                     </td>
                     <td className="px-4 py-3 text-[0.875rem] text-[#1A1A1A] dark:text-gray-100 text-right tabular-nums">
-                      {product.unitsSold}
+                      {formatNumber(product.unitsSold)}
                     </td>
                     <td className="px-4 py-3 text-[0.875rem] text-[#1A1A1A] dark:text-gray-100 text-right font-medium tabular-nums">
-                      ₱{product.revenue.toLocaleString()}
+                      {formatPeso(product.revenue)}
                     </td>
                   </tr>
                 ))}

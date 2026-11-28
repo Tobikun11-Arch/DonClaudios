@@ -28,6 +28,7 @@ import {
 } from '@/lib/preOrder/preOrder';
 import PreOrderDatesStrip from '@/features/preorders/components/PreOrderDatesStrip';
 import {MenuBrowser} from '@/features/menu/components/MenuBrowser';
+import {formatPeso} from '@/lib/utils/formatNumber';
 
 export default function OrderSlot() {
   const brand = useBrand();
@@ -232,7 +233,7 @@ export default function OrderSlot() {
 
           {cartUniqueCount > 0 && (
             <span className="ml-2 text-sm font-semibold text-[#2d4a35] dark:text-[#7ed4a0]">
-              ₱{cartSubtotal}.00
+              {formatPeso(cartSubtotal, true)}
             </span>
           )}
         </Button>

@@ -16,7 +16,7 @@ import {useScrollToHighlight} from '@/shared/hooks/useScrollToHighlight';
 import {FilterPills} from '@/shared/components/FilterPills';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
-type Filter = 'all' | 'flagged' | ReviewStatus;
+type Filter = 'all' | ReviewStatus;
 
 function Stars({rating}: {rating: number}) {
   return (
@@ -35,8 +35,8 @@ function Stars({rating}: {rating: number}) {
 
 function statusBadge(status: ReviewStatus) {
   const map: Record<ReviewStatus, {label: string; className: string}> = {
-    pending: {label: 'Pending', className: 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300'},
-    approved: {label: 'Approved', className: 'bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300'},
+    pending: {label: 'Needs review', className: 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300'},
+    approved: {label: 'Published', className: 'bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300'},
     rejected: {label: 'Rejected', className: 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400'}
   };
   const cfg = map[status];
@@ -54,35 +54,29 @@ function formatDate(value?: string) {
   return new Date(value).toLocaleString();
 }
 
-// True for any review the word filter held back and the owner has not published
-// yet. Approving clears it, rejecting keeps it so the record stays auditable.
-function isFlagged(review: Review): boolean {
+// Reviews publish on submit; only 1-star ones (and any legacy pending review)
+// wait here for an approve/reject decision.
+function NeedsDecisionNotice() {
   return (
-    review.status !== 'approved' &&
-    review.moderation != null &&
-    review.moderation.action !== 'allow'
-  );
-}
-function AutoBlockedNotice({review}: {review: Review}) {
-  const matched = review.moderation?.matchedWords ?? [];
-  const handled = review.moderation?.action === 'manual';
-  return (
-    <div className="mt-3 rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-3 text-xs text-red-700 dark:text-red-300">
+    <div className="mt-3 rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-200">
       <p className="flex items-center gap-1.5 font-semibold">
         <ShieldAlert size={14} />
-        Auto-blocked by the word filter
+        Waiting for your decision
       </p>
       <p className="mt-1">
-        Matched: {matched.length > 0 ? matched.join(', ') : 'flagged words'}
-        {review.moderatedAt
-          ? ` • ${formatDate(review.moderatedAt)}`
-          : ''}
+        This review is hidden from the homepage. Approve to publish it, or
+        reject it if it is not a genuine complaint.
       </p>
-      <p className="mt-1">
-        {handled
-          ? 'You already rejected this one. It stays here for the record.'
-          : 'Approve it if the language is acceptable, otherwise reject it. The customer can resubmit for the same order.'}
-      </p>
+    </div>
+  );
+}
+
+// The owner reads the original text; the homepage shows bad words masked.
+function MaskedNotice({review}: {review: Review}) {
+  return (
+    <div className="mt-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-3 text-xs text-gray-600 dark:text-gray-300">
+      <p className="font-semibold">Shown on the homepage as</p>
+      <p className="mt-1 break-words">&ldquo;{review.publicComment}&rdquo;</p>
     </div>
   );
 }
@@ -151,11 +145,7 @@ export default function OwnerReviews() {
   const reviews = useMemo(
     () =>
       (data?.reviews ?? []).filter(review =>
-        filter === 'all'
-          ? true
-          : filter === 'flagged'
-            ? isFlagged(review)
-            : review.status === filter
+        filter === 'all' ? true : review.status === filter
       ),
     [data, filter]
   );
@@ -166,8 +156,7 @@ export default function OwnerReviews() {
       all: all.length,
       pending: all.filter(r => r.status === 'pending').length,
       approved: all.filter(r => r.status === 'approved').length,
-      rejected: all.filter(r => r.status === 'rejected').length,
-      flagged: all.filter(isFlagged).length
+      rejected: all.filter(r => r.status === 'rejected').length
     };
   }, [data]);
 
@@ -189,15 +178,16 @@ export default function OwnerReviews() {
     return [];
   };
 
-  const handleStatus = async (review: Review, status: ReviewStatus) => {
+  const handleStatus = async (
+    review: Review,
+    status: 'approved' | 'rejected'
+  ) => {
     try {
       await updateStatus.mutateAsync({id: review._id, body: {status}});
       toast.success(
         status === 'approved'
-          ? isFlagged(review)
-            ? 'Auto-blocked review approved and published.'
-            : 'Review approved.'
-          : 'Review rejected.'
+          ? 'Review approved and published.'
+          : 'Review rejected. It stays hidden.'
       );
     } catch (error) {
       toast.error(getFriendlyErrorMessage(error, 'Failed to update review.'));
@@ -243,9 +233,8 @@ export default function OwnerReviews() {
 
   const tabs: {key: Filter; label: string; count: number}[] = [
     {key: 'all', label: 'All', count: counts.all},
-    {key: 'pending', label: 'Pending', count: counts.pending},
-    {key: 'flagged', label: 'Flagged', count: counts.flagged},
-    {key: 'approved', label: 'Approved', count: counts.approved},
+    {key: 'pending', label: 'Needs review', count: counts.pending},
+    {key: 'approved', label: 'Published', count: counts.approved},
     {key: 'rejected', label: 'Rejected', count: counts.rejected}
   ];
 
@@ -255,8 +244,9 @@ export default function OwnerReviews() {
         <div>
           <h1 className="text-2xl font-extrabold text-[#2d4a35] dark:text-[#7ed4a0]">Reviews</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Approve, reject, and reply to customer reviews. Approved reviews
-            appear on the homepage.
+            Reviews go live on the homepage as soon as they are posted, with
+            bad words masked. 1-star reviews wait in Needs review for you to
+            approve or reject.
           </p>
         </div>
         <OwnerNotificationBell />
@@ -306,18 +296,12 @@ export default function OwnerReviews() {
                     `min-w-0` lets this column shrink below its longest
                     unbreakable token so the comment text cannot push the
                     shrink-0 Approve/Reject column off the edge, and the badge
-                    row wraps rather than clipping `Auto-blocked` at 320px.
+                    row wraps rather than clipping at 320px.
                   */}
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                       <Stars rating={review.rating} />
                       {statusBadge(review.status)}
-                      {isFlagged(review) && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-500/20 px-3 py-1 text-xs font-semibold text-red-700 dark:text-red-300">
-                          <ShieldAlert size={12} />
-                          Auto-blocked
-                        </span>
-                      )}
                     </div>
                     <p className="text-sm font-bold text-gray-900 dark:text-gray-100 mt-3 break-words">
                       {review.customerName}
@@ -342,21 +326,23 @@ export default function OwnerReviews() {
                         ))}
                       </div>
                     )}
-                    {isFlagged(review) && <AutoBlockedNotice review={review} />}
+                    {review.publicComment != null &&
+                      review.publicComment !== review.comment && (
+                        <MaskedNotice review={review} />
+                      )}
+                    {review.status === 'pending' && <NeedsDecisionNotice />}
                   </div>
 
-                  <div className="flex md:flex-col gap-2 shrink-0">
-                    {review.status !== 'approved' && (
+                  {review.status === 'pending' && (
+                    <div className="flex md:flex-col gap-2 shrink-0">
                       <Button
                         onClick={() => handleStatus(review, 'approved')}
                         disabled={updateStatus.isPending}
                         className="bg-green-600 hover:bg-green-700 text-white"
                         size="sm"
                       >
-                        {isFlagged(review) ? 'Approve anyway' : 'Approve'}
+                        Approve
                       </Button>
-                    )}
-                    {review.status !== 'rejected' && (
                       <Button
                         onClick={() => handleStatus(review, 'rejected')}
                         disabled={updateStatus.isPending}
@@ -365,8 +351,8 @@ export default function OwnerReviews() {
                       >
                         Reject
                       </Button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
 
                 {messages.length > 0 && (

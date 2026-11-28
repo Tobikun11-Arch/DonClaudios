@@ -13,6 +13,7 @@ import {
   sendMfaCode,
   sendPhoneCode,
   setFirstPassword,
+  setNewsletter,
   setOrderEmails,
   startTotpSetup,
   unlinkGoogle,
@@ -221,9 +222,10 @@ function SetPasswordForm({onDone}: {onDone: () => void}) {
 
 /* -------------------------------------------------------------- MFA */
 
-type MfaStep = 'idle' | 'email-code' | 'app-setup' | 'off-code' | 'codes';
+type MfaStep = 'idle' | 'email-code' | 'app-setup' | 'off-code' | 'switch-code' | 'codes';
 
-function MfaControl({user, onDone}: {user: MeUser; onDone: () => void}) {
+/** Turn two-step sign-in on/off. Also used by the owner's Settings > Security. */
+export function MfaControl({user, onDone}: {user: MeUser; onDone: () => void}) {
   const enabled = user.mfaEnabled === true;
   const method = user.mfaMethod ?? 'email';
   const [step, setStep] = useState<MfaStep>('idle');
@@ -260,9 +262,9 @@ function MfaControl({user, onDone}: {user: MeUser; onDone: () => void}) {
     }, 'Could not send the code.');
 
   /** Authenticator app: show the QR code; the first app code turns it on. */
-  const startApp = () =>
+  const startApp = (currentCode?: string) =>
     run(async () => {
-      setSetup(await startTotpSetup());
+      setSetup(await startTotpSetup(currentCode));
       setCode('');
       setStep('app-setup');
     }, 'Could not start the authenticator setup.');
@@ -410,6 +412,30 @@ function MfaControl({user, onDone}: {user: MeUser; onDone: () => void}) {
     );
   }
 
+  if (step === 'switch-code') {
+    return (
+      <div className="space-y-2">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          To switch, enter the 6-digit code we sent to {sentTo ?? 'your email'}, or one of your backup codes.
+        </p>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          {codeInput('Code or backup code')}
+          <button
+            type="button"
+            className={primaryButton}
+            onClick={() => startApp(code.trim())}
+            disabled={busy || code.trim().length < 6}
+          >
+            Continue
+          </button>
+          <button type="button" className={outlineButton} onClick={reset}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (step === 'off-code') {
     return (
       <div className="space-y-2">
@@ -442,7 +468,7 @@ function MfaControl({user, onDone}: {user: MeUser; onDone: () => void}) {
         </p>
         <div className="flex flex-wrap gap-2">
           {method === 'email' ? (
-            <button type="button" className={outlineButton} onClick={startApp} disabled={busy}>
+            <button type="button" className={outlineButton} onClick={() => startEmail('switch-code')} disabled={busy}>
               <Smartphone className="h-4 w-4" /> Switch to authenticator app
             </button>
           ) : null}
@@ -485,7 +511,7 @@ function MfaControl({user, onDone}: {user: MeUser; onDone: () => void}) {
         </button>
         <button
           type="button"
-          onClick={startApp}
+          onClick={() => startApp()}
           disabled={busy}
           className="rounded-lg border border-gray-200 p-3 text-left transition-colors hover:border-[#3c5e45] hover:bg-[#e9f5ee] disabled:opacity-60 dark:border-gray-700 dark:hover:bg-[#7ed4a0]/10"
         >
@@ -623,6 +649,28 @@ export function SecurityCard({user}: {user: MeUser | undefined}) {
               act(
                 () => setOrderEmails(next),
                 next ? 'Order emails are on.' : 'Order emails are off.',
+                'Could not save.'
+              );
+            }}
+          />
+        </label>
+      </Row>
+
+      <Row icon={<Mail className="h-4 w-4" />} title="Newsletter">
+        <label className="flex cursor-pointer items-center justify-between gap-3">
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            Email me about new products, promos and pre-orders.
+          </span>
+          <input
+            type="checkbox"
+            className="h-5 w-5 accent-[#3c5e45]"
+            checked={user.newsletterOptIn === true}
+            disabled={busy}
+            onChange={e => {
+              const next = e.target.checked;
+              act(
+                () => setNewsletter(next),
+                next ? 'You are subscribed to the newsletter.' : 'You are unsubscribed from the newsletter.',
                 'Could not save.'
               );
             }}

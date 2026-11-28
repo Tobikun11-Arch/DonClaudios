@@ -46,6 +46,10 @@ import {useQueryClient} from '@tanstack/react-query';
 import {PRODUCTS_QUERY_PREFIX} from '@/lib/hooks/products/useProducts';
 import {MIN_ORDER_MESSAGE, MIN_ORDER_TOTAL} from '@/lib/constants/orderLimits';
 import {CheckoutPaymentNote} from '@/features/order/components/CheckoutPaymentNote';
+import {
+  TURNSTILE_ENABLED,
+  TurnstileWidget
+} from '@/features/order/components/TurnstileWidget';
 import OrderTimingPicker, {
   DEFAULT_TIMING,
   timingProblem,
@@ -53,6 +57,7 @@ import OrderTimingPicker, {
 } from '@/features/order/components/OrderTimingPicker';
 import {CheckoutOrderNotices} from '@/features/order/components/OrderNotices';
 import type {ScheduleQuote} from '@/lib/orders/orderSchedule';
+import {formatPeso} from '@/lib/utils/formatNumber';
 
 const STORE = {
   lat: 14.39092185435405,
@@ -110,6 +115,9 @@ export default function CustomerCheckoutPage() {
   );
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
+  // Cloudflare Turnstile token; reset after a failed order (single-use).
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
   const storeStatusQuery = useStoreStatusQuery();
   // A closed store only blocks ASAP orders; pre-orders pick an open slot.
@@ -286,7 +294,8 @@ export default function CustomerCheckoutPage() {
         courier: courierPayload,
         timing: timing.timing,
         scheduledDate: timing.timing === 'scheduled' ? timing.day ?? undefined : undefined,
-        scheduledTime: timing.timing === 'scheduled' ? timing.time ?? undefined : undefined
+        scheduledTime: timing.timing === 'scheduled' ? timing.time ?? undefined : undefined,
+        turnstileToken: turnstileToken ?? undefined
       });
 
       const orderId = created?.order?._id;
@@ -304,6 +313,7 @@ export default function CustomerCheckoutPage() {
         );
       }
     } catch (error) {
+      setTurnstileResetKey(k => k + 1);
       const message =
         error && typeof error === 'object' && 'message' in error
           ? String((error as {message?: unknown}).message)
@@ -324,6 +334,7 @@ export default function CustomerCheckoutPage() {
         createOrderMutation.isPending ||
         clearCartMutation.isPending ||
         !agreedToTerms ||
+        (TURNSTILE_ENABLED && !turnstileToken) ||
         courierMissing ||
         phoneRequired ||
         Boolean(timingIssue) ||
@@ -758,17 +769,17 @@ export default function CustomerCheckoutPage() {
                             {item.name}
                           </p>
                           <p className="shrink-0 text-sm font-extrabold text-gray-900 dark:text-gray-100">
-                            ₱{unitPrice * item.quantity}.00
+                            {formatPeso(unitPrice * item.quantity, true)}
                           </p>
                         </div>
 
                         <div className="mt-0.5">
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            ₱{unitPrice}.00 each
+                            {formatPeso(unitPrice, true)} each
                           </p>
                           {isDiscounted ? (
                             <p className="text-[11px] text-gray-400 line-through">
-                              ₱{item.price}.00
+                              {formatPeso(item.price, true)}
                             </p>
                           ) : null}
                         </div>
@@ -819,7 +830,7 @@ export default function CustomerCheckoutPage() {
               <div className="pt-1 space-y-2">
                 <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
                   <span className="text-gray-500 dark:text-gray-400">Subtotal</span>
-                  <span className="font-semibold">₱{subtotal}.00</span>
+                  <span className="font-semibold">{formatPeso(subtotal, true)}</span>
                 </div>
               </div>
 
@@ -828,7 +839,7 @@ export default function CustomerCheckoutPage() {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Total</span>
                 <span className="text-2xl font-extrabold text-gray-900 dark:text-gray-100">
-                  ₱{total}.00
+                  {formatPeso(total, true)}
                 </span>
               </div>
               {orderType === 'Delivery' && deliveryMode === 'LALAMOVE' ? (
@@ -877,6 +888,11 @@ export default function CustomerCheckoutPage() {
                 </label>
               </div>
 
+              <TurnstileWidget
+                onToken={setTurnstileToken}
+                resetKey={turnstileResetKey}
+              />
+
               {/*
                 Below `lg` the checkout form is a single column and the primary
                 CTA ends up a full scroll below the fold. A sticky bottom bar
@@ -887,7 +903,7 @@ export default function CustomerCheckoutPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Total</span>
                   <span className="text-2xl font-extrabold text-gray-900 dark:text-gray-100">
-                    ₱{total}.00
+                    {formatPeso(total, true)}
                   </span>
                 </div>
                 {checkoutButton}

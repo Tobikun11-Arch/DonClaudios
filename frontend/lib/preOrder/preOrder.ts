@@ -7,6 +7,10 @@
  * category list in sync with the backend.
  */
 
+import {formatPeso} from '@/lib/utils/formatNumber';
+
+export {formatPeso};
+
 export const PRE_ORDER_CATEGORIES = [
   'Cochinillo',
   'Lechon de Leche',
@@ -427,10 +431,6 @@ export function timeRangeLabel(batch: {startTime: string; endTime: string}): str
 
 export function scheduleLabel(batch: {startTime: string; endTime: string}, date: Date, now: Date = new Date()): string {
   return `${dateLabel(date, now)} · ${timeRangeLabel(batch)}`;
-}
-
-export function formatPeso(n: number): string {
-  return `₱${Math.round(n).toLocaleString('en-US')}`;
 }
 
 export function formatCountdown(ms: number): {hours: string; minutes: string; seconds: string} {

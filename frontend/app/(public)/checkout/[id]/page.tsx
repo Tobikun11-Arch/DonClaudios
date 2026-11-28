@@ -66,7 +66,12 @@ import OrderTimingPicker, {
   type TimingSelection
 } from '@/features/order/components/OrderTimingPicker';
 import {CheckoutOrderNotices} from '@/features/order/components/OrderNotices';
+import {
+  TURNSTILE_ENABLED,
+  TurnstileWidget
+} from '@/features/order/components/TurnstileWidget';
 import type {ScheduleQuote} from '@/lib/orders/orderSchedule';
+import {formatPeso} from '@/lib/utils/formatNumber';
 
 const STORE = {
   lat: 14.39092185435405,
@@ -126,6 +131,9 @@ export default function CheckoutGuestPage() {
   // form was opened (the server rejects instant, script-speed submissions).
   const [honeypot, setHoneypot] = useState('');
   const [formStartedAt] = useState(() => Date.now());
+  // Cloudflare Turnstile token; reset after a failed order (single-use).
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const normalizedPhone = normalizePH(mobileNumber);
   const detectedCarrier = normalizedPhone
     ? detectCarrier(normalizedPhone)
@@ -480,9 +488,11 @@ export default function CheckoutGuestPage() {
         scheduledDate: timing.timing === 'scheduled' ? timing.day ?? undefined : undefined,
         scheduledTime: timing.timing === 'scheduled' ? timing.time ?? undefined : undefined,
         website: honeypot,
-        formStartedAt
+        formStartedAt,
+        turnstileToken: turnstileToken ?? undefined
       });
     } catch (error) {
+      setTurnstileResetKey(k => k + 1);
       setCheckoutError(
         getFriendlyErrorMessage(
           error,
@@ -511,6 +521,7 @@ export default function CheckoutGuestPage() {
           overGuestMax ||
           courierMissing ||
           !phoneVerified ||
+          (TURNSTILE_ENABLED && !turnstileToken) ||
           isStoreClosed ||
           Boolean(timingIssue) ||
           createOrderMutation.isPending ||
@@ -1093,6 +1104,10 @@ export default function CheckoutGuestPage() {
               </div>
 
               <CheckoutPaymentNote orderType={orderType} total={total} />
+              <TurnstileWidget
+                onToken={setTurnstileToken}
+                resetKey={turnstileResetKey}
+              />
               <CheckoutOrderNotices
                 className="mt-4"
                 orderType={orderType}
@@ -1152,17 +1167,17 @@ export default function CheckoutGuestPage() {
                               {item.name}
                             </p>
                             <p className="shrink-0 text-sm font-extrabold text-gray-900">
-                              ₱{unitPrice * item.qty}.00
+                              {formatPeso(unitPrice * item.qty, true)}
                             </p>
                           </div>
 
                           <div className="mt-0.5">
                             <p className="text-xs text-gray-500">
-                              ₱{unitPrice}.00 each
+                              {formatPeso(unitPrice, true)} each
                             </p>
                             {isDiscounted ? (
                               <p className="text-[11px] text-gray-400 line-through">
-                                ₱{item.price}.00
+                                {formatPeso(item.price, true)}
                               </p>
                             ) : null}
                           </div>
@@ -1218,7 +1233,7 @@ export default function CheckoutGuestPage() {
                 <div className="pt-1 space-y-2">
                   <div className="flex items-center justify-between text-sm text-gray-700">
                     <span className="text-gray-500">Subtotal</span>
-                    <span className="font-semibold">₱{subtotal}.00</span>
+                    <span className="font-semibold">{formatPeso(subtotal, true)}</span>
                   </div>
                 </div>
 
@@ -1227,7 +1242,7 @@ export default function CheckoutGuestPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold text-gray-900">Total</span>
                   <span className="ux-num text-2xl font-extrabold text-gray-900">
-                    ₱{total}.00
+                    {formatPeso(total, true)}
                   </span>
                 </div>
                 {orderType === 'Delivery' && deliveryMode === 'LALAMOVE' ? (
@@ -1247,7 +1262,7 @@ export default function CheckoutGuestPage() {
         <div className="flex items-center gap-4">
           <div className="min-w-0">
             <p className="text-xs text-gray-500">Total</p>
-            <p className="text-xl font-extrabold text-gray-900">₱{total}.00</p>
+            <p className="text-xl font-extrabold text-gray-900">{formatPeso(total, true)}</p>
           </div>
           <div className="flex-1">{checkoutButton}</div>
         </div>

@@ -24,6 +24,7 @@ import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {FilterPills} from '@/shared/components/FilterPills';
 import CashierNotificationBell from '@/features/cashier/notifications/components/CashierNotificationBell';
 import SectionLoader from '@/shared/components/SectionLoader';
+import {formatPeso} from '@/lib/utils/formatNumber';
 
 function stockClass(stock: number) {
   if (stock <= 0) return 'bg-red-50 text-red-700 border-red-200';
@@ -158,7 +159,7 @@ function CashierProductCard({
           : 'No prep time set'}
       </p>
       <p className="mt-2 text-sm font-semibold text-[#2d4a35]">
-        ₱{product.price}.00
+        {formatPeso(product.price, true)}
       </p>
       {!product.isAvailable && (
         <p className="mt-2 text-[11px] font-bold text-red-600">
@@ -364,8 +365,8 @@ export function CashierMenuStock() {
                 </p>
                 <p className="mt-2 text-xs font-semibold text-[#2d4a35]">
                   {promo.promoType === 'percentage' && `${promo.discountRate ?? 0}% off`}
-                  {promo.promoType === 'fixed_amount' && `₱${promo.discountAmount ?? 0} off`}
-                  {promo.promoType === 'bundle' && promo.price ? `₱${promo.price}.00` : 'Bundle'}
+                  {promo.promoType === 'fixed_amount' && `${formatPeso(promo.discountAmount ?? 0, (promo.discountAmount ?? 0) % 1 !== 0)} off`}
+                  {promo.promoType === 'bundle' && promo.price ? formatPeso(promo.price, true) : 'Bundle'}
                 </p>
                 <p className="mt-1 text-[11px] text-gray-400">
                   {promo.startDate

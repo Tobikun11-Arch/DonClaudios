@@ -3,6 +3,7 @@ import {OrderModel} from '../models/Order.model';
 import {OrderItemModel} from '../models/OrderItem.model';
 import {CustomerModel} from '../models/Customer.model';
 import {StaffActivityModel} from '../models/StaffActivity.model';
+import {cashierRepository} from '../repositories/cashier.repository';
 import type {ResolvedRange} from '../utils/dateRange';
 import {toManilaDayKey} from '../utils/dateRange';
 import {
@@ -34,6 +35,10 @@ export type DetailFilters = {
   orderType?: string;
   paymentMethod?: string;
   status?: string;
+  /** Staff view: staff name or order number. */
+  search?: string;
+  /** Staff view: cashiers online / offline right now. */
+  presence?: 'online' | 'offline';
 };
 
 export type DetailResult = {
@@ -355,16 +360,58 @@ async function customerRows(range: ResolvedRange, filters: DetailFilters, paging
 
 /* ------------------------------------------------------------- Staff */
 
-const ACTION_LABELS: Record<string, string> = {
-  login: 'Signed in',
-  logout: 'Signed out',
-  order_status: 'Order status',
-  courier_ack: 'Replied to courier booking'
-};
+/** "Accepted order DC-012", "Marked order DC-012 as Preparing"... */
+function describeAction(e: any, ref: string) {
+  const order = ref ? `order ${ref}` : 'an order';
+  switch (e.action) {
+    case 'login':
+      return 'Signed in';
+    case 'logout':
+      return 'Signed out';
+    case 'courier_ack':
+      return `Replied to the courier booking on ${order}`;
+  }
+  const status = e.meta?.status as string | undefined;
+  const reason = e.meta?.reason ? ` (${e.meta.reason})` : '';
+  switch (status) {
+    case 'confirmed':
+      return `Accepted ${order}`;
+    case 'on_the_way':
+      return `Sent out ${order} for delivery`;
+    case 'completed':
+      return `Completed ${order}`;
+    case 'cancelled':
+      return `Cancelled ${order}${reason}`;
+    default:
+      return `Marked ${order} as ${STATUS_LABELS[status ?? ''] ?? status ?? 'updated'}${reason}`;
+  }
+}
 
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Staff log: what each staff member did to orders. Sign-in / sign-out events
+ * are not listed; the Status column shows whether the cashier is online now
+ * (heartbeat from the cashier apps, see utils/presence).
+ */
 async function staffRows(range: ResolvedRange, filters: DetailFilters, paging: Paging) {
-  const match: Record<string, unknown> = {at: {$gte: range.from, $lt: range.to}};
+  const match: Record<string, unknown> = {
+    at: {$gte: range.from, $lt: range.to},
+    action: {$nin: ['login', 'logout']}
+  };
+  const and: Record<string, unknown>[] = [];
   if (filters.cashierId) match.actorId = filters.cashierId;
+  const onlineIds = await cashierRepository.listOnlineIds();
+  if (filters.presence === 'online') and.push({actorId: {$in: onlineIds}});
+  if (filters.presence === 'offline') and.push({actorType: 'cashier', actorId: {$nin: onlineIds}});
+  const search = filters.search?.trim();
+  if (search) {
+    const rx = {$regex: escapeRegex(search), $options: 'i'};
+    const matchingOrders = await OrderModel.find({orderNumber: rx}, {_id: 1}).limit(500).lean().exec();
+    and.push({$or: [{actorName: rx}, {orderId: {$in: matchingOrders.map(o => o._id)}}]});
+  }
+  if (and.length) match.$and = and;
+
   const {skip, limit} = window(paging);
   const [events, total, perStaff] = await Promise.all([
     StaffActivityModel.find(match).sort({at: -1}).skip(skip).limit(limit).lean().exec(),
@@ -378,28 +425,27 @@ async function staffRows(range: ResolvedRange, filters: DetailFilters, paging: P
   const orderIds = events.map((e: any) => e.orderId).filter(Boolean);
   const orders = await OrderModel.find({_id: {$in: orderIds}}, {orderNumber: 1}).lean().exec();
   const refs = new Map(orders.map((o: any) => [String(o._id), orderRef(o)]));
-  const rows = events.map((e: any) => ({
-    at: new Date(e.at).toISOString(),
-    staff: e.actorName ?? 'Staff',
-    role: e.actorType === 'admin' ? 'Owner' : 'Cashier',
-    action: ACTION_LABELS[e.action] ?? e.action,
-    order: e.orderId ? refs.get(String(e.orderId)) ?? `#${String(e.orderId).slice(-6).toUpperCase()}` : '—',
-    detail:
-      e.action === 'order_status'
-        ? `${STATUS_LABELS[e.meta?.status] ?? e.meta?.status ?? ''}${e.meta?.reason ? ` — ${e.meta.reason}` : ''}`
-        : e.client === 'mobile'
-          ? 'Mobile app'
-          : 'Web',
-    ip: e.ip ?? '—'
-  }));
+  const online = new Set(onlineIds);
+  const rows = events.map((e: any) => {
+    const ref = e.orderId ? refs.get(String(e.orderId)) ?? `#${String(e.orderId).slice(-6).toUpperCase()}` : '';
+    return {
+      at: new Date(e.at).toISOString(),
+      staff: e.actorName ?? 'Staff',
+      role: e.actorType === 'admin' ? 'Owner' : 'Cashier',
+      status: e.actorType === 'cashier' ? (online.has(e.actorId) ? 'Online' : 'Offline') : '—',
+      action: describeAction(e, ref),
+      device: e.client === 'mobile' ? 'Mobile app' : 'Web',
+      ip: e.ip ?? '—'
+    };
+  });
   return {
     columns: [
       {key: 'at', label: 'Date / time', type: 'datetime'},
       {key: 'staff', label: 'Staff'},
       {key: 'role', label: 'Role'},
-      {key: 'action', label: 'Action'},
-      {key: 'order', label: 'Order #'},
-      {key: 'detail', label: 'Detail'},
+      {key: 'status', label: 'Status'},
+      {key: 'action', label: 'Activity'},
+      {key: 'device', label: 'Device'},
       {key: 'ip', label: 'IP'}
     ] as DetailColumn[],
     rows,

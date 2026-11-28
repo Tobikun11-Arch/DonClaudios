@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import {AlertTriangle, ArrowRight, CheckCircle2} from 'lucide-react';
 import type {DashboardValueSplit} from '@/lib/types/dashboard';
+import {formatNumber, formatPeso} from '@/lib/utils/formatNumber';
 
 /**
  * The main dashboard's most important correction. Without this the revenue card
@@ -44,7 +45,7 @@ export function StuckOrdersAlert({
         <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[#B45309] dark:text-amber-300" />
         <div className="min-w-0 flex-1">
           <p className="text-[0.9rem] font-semibold text-[#1A1A1A] dark:text-gray-100">
-            {stuckOrders.toLocaleString()} orders worth ₱{stuckValue.toLocaleString()} are stuck
+            {formatNumber(stuckOrders)} orders worth {formatPeso(stuckValue)} are stuck
             {oldestStuckDays !== null && ` — the oldest has been waiting ${oldestStuckDays} days`}
           </p>
           <p className="mt-0.5 text-[0.8rem] text-[#6B7280] dark:text-gray-400">
@@ -55,15 +56,15 @@ export function StuckOrdersAlert({
           <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.75rem]">
             <span className="text-[#1A1A1A] dark:text-gray-100">
               Collected{' '}
-              <span className="font-semibold tabular-nums">₱{collected.toLocaleString()}</span>
+              <span className="font-semibold tabular-nums">{formatPeso(collected)}</span>
               <span className="text-[#6B7280] dark:text-gray-400"> ({collectedShare}%)</span>
             </span>
             <span className="text-[#1A1A1A] dark:text-gray-100">
               Still open{' '}
-              <span className="font-semibold tabular-nums">₱{open.toLocaleString()}</span>
+              <span className="font-semibold tabular-nums">{formatPeso(open)}</span>
               <span className="text-[#6B7280] dark:text-gray-400">
                 {' '}
-                ({split.openOrders.toLocaleString()} orders)
+                ({formatNumber(split.openOrders)} orders)
               </span>
             </span>
             <Link

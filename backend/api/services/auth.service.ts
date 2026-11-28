@@ -5,6 +5,7 @@ import {customerRepository} from '../repositories/customer.repository';
 import {cashierRepository} from '../repositories/cashier.repository';
 import {adminRepository} from '../repositories/admin.repository';
 import {ApiError} from '../utils/error';
+import {ACCOUNT_DISABLED_MESSAGE} from '../middleware/auth';
 import {emailService} from './email.service';
 import {smsService} from './sms.service';
 import {toInternationalPhone} from '../utils/phone';
@@ -26,12 +27,17 @@ export const authService = {
     phoneNumber: string;
     address: string;
     carrier?: 'globe_dito' | 'smart_tnt';
+    newsletterOptIn?: boolean;
     acquisition?: unknown;
   }) {
     const email = data.email.toLowerCase().trim();
     const acquisition = sanitizeAcquisition(data.acquisition);
     const carrier = data.carrier === 'smart_tnt' ? 'smart_tnt' : 'globe_dito';
     const useEmailOtp = carrier === 'smart_tnt';
+    const newsletter = {
+      newsletterOptIn: data.newsletterOptIn === true,
+      newsletterOptInAt: new Date()
+    };
 
     // Validate phone format up front so we never persist a record we cannot
     // send an OTP to (which would leave the user stuck).
@@ -114,6 +120,7 @@ export const authService = {
           verificationExpiry,
           isVerified: false,
           phoneVerified: false,
+          ...newsletter,
           // Keep the first answer if the pending account already has one.
           ...(acquisition && !target.acquisition ? {acquisition} : {})
         } as any);
@@ -163,6 +170,7 @@ export const authService = {
         verificationExpiry,
         isVerified: false,
         phoneVerified: false,
+        ...newsletter,
         ...(acquisition ? {acquisition} : {})
       } as any);
 
@@ -506,6 +514,10 @@ export const authService = {
       if (!user.passwordHash) continue;
       const match = await bcrypt.compare(password, user.passwordHash);
       if (!match) continue;
+      // Only told after the right password, so it does not reveal accounts.
+      if (type === 'cashier' && user.isDisabled) {
+        throw new ApiError(403, 'ACCOUNT_DISABLED', ACCOUNT_DISABLED_MESSAGE);
+      }
       return {user, userType: type};
     }
 
@@ -566,6 +578,10 @@ export const authService = {
 
       if (!user.isVerified) {
         throw new ApiError(403, 'NOT_VERIFIED', 'Email not verified');
+      }
+
+      if (userType === 'cashier' && user.isDisabled) {
+        throw new ApiError(401, 'ACCOUNT_DISABLED', ACCOUNT_DISABLED_MESSAGE);
       }
 
       // A password change signs out every other device: refresh tokens issued

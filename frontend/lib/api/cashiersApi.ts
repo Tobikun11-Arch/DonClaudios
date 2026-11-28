@@ -35,6 +35,14 @@ export async function updateCashier(params: {
   return res.data;
 }
 
+/** Settings > Cashiers > Disable / Enable (sessions end at once on disable). */
+export async function setCashierDisabled(params: {id: string; disabled: boolean}) {
+  const res = await httpClient.patch<UpdateCashierResponse>(`/cashiers/${params.id}/disabled`, {
+    disabled: params.disabled
+  });
+  return res.data;
+}
+
 export async function deleteCashier(id: string) {
   const res = await httpClient.delete<DeleteCashierResponse>(
     `/cashiers/${id}`

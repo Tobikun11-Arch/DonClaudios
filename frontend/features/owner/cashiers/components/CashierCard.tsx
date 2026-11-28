@@ -1,14 +1,34 @@
 import {Button} from '@/components/ui/button';
 import {Card, CardContent} from '@/components/ui/card';
 import {cn} from '@/lib/utils';
-import {User, Pencil, Trash2, Mail, Phone, MapPin} from 'lucide-react';
+import {User, Pencil, Trash2, Mail, Phone, MapPin, Ban, RotateCcw} from 'lucide-react';
 import type {Cashier} from '@/lib/types/cashier';
 
 interface Props {
   cashier: Cashier;
   onEdit: (c: Cashier) => void;
   onDelete: (c: Cashier) => void;
+  onToggleDisabled: (c: Cashier) => void;
   isDeleting: boolean;
+  isToggling: boolean;
+}
+
+function statusOf(c: Cashier) {
+  if (c.isDisabled) {
+    return {
+      label: 'DISABLED',
+      className: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 border-red-200 dark:border-red-500/30'
+    };
+  }
+  return c.isOnline
+    ? {
+        label: 'ONLINE',
+        className: 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-300 border-green-200 dark:border-green-500/30'
+      }
+    : {
+        label: 'OFFLINE',
+        className: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700'
+      };
 }
 
 function CashierAvatar({cashier: c}: {cashier: Cashier}) {
@@ -29,7 +49,8 @@ function CashierAvatar({cashier: c}: {cashier: Cashier}) {
   );
 }
 
-export function CashierCard({cashier: c, onEdit, onDelete, isDeleting}: Props) {
+export function CashierCard({cashier: c, onEdit, onDelete, onToggleDisabled, isDeleting, isToggling}: Props) {
+  const status = statusOf(c);
   return (
     <Card className="overflow-hidden border-gray-100 dark:border-gray-700 p-0">
       <CardContent className="p-5">
@@ -43,15 +64,8 @@ export function CashierCard({cashier: c, onEdit, onDelete, isDeleting}: Props) {
               <p className="text-xs text-gray-500 dark:text-gray-400 break-words">@{c.username}</p>
             </div>
           </div>
-          <span
-            className={cn(
-              'shrink-0 text-[11px] font-bold px-3 py-1 rounded-full border',
-              c.isOnline
-                ? 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-300 border-green-200 dark:border-green-500/30'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700'
-            )}
-          >
-            {c.isOnline ? 'ONLINE' : 'OFFLINE'}
+          <span className={cn('shrink-0 text-[11px] font-bold px-3 py-1 rounded-full border', status.className)}>
+            {status.label}
           </span>
         </div>
 
@@ -83,6 +97,16 @@ export function CashierCard({cashier: c, onEdit, onDelete, isDeleting}: Props) {
           >
             <Pencil className="h-4 w-4" />
             Edit
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onToggleDisabled(c)}
+            disabled={isToggling}
+            className="flex-1"
+          >
+            {c.isDisabled ? <RotateCcw className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
+            {c.isDisabled ? 'Enable' : 'Disable'}
           </Button>
           <Button
             variant="destructive"
@@ -119,6 +143,7 @@ export function CashierCardSkeleton() {
           <div className="h-3 w-2/3 bg-gray-100 dark:bg-gray-800 rounded-full animate-pulse" />
         </div>
         <div className="flex gap-2 pt-1">
+          <div className="h-8 flex-1 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
           <div className="h-8 flex-1 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
           <div className="h-8 flex-1 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
         </div>

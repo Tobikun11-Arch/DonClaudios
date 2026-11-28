@@ -33,6 +33,7 @@ import {normalizePH, detectCarrier, toAppCarrier} from '@/lib/phone';export defa
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
@@ -88,7 +89,8 @@ import {normalizePH, detectCarrier, toAppCarrier} from '@/lib/phone';export defa
         password,
         phoneNumber,
         address: houseAddress,
-        carrier
+        carrier,
+        newsletterOptIn
       });
       if (carrier === 'globe_dito') {
         router.push(`/verify-phone?phone=${encodeURIComponent(phoneNumber)}`);
@@ -315,6 +317,20 @@ import {normalizePH, detectCarrier, toAppCarrier} from '@/lib/phone';export defa
             <Link href="/privacy" className="text-[#3c5e45] hover:underline">
               Privacy Policy
             </Link>
+          </label>
+        </div>
+
+        <div className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            id="newsletterOptIn"
+            checked={newsletterOptIn}
+            onChange={e => setNewsletterOptIn(e.target.checked)}
+            disabled={isSubmitting}
+            className="mt-1 h-4 w-4 rounded border-gray-300 text-[#3c5e45] focus:ring-[#3c5e45]"
+          />
+          <label htmlFor="newsletterOptIn" className="text-sm text-muted-foreground">
+            Email me about new products, promos and pre-orders. You can unsubscribe anytime.
           </label>
         </div>
 

@@ -1,10 +1,8 @@
 import type {Request} from 'express';
 import {StaffActivityModel, type StaffActivityAction} from '../models/StaffActivity.model';
 import type {OrderActor} from '../models/Order.model';
-import {adminRepository} from '../repositories/admin.repository';
-import {notificationService} from './notification.service';
+import {cashierRepository} from '../repositories/cashier.repository';
 import {getClientIp} from '../utils/clientIp';
-import {formatStoreDateTime} from '../config/orderSchedule';
 import type {ResolvedRange} from '../utils/dateRange';
 
 function clientOf(req?: Request): 'web' | 'mobile' {
@@ -46,28 +44,21 @@ export const staffActivityService = {
     }
   },
 
-  /** Cashier signed in or out: log it and tell the owner (Settings > Notifications > Cashier sign-ins). */
+  /**
+   * Cashier signed in or out: log it and update presence. Owners see this in
+   * Reports > Staff and the dashboard Staff activity card, not as
+   * notifications (sign-ins/outs would flood the bell).
+   */
   async recordSession(actor: OrderActor, action: 'login' | 'logout', req?: Request) {
     if (actor.type !== 'cashier') return;
     const at = new Date();
-    await this.record({actor, action, req, at});
-    try {
-      const admins = (await adminRepository.listAll()) ?? [];
-      const verb = action === 'login' ? 'signed in' : 'signed out';
-      const where = clientOf(req) === 'mobile' ? 'mobile app' : 'web';
-      for (const admin of admins) {
-        await notificationService.createForAdmin({
-          adminId: String(admin._id),
-          type: 'staff_activity',
-          title: `${action === 'login' ? '🟢' : '🔴'} ${actor.name ?? 'A cashier'} ${verb}`,
-          message: `${actor.name ?? 'A cashier'} (cashier) ${verb} · ${formatStoreDateTime(at)} · ${where}`,
-          link: '/owner/dashboard',
-          preferenceKey: 'account.Cashier sign-ins'
-        });
-      }
-    } catch (error) {
-      console.error('Failed to notify owners of cashier session', error);
+    // Online/Offline: sign-in counts as a heartbeat, sign-out ends it now.
+    if (actor.id) {
+      await cashierRepository
+        .setLastSeen(actor.id, action === 'login' ? at : null)
+        .catch(error => console.error('Failed to update cashier presence', error));
     }
+    await this.record({actor, action, req, at});
   },
 
   async listRecent(limit = 20) {

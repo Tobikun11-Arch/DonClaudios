@@ -35,6 +35,7 @@ import {refundPolicySummary} from '@/lib/payment/refundPolicy';
 import {PreOrderNextSteps} from '@/features/preorders/components/PreOrderNextSteps';
 import {effectiveDownPaymentPercent, useDownPaymentQuery} from '@/lib/hooks/useDownPayment';
 import {RefundBreakdown} from '@/features/owner/orders/components/OrderCancellation';
+import {formatPeso} from '@/lib/utils/formatNumber';
 import {
   formatMinutes,
   OVERDUE_GRACE_MINUTES,
@@ -187,10 +188,7 @@ function getItemImage(item: OrderHistoryItem) {
 }
 
 function fmtMoney(value: number) {
-  return `₱${(value ?? 0).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })}`;
+  return formatPeso(value ?? 0, true);
 }
 
 function orderTypeDisplay(orderType: string) {

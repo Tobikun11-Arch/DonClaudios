@@ -31,6 +31,7 @@ import {
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {PreOrderBadge, withSize} from '@/shared/components/PreOrderBadge';
 import SectionLoader from '@/shared/components/SectionLoader';
+import {formatPeso} from '@/lib/utils/formatNumber';
 
 function getItemName(item: OrderHistoryItem) {
   let name = 'Product';
@@ -132,7 +133,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
               </span>
             </div>
             <p className="text-xs text-gray-400 mt-1">
-              Order #{orderNo} • {orderKindLabel(order)} • ₱{order.totalAmount}.00
+              Order #{orderNo} • {orderKindLabel(order)} • {formatPeso(order.totalAmount, true)}
               <PreOrderBadge order={order} className="ml-2" />
               {order.isGuest && (
                 <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
@@ -239,13 +240,13 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold text-gray-900 line-clamp-2">{getItemName(item)}</p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Qty {item.quantity} • ₱{item.price}.00 each
+                    Qty {item.quantity} • {formatPeso(item.price, true)} each
                   </p>
                   {item.specialRequest ? (
                     <p className="text-xs text-gray-500 mt-1">Request: {item.specialRequest}</p>
                   ) : null}
                 </div>
-                <p className="text-sm font-bold text-gray-900">₱{item.price * item.quantity}.00</p>
+                <p className="text-sm font-bold text-gray-900">{formatPeso(item.price * item.quantity, true)}</p>
               </div>
             );
           })}
@@ -253,7 +254,7 @@ export default function CashierOrderDetail({orderId}: {orderId: string}) {
 
         <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
           <p className="text-sm font-bold text-gray-900">Total</p>
-          <p className="text-lg font-extrabold text-[#2d4a35]">₱{order.totalAmount}.00</p>
+          <p className="text-lg font-extrabold text-[#2d4a35]">{formatPeso(order.totalAmount, true)}</p>
         </div>
       </div>
 

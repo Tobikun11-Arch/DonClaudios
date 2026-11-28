@@ -68,6 +68,7 @@ export function useCreateReviewMutation() {
     mutationFn: createReview,
     onSuccess: async () => {
       await queryClient.invalidateQueries({queryKey: myReviewsQueryKey});
+      await queryClient.invalidateQueries({queryKey: publicReviewsQueryKey});
       await queryClient.invalidateQueries({
         queryKey: reviewEligibilityQueryKey
       });

@@ -23,6 +23,8 @@ export const registerDto = z.object({
   phoneNumber: z.string().min(1).optional(),
   address: z.string().min(1).optional(),
   carrier: z.enum(['globe_dito', 'smart_tnt']).optional(),
+  // Newsletter opt-in checkbox (unchecked by default on the form).
+  newsletterOptIn: z.boolean().optional(),
   // Optional and loosely typed on purpose: sanitizeAcquisition() cleans it and
   // never fails a sign-up over bad tracking data.
   acquisition: z.unknown().optional()
@@ -162,6 +164,11 @@ export const mfaCodeDto = z.object({
   code: z.string().trim().min(6).max(20)
 });
 
+/** Authenticator setup: a current code is only needed when two-step is already on. */
+export const mfaOptionalCodeDto = z.object({
+  code: z.string().trim().min(6).max(20).optional()
+});
+
 export const mfaChallengeDto = z.object({
   challengeToken: z.string().min(20)
 });
@@ -173,6 +180,14 @@ export const mfaVerifyDto = z.object({
 
 export const orderEmailPrefDto = z.object({
   orderEmailUpdates: z.boolean()
+});
+
+export const newsletterPrefDto = z.object({
+  newsletterOptIn: z.boolean()
+});
+
+export const newsletterUnsubscribeDto = z.object({
+  token: z.string().min(26).max(200)
 });
 
 export type RegisterDto = z.infer<typeof registerDto>;

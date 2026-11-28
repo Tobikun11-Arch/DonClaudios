@@ -7,6 +7,7 @@ type SendEmailParams = {
   subject: string;
   text: string;
   html?: string;
+  headers?: Record<string, string>;
 };
 
 function getSmtpConfig() {
@@ -37,6 +38,29 @@ function getSmtpConfig() {
 }
 
 export const emailService = {
+  /**
+   * One pooled SMTP connection set for a batch of emails (the newsletter), so
+   * a send to many customers doesn't open a new connection per email.
+   * Call close() when the batch is done.
+   */
+  createPooledSender() {
+    const {host, port, user, pass, from} = getSmtpConfig();
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: {user, pass},
+      pool: true,
+      maxConnections: 3
+    });
+    return {
+      send: async (params: SendEmailParams) => {
+        await transporter.sendMail({from, ...params});
+      },
+      close: () => transporter.close()
+    };
+  },
+
   async sendEmail({to, subject, text, html}: SendEmailParams) {
     const {host, port, user, pass, from} = getSmtpConfig();
 

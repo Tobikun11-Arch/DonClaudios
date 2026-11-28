@@ -18,7 +18,9 @@
     "rewards:rollback": "tsx scripts/migratePointsScale.ts down",
     "seed:preorders": "tsx scripts/seedPreOrders.ts",
     "menu:order:preview": "tsx scripts/seedMenuCategoryOrder.ts",
-    "menu:order:apply": "tsx scripts/seedMenuCategoryOrder.ts --apply"
+    "menu:order:apply": "tsx scripts/seedMenuCategoryOrder.ts --apply",
+    "reviews:publish-pending:preview": "tsx scripts/publishPendingReviews.ts",
+    "reviews:publish-pending:apply": "tsx scripts/publishPendingReviews.ts --apply"
   },
   "keywords": [],
   "author": "",

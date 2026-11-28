@@ -8,6 +8,9 @@ import {CustomerModel, type CustomerDocument} from '../models/Customer.model';
 import {customerRepository} from '../repositories/customer.repository';
 import {cashierRepository} from '../repositories/cashier.repository';
 import {adminRepository} from '../repositories/admin.repository';
+import {AdminModel} from '../models/Admin.model';
+import type {AccountMfa} from '../models/base/Mfa.schema';
+import type {Model} from 'mongoose';
 import {emailService} from './email.service';
 import {guestOtpService} from './guestOtp.service';
 import {accountNoticeEmailTemplate} from '../templates/accountNoticeEmail';
@@ -31,6 +34,20 @@ const BACKUP_CODE_COUNT = 8;
 const challengeSecret = () => `${env.JWT_SECRET}:mfa-challenge`;
 
 type UserType = 'customer' | 'cashier' | 'admin';
+/** Accounts that can turn on two-step sign-in. */
+export type MfaUserType = 'customer' | 'admin';
+
+type MfaUser = {email: string; firstName?: string; mfa?: AccountMfa | null};
+
+function mfaModel(type: MfaUserType): Model<any> {
+  return type === 'admin' ? AdminModel : CustomerModel;
+}
+
+async function findMfaUser(userId: string, type: MfaUserType) {
+  const user = await (type === 'admin' ? adminRepository.findById(userId) : customerRepository.findById(userId));
+  if (!user) throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
+  return user as typeof user & MfaUser;
+}
 
 let googleClient: OAuth2Client | null = null;
 
@@ -230,52 +247,60 @@ export const accountSecurityService = {
   },
 
   /* --------------------------------------------------------------- MFA */
+  // Shared by customers and the owner (admin). `type` defaults to customer so
+  // the existing customer calls stay as they were.
 
   isMfaOn(user: any, type: UserType) {
-    return type === 'customer' && user?.mfa?.enabled === true;
+    return type !== 'cashier' && user?.mfa?.enabled === true;
   },
 
   /**
    * First step of a two-step sign-in: email users get a code now; app users
    * open their authenticator. The response tells the page which one.
    */
-  async beginSignInChallenge(customer: any) {
-    const id = String(customer._id);
-    const method: 'email' | 'totp' = customer.mfa?.method === 'totp' ? 'totp' : 'email';
-    const sent = method === 'email' ? await this.sendMfaCode(id).catch(() => null) : null;
+  async beginSignInChallenge(user: any, type: MfaUserType = 'customer') {
+    const id = String(user._id);
+    const method: 'email' | 'totp' = user.mfa?.method === 'totp' ? 'totp' : 'email';
+    const sent = method === 'email' ? await this.sendMfaCode(id, type).catch(() => null) : null;
     return {
       mfaRequired: true as const,
       method,
-      challengeToken: this.createChallenge(id),
+      challengeToken: this.createChallenge(id, type),
       sentTo: sent?.sentTo ?? null
     };
   },
 
   /** Authenticator app setup, step 1: a new secret as a QR code (not active yet). */
-  async startTotpSetup(customerId: string) {
-    const customer = await customerRepository.findById(customerId);
-    if (!customer) throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
+  async startTotpSetup(userId: string, type: MfaUserType = 'customer', currentCode?: string) {
+    let user = await findMfaUser(userId, type);
+    // Already on: switching to a new app needs a current (or backup) code, so a
+    // stolen session can't swap in its own authenticator.
+    if (user.mfa?.enabled) {
+      if (!currentCode) {
+        throw new ApiError(400, 'CODE_REQUIRED', 'Enter your current code or a backup code first.');
+      }
+      user = (await this.checkMfaCode(userId, currentCode, true, type)).user;
+    }
     const secret = generateTotpSecret();
-    await CustomerModel.updateOne(
-      {_id: customerId},
+    await mfaModel(type).updateOne(
+      {_id: userId},
       {
         $set: {
           'mfa.totpPending': encryptSecret(secret),
-          ...(customer.mfa ? {} : {'mfa.enabled': false, 'mfa.method': 'email', 'mfa.backupCodes': []})
+          ...(user.mfa ? {} : {'mfa.enabled': false, 'mfa.method': 'email', 'mfa.backupCodes': []})
         }
       }
     ).exec();
-    const url = otpauthUrl(secret, customer.email);
+    const url = otpauthUrl(secret, user.email);
     const qrDataUrl = await QRCode.toDataURL(url, {margin: 1, width: 220});
     // Grouped for typing by hand when the QR can't be scanned.
     return {qrDataUrl, otpauthUrl: url, secret: secret.replace(/(.{4})/g, '$1 ').trim()};
   },
 
   /** Authenticator app setup, step 2: the first app code proves it works, then it is turned on. */
-  async enableTotp(customerId: string, code: string) {
-    const customer = await customerRepository.findById(customerId);
-    if (!customer) throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
-    const pending = customer.mfa?.totpPending;
+  async enableTotp(userId: string, code: string, type: MfaUserType = 'customer') {
+    const user = await findMfaUser(userId, type);
+    const pending = user.mfa?.totpPending;
     if (!pending) throw new ApiError(400, 'TOTP_NOT_STARTED', 'Start the authenticator setup again.');
     const step = verifyTotp(decryptSecret(pending), code);
     if (step === null) {
@@ -283,8 +308,8 @@ export const accountSecurityService = {
     }
     const codes = Array.from({length: BACKUP_CODE_COUNT}, newBackupCode);
     const hashes = await Promise.all(codes.map(c => bcrypt.hash(c, 10)));
-    await CustomerModel.updateOne(
-      {_id: customerId},
+    await mfaModel(type).updateOne(
+      {_id: userId},
       {
         $set: {
           'mfa.enabled': true,
@@ -294,41 +319,42 @@ export const accountSecurityService = {
           'mfa.totpLastStep': step,
           'mfa.backupCodes': hashes,
           'mfa.enabledAt': new Date(),
-          'mfa.codeAttempts': 0
+          'mfa.codeAttempts': 0,
+          // Signs out every other device (refresh tokens issued before now stop working).
+          passwordChangedAt: new Date()
         }
       }
     ).exec();
-    notify(customer, 'mfa_enabled');
+    notify(user, 'mfa_enabled');
     return {backupCodes: codes};
   },
 
-  async sendMfaCode(customerId: string) {
-    const customer = await customerRepository.findById(customerId);
-    if (!customer) throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
-    if (customer.mfa?.enabled && customer.mfa.method === 'totp') {
+  async sendMfaCode(userId: string, type: MfaUserType = 'customer') {
+    const user = await findMfaUser(userId, type);
+    if (user.mfa?.enabled && user.mfa.method === 'totp') {
       throw new ApiError(400, 'USE_AUTHENTICATOR', 'Open your authenticator app for the code, or use a backup code.');
     }
-    const sentAt = customer.mfa?.codeSentAt ? new Date(customer.mfa.codeSentAt).getTime() : 0;
+    const sentAt = user.mfa?.codeSentAt ? new Date(user.mfa.codeSentAt).getTime() : 0;
     const waitMs = MFA_RESEND_COOLDOWN_MS - (Date.now() - sentAt);
     if (waitMs > 0) {
       throw new ApiError(429, 'RESEND_COOLDOWN', `Please wait ${Math.ceil(waitMs / 1000)}s before requesting another code`);
     }
     const code = generateVerificationCode();
-    await CustomerModel.updateOne(
-      {_id: customerId},
+    await mfaModel(type).updateOne(
+      {_id: userId},
       {
         $set: {
           'mfa.codeHash': await bcrypt.hash(code, 10),
           'mfa.codeExpiry': getVerificationExpiry(MFA_CODE_MINUTES),
           'mfa.codeAttempts': 0,
           'mfa.codeSentAt': new Date(),
-          ...(customer.mfa ? {} : {'mfa.enabled': false, 'mfa.method': 'email', 'mfa.backupCodes': []})
+          ...(user.mfa ? {} : {'mfa.enabled': false, 'mfa.method': 'email', 'mfa.backupCodes': []})
         }
       }
     ).exec();
-    const greeting = customer.firstName ? `Hi ${customer.firstName},` : 'Hi,';
+    const greeting = user.firstName ? `Hi ${user.firstName},` : 'Hi,';
     await emailService.sendEmail({
-      to: customer.email,
+      to: user.email,
       subject: `Your DonClaudios sign-in code: ${code}`,
       text: `${greeting}\n\nYour DonClaudios code is ${code}. It expires in ${MFA_CODE_MINUTES} minutes.\n\nIf you didn't try to sign in, change your password.`,
       html: `<div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:0 auto;padding:24px;">
@@ -338,14 +364,14 @@ export const accountSecurityService = {
   <p style="color:#6b7280;">It expires in ${MFA_CODE_MINUTES} minutes. If you didn't try to sign in, change your password.</p>
 </div>`
     });
-    return {sentTo: maskEmail(customer.email), expiresMinutes: MFA_CODE_MINUTES};
+    return {sentTo: maskEmail(user.email), expiresMinutes: MFA_CODE_MINUTES};
   },
 
   /** Checks an emailed or authenticator-app code, or (when allowBackup) a one-time backup code. */
-  async checkMfaCode(customerId: string, code: string, allowBackup: boolean) {
-    const customer = await customerRepository.findById(customerId);
-    if (!customer) throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
-    const mfa = customer.mfa;
+  async checkMfaCode(userId: string, code: string, allowBackup: boolean, type: MfaUserType = 'customer') {
+    const user = await findMfaUser(userId, type);
+    const model = mfaModel(type);
+    const mfa = user.mfa;
     const input = String(code ?? '').trim().toLowerCase();
 
     // Backup codes look like "k7f2-9qhx-3m"; sign-in codes are 6 digits.
@@ -353,8 +379,8 @@ export const accountSecurityService = {
       for (let i = 0; i < (mfa.backupCodes ?? []).length; i++) {
         if (await bcrypt.compare(input, mfa.backupCodes[i])) {
           const rest = mfa.backupCodes.filter((_, idx) => idx !== i);
-          await CustomerModel.updateOne({_id: customerId}, {$set: {'mfa.backupCodes': rest}}).exec();
-          return {customer, usedBackup: true, backupCodesLeft: rest.length};
+          await model.updateOne({_id: userId}, {$set: {'mfa.backupCodes': rest}}).exec();
+          return {user, usedBackup: true, backupCodesLeft: rest.length};
         }
       }
       throw new ApiError(400, 'INVALID_CODE', 'That backup code is not valid.');
@@ -366,14 +392,14 @@ export const accountSecurityService = {
       }
       const step = verifyTotp(decryptSecret(mfa.totpSecret), input, mfa.totpLastStep);
       if (step === null) {
-        await CustomerModel.updateOne({_id: customerId}, {$inc: {'mfa.codeAttempts': 1}}).exec();
+        await model.updateOne({_id: userId}, {$inc: {'mfa.codeAttempts': 1}}).exec();
         throw new ApiError(400, 'INVALID_CODE', 'That code is not correct. Use the newest code in your authenticator app.');
       }
-      await CustomerModel.updateOne(
-        {_id: customerId},
+      await model.updateOne(
+        {_id: userId},
         {$set: {'mfa.totpLastStep': step, 'mfa.codeAttempts': 0}}
       ).exec();
-      return {customer, usedBackup: false, backupCodesLeft: mfa.backupCodes?.length ?? 0};
+      return {user, usedBackup: false, backupCodesLeft: mfa.backupCodes?.length ?? 0};
     }
 
     if (!mfa?.codeHash || !mfa.codeExpiry) {
@@ -386,36 +412,37 @@ export const accountSecurityService = {
       throw new ApiError(400, 'EXPIRED_CODE', 'That code expired. Request a new one.');
     }
     if (!(await bcrypt.compare(input, mfa.codeHash))) {
-      await CustomerModel.updateOne({_id: customerId}, {$inc: {'mfa.codeAttempts': 1}}).exec();
+      await model.updateOne({_id: userId}, {$inc: {'mfa.codeAttempts': 1}}).exec();
       throw new ApiError(400, 'INVALID_CODE', 'That code is not correct.');
     }
-    await CustomerModel.updateOne(
-      {_id: customerId},
+    await model.updateOne(
+      {_id: userId},
       {$set: {'mfa.codeHash': null, 'mfa.codeExpiry': null, 'mfa.codeAttempts': 0}}
     ).exec();
-    return {customer, usedBackup: false, backupCodesLeft: mfa.backupCodes?.length ?? 0};
+    return {user, usedBackup: false, backupCodesLeft: mfa.backupCodes?.length ?? 0};
   },
 
-  createChallenge(userId: string) {
-    return jwt.sign({userId, type: 'customer', purpose: 'mfa'}, challengeSecret(), {expiresIn: '10m'});
+  createChallenge(userId: string, type: MfaUserType = 'customer') {
+    return jwt.sign({userId, type, purpose: 'mfa'}, challengeSecret(), {expiresIn: '10m'});
   },
 
-  readChallenge(token: string): string {
+  /** Who a sign-in challenge is for. The type is signed, so a customer challenge can't open the owner account. */
+  readChallenge(token: string): {userId: string; type: MfaUserType} {
     try {
-      const payload = jwt.verify(token, challengeSecret()) as {userId: string; purpose?: string};
+      const payload = jwt.verify(token, challengeSecret()) as {userId: string; type?: string; purpose?: string};
       if (payload.purpose !== 'mfa') throw new Error('wrong purpose');
-      return payload.userId;
+      return {userId: payload.userId, type: payload.type === 'admin' ? 'admin' : 'customer'};
     } catch {
       throw new ApiError(401, 'MFA_CHALLENGE_EXPIRED', 'Your sign-in took too long. Please sign in again.');
     }
   },
 
-  async enableMfa(customerId: string, code: string) {
-    const {customer} = await this.checkMfaCode(customerId, code, false);
+  async enableMfa(userId: string, code: string, type: MfaUserType = 'customer') {
+    const {user} = await this.checkMfaCode(userId, code, false, type);
     const codes = Array.from({length: BACKUP_CODE_COUNT}, newBackupCode);
     const hashes = await Promise.all(codes.map(c => bcrypt.hash(c, 10)));
-    await CustomerModel.updateOne(
-      {_id: customerId},
+    await mfaModel(type).updateOne(
+      {_id: userId},
       {
         $set: {
           'mfa.enabled': true,
@@ -423,18 +450,20 @@ export const accountSecurityService = {
           'mfa.backupCodes': hashes,
           'mfa.enabledAt': new Date(),
           'mfa.totpSecret': null,
-          'mfa.totpPending': null
+          'mfa.totpPending': null,
+          // Signs out every other device (refresh tokens issued before now stop working).
+          passwordChangedAt: new Date()
         }
       }
     ).exec();
-    notify(customer, 'mfa_enabled');
+    notify(user, 'mfa_enabled');
     return {backupCodes: codes};
   },
 
-  async disableMfa(customerId: string, code: string) {
-    const {customer} = await this.checkMfaCode(customerId, code, true);
-    await CustomerModel.updateOne(
-      {_id: customerId},
+  async disableMfa(userId: string, code: string, type: MfaUserType = 'customer') {
+    const {user} = await this.checkMfaCode(userId, code, true, type);
+    await mfaModel(type).updateOne(
+      {_id: userId},
       {
         $set: {
           'mfa.enabled': false,
@@ -448,6 +477,6 @@ export const accountSecurityService = {
         }
       }
     ).exec();
-    notify(customer, 'mfa_disabled');
+    notify(user, 'mfa_disabled');
   }
 };

@@ -2,6 +2,7 @@ import {Request, Response, NextFunction} from 'express';
 import jwt from 'jsonwebtoken';
 import {env} from '../config/env';
 import {ApiError} from '../utils/error';
+import {cashierRepository} from '../repositories/cashier.repository';
 
 const ACCESS_COOKIE = 'dc_access_token';
 
@@ -29,6 +30,19 @@ export function extractAccessToken(req: Request): string | undefined {
   return req.cookies?.[ACCESS_COOKIE] as string | undefined;
 }
 
+export const ACCOUNT_DISABLED_MESSAGE = 'This account is disabled. Ask the owner.';
+
+/**
+ * Cashier tokens are checked against the account on every request, so a
+ * cashier the owner disabled (or deleted) is cut off at once, not when the
+ * 15-minute access token runs out. 401 makes the web and the POS app try a
+ * refresh, which is refused too, so both land on the sign-in screen.
+ */
+function checkCashier(payload: JwtPayload, onDone: (active: boolean) => void, next: NextFunction) {
+  if (payload.type !== 'cashier') return onDone(true);
+  cashierRepository.isActive(payload.userId).then(onDone, next);
+}
+
 export function requireAuth(req: Request, _res: Response, next: NextFunction) {
   const token = extractAccessToken(req);
 
@@ -36,13 +50,21 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction) {
     return next(new ApiError(401, 'UNAUTHORIZED', 'Missing access token'));
   }
 
+  let payload: JwtPayload;
   try {
-    const payload = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
-    req.auth = payload;
-    return next();
+    payload = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
   } catch {
     return next(new ApiError(401, 'UNAUTHORIZED', 'Invalid token'));
   }
+  checkCashier(
+    payload,
+    active => {
+      if (!active) return next(new ApiError(401, 'ACCOUNT_DISABLED', ACCOUNT_DISABLED_MESSAGE));
+      req.auth = payload;
+      next();
+    },
+    next
+  );
 }
 
 export function optionalAuth(
@@ -54,13 +76,22 @@ export function optionalAuth(
   if (!token) {
     return next();
   }
+  let payload: JwtPayload;
   try {
-    const payload = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
-    req.auth = payload;
+    payload = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
   } catch {
     // Ignore invalid/expired token; leave req.auth unset (treat as guest)
+    return next();
   }
-  return next();
+  checkCashier(
+    payload,
+    active => {
+      // A disabled cashier is treated as a guest here.
+      if (active) req.auth = payload;
+      next();
+    },
+    next
+  );
 }
 
 export function requireAdmin(req: Request, _res: Response, next: NextFunction) {

@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {Bell, BellRing, CheckCheck, Trash2, Mail, MailOpen} from 'lucide-react';
 import {toast} from 'sonner';
@@ -14,9 +14,47 @@ import {useNotificationSound} from '@/lib/hooks/notifications/useNotificationSou
 import type {Notification} from '@/lib/types/notification';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {notificationUrl} from '@/lib/notifications/notificationUrl';
+import {FilterSelect} from '@/shared/components/FilterPills';
+
+const CATEGORIES = [
+  {key: 'orders', label: 'Orders'},
+  {key: 'preorders', label: 'Pre-orders'},
+  {key: 'cancellations', label: 'Cancellations & refunds'},
+  {key: 'reviews', label: 'Reviews'},
+  {key: 'inventory', label: 'Inventory'},
+  {key: 'other', label: 'Other'}
+] as const;
+type Category = (typeof CATEGORIES)[number]['key'];
+
+/**
+ * Bucket an owner notification for the bell's filter. Pre-order alerts share
+ * types with regular orders, so they are told apart by their Pre-orders link;
+ * cancellations and refunds are picked out by title across both.
+ */
+function categoryOf(n: Notification): Category {
+  if (/cancel|refund/i.test(n.title)) return 'cancellations';
+  if (n.link?.includes('tab=preorders')) return 'preorders';
+  switch (n.type) {
+    case 'review_submitted':
+      return 'reviews';
+    case 'low_stock':
+      return 'inventory';
+    case 'new_order':
+    case 'order_status':
+    case 'order_message':
+    case 'order_overdue':
+    case 'order_delayed':
+    case 'courier_booked':
+    case 'points_adjustment':
+      return 'orders';
+    default:
+      return 'other';
+  }
+}
 
 export default function OwnerNotificationBell({alert = false}: {alert?: boolean}) {
   const [open, setOpen] = useState(false);
+  const [category, setCategory] = useState<'all' | Category>('all');
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -25,9 +63,36 @@ export default function OwnerNotificationBell({alert = false}: {alert?: boolean}
   const markAllReadMutation = useMarkAllAdminNotificationsReadMutation();
   const deleteMutation = useDeleteAdminNotificationMutation();
 
-  const notifications = data?.notifications ?? [];
+  const notifications = useMemo(() => data?.notifications ?? [], [data]);
   const unreadCount = data?.unreadCount ?? 0;
   useNotificationSound(notifications);
+
+  // The list is not paginated, so filter here; the badge stays the overall
+  // unread count and each option shows its own unread count.
+  const {visible, categoryOptions} = useMemo(() => {
+    const unreadBy = new Map<Category, number>();
+    const present = new Set<Category>();
+    for (const n of notifications) {
+      const c = categoryOf(n);
+      present.add(c);
+      if (!n.read) unreadBy.set(c, (unreadBy.get(c) ?? 0) + 1);
+    }
+    const withUnread = (label: string, count: number) =>
+      count > 0 ? `${label} (${count} unread)` : label;
+    return {
+      visible:
+        category === 'all'
+          ? notifications
+          : notifications.filter(n => categoryOf(n) === category),
+      categoryOptions: [
+        {value: 'all', label: withUnread('All', unreadCount)},
+        ...CATEGORIES.filter(c => c.key !== 'other' || present.has('other') || category === 'other').map(c => ({
+          value: c.key,
+          label: withUnread(c.label, unreadBy.get(c.key) ?? 0)
+        }))
+      ]
+    };
+  }, [notifications, unreadCount, category]);
 
   useEffect(() => {
     if (!open) return;
@@ -140,6 +205,17 @@ export default function OwnerNotificationBell({alert = false}: {alert?: boolean}
             )}
           </div>
 
+          {notifications.length > 0 && (
+            <div className="border-b border-gray-100 dark:border-gray-700 px-4 py-2">
+              <FilterSelect
+                value={category}
+                onChange={value => setCategory(value as 'all' | Category)}
+                options={categoryOptions}
+                ariaLabel="Filter notifications by category"
+              />
+            </div>
+          )}
+
           <div className="max-h-[60vh] overflow-y-auto sm:max-h-80">
             {isLoading ? (
               <div className="p-5 text-sm text-gray-500 dark:text-gray-400">
@@ -149,8 +225,12 @@ export default function OwnerNotificationBell({alert = false}: {alert?: boolean}
               <div className="p-5 text-sm text-gray-500 dark:text-gray-400">
                 No notifications yet.
               </div>
+            ) : visible.length === 0 ? (
+              <div className="p-5 text-sm text-gray-500 dark:text-gray-400">
+                No notifications in this category.
+              </div>
             ) : (
-              notifications.map(notification => (
+              visible.map(notification => (
                 <div
                   key={notification._id}
                   onClick={() => handleClick(notification)}

@@ -4,6 +4,7 @@ import {
   useCashiersQuery,
   useCreateCashierMutation,
   useDeleteCashierMutation,
+  useSetCashierDisabledMutation,
   useUpdateCashierMutation
 } from '@/lib/hooks/cashiers/useCashiers';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
@@ -15,6 +16,7 @@ import {CashiersFilters} from './CashiersFilters';
 import {CashierCard, CashierCardSkeleton} from './CashierCard';
 import {CashierFormModal} from './CashierFormModal';
 import {DeleteCashierModal} from './DeleteCashierModal';
+import {DisableCashierModal} from './DisableCashierModal';
 import type {Cashier} from '@/lib/types/cashier';
 import {Button} from '@/components/ui/button';
 import {Plus} from 'lucide-react';
@@ -25,6 +27,8 @@ export default function CashiersPage({embedded = false}: {embedded?: boolean} = 
   const createMutation = useCreateCashierMutation();
   const updateMutation = useUpdateCashierMutation();
   const deleteMutation = useDeleteCashierMutation();
+  const disableMutation = useSetCashierDisabledMutation();
+  const [disablingCashier, setDisablingCashier] = useState<Cashier | null>(null);
 
   const [query, setQuery] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -143,6 +147,24 @@ export default function CashiersPage({embedded = false}: {embedded?: boolean} = 
     }
   };
 
+  const cashierName = (c: Cashier | null) => (c ? `${c.firstName} ${c.lastName}` : '');
+
+  const setDisabled = async (c: Cashier, disabled: boolean) => {
+    try {
+      await disableMutation.mutateAsync({id: c._id, disabled});
+      toast.success(disabled ? `${cashierName(c)} is disabled.` : `${cashierName(c)} can sign in again.`);
+      setDisablingCashier(null);
+    } catch (err) {
+      toast.error(getFriendlyErrorMessage(err, 'Could not update the cashier account.'));
+    }
+  };
+
+  // Disabling asks first; enabling is harmless, so it runs right away.
+  const onToggleDisabled = (c: Cashier) => {
+    if (c.isDisabled) void setDisabled(c, false);
+    else setDisablingCashier(c);
+  };
+
   const onDelete = async () => {
     if (!deletingCashier) return;
     try {
@@ -222,7 +244,9 @@ export default function CashiersPage({embedded = false}: {embedded?: boolean} = 
                 cashier={c}
                 onEdit={openEdit}
                 onDelete={openDeleteModal}
+                onToggleDisabled={onToggleDisabled}
                 isDeleting={deleteMutation.isPending}
+                isToggling={disableMutation.isPending}
               />
             ))}
           </div>
@@ -240,6 +264,16 @@ export default function CashiersPage({embedded = false}: {embedded?: boolean} = 
         onFormChange={(field, value) =>
           setForm(prev => ({...prev, [field]: value}))
         }
+      />
+
+      <DisableCashierModal
+        open={disablingCashier !== null}
+        cashierName={cashierName(disablingCashier)}
+        isPending={disableMutation.isPending}
+        onConfirm={() => disablingCashier && void setDisabled(disablingCashier, true)}
+        onClose={() => {
+          if (!disableMutation.isPending) setDisablingCashier(null);
+        }}
       />
 
       <DeleteCashierModal

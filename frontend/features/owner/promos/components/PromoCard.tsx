@@ -1,6 +1,7 @@
 import {Button} from '@/components/ui/button';
 import type {Promo} from '@/lib/types/promo';
 import Image from 'next/image';
+import {formatPeso} from '@/lib/utils/formatNumber';
 
 interface Props {
   promo: Promo;
@@ -25,18 +26,11 @@ function getStatus(p: Promo): 'active' | 'upcoming' | 'expired' | 'inactive' {
   return 'active';
 }
 
-function formatMoney(amount: number) {
-  return amount.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
-}
-
 function getDiscountLabel(p: Promo) {
   const parts: string[] = [];
   if (typeof p.discountRate === 'number') parts.push(`${p.discountRate}% off`);
   if (typeof p.discountAmount === 'number')
-    parts.push(`₱${formatMoney(p.discountAmount)} off`);
+    parts.push(`${formatPeso(p.discountAmount, true)} off`);
   if (parts.length === 0) {
     if (p.promoType === 'bundle') return 'Bundle deal';
     return 'Promo';

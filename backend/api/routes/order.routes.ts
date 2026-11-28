@@ -13,7 +13,8 @@ import {validate, validateQuery} from '../middleware/validation';
 import {
   guestOtpLimiter,
   guestMessageLimiter,
-  guestOrderLimiter
+  guestOrderLimiter,
+  customerOrderLimiter
 } from '../middleware/rateLimit';
 import {
   guestOtpSendDto,
@@ -47,7 +48,13 @@ function requireStaff(req: Request, _res: Response, next: NextFunction) {
   return next(new ApiError(403, 'FORBIDDEN', 'Admin or cashier access required'));
 }
 
-router.post('/me', requireAuth, orderController.createCustomerOrder);
+router.post(
+  '/me',
+  requireAuth,
+  requireCustomer,
+  customerOrderLimiter,
+  orderController.createCustomerOrder
+);
 router.get('/me', requireAuth, orderController.listMyOrders);
 router.post('/guest', guestOrderLimiter, orderController.createGuestOrder);
 

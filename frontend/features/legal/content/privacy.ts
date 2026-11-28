@@ -3,7 +3,7 @@ import type { LegalPageProps } from "../components/LegalLayout";
 export const privacy: LegalPageProps = {
   slug: "privacy",
   title: "Privacy Policy",
-  lastUpdated: "November 23, 2026",
+  lastUpdated: "November 28, 2026",
   intro:
     "DonClaudio's Lechon House respects your privacy. This policy explains what personal data we collect, why we collect it, and your rights under the Data Privacy Act of 2012 (RA 10173).",
   sections: [
@@ -62,7 +62,10 @@ export const privacy: LegalPageProps = {
     {
       heading: "Why We Collect It",
       summary: "To run your account and orders, prevent fraud, and improve our service.",
-      body: ["To create and verify your account, process and deliver your orders, send order updates, handle refund claims, prevent fraud, and improve our service."],
+      body: [
+        "To create and verify your account, process and deliver your orders, send order updates, handle refund claims, prevent fraud, and improve our service.",
+        "If you opt in to our newsletter, we use your name and email address to tell you about new products, promos and pre-orders. You can unsubscribe anytime from the link in any newsletter email or in your account settings.",
+      ],
     },
     {
       heading: "Sharing of Information",

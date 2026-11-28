@@ -1,8 +1,8 @@
 'use client';
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useQuery, keepPreviousData} from '@tanstack/react-query';
-import {ChevronDown, ChevronLeft, ChevronRight, FileSpreadsheet, FileText, Loader2} from 'lucide-react';
+import {ChevronDown, ChevronLeft, ChevronRight, FileSpreadsheet, FileText, Loader2, Search} from 'lucide-react';
 import {toast} from 'sonner';
 import {
   downloadReportDetail,
@@ -14,8 +14,15 @@ import type {ReportRange} from '@/lib/types/report';
 import {triggerBlobDownload} from '@/lib/utils/csvExport';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {cn} from '@/lib/utils';
+import {formatNumber, formatPeso} from '@/lib/utils/formatNumber';
 
 const PAGE_SIZE = 50;
+/** The staff log is read event by event, so it pages in tens. */
+const STAFF_PAGE_SIZE = 10;
+const PRESENCE = [
+  {value: 'online', label: 'Online'},
+  {value: 'offline', label: 'Offline'}
+];
 
 const ORDER_TYPES = [
   {value: 'pickup', label: 'Pick-up'},
@@ -47,9 +54,9 @@ type Column = {key: string; label: string; type?: 'text' | 'money' | 'number' | 
 function formatCell(value: unknown, type?: Column['type']) {
   if (value === null || value === undefined || value === '') return '—';
   if (type === 'money' && typeof value === 'number') {
-    return `₱${value.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    return formatPeso(value, true);
   }
-  if (type === 'number' && typeof value === 'number') return value.toLocaleString('en-PH');
+  if (type === 'number' && typeof value === 'number') return formatNumber(value);
   if (type === 'datetime' && typeof value === 'string') {
     return new Date(value).toLocaleString('en-PH', {month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'});
   }
@@ -94,17 +101,31 @@ function Select({
 /**
  * Reports > Detailed: every row behind a report tab (each order, each
  * product per day, each customer, each staff action), with filters, 50 rows
- * per page, totals over all matching rows, and CSV / PDF of the same rows.
+ * per page (10 for Staff), totals over all matching rows, and CSV / PDF of
+ * the same rows. Filters and paging run on the server.
  */
 export function DetailedReportView({view, range}: {view: DetailView; range: ReportRange}) {
   const [filters, setFilters] = useState<DetailFilters>({});
   const [page, setPage] = useState(1);
   const [busy, setBusy] = useState<'csv' | 'pdf' | null>(null);
   const [openRow, setOpenRow] = useState<number | null>(null);
+  const [searchText, setSearchText] = useState('');
+  const pageSize = view === 'staff' ? STAFF_PAGE_SIZE : PAGE_SIZE;
+
+  // Search as you type, one request after a short pause.
+  useEffect(() => {
+    const search = searchText.trim() || undefined;
+    if (search === filters.search) return;
+    const timer = setTimeout(() => {
+      setFilters(f => ({...f, search}));
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchText, filters.search]);
 
   const query = useQuery({
-    queryKey: ['report', 'detail', view, range, filters, page],
-    queryFn: () => getReportDetail(view, range, filters, page, PAGE_SIZE),
+    queryKey: ['report', 'detail', view, range, filters, page, pageSize],
+    queryFn: () => getReportDetail(view, range, filters, page, pageSize),
     placeholderData: keepPreviousData,
     staleTime: 30_000
   });
@@ -137,18 +158,40 @@ export function DetailedReportView({view, range}: {view: DetailView; range: Repo
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-end gap-2 rounded-xl border border-[#E5E7EB] bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
+        {view === 'staff' ? (
+          <label className="flex min-w-[200px] flex-1 flex-col gap-1 text-[0.72rem] font-semibold uppercase tracking-[0.06em] text-[#6B7280] dark:text-gray-400 sm:max-w-xs">
+            Search
+            <span className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="search"
+                value={searchText}
+                onChange={e => setSearchText(e.target.value)}
+                placeholder="Staff name or order #"
+                className="h-9 w-full rounded-lg border border-gray-200 bg-white pl-8 pr-2 text-sm font-normal normal-case tracking-normal text-gray-900 placeholder:text-gray-400 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              />
+            </span>
+          </label>
+        ) : null}
         <Select
           label={view === 'staff' ? 'Staff' : 'Cashier'}
           value={filters.cashierId ?? ''}
           onChange={v => setFilter('cashierId', v)}
           options={(data?.cashiers ?? []).map(c => ({value: c.id, label: c.name}))}
         />
-        {view !== 'staff' ? (
+        {view === 'staff' ? (
+          <Select
+            label="Status"
+            value={filters.presence ?? ''}
+            onChange={v => setFilter('presence', v)}
+            options={PRESENCE}
+          />
+        ) : (
           <>
             <Select label="Order type" value={filters.orderType ?? ''} onChange={v => setFilter('orderType', v)} options={ORDER_TYPES} />
             <Select label="Payment" value={filters.paymentMethod ?? ''} onChange={v => setFilter('paymentMethod', v)} options={PAYMENTS} />
           </>
-        ) : null}
+        )}
         {orderFilters ? (
           <Select label="Status" value={filters.status ?? ''} onChange={v => setFilter('status', v)} options={STATUSES} />
         ) : null}
@@ -213,7 +256,7 @@ export function DetailedReportView({view, range}: {view: DetailView; range: Repo
                     <tr className="border-t-2 border-[#2d4a35]/30 bg-[#F7F8F6] font-semibold dark:bg-gray-800">
                       {columns.map((c, i) => (
                         <td key={c.key} className={cn('px-3 py-2 tabular-nums', isNumeric(c) && 'text-right')}>
-                          {i === 0 ? `Total (${data.total} rows)` : c.key in data.totals ? formatCell(data.totals[c.key], c.type) : ''}
+                          {i === 0 ? `Total (${formatNumber(data.total)} rows)` : c.key in data.totals ? formatCell(data.totals[c.key], c.type) : ''}
                         </td>
                       ))}
                     </tr>
@@ -254,7 +297,7 @@ export function DetailedReportView({view, range}: {view: DetailView; range: Repo
                     {open ? (
                       <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 px-4 pb-3 text-xs">
                         {rest.map(c => (
-                          <div key={c.key} className={c.key === 'items' || c.key === 'detail' ? 'col-span-2' : ''}>
+                          <div key={c.key} className={c.key === 'items' || c.key === 'action' ? 'col-span-2' : ''}>
                             <dt className="text-[#6B7280] dark:text-gray-400">{c.label}</dt>
                             <dd className="break-words font-medium text-[#1A1A1A] dark:text-gray-100">{formatCell(row[c.key], c.type)}</dd>
                           </div>
@@ -266,7 +309,7 @@ export function DetailedReportView({view, range}: {view: DetailView; range: Repo
               })}
               {Object.keys(data.totals).length ? (
                 <li className="bg-[#F7F8F6] px-4 py-3 text-xs dark:bg-gray-800">
-                  <p className="font-semibold text-[#1A1A1A] dark:text-gray-100">Total ({data.total} rows)</p>
+                  <p className="font-semibold text-[#1A1A1A] dark:text-gray-100">Total ({formatNumber(data.total)} rows)</p>
                   {columns
                     .filter(c => c.key in data.totals)
                     .map(c => (
@@ -280,7 +323,7 @@ export function DetailedReportView({view, range}: {view: DetailView; range: Repo
 
             <div className="flex items-center justify-between gap-2 border-t border-gray-100 px-4 py-2 text-sm dark:border-gray-800">
               <span className="text-[#6B7280] dark:text-gray-400">
-                Page {data.page} of {totalPages} · {data.total} rows
+                Page {data.page} of {totalPages} · {formatNumber(data.total)} rows
               </span>
               <div className="flex gap-1">
                 <button

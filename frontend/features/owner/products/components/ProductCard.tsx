@@ -4,7 +4,7 @@ import {stockUnitLabel} from '@/lib/categories/categoryUtils';
 import {cn} from '@/lib/utils';
 import {Package, Pencil, Trash2, Clock, CalendarClock} from 'lucide-react';
 import Image from 'next/image';
-import {formatPeso} from '../utils/formatPeso';
+import {formatPeso} from '@/lib/utils/formatNumber';
 import {Product} from '@/lib/types/product';
 import {
   formatBatchTime,

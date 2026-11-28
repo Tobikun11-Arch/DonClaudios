@@ -30,6 +30,7 @@ import {
 } from '@/lib/hooks/orders/useTrackOrder';
 import {formatManilaDateTime, inStoreRuleText} from '@/lib/payment/inStorePayment';
 import PaymentChannelTiles, {type PayOption} from './PaymentChannelTiles';
+import {formatPeso} from '@/lib/utils/formatNumber';
 
 /*
  * XENDIT PAYMENT card (customer side).
@@ -46,10 +47,7 @@ import PaymentChannelTiles, {type PayOption} from './PaymentChannelTiles';
 const PAYMENT_OPEN = ['confirmed', 'preparing', 'ready', 'on_the_way'];
 
 function peso(value: number) {
-  return `₱${(value ?? 0).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })}`;
+  return formatPeso(value ?? 0, true);
 }
 
 function timeOf(iso: string) {

@@ -88,6 +88,10 @@ export type DetailFilters = {
   orderType?: string;
   paymentMethod?: string;
   status?: string;
+  /** Staff view: staff name or order number. */
+  search?: string;
+  /** Staff view: cashiers online / offline right now. */
+  presence?: 'online' | 'offline';
 };
 
 export type ReportDetail = {

@@ -20,6 +20,7 @@ import {
   slotLabel
 } from '@/features/preorders/utils';
 import {todayInStoreTimezone} from '@/lib/preOrder/preOrder';
+import {findSizeConflicts} from '@/lib/preOrder/sizeOverlap';
 import {enterNavigation} from '@/shared/utils/enterNavigation';
 
 const PAST_DATE_MESSAGE = 'Pickup date cannot be in the past';
@@ -34,6 +35,8 @@ type SizeDraft = {
   key: string;
   _id?: string;
   label: string;
+  /** Saved label, so a sold size whose label is untouched counts as locked. */
+  originalLabel: string;
   description: string;
   price: string;
   stock: string;
@@ -43,12 +46,38 @@ type SizeDraft = {
 type ProductDraft = {key: string; _id?: string; productId: string; maxSizes: string; sizes: SizeDraft[]};
 type SlotDraft = {key: string; _id?: string; startTime: string; endTime: string; limit: string; booked: number};
 
+type SizeIssue = {other: SizeDraft; otherNo: number; removable: boolean};
+
+const sameRow = (a: SizeDraft, b: SizeDraft) =>
+  a.label.toLowerCase().replace(/\s+/g, '') === b.label.toLowerCase().replace(/\s+/g, '') &&
+  a.description.trim() === b.description.trim() &&
+  a.price === b.price &&
+  a.stock === b.stock &&
+  a.maxPerOrder === b.maxPerOrder;
+
+/**
+ * Sizes of one product that repeat or overlap an earlier size, by draft key.
+ * A new, unsold row identical to an earlier one is `removable`: it is
+ * dropped on save. Any other clash blocks saving.
+ */
+function sizeIssues(sizes: SizeDraft[]): Map<string, SizeIssue> {
+  const locked = (i: number) => sizes[i].sold > 0 && sizes[i].label.trim() === sizes[i].originalLabel.trim();
+  const out = new Map<string, SizeIssue>();
+  for (const c of findSizeConflicts(sizes.map(s => s.label), locked)) {
+    const s = sizes[c.index];
+    const other = sizes[c.otherIndex];
+    out.set(s.key, {other, otherNo: c.otherIndex + 1, removable: s.sold === 0 && sameRow(s, other)});
+  }
+  return out;
+}
+
 let seq = 0;
 const k = () => `k${++seq}`;
 
 const blankSize = (): SizeDraft => ({
   key: k(),
   label: '',
+  originalLabel: '',
   description: '',
   price: '',
   stock: String(DEFAULT_SIZE_STOCK),
@@ -89,6 +118,7 @@ function fromEvent(event: PreOrderEvent | null) {
         key: k(),
         _id: s._id,
         label: s.label,
+        originalLabel: s.label,
         description: s.description ?? '',
         price: String(s.price),
         stock: String(s.stock ?? s.remaining),
@@ -165,6 +195,7 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
       ? previous.sizes.map(s => ({
           key: k(),
           label: s.label,
+          originalLabel: '',
           description: s.description ?? '',
           price: String(s.price),
           stock: String(s.stock ?? DEFAULT_SIZE_STOCK),
@@ -185,13 +216,25 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
     if (pickupIsPast) return toast.error(PAST_DATE_MESSAGE);
     const badSlot = form.slots.findIndex(s => slotTimeError(s));
     if (badSlot >= 0) return toast.error(`Time slot #${badSlot + 1}: ${slotTimeError(form.slots[badSlot])}`);
+    // Drop exact repeats, then refuse any size that still clashes.
+    const products = form.products.map(p => {
+      const issues = sizeIssues(p.sizes);
+      return {...p, sizes: p.sizes.filter(s => !issues.get(s.key)?.removable)};
+    });
+    for (const p of products) {
+      const [clash] = sizeIssues(p.sizes).entries();
+      if (clash) {
+        const label = p.sizes.find(s => s.key === clash[0])?.label.trim();
+        return toast.error(`"${label}" is already covered by "${clash[1].other.label.trim()}". Remove it or change the weight.`);
+      }
+    }
     const input: PreOrderEventInput = {
       title: form.title.trim(),
       pickupDate: form.pickupDate,
       description: form.description.trim() || null,
       cancelCutoffDays: Number(form.cancelCutoffDays || 0),
       maxOrdersPerCustomer: Number(form.maxOrdersPerCustomer || 1),
-      products: form.products.map(p => ({
+      products: products.map(p => ({
         _id: p._id,
         productId: p.productId,
         maxSizes: Number(p.maxSizes || 1),
@@ -385,6 +428,7 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
             const name = prod?.name ?? info?.name ?? 'Product';
             const image = prod?.imageUrl ?? info?.imageUrl ?? null;
             const hasSold = p.sizes.some(s => s.sold > 0);
+            const issues = sizeIssues(p.sizes);
             return (
               <div
                 key={p.key}
@@ -434,71 +478,92 @@ export default function PreOrderEditor({event, allEvents, onDone}: Props) {
                   <span className="w-8" />
                 </div>
                 <div className="space-y-2">
-                  {p.sizes.map(s => (
-                    <div
-                      key={s.key}
-                      className="grid grid-cols-2 gap-2 rounded-lg bg-white dark:bg-gray-900 p-2 md:grid-cols-[1.6fr_1.4fr_0.75fr_0.6fr_0.6fr_auto] md:bg-transparent md:p-0 dark:md:bg-transparent"
-                    >
-                      <input
-                        required
-                        className={`${inputCls} col-span-2 md:col-span-1`}
-                        placeholder="Size, e.g. 4-5 KG"
-                        value={s.label}
-                        onChange={e => updateSize(p.key, s.key, {label: e.target.value})}
-                      />
-                      <input
-                        className={`${inputCls} col-span-2 md:col-span-1`}
-                        placeholder="e.g. Good for 12-15 pax"
-                        value={s.description}
-                        onChange={e => updateSize(p.key, s.key, {description: e.target.value})}
-                      />
-                      <input
-                        type="number"
-                        min={1}
-                        className={inputCls}
-                        required
-                        placeholder="Price"
-                        aria-label="Price"
-                        value={s.price}
-                        onChange={e => updateSize(p.key, s.key, {price: e.target.value})}
-                      />
-                      <div>
+                  {p.sizes.map(s => {
+                    const issue = issues.get(s.key);
+                    const blocking = !!issue && !issue.removable;
+                    const errorId = `size-issue-${s.key}`;
+                    return (
+                      <div
+                        key={s.key}
+                        className="grid grid-cols-2 gap-2 rounded-lg bg-white dark:bg-gray-900 p-2 md:grid-cols-[1.6fr_1.4fr_0.75fr_0.6fr_0.6fr_auto] md:bg-transparent md:p-0 dark:md:bg-transparent"
+                      >
+                        <div className="col-span-2 md:col-span-1">
+                          <input
+                            required
+                            className={`${inputCls} ${blocking ? 'border-red-400 dark:border-red-500' : ''}`}
+                            placeholder="Size, e.g. 4-5 KG"
+                            value={s.label}
+                            aria-invalid={blocking}
+                            aria-describedby={issue ? errorId : undefined}
+                            onChange={e => updateSize(p.key, s.key, {label: e.target.value})}
+                          />
+                          {issue && (
+                            <p
+                              id={errorId}
+                              className={`mt-0.5 text-[0.68rem] ${
+                                blocking ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'
+                              }`}
+                            >
+                              {blocking
+                                ? `Already covered by "${issue.other.label.trim()}" (size #${issue.otherNo})`
+                                : `Same as size #${issue.otherNo}, removed when you save`}
+                            </p>
+                          )}
+                        </div>
+                        <input
+                          className={`${inputCls} col-span-2 md:col-span-1`}
+                          placeholder="e.g. Good for 12-15 pax"
+                          value={s.description}
+                          onChange={e => updateSize(p.key, s.key, {description: e.target.value})}
+                        />
                         <input
                           type="number"
-                          min={Math.max(s.sold, 0)}
+                          min={1}
                           className={inputCls}
                           required
-                          aria-label="Limit (pieces)"
-                          value={s.stock}
-                          onChange={e => updateSize(p.key, s.key, {stock: e.target.value})}
+                          placeholder="Price"
+                          aria-label="Price"
+                          value={s.price}
+                          onChange={e => updateSize(p.key, s.key, {price: e.target.value})}
                         />
-                        {s.sold > 0 && (
-                          <p className="mt-0.5 text-[0.68rem] text-gray-500 dark:text-gray-400">
-                            {s.sold} ordered
-                          </p>
-                        )}
+                        <div>
+                          <input
+                            type="number"
+                            min={Math.max(s.sold, 0)}
+                            className={inputCls}
+                            required
+                            aria-label="Limit (pieces)"
+                            value={s.stock}
+                            onChange={e => updateSize(p.key, s.key, {stock: e.target.value})}
+                          />
+                          {s.sold > 0 && (
+                            <p className="mt-0.5 text-[0.68rem] text-gray-500 dark:text-gray-400">
+                              {s.sold} ordered
+                            </p>
+                          )}
+                        </div>
+                        <input
+                          type="number"
+                          min={1}
+                          className={inputCls}
+                          aria-label="Max per customer"
+                          value={s.maxPerOrder}
+                          onChange={e => updateSize(p.key, s.key, {maxPerOrder: e.target.value})}
+                        />
+                        <button
+                          type="button"
+                          disabled={s.sold > 0 || p.sizes.length === 1}
+                          title={s.sold > 0 ? 'This size already has orders' : 'Remove size'}
+                          onClick={() =>
+                            updateProduct(p.key, x => ({...x, sizes: x.sizes.filter(y => y.key !== s.key)}))
+                          }
+                          className="justify-self-end rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-red-500/10"
+                        >
+                          <Trash2 size={15} />
+                        </button>
                       </div>
-                      <input
-                        type="number"
-                        min={1}
-                        className={inputCls}
-                        aria-label="Max per customer"
-                        value={s.maxPerOrder}
-                        onChange={e => updateSize(p.key, s.key, {maxPerOrder: e.target.value})}
-                      />
-                      <button
-                        type="button"
-                        disabled={s.sold > 0 || p.sizes.length === 1}
-                        title={s.sold > 0 ? 'This size already has orders' : 'Remove size'}
-                        onClick={() =>
-                          updateProduct(p.key, x => ({...x, sizes: x.sizes.filter(y => y.key !== s.key)}))
-                        }
-                        className="justify-self-end rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-red-500/10"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <button
                   type="button"

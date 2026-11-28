@@ -4,6 +4,7 @@ import Image from 'next/image';
 import {useBrand} from '@/lib/hooks/useBrand';
 import type {MeUser} from '@/lib/api/authApi';
 import type {OrderHistoryEntry} from '@/lib/api/orderApi';
+import {formatPeso} from '@/lib/utils/formatNumber';
 
 function memberSinceLabel(iso?: string): string | null {
   if (!iso) return null;
@@ -19,7 +20,7 @@ function lastOrderLabel(orders: OrderHistoryEntry[]): string | null {
   const firstItem = o.items?.[0]?.name ?? o.items?.[0]?.productId;
   const itemName = typeof firstItem === 'string' ? firstItem : firstItem?.name;
   const parts = [size, itemName].filter(Boolean).join(' ');
-  const tail = parts || `₱${o.totalAmount.toLocaleString()}`;
+  const tail = parts || formatPeso(o.totalAmount, o.totalAmount % 1 !== 0);
   return `last: ${tail}`;
 }
 

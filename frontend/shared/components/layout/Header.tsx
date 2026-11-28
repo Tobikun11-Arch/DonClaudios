@@ -22,6 +22,7 @@ import {meQueryKey, useMeQuery} from '@/lib/hooks/auth/useMeQuery';
 import {getMe} from '@/lib/api/authApi';
 import {getDashboardPath} from '@/lib/auth/redirects';
 import {BrandLogo} from '@/shared/components/BrandLogo';
+import {formatPeso} from '@/lib/utils/formatNumber';
 
 export default function Header() {
   const brand = useBrand();
@@ -182,7 +183,7 @@ export default function Header() {
             {isOrderRoute ? (
               cartUniqueCount > 0 ? (
                 <span className="ux-num text-sm font-semibold">
-                  ₱{cartSubtotal}.00
+                  {formatPeso(cartSubtotal, true)}
                 </span>
               ) : null
             ) : (
@@ -251,7 +252,7 @@ export default function Header() {
               </span>
               {isOrderRoute
                 ? cartUniqueCount > 0
-                  ? `₱${cartSubtotal}.00`
+                  ? formatPeso(cartSubtotal, true)
                   : 'Order'
                 : 'Order Now'}
             </Button>

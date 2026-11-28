@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import {ChevronRight} from 'lucide-react';
+import {formatPeso} from '@/lib/utils/formatNumber';
 
 function RelatedProductCard({
   id,
@@ -58,7 +59,7 @@ function RelatedProductCard({
 
         <div className="mt-5 flex items-center justify-between pr-2">
           <span className="text-[17px] font-bold text-[#1a1a1a] dark:text-gray-100">
-            ₱{price}.00
+            {formatPeso(price, true)}
           </span>
           <ChevronRight className="h-4 w-4 text-gray-400" />
         </div>
