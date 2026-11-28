@@ -1,5 +1,6 @@
 import rateLimit from 'express-rate-limit';
 import {getClientIp} from '../utils/clientIp';
+import {CUSTOMER_ORDER_GUARD} from '../config/customerOrderGuard';
 
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
@@ -60,6 +61,24 @@ export const guestOrderLimiter = rateLimit({
   message: {
     success: false,
     code: 'GUEST_ORDER_RATE_LIMIT',
+    message: 'Too many checkout attempts. Please wait a few minutes and try again.'
+  }
+});
+
+// Burst limit on account checkout (POST /orders/me), keyed by the signed-in
+// customer rather than IP so incognito / a new network does not reset it.
+// Must run after requireAuth. The real per-account caps live in
+// customerOrderGuard.service.ts.
+export const customerOrderLimiter = rateLimit({
+  windowMs: CUSTOMER_ORDER_GUARD.burstWindowMinutes * 60 * 1000,
+  max: CUSTOMER_ORDER_GUARD.burstMaxRequests,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: req =>
+    req.auth?.userId ? `customer:${req.auth.userId}` : getClientIp(req),
+  message: {
+    success: false,
+    code: 'CUSTOMER_ORDER_RATE_LIMIT',
     message: 'Too many checkout attempts. Please wait a few minutes and try again.'
   }
 });

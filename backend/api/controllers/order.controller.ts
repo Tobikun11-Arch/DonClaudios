@@ -22,6 +22,8 @@ import {env} from '../config/env';
 import {storeStatusService} from '../services/storeStatus.service';
 import {guestOtpService} from '../services/guestOtp.service';
 import {guestOrderGuardService} from '../services/guestOrderGuard.service';
+import {customerOrderGuardService} from '../services/customerOrderGuard.service';
+import {verifyTurnstile} from '../services/turnstile.service';
 import {
   customerCancelPolicy,
   downPaymentPercentOf,
@@ -623,10 +625,26 @@ export const orderController = {
   },
 
   async createCustomerOrder(req: Request, res: Response, next: NextFunction) {
+    let releaseCooldown: (() => Promise<void>) | null = null;
     try {
       if (!req.auth) {
         throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
       }
+
+      // Spam protection layer 1: CAPTCHA (skipped while unconfigured) and a
+      // temporary block on accounts flagged for spam.
+      const guardCtx = customerOrderGuardService.buildContext(
+        req,
+        req.auth.userId,
+        Array.isArray(req.body?.items)
+          ? req.body.items.map((i: any) => ({
+              productId: String(i?.productId ?? ''),
+              quantity: Number(i?.quantity ?? i?.qty ?? 1)
+            }))
+          : []
+      );
+      await verifyTurnstile(req.body?.turnstileToken, guardCtx.ip);
+      await customerOrderGuardService.assertNotBlocked(guardCtx);
 
       // Store hours are checked with the timing below: ASAP needs the store
       // open now, a pre-order only needs an open slot.
@@ -755,6 +773,12 @@ export const orderController = {
         ? contactInfo.address
         : undefined;
 
+      // Spam protection layer 2: active / daily / duplicate caps, then the
+      // cooldown claimed atomically (released below if the order fails).
+      await customerOrderGuardService.assertWithinLimits(guardCtx);
+      ({release: releaseCooldown} =
+        await customerOrderGuardService.claimCooldown(guardCtx));
+
       // Reserve stock and create the order in ONE transaction. The reservation
       // validates the per-day pre-order allowance and the live batch stock, and
       // atomically drops the batches / product totals. Because two concurrent
@@ -872,6 +896,10 @@ export const orderController = {
         }
       }
 
+      // The order exists now: keep the cooldown even if a later step fails.
+      releaseCooldown = null;
+      await customerOrderGuardService.recordPlaced(guardCtx, order._id);
+
       // Manual payment flow: the payment channel is agreed with the cashier on
       // the confirmation call, not chosen at checkout. The transaction row
       // keeps its unique per-order shape with the placeholder'other' and is
@@ -888,6 +916,7 @@ export const orderController = {
 
       res.status(201).json({order, transaction});
     } catch (error) {
+      if (releaseCooldown) await releaseCooldown();
       next(error);
     }
   },
@@ -1022,6 +1051,7 @@ export const orderController = {
           : []
       );
       await guestOrderGuardService.assertNotBot(guardCtx, req.body);
+      await verifyTurnstile(req.body?.turnstileToken, guardCtx.ip);
 
       let guestVerified = false;
       if (isNonEmptyString(guestInfo.phoneNumber)) {

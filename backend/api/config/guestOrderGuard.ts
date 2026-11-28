@@ -15,6 +15,11 @@ export const GUEST_ORDER_GUARD = {
   /** Max guest orders from one IP in a rolling 24 hours. */
   ipMaxPerDay: 15,
 
+  /**
+   * Seconds one phone number / email must wait between two guest orders, so
+   * switching networks or going incognito does not skip the IP cooldown.
+   */
+  contactCooldownSeconds: 60,
   /** Max guest orders for one phone number / email in a rolling 24 hours. */
   contactMaxPerDay: 5,
   /** Max guest orders for one phone / email that are still in progress. */

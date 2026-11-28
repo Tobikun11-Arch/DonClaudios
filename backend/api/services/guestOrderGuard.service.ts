@@ -16,7 +16,8 @@ import {getClientIp} from '../utils/clientIp';
  *  1. Honeypot  - hidden "website" field real people never see or fill.
  *  2. Form timer - the form cannot be submitted in under a few seconds.
  *  3. Per-IP     - cooldown between orders + hourly / daily caps.
- *  4. Per-contact- daily cap and "active orders" cap per phone / email.
+ *  4. Per-contact- cooldown, daily cap and "active orders" cap per phone /
+ *                  email.
  *  5. Duplicate  - same contact + same cart within a short window.
  * (A burst rate limiter on the route and the existing phone/email OTP sit in
  * front of all this.)
@@ -147,6 +148,26 @@ export const guestOrderGuardService = {
     if (ctx.email) contactOr.push({email: ctx.email});
 
     if (contactOr.length > 0) {
+      const lastFromContact = await GuestOrderAttemptModel.findOne({
+        $or: contactOr,
+        outcome: 'placed'
+      })
+        .sort({createdAt: -1})
+        .lean();
+      if (lastFromContact) {
+        const waitMs =
+          G.contactCooldownSeconds * 1000 -
+          (Date.now() - new Date(lastFromContact.createdAt).getTime());
+        if (waitMs > 0) {
+          await block(
+            ctx,
+            429,
+            'GUEST_CONTACT_COOLDOWN',
+            `An order was just placed with this phone number or email. Please wait ${Math.ceil(waitMs / 1000)}s before placing another.`
+          );
+        }
+      }
+
       const contactDay = await GuestOrderAttemptModel.countDocuments({
         $or: contactOr,
         outcome: 'placed',

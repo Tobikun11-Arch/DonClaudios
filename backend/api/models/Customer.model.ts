@@ -47,6 +47,12 @@ export interface CustomerDocument extends BaseUserDocument {
   phoneConfirmedByEmail?: boolean;
   /** Optional two-step sign-in (a code sent by email). */
   mfa?: CustomerMfa | null;
+  /** Last placed online order; claimed atomically for the order cooldown. */
+  lastOrderAt?: Date | null;
+  /** Temporary spam block: new orders are refused until this moment. */
+  orderBlockedUntil?: Date | null;
+  /** When the account was last auto-flagged for order spam. */
+  flaggedForSpamAt?: Date | null;
 }
 
 export interface CustomerMfa {
@@ -136,6 +142,9 @@ const CustomerSchema = new Schema<CustomerDocument>(
       ),
       default: null
     },
+    lastOrderAt: {type: Date, default: null},
+    orderBlockedUntil: {type: Date, default: null},
+    flaggedForSpamAt: {type: Date, default: null},
     onboardingTourDoneAt: {type: Date, default: null},
     onboardingTourOutcome: {
       type: String,

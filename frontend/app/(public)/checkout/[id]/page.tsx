@@ -66,6 +66,10 @@ import OrderTimingPicker, {
   type TimingSelection
 } from '@/features/order/components/OrderTimingPicker';
 import {CheckoutOrderNotices} from '@/features/order/components/OrderNotices';
+import {
+  TURNSTILE_ENABLED,
+  TurnstileWidget
+} from '@/features/order/components/TurnstileWidget';
 import type {ScheduleQuote} from '@/lib/orders/orderSchedule';
 
 const STORE = {
@@ -126,6 +130,9 @@ export default function CheckoutGuestPage() {
   // form was opened (the server rejects instant, script-speed submissions).
   const [honeypot, setHoneypot] = useState('');
   const [formStartedAt] = useState(() => Date.now());
+  // Cloudflare Turnstile token; reset after a failed order (single-use).
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const normalizedPhone = normalizePH(mobileNumber);
   const detectedCarrier = normalizedPhone
     ? detectCarrier(normalizedPhone)
@@ -480,9 +487,11 @@ export default function CheckoutGuestPage() {
         scheduledDate: timing.timing === 'scheduled' ? timing.day ?? undefined : undefined,
         scheduledTime: timing.timing === 'scheduled' ? timing.time ?? undefined : undefined,
         website: honeypot,
-        formStartedAt
+        formStartedAt,
+        turnstileToken: turnstileToken ?? undefined
       });
     } catch (error) {
+      setTurnstileResetKey(k => k + 1);
       setCheckoutError(
         getFriendlyErrorMessage(
           error,
@@ -511,6 +520,7 @@ export default function CheckoutGuestPage() {
           overGuestMax ||
           courierMissing ||
           !phoneVerified ||
+          (TURNSTILE_ENABLED && !turnstileToken) ||
           isStoreClosed ||
           Boolean(timingIssue) ||
           createOrderMutation.isPending ||
@@ -1093,6 +1103,10 @@ export default function CheckoutGuestPage() {
               </div>
 
               <CheckoutPaymentNote orderType={orderType} total={total} />
+              <TurnstileWidget
+                onToken={setTurnstileToken}
+                resetKey={turnstileResetKey}
+              />
               <CheckoutOrderNotices
                 className="mt-4"
                 orderType={orderType}

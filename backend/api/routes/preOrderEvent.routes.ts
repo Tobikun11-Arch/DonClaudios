@@ -2,6 +2,7 @@ import {Router, type Request, type Response, type NextFunction} from 'express';
 import {preOrderEventController as c} from '../controllers/preOrderEvent.controller';
 import {optionalAuth, requireAuth, requireAdmin, requireCustomer} from '../middleware/auth';
 import {ApiError} from '../utils/error';
+import {customerOrderLimiter} from '../middleware/rateLimit';
 
 /**
  * Dated pre-orders.
@@ -19,7 +20,7 @@ function requireStaff(req: Request, _res: Response, next: NextFunction) {
 
 router.get('/open', optionalAuth, c.listOpen);
 router.get('/open/:id', optionalAuth, c.getOpen);
-router.post('/open/:id/orders', requireAuth, requireCustomer, c.place);
+router.post('/open/:id/orders', requireAuth, requireCustomer, customerOrderLimiter, c.place);
 
 router.get('/events', requireAuth, requireStaff, c.list);
 router.post('/events', requireAuth, requireAdmin, c.create);

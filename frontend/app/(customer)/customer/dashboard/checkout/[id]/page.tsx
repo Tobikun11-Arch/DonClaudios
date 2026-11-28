@@ -46,6 +46,10 @@ import {useQueryClient} from '@tanstack/react-query';
 import {PRODUCTS_QUERY_PREFIX} from '@/lib/hooks/products/useProducts';
 import {MIN_ORDER_MESSAGE, MIN_ORDER_TOTAL} from '@/lib/constants/orderLimits';
 import {CheckoutPaymentNote} from '@/features/order/components/CheckoutPaymentNote';
+import {
+  TURNSTILE_ENABLED,
+  TurnstileWidget
+} from '@/features/order/components/TurnstileWidget';
 import OrderTimingPicker, {
   DEFAULT_TIMING,
   timingProblem,
@@ -110,6 +114,9 @@ export default function CustomerCheckoutPage() {
   );
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
+  // Cloudflare Turnstile token; reset after a failed order (single-use).
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
   const storeStatusQuery = useStoreStatusQuery();
   // A closed store only blocks ASAP orders; pre-orders pick an open slot.
@@ -286,7 +293,8 @@ export default function CustomerCheckoutPage() {
         courier: courierPayload,
         timing: timing.timing,
         scheduledDate: timing.timing === 'scheduled' ? timing.day ?? undefined : undefined,
-        scheduledTime: timing.timing === 'scheduled' ? timing.time ?? undefined : undefined
+        scheduledTime: timing.timing === 'scheduled' ? timing.time ?? undefined : undefined,
+        turnstileToken: turnstileToken ?? undefined
       });
 
       const orderId = created?.order?._id;
@@ -304,6 +312,7 @@ export default function CustomerCheckoutPage() {
         );
       }
     } catch (error) {
+      setTurnstileResetKey(k => k + 1);
       const message =
         error && typeof error === 'object' && 'message' in error
           ? String((error as {message?: unknown}).message)
@@ -324,6 +333,7 @@ export default function CustomerCheckoutPage() {
         createOrderMutation.isPending ||
         clearCartMutation.isPending ||
         !agreedToTerms ||
+        (TURNSTILE_ENABLED && !turnstileToken) ||
         courierMissing ||
         phoneRequired ||
         Boolean(timingIssue) ||
@@ -876,6 +886,11 @@ export default function CustomerCheckoutPage() {
                   </Link>
                 </label>
               </div>
+
+              <TurnstileWidget
+                onToken={setTurnstileToken}
+                resetKey={turnstileResetKey}
+              />
 
               {/*
                 Below `lg` the checkout form is a single column and the primary
