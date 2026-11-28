@@ -5,6 +5,7 @@ import {
   deleteCashier,
   getCashier,
   listCashiers,
+  setCashierDisabled,
   updateCashier
 } from '@/lib/api/cashiersApi';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
@@ -47,6 +48,16 @@ export function useUpdateCashierMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateCashier,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({queryKey: cashiersQueryKey});
+    }
+  });
+}
+
+export function useSetCashierDisabledMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: setCashierDisabled,
     onSuccess: async () => {
       await queryClient.invalidateQueries({queryKey: cashiersQueryKey});
     }

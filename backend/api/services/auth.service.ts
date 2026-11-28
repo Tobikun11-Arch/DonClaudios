@@ -5,6 +5,7 @@ import {customerRepository} from '../repositories/customer.repository';
 import {cashierRepository} from '../repositories/cashier.repository';
 import {adminRepository} from '../repositories/admin.repository';
 import {ApiError} from '../utils/error';
+import {ACCOUNT_DISABLED_MESSAGE} from '../middleware/auth';
 import {emailService} from './email.service';
 import {smsService} from './sms.service';
 import {toInternationalPhone} from '../utils/phone';
@@ -506,6 +507,10 @@ export const authService = {
       if (!user.passwordHash) continue;
       const match = await bcrypt.compare(password, user.passwordHash);
       if (!match) continue;
+      // Only told after the right password, so it does not reveal accounts.
+      if (type === 'cashier' && user.isDisabled) {
+        throw new ApiError(403, 'ACCOUNT_DISABLED', ACCOUNT_DISABLED_MESSAGE);
+      }
       return {user, userType: type};
     }
 
@@ -566,6 +571,10 @@ export const authService = {
 
       if (!user.isVerified) {
         throw new ApiError(403, 'NOT_VERIFIED', 'Email not verified');
+      }
+
+      if (userType === 'cashier' && user.isDisabled) {
+        throw new ApiError(401, 'ACCOUNT_DISABLED', ACCOUNT_DISABLED_MESSAGE);
       }
 
       // A password change signs out every other device: refresh tokens issued

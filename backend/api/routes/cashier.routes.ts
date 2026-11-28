@@ -1,13 +1,14 @@
 import {Router} from 'express';
 import {cashierController} from '../controllers/cashier.controller';
 import {validate} from '../middleware/validation';
-import {createCashierDto, updateCashierDto} from '../dtos/cashier.dto';
+import {createCashierDto, setCashierDisabledDto, updateCashierDto} from '../dtos/cashier.dto';
 import {requireAdmin, requireAuth} from '../middleware/auth';
 
 const router = Router();
 
-router.get('/', cashierController.list);
-router.get('/:id', cashierController.getById);
+// Owner only: these return staff contact details.
+router.get('/', requireAuth, requireAdmin, cashierController.list);
+router.get('/:id', requireAuth, requireAdmin, cashierController.getById);
 
 router.post(
   '/',
@@ -23,6 +24,14 @@ router.patch(
   requireAdmin,
   validate(updateCashierDto),
   cashierController.update
+);
+
+router.patch(
+  '/:id/disabled',
+  requireAuth,
+  requireAdmin,
+  validate(setCashierDisabledDto),
+  cashierController.setDisabled
 );
 
 router.delete('/:id', requireAuth, requireAdmin, cashierController.remove);

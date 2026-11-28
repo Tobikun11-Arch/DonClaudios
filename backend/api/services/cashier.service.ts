@@ -13,7 +13,12 @@ function withPresence(cashier: CashierDocument) {
   delete json.passwordHash;
   delete json.verificationCode;
   delete json.verificationExpiry;
-  return {...json, lastSeenAt: cashier.lastSeenAt ?? null, isOnline: isOnline(cashier.lastSeenAt)};
+  return {
+    ...json,
+    lastSeenAt: cashier.lastSeenAt ?? null,
+    isDisabled: cashier.isDisabled === true,
+    isOnline: !cashier.isDisabled && isOnline(cashier.lastSeenAt)
+  };
 }
 
 export const cashierService = {
@@ -125,6 +130,26 @@ export const cashierService = {
     }
 
     const updated = await cashierRepository.updateById(id, updateData);
+    if (!updated) {
+      throw new ApiError(404, 'CASHIER_NOT_FOUND', 'Cashier not found');
+    }
+    return withPresence(updated);
+  },
+
+  /**
+   * Settings > Cashiers > Disable / Enable. Disabling blocks sign-in, rejects
+   * every open session at once (auth middleware) and kills saved refresh
+   * tokens, so after re-enabling the cashier signs in again. Orders and the
+   * staff log keep their history.
+   */
+  async setDisabled(id: string, disabled: boolean) {
+    const now = new Date();
+    const updated = await cashierRepository.updateById(
+      id,
+      disabled
+        ? {isDisabled: true, disabledAt: now, lastSeenAt: null, passwordChangedAt: now}
+        : {isDisabled: false, disabledAt: null}
+    );
     if (!updated) {
       throw new ApiError(404, 'CASHIER_NOT_FOUND', 'Cashier not found');
     }

@@ -38,6 +38,15 @@ export const cashierController = {
     }
   },
 
+  async setDisabled(req: Request, res: Response, next: NextFunction) {
+    try {
+      const cashier = await cashierService.setDisabled(req.params.id, req.body.disabled);
+      res.status(200).json({cashier});
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async remove(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await cashierService.deleteCashier(req.params.id);
