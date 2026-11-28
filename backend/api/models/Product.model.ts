@@ -101,6 +101,11 @@ export interface ProductDocument extends mongoose.Document {
   promoStartDate?: Date;
   promoEndDate?: Date;
   isPromoActive?: boolean;
+  /**
+   * Newsletter guard: null = not emailed yet, a date = emailed. Missing on
+   * products made before the newsletter, so editing those never emails.
+   */
+  newsletterSentAt?: Date | null;
   createdBy: mongoose.Types.ObjectId;
 }
 
@@ -168,6 +173,8 @@ const ProductSchema = new Schema<ProductDocument>(
     promoStartDate: {type: Date, default: undefined},
     promoEndDate: {type: Date, default: undefined},
     isPromoActive: {type: Boolean, default: undefined},
+    // No default on purpose: missing (old products) must stay distinct from null.
+    newsletterSentAt: {type: Date},
     createdBy: {type: Schema.Types.ObjectId, ref: 'Admin', required: true}
   },
   {timestamps: true}

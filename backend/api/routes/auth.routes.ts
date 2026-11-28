@@ -22,7 +22,9 @@ import {
   mfaCodeDto,
   mfaChallengeDto,
   mfaVerifyDto,
-  orderEmailPrefDto
+  orderEmailPrefDto,
+  newsletterPrefDto,
+  newsletterUnsubscribeDto
 } from '../dtos/auth.dto';
 import {
   authLimiter,
@@ -79,6 +81,9 @@ router.post('/mfa/totp/setup', authLimiter, requireAuth, requireCustomer, accoun
 router.post('/mfa/totp/enable', authLimiter, requireAuth, requireCustomer, validate(mfaCodeDto), accountController.enableTotp);
 router.post('/mfa/disable', authLimiter, requireAuth, requireCustomer, validate(mfaCodeDto), accountController.disableMfa);
 router.put('/me/order-emails', sessionLimiter, requireAuth, requireCustomer, validate(orderEmailPrefDto), accountController.setOrderEmails);
+router.put('/me/newsletter', sessionLimiter, requireAuth, requireCustomer, validate(newsletterPrefDto), accountController.setNewsletter);
+// Public one-click unsubscribe (signed token from the email, no sign-in).
+router.post('/newsletter/unsubscribe', authLimiter, validate(newsletterUnsubscribeDto), accountController.newsletterUnsubscribe);
 
 router.post(
   '/forgot-password',

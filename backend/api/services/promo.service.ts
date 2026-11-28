@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import {ApiError} from '../utils/error';
 import {promoRepository} from '../repositories/promo.repository';
+import {newsletterService} from './newsletter.service';
 
 export const promoService = {
   async list() {
@@ -118,12 +119,16 @@ export const promoService = {
       return new mongoose.Types.ObjectId(id);
     });
 
-    return promoRepository.create({
+    const created = await promoRepository.create({
       ...data,
       productIds: productObjectIds.length > 0 ? productObjectIds : undefined,
       isActive: data.isActive ?? true,
+      // null = not emailed yet (see newsletterService.announcePromo).
+      newsletterSentAt: null,
       createdBy: new mongoose.Types.ObjectId(adminId)
     });
+    newsletterService.announcePromo(created);
+    return created;
   },
 
   async update(
@@ -276,6 +281,8 @@ export const promoService = {
     if (!updated) {
       throw new ApiError(404, 'PROMO_NOT_FOUND', 'Promo not found');
     }
+    // Emails once, e.g. when an inactive promo is switched on.
+    newsletterService.announcePromo(updated);
     return updated;
   },
 

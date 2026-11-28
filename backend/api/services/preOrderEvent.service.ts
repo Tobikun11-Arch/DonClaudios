@@ -15,6 +15,7 @@ import {customerRepository} from '../repositories/customer.repository';
 import {notificationRepository} from '../repositories/notification.repository';
 import {notificationService} from './notification.service';
 import {notifyOwners} from './ownerNotify.service';
+import {newsletterService} from './newsletter.service';
 import {ApiError} from '../utils/error';
 import {needsPhoneVerification} from './accountSecurity.service';
 import {findSizeConflicts} from '../utils/preOrderSize';
@@ -566,7 +567,10 @@ export const preOrderEventService = {
     event.status = status as PreOrderEventStatus;
     if (firstPublish) event.publishedAt = new Date();
     await event.save();
-    if (firstPublish) void announceToCustomers(event);
+    if (firstPublish) {
+      void announceToCustomers(event);
+      newsletterService.announcePreOrderDate(event, formatPickup(event.pickupDate));
+    }
     return this.getForOwner(id);
   },
 

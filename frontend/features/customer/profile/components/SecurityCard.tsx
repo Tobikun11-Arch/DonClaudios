@@ -13,6 +13,7 @@ import {
   sendMfaCode,
   sendPhoneCode,
   setFirstPassword,
+  setNewsletter,
   setOrderEmails,
   startTotpSetup,
   unlinkGoogle,
@@ -623,6 +624,28 @@ export function SecurityCard({user}: {user: MeUser | undefined}) {
               act(
                 () => setOrderEmails(next),
                 next ? 'Order emails are on.' : 'Order emails are off.',
+                'Could not save.'
+              );
+            }}
+          />
+        </label>
+      </Row>
+
+      <Row icon={<Mail className="h-4 w-4" />} title="Newsletter">
+        <label className="flex cursor-pointer items-center justify-between gap-3">
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            Email me about new products, promos and pre-orders.
+          </span>
+          <input
+            type="checkbox"
+            className="h-5 w-5 accent-[#3c5e45]"
+            checked={user.newsletterOptIn === true}
+            disabled={busy}
+            onChange={e => {
+              const next = e.target.checked;
+              act(
+                () => setNewsletter(next),
+                next ? 'You are subscribed to the newsletter.' : 'You are unsubscribed from the newsletter.',
                 'Could not save.'
               );
             }}

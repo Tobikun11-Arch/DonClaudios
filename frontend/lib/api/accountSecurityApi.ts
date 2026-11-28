@@ -100,3 +100,14 @@ export async function setOrderEmails(orderEmailUpdates: boolean) {
   const res = await httpClient.put<{orderEmailUpdates: boolean}>('/auth/me/order-emails', {orderEmailUpdates});
   return res.data;
 }
+
+export async function setNewsletter(newsletterOptIn: boolean) {
+  const res = await httpClient.put<{newsletterOptIn: boolean}>('/auth/me/newsletter', {newsletterOptIn});
+  return res.data;
+}
+
+/** Public: one-click unsubscribe with the signed token from a newsletter email. */
+export async function unsubscribeNewsletter(token: string) {
+  const res = await httpClient.post<{unsubscribed: true}>('/auth/newsletter/unsubscribe', {token});
+  return res.data;
+}

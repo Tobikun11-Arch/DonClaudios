@@ -31,6 +31,7 @@ type RegisterRequest = {
   phoneNumber: string;
   address: string;
   carrier?: 'globe_dito' | 'smart_tnt';
+  newsletterOptIn?: boolean;
 };
 
 type RegisterResponse = {
@@ -63,6 +64,7 @@ type MeResponse = {
   /** Google accounts must add and verify a phone before ordering. */
   needsPhoneVerification?: boolean;
   orderEmailUpdates?: boolean;
+  newsletterOptIn?: boolean;
   googleLinked?: boolean;
   googleEmail?: string | null;
   hasPassword?: boolean;

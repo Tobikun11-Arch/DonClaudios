@@ -27,12 +27,17 @@ export const authService = {
     phoneNumber: string;
     address: string;
     carrier?: 'globe_dito' | 'smart_tnt';
+    newsletterOptIn?: boolean;
     acquisition?: unknown;
   }) {
     const email = data.email.toLowerCase().trim();
     const acquisition = sanitizeAcquisition(data.acquisition);
     const carrier = data.carrier === 'smart_tnt' ? 'smart_tnt' : 'globe_dito';
     const useEmailOtp = carrier === 'smart_tnt';
+    const newsletter = {
+      newsletterOptIn: data.newsletterOptIn === true,
+      newsletterOptInAt: new Date()
+    };
 
     // Validate phone format up front so we never persist a record we cannot
     // send an OTP to (which would leave the user stuck).
@@ -115,6 +120,7 @@ export const authService = {
           verificationExpiry,
           isVerified: false,
           phoneVerified: false,
+          ...newsletter,
           // Keep the first answer if the pending account already has one.
           ...(acquisition && !target.acquisition ? {acquisition} : {})
         } as any);
@@ -164,6 +170,7 @@ export const authService = {
         verificationExpiry,
         isVerified: false,
         phoneVerified: false,
+        ...newsletter,
         ...(acquisition ? {acquisition} : {})
       } as any);
 

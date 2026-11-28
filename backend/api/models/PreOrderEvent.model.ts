@@ -64,6 +64,8 @@ export interface PreOrderEventDocument extends mongoose.Document {
   products: PreOrderEventProduct[];
   slots: PreOrderSlot[];
   publishedAt?: Date | null;
+  /** When the newsletter for this date went out (once per date). */
+  newsletterSentAt?: Date | null;
   createdBy?: mongoose.Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
@@ -107,6 +109,7 @@ const PreOrderEventSchema = new Schema<PreOrderEventDocument>(
     products: {type: [EventProductSchema], default: []},
     slots: {type: [SlotSchema], default: []},
     publishedAt: {type: Date, default: null},
+    newsletterSentAt: {type: Date, default: null},
     createdBy: {type: Schema.Types.ObjectId, ref: 'Admin', default: null}
   },
   {timestamps: true}

@@ -12,6 +12,8 @@ export interface PromoDocument extends mongoose.Document {
   startDate: Date;
   endDate: Date;
   isActive: boolean;
+  /** Newsletter guard, same rules as Product.newsletterSentAt. */
+  newsletterSentAt?: Date | null;
   createdBy: mongoose.Types.ObjectId;
 }
 
@@ -32,6 +34,8 @@ const PromoSchema = new Schema<PromoDocument>(
     startDate: {type: Date, required: true},
     endDate: {type: Date, required: true},
     isActive: {type: Boolean, default: true},
+    // No default on purpose: missing (old promos) must stay distinct from null.
+    newsletterSentAt: {type: Date},
     createdBy: {type: Schema.Types.ObjectId, ref: 'Admin', required: true}
   },
   {timestamps: true}

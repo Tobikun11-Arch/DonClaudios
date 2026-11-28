@@ -38,6 +38,10 @@ export interface CustomerDocument extends BaseUserDocument {
   acquisition?: Acquisition | null;
   /** Email me when my order is ready / on the way / cancelled. Default on. */
   orderEmailUpdates?: boolean;
+  /** Newsletter (new products, promos, pre-orders). Opt-in only, default off. */
+  newsletterOptIn?: boolean;
+  /** When the newsletter choice was last changed (consent record). */
+  newsletterOptInAt?: Date | null;
   /** Google account linked for "Continue with Google" (the Google `sub`). */
   googleId?: string | null;
   googleEmail?: string | null;
@@ -119,6 +123,8 @@ const CustomerSchema = new Schema<CustomerDocument>(
     occasions: {type: [OccasionSchema], default: []},
     acquisition: {type: AcquisitionSchema, default: undefined},
     orderEmailUpdates: {type: Boolean, default: true},
+    newsletterOptIn: {type: Boolean, default: false},
+    newsletterOptInAt: {type: Date, default: null},
     googleId: {type: String, default: undefined},
     googleEmail: {type: String, default: null},
     signupMethod: {type: String, enum: ['password', 'google'], default: 'password'},

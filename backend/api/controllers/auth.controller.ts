@@ -163,6 +163,7 @@ export const authController = {
                 phoneVerified: customer.phoneVerified === true,
                 needsPhoneVerification: needsPhoneVerification(customer),
                 orderEmailUpdates: customer.orderEmailUpdates !== false,
+                newsletterOptIn: customer.newsletterOptIn === true,
                 googleLinked: !!customer.googleId,
                 googleEmail: customer.googleEmail ?? null,
                 hasPassword: !!customer.passwordHash,

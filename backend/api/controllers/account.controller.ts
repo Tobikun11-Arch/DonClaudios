@@ -4,6 +4,7 @@ import {CustomerModel} from '../models/Customer.model';
 import {customerRepository} from '../repositories/customer.repository';
 import {accountSecurityService, needsPhoneVerification} from '../services/accountSecurity.service';
 import {sanitizeAcquisition} from '../config/acquisition';
+import {newsletterService} from '../services/newsletter.service';
 import {completeSignIn} from './auth.controller';
 
 function customerId(req: Request): string {
@@ -168,6 +169,23 @@ export const accountController = {
       if (!exists) throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
       await CustomerModel.updateOne({_id: id}, {$set: {orderEmailUpdates: req.body.orderEmailUpdates}}).exec();
       res.status(200).json({orderEmailUpdates: req.body.orderEmailUpdates});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async setNewsletter(req: Request, res: Response, next: NextFunction) {
+    try {
+      res.status(200).json(await newsletterService.setOptIn(customerId(req), req.body.newsletterOptIn));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** Public: one-click unsubscribe from a newsletter email link. */
+  async newsletterUnsubscribe(req: Request, res: Response, next: NextFunction) {
+    try {
+      res.status(200).json(await newsletterService.unsubscribe(req.body.token));
     } catch (error) {
       next(error);
     }
