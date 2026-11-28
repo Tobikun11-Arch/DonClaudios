@@ -5,6 +5,10 @@ import {
 } from '../models/Notification.model';
 import mongoose from 'mongoose';
 
+// Old cashier sign-in/out alerts. No longer created; hidden so they don't
+// linger in the owner bell (Reports > Staff shows that activity instead).
+const VISIBLE_ADMIN_TYPE = {$nin: ['staff_activity']};
+
 export const notificationRepository = {
   listByCustomerId: (customerId: string) =>
     NotificationModel.find({target: 'customer', customerId})
@@ -13,7 +17,7 @@ export const notificationRepository = {
       .exec(),
 
   listByAdminId: (adminId: string) =>
-    NotificationModel.find({target: 'admin', adminId})
+    NotificationModel.find({target: 'admin', adminId, type: VISIBLE_ADMIN_TYPE})
       .sort({createdAt: -1})
       .lean()
       .exec(),
@@ -38,7 +42,12 @@ export const notificationRepository = {
     NotificationModel.countDocuments({target: 'customer', customerId, read: false}).exec(),
 
   countUnreadByAdminId: (adminId: string) =>
-    NotificationModel.countDocuments({target: 'admin', adminId, read: false}).exec(),
+    NotificationModel.countDocuments({
+      target: 'admin',
+      adminId,
+      read: false,
+      type: VISIBLE_ADMIN_TYPE
+    }).exec(),
 
   countUnreadByCashierId: (cashierId: string) =>
     NotificationModel.countDocuments({target: 'cashier', cashierId, read: false}).exec(),

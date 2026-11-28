@@ -90,8 +90,7 @@ const SECTIONS: Record<string, {title: string; subtitle?: string; items: Item[]}
     title: 'Account',
     items: [
       {label: 'New login', description: 'Security alert when a new login occurs on the owner account', defaultOn: true},
-      {label: 'Password change', description: 'Security alert when the owner account password is changed', defaultOn: true},
-      {label: 'Cashier sign-ins', description: 'Tell me when a cashier signs in or out', defaultOn: true}
+      {label: 'Password change', description: 'Security alert when the owner account password is changed', defaultOn: true}
     ]
   }
 };
