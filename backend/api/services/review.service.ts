@@ -1,5 +1,5 @@
 import {ApiError} from '../utils/error';
-import {scanText} from '../utils/profanityFilter';
+import {maskText, scanText} from '../utils/profanityFilter';
 import {reviewRepository} from '../repositories/review.repository';
 import {customerRepository} from '../repositories/customer.repository';
 import {adminRepository} from '../repositories/admin.repository';
@@ -9,11 +9,22 @@ import {reviewReplyEmailTemplate} from '../templates/reviewReplyEmail';
 import type {CustomerDocument} from '../models/Customer.model';
 import type {AdminDocument} from '../models/Admin.model';
 
+// Card #228: reviews publish on submit. Only 1-star reviews wait for the owner
+// (approve/reject as a dispute check). Bad words are never blocked; the stored
+// text stays original for the owner and is masked whenever it is shown publicly.
+const NEEDS_OWNER_REVIEW_MAX_RATING = 1;
+
 export const reviewService = {
   async listPublic() {
     const reviews = await reviewRepository.listApproved();
     return reviews.map(review => {
-      const obj = review.toObject();
+      const {
+        moderation: _moderation,
+        moderatedBy: _moderatedBy,
+        repliedBy: _repliedBy,
+        isAutoRejected: _isAutoRejected,
+        ...obj
+      } = review.toObject();
       const customer = obj.customerId as
         | {_id?: unknown; profilePhoto?: string}
         | null
@@ -25,6 +36,12 @@ export const reviewService = {
         : null;
       return {
         ...obj,
+        comment: maskText(obj.comment),
+        reply: obj.reply ? maskText(obj.reply) : obj.reply,
+        messages: (obj.messages ?? []).map(message => ({
+          ...message,
+          body: maskText(message.body)
+        })),
         profilePhoto,
         customerId: isPopulated
           ? String((customer as {_id?: unknown})._id)
@@ -34,7 +51,13 @@ export const reviewService = {
   },
 
   async listForAdmin() {
-    return reviewRepository.listAll();
+    const reviews = await reviewRepository.listAll();
+    // The owner sees the original text (needed for disputes) plus the masked
+    // version the homepage shows.
+    return reviews.map(review => {
+      const obj = review.toObject();
+      return {...obj, publicComment: maskText(obj.comment)};
+    });
   },
 
   async listMyReviews(customerId: string) {
@@ -59,19 +82,10 @@ export const reviewService = {
       throw new ApiError(400, 'VALIDATION_ERROR', 'Comment is required');
     }
 
-    // Server-side moderation. The frontend only shows a warning, so this is the
-    // enforcement point. Severe language is blocked outright and nothing is
-    // stored; a single mild insult is stored but auto-rejected and flagged.
+    // Bad words are not blocked: the original is stored and masked on public
+    // reads. The matched words are kept on the record for the owner.
     const scan = scanText(data.comment);
-    if (scan.action === 'block') {
-      throw new ApiError(
-        422,
-        'PROFANITY_DETECTED',
-        'Please remove inappropriate language before submitting your review.',
-        {matchedWords: scan.terms}
-      );
-    }
-    const isAutoRejected = scan.action === 'auto_reject';
+    const needsOwnerReview = data.rating <= NEEDS_OWNER_REVIEW_MAX_RATING;
 
     const images = (data.images ?? [])
       .map(url => ({url, alt: ''}))
@@ -102,17 +116,16 @@ export const reviewService = {
 
     const targetOrder = unreviewedOrders[0];
 
-    if (isAutoRejected) {
-      // A blocked submission must not consume the customer's one-review-per-order
-      // slot, so clear the previous attempt before storing the new one.
-      try {
-        await reviewRepository.deleteAutoRejectedForOrder(
-          customerId,
-          String(targetOrder._id)
-        );
-      } catch (error) {
-        console.error('Failed to clear previous auto-rejected review', error);
-      }
+    // Reviews auto-rejected under the old word filter do not consume the
+    // order's slot, so clear one before storing the resubmission (keeps the
+    // {customerId, orderId} unique index satisfied).
+    try {
+      await reviewRepository.deleteAutoRejectedForOrder(
+        customerId,
+        String(targetOrder._id)
+      );
+    } catch (error) {
+      console.error('Failed to clear previous auto-rejected review', error);
     }
 
     let created;
@@ -124,10 +137,10 @@ export const reviewService = {
         comment: data.comment,
         orderId: targetOrder._id as any,
         images,
-        status: isAutoRejected ? 'rejected' : 'pending',
-        isAutoRejected,
+        status: needsOwnerReview ? 'pending' : 'approved',
+        isAutoRejected: false,
         moderation: {
-          action: isAutoRejected ? 'auto_reject' : 'allow',
+          action: 'allow',
           score: scan.score,
           matchedWords: scan.terms
         }
@@ -144,24 +157,6 @@ export const reviewService = {
       throw error;
     }
 
-    if (isAutoRejected) {
-      try {
-        await notificationService.createForCustomer({
-          customerId: String(customer._id),
-          type: 'review_auto_rejected',
-          title: 'Review not published',
-          message:
-            'Your review was not published because it contained inappropriate language. Please edit it and submit again.',
-          reviewId: String(created._id),
-          orderId: String(targetOrder._id),
-          link: '/customer/dashboard?tab=reviews'
-        });
-      } catch (error) {
-        console.error('Failed to notify customer about blocked review', error);
-      }
-      return created;
-    }
-
     try {
       const admins = (await adminRepository.listAll()) as
         | (AdminDocument & {_id: unknown})[]
@@ -171,8 +166,12 @@ export const reviewService = {
           await notificationService.createForAdmin({
             adminId: String(admin._id),
             type: 'review_submitted',
-            title: 'New review awaiting approval',
-            message: `${customerName} submitted a ${data.rating}-star review.`,
+            title: needsOwnerReview
+              ? '1-star review needs your decision'
+              : 'New review published',
+            message: needsOwnerReview
+              ? `${customerName || 'A customer'} left a 1-star review. It stays hidden until you approve or reject it.`
+              : `${customerName || 'A customer'} posted a ${data.rating}-star review. It is live on the homepage.`,
             reviewId: String(created._id),
             link: '/owner/dashboard?tab=reviews',
             preferenceKey: 'customers.New reviews'
@@ -202,8 +201,16 @@ export const reviewService = {
       throw new ApiError(400, 'INVALID_STATUS', 'Status must be approved or rejected');
     }
 
-    // An owner decision always wins over an automatic block, but the matched
-    // words stay on the record for the audit trail.
+    // Approve/reject only exists for reviews waiting on the owner (1-star, plus
+    // any legacy pending review from before auto-publish).
+    if (review.status !== 'pending') {
+      throw new ApiError(
+        409,
+        'REVIEW_ALREADY_DECIDED',
+        'Only reviews waiting for your decision can be approved or rejected.'
+      );
+    }
+
     return reviewRepository.updateStatus(
       reviewId,
       status,
@@ -282,14 +289,6 @@ export const reviewService = {
   ) {
     if (!reply.trim()) {
       throw new ApiError(400, 'VALIDATION_ERROR', 'Reply is required');
-    }
-
-    if (scanText(reply).action === 'block') {
-      throw new ApiError(
-        422,
-        'PROFANITY_DETECTED',
-        'Please remove inappropriate language before sending your reply.'
-      );
     }
 
     const review = await reviewRepository.findById(reviewId);

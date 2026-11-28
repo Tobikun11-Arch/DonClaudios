@@ -29,6 +29,8 @@ export interface Review {
   customerName: string;
   rating: number;
   comment: string;
+  // Owner list only: the comment as the homepage shows it (bad words masked).
+  publicComment?: string;
   status: ReviewStatus;
   orderId?: string | null;
   images?: ReviewImage[];
@@ -76,7 +78,7 @@ export interface UpdateReviewStatusResponse {
 }
 
 export interface UpdateReviewStatusBody {
-  status: ReviewStatus;
+  status: 'approved' | 'rejected';
 }
 
 export interface ReplyReviewResponse {

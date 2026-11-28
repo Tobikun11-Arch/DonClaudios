@@ -13,7 +13,7 @@ export const createReviewDto = z.object({
 export type CreateReviewDto = z.infer<typeof createReviewDto>;
 
 export const updateReviewStatusDto = z.object({
-  status: z.enum(['pending', 'approved', 'rejected'])
+  status: z.enum(['approved', 'rejected'])
 });
 
 export type UpdateReviewStatusDto = z.infer<typeof updateReviewStatusDto>;
