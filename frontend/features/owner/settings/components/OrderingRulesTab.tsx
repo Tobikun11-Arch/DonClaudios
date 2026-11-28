@@ -12,8 +12,10 @@ import {
 } from '@/lib/hooks/useOrderSchedule';
 import {DEFAULT_ORDERING_RULES, type OrderingRules} from '@/lib/orders/orderSchedule';
 import {sanitizeInteger} from '@/lib/validation/numeric';
+import {formatMoney} from '@/lib/utils/formatNumber';
 import {SettingRow} from './SettingRow';
 import {enterNavigation} from '@/shared/utils/enterNavigation';
+import {MoneyInput} from '@/shared/components/MoneyInput';
 
 type Key = keyof OrderingRules;
 type Draft = Record<Key, string>;
@@ -176,16 +178,28 @@ export function OrderingRulesTab() {
                 description={f.description}
                 control={
                   <div className="flex items-center gap-2 sm:justify-end">
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      aria-label={f.title}
-                      value={form[f.key]}
-                      onChange={e => edit(f.key, e.target.value)}
-                      className="min-h-[44px] sm:w-28 tabular-nums"
-                      placeholder={String(DEFAULT_ORDERING_RULES[f.key])}
-                    />
+                    {f.unit === '₱' ? (
+                      <MoneyInput
+                        allowCents={false}
+                        maxDigits={7}
+                        aria-label={f.title}
+                        value={form[f.key]}
+                        onValueChange={n => edit(f.key, n == null ? '' : String(n))}
+                        className="min-h-[44px] sm:w-28 tabular-nums"
+                        placeholder={formatMoney(DEFAULT_ORDERING_RULES[f.key])}
+                      />
+                    ) : (
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        aria-label={f.title}
+                        value={form[f.key]}
+                        onChange={e => edit(f.key, e.target.value)}
+                        className="min-h-[44px] sm:w-28 tabular-nums"
+                        placeholder={String(DEFAULT_ORDERING_RULES[f.key])}
+                      />
+                    )}
                     <span className="w-14 shrink-0 text-left text-xs text-gray-500 dark:text-gray-400">
                       {f.unit === '₱' ? 'pesos' : f.unit}
                     </span>
