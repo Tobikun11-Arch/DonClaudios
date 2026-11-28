@@ -17,6 +17,7 @@ import {notificationService} from './notification.service';
 import {notifyOwners} from './ownerNotify.service';
 import {ApiError} from '../utils/error';
 import {needsPhoneVerification} from './accountSecurity.service';
+import {findSizeConflicts} from '../utils/preOrderSize';
 
 /*
  * Dated pre-orders ("Holiday pre-orders").
@@ -179,9 +180,9 @@ async function buildContent(input: EventInput, existing?: PreOrderEventDocument)
   }
 
   // Index existing sizes/slots so edits keep their sold counts.
-  const oldSizes = new Map<string, {stock: number; remaining: number}>();
+  const oldSizes = new Map<string, {stock: number; remaining: number; label: string}>();
   for (const p of existing?.products ?? []) {
-    for (const s of p.sizes) oldSizes.set(String(s._id), {stock: s.stock, remaining: s.remaining});
+    for (const s of p.sizes) oldSizes.set(String(s._id), {stock: s.stock, remaining: s.remaining, label: s.label});
   }
   const oldSlots = new Map<string, {limit: number; remaining: number}>();
   for (const s of existing?.slots ?? []) oldSlots.set(String(s._id), {limit: s.limit, remaining: s.remaining});
@@ -222,6 +223,22 @@ async function buildContent(input: EventInput, existing?: PreOrderEventDocument)
         maxPerOrder
       };
     });
+    // Same or overlapping weights (4-5 kg twice, or 4.5 kg next to 4-5 kg).
+    // Two sizes that already have orders and keep their label are let
+    // through, since neither can be removed.
+    const locked = (i: number) => {
+      const id = sizesIn[i]._id;
+      const old = id && isId(id) ? oldSizes.get(id) : undefined;
+      return !!old && old.stock - old.remaining > 0 && old.label === sizes[i].label;
+    };
+    const [clash] = findSizeConflicts(sizes.map(s => s.label), locked);
+    if (clash) {
+      throw new ApiError(
+        400,
+        'DUPLICATE_SIZE',
+        `Product #${pi + 1}: "${sizes[clash.index].label}" is already covered by "${sizes[clash.otherIndex].label}". Remove it or change the weight.`
+      );
+    }
     return {
       ...(p._id && isId(p._id) ? {_id: new mongoose.Types.ObjectId(p._id)} : {}),
       productId: new mongoose.Types.ObjectId(p.productId as string),
