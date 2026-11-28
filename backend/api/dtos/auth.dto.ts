@@ -164,6 +164,11 @@ export const mfaCodeDto = z.object({
   code: z.string().trim().min(6).max(20)
 });
 
+/** Authenticator setup: a current code is only needed when two-step is already on. */
+export const mfaOptionalCodeDto = z.object({
+  code: z.string().trim().min(6).max(20).optional()
+});
+
 export const mfaChallengeDto = z.object({
   challengeToken: z.string().min(20)
 });

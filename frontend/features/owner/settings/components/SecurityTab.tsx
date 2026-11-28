@@ -5,11 +5,15 @@ import {toast} from 'sonner';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
+import {useQueryClient} from '@tanstack/react-query';
 import {useChangePasswordMutation, useSessionsQuery} from '@/lib/hooks/auth/useProfile';
+import {meQueryKey, useMeQuery} from '@/lib/hooks/auth/useMeQuery';
+import {MfaControl} from '@/features/customer/profile/components/SecurityCard';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 import {validatePassword} from '@/lib/utils/passwordRules';
 import {enterNavigation} from '@/shared/utils/enterNavigation';
 import {Monitor} from 'lucide-react';
+import {cn} from '@/lib/utils';
 
 function PasswordField({
   id,
@@ -54,6 +58,8 @@ export function SecurityTab() {
   const changePasswordMutation = useChangePasswordMutation();
   const sessionsQuery = useSessionsQuery();
   const sessions = sessionsQuery.data?.sessions ?? [];
+  const queryClient = useQueryClient();
+  const me = useMeQuery().data?.user;
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -140,6 +146,31 @@ export function SecurityTab() {
             </Button>
           </div>
         </form>
+      </div>
+
+      <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <h2 className="text-lg font-bold text-[#2d4a35] dark:text-[#7ed4a0]">
+            Two-step verification
+          </h2>
+          {me ? (
+            <span
+              className={cn(
+                'ml-auto rounded-full px-2 py-0.5 text-xs font-semibold',
+                me.mfaEnabled
+                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'
+              )}
+            >
+              {me.mfaEnabled ? (me.mfaMethod === 'totp' ? 'On · Authenticator app' : 'On · Email code') : 'Off'}
+            </span>
+          ) : null}
+        </div>
+        {me ? (
+          <MfaControl user={me} onDone={() => queryClient.invalidateQueries({queryKey: meQueryKey})} />
+        ) : (
+          <div className="h-14 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
+        )}
       </div>
 
       <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-6">

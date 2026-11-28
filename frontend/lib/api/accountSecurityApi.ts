@@ -81,8 +81,12 @@ export async function enableMfa(code: string) {
 }
 
 /** Authenticator app setup: QR code + the secret for typing in by hand. */
-export async function startTotpSetup() {
-  const res = await httpClient.post<{qrDataUrl: string; otpauthUrl: string; secret: string}>('/auth/mfa/totp/setup');
+/** `currentCode` is required when two-step is already on (switching methods). */
+export async function startTotpSetup(currentCode?: string) {
+  const res = await httpClient.post<{qrDataUrl: string; otpauthUrl: string; secret: string}>(
+    '/auth/mfa/totp/setup',
+    currentCode ? {code: currentCode} : {}
+  );
   return res.data;
 }
 

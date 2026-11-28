@@ -20,6 +20,7 @@ import {
   phoneSendCodeDto,
   phoneVerifyDto,
   mfaCodeDto,
+  mfaOptionalCodeDto,
   mfaChallengeDto,
   mfaVerifyDto,
   orderEmailPrefDto,
@@ -75,11 +76,12 @@ router.post('/google/unlink', sessionLimiter, requireAuth, requireCustomer, acco
 router.post('/password/set', authLimiter, requireAuth, requireCustomer, validate(setPasswordDto), accountController.setPassword);
 router.post('/phone/send-code', authLimiter, requireAuth, requireCustomer, validate(phoneSendCodeDto), accountController.sendPhoneCode);
 router.post('/phone/verify', authLimiter, requireAuth, requireCustomer, validate(phoneVerifyDto), accountController.verifyPhone);
-router.post('/mfa/send-code', authLimiter, requireAuth, requireCustomer, accountController.sendMfaCode);
-router.post('/mfa/enable', authLimiter, requireAuth, requireCustomer, validate(mfaCodeDto), accountController.enableMfa);
-router.post('/mfa/totp/setup', authLimiter, requireAuth, requireCustomer, accountController.startTotpSetup);
-router.post('/mfa/totp/enable', authLimiter, requireAuth, requireCustomer, validate(mfaCodeDto), accountController.enableTotp);
-router.post('/mfa/disable', authLimiter, requireAuth, requireCustomer, validate(mfaCodeDto), accountController.disableMfa);
+// Two-step sign-in settings: customers and the owner (the controller checks the account type).
+router.post('/mfa/send-code', authLimiter, requireAuth, accountController.sendMfaCode);
+router.post('/mfa/enable', authLimiter, requireAuth, validate(mfaCodeDto), accountController.enableMfa);
+router.post('/mfa/totp/setup', authLimiter, requireAuth, validate(mfaOptionalCodeDto), accountController.startTotpSetup);
+router.post('/mfa/totp/enable', authLimiter, requireAuth, validate(mfaCodeDto), accountController.enableTotp);
+router.post('/mfa/disable', authLimiter, requireAuth, validate(mfaCodeDto), accountController.disableMfa);
 router.put('/me/order-emails', sessionLimiter, requireAuth, requireCustomer, validate(orderEmailPrefDto), accountController.setOrderEmails);
 router.put('/me/newsletter', sessionLimiter, requireAuth, requireCustomer, validate(newsletterPrefDto), accountController.setNewsletter);
 // Public one-click unsubscribe (signed token from the email, no sign-in).

@@ -2,16 +2,25 @@ import type {Request, Response, NextFunction} from 'express';
 import {ApiError} from '../utils/error';
 import {CustomerModel} from '../models/Customer.model';
 import {customerRepository} from '../repositories/customer.repository';
-import {accountSecurityService, needsPhoneVerification} from '../services/accountSecurity.service';
+import {accountSecurityService, needsPhoneVerification, type MfaUserType} from '../services/accountSecurity.service';
 import {sanitizeAcquisition} from '../config/acquisition';
 import {newsletterService} from '../services/newsletter.service';
-import {completeSignIn} from './auth.controller';
+import {completeSignIn, setSessionCookies} from './auth.controller';
 
 function customerId(req: Request): string {
   if (!req.auth?.userId || req.auth.type !== 'customer') {
     throw new ApiError(403, 'FORBIDDEN', 'Customer access required');
   }
   return String(req.auth.userId);
+}
+
+/** Two-step sign-in settings are for customers and the owner (admin). */
+function mfaAccount(req: Request): {id: string; type: MfaUserType} {
+  const type = req.auth?.type;
+  if (!req.auth?.userId || (type !== 'customer' && type !== 'admin')) {
+    throw new ApiError(403, 'FORBIDDEN', 'Customer or owner access required');
+  }
+  return {id: String(req.auth.userId), type};
 }
 
 /**
@@ -43,16 +52,17 @@ export const accountController = {
 
   async mfaVerify(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = accountSecurityService.readChallenge(req.body.challengeToken);
-      const {customer, usedBackup, backupCodesLeft} = await accountSecurityService.checkMfaCode(
+      const {userId, type} = accountSecurityService.readChallenge(req.body.challengeToken);
+      const {user, usedBackup, backupCodesLeft} = await accountSecurityService.checkMfaCode(
         userId,
         req.body.code,
-        true
+        true,
+        type
       );
-      await completeSignIn(req, res, customer, 'customer', {
+      await completeSignIn(req, res, user, type, {
         usedBackupCode: usedBackup,
         backupCodesLeft,
-        needsPhoneVerification: needsPhoneVerification(customer)
+        ...(type === 'customer' ? {needsPhoneVerification: needsPhoneVerification(user as any)} : {})
       });
     } catch (error) {
       next(error);
@@ -61,8 +71,8 @@ export const accountController = {
 
   async mfaResend(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = accountSecurityService.readChallenge(req.body.challengeToken);
-      const sent = await accountSecurityService.sendMfaCode(userId);
+      const {userId, type} = accountSecurityService.readChallenge(req.body.challengeToken);
+      const sent = await accountSecurityService.sendMfaCode(userId, type);
       res.status(200).json(sent);
     } catch (error) {
       next(error);
@@ -121,7 +131,8 @@ export const accountController = {
 
   async sendMfaCode(req: Request, res: Response, next: NextFunction) {
     try {
-      res.status(200).json(await accountSecurityService.sendMfaCode(customerId(req)));
+      const {id, type} = mfaAccount(req);
+      res.status(200).json(await accountSecurityService.sendMfaCode(id, type));
     } catch (error) {
       next(error);
     }
@@ -129,8 +140,10 @@ export const accountController = {
 
   async enableMfa(req: Request, res: Response, next: NextFunction) {
     try {
-      const {backupCodes} = await accountSecurityService.enableMfa(customerId(req), req.body.code);
-      res.status(200).json({mfaEnabled: true, backupCodes});
+      const {id, type} = mfaAccount(req);
+      const {backupCodes} = await accountSecurityService.enableMfa(id, req.body.code, type);
+      // Other devices were signed out; this one keeps working.
+      res.status(200).json({mfaEnabled: true, backupCodes, ...setSessionCookies(req, res, id, type)});
     } catch (error) {
       next(error);
     }
@@ -138,7 +151,8 @@ export const accountController = {
 
   async startTotpSetup(req: Request, res: Response, next: NextFunction) {
     try {
-      res.status(200).json(await accountSecurityService.startTotpSetup(customerId(req)));
+      const {id, type} = mfaAccount(req);
+      res.status(200).json(await accountSecurityService.startTotpSetup(id, type, req.body?.code));
     } catch (error) {
       next(error);
     }
@@ -146,8 +160,10 @@ export const accountController = {
 
   async enableTotp(req: Request, res: Response, next: NextFunction) {
     try {
-      const {backupCodes} = await accountSecurityService.enableTotp(customerId(req), req.body.code);
-      res.status(200).json({mfaEnabled: true, method: 'totp', backupCodes});
+      const {id, type} = mfaAccount(req);
+      const {backupCodes} = await accountSecurityService.enableTotp(id, req.body.code, type);
+      // Other devices were signed out; this one keeps working.
+      res.status(200).json({mfaEnabled: true, method: 'totp', backupCodes, ...setSessionCookies(req, res, id, type)});
     } catch (error) {
       next(error);
     }
@@ -155,7 +171,8 @@ export const accountController = {
 
   async disableMfa(req: Request, res: Response, next: NextFunction) {
     try {
-      await accountSecurityService.disableMfa(customerId(req), req.body.code);
+      const {id, type} = mfaAccount(req);
+      await accountSecurityService.disableMfa(id, req.body.code, type);
       res.status(200).json({mfaEnabled: false});
     } catch (error) {
       next(error);
