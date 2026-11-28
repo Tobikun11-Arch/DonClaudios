@@ -1,5 +1,6 @@
 import {CashierModel, CashierDocument} from '../models/Cashier.model';
 import {phoneVariants} from '../utils/phone';
+import {onlineSinceFilter} from '../utils/presence';
 
 export const cashierRepository = {
   findByEmail: (email: string) =>
@@ -38,5 +39,13 @@ export const cashierRepository = {
     >
   ) => CashierModel.findByIdAndUpdate(id, data, {new: true}).exec(),
 
-  deleteById: (id: string) => CashierModel.findByIdAndDelete(id).exec()
+  deleteById: (id: string) => CashierModel.findByIdAndDelete(id).exec(),
+
+  /** Heartbeat / sign-in (date) or sign-out (null). Skips the `updatedAt` bump. */
+  setLastSeen: (id: string, at: Date | null) =>
+    CashierModel.updateOne({_id: id}, {$set: {lastSeenAt: at}}, {timestamps: false}).exec(),
+
+  /** Ids of cashiers whose last heartbeat is inside the presence timeout. */
+  listOnlineIds: async () =>
+    (await CashierModel.find(onlineSinceFilter(), {_id: 1}).lean().exec()).map(c => String(c._id))
 };

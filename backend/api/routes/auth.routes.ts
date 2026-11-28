@@ -29,7 +29,7 @@ import {
   loginLimiter,
   sessionLimiter
 } from '../middleware/rateLimit';
-import {requireAuth, requireAdmin, requireCustomer} from '../middleware/auth';
+import {requireAuth, requireAdmin, requireCashier, requireCustomer} from '../middleware/auth';
 import {accountController} from '../controllers/account.controller';
 
 const router = Router();
@@ -108,6 +108,9 @@ router.post(
   authController.refresh
 );
 router.post('/logout', sessionLimiter, authController.logout);
+// Cashier apps call this every minute while open (Online/Offline status).
+// No IP limiter: every till in the store shares one IP.
+router.post('/heartbeat', requireAuth, requireCashier, authController.heartbeat);
 router.get('/me', sessionLimiter, requireAuth, authController.me);
 router.post(
   '/me/onboarding-tour',

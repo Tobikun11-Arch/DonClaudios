@@ -2,6 +2,7 @@ import type {Request} from 'express';
 import {StaffActivityModel, type StaffActivityAction} from '../models/StaffActivity.model';
 import type {OrderActor} from '../models/Order.model';
 import {adminRepository} from '../repositories/admin.repository';
+import {cashierRepository} from '../repositories/cashier.repository';
 import {notificationService} from './notification.service';
 import {getClientIp} from '../utils/clientIp';
 import {formatStoreDateTime} from '../config/orderSchedule';
@@ -50,6 +51,12 @@ export const staffActivityService = {
   async recordSession(actor: OrderActor, action: 'login' | 'logout', req?: Request) {
     if (actor.type !== 'cashier') return;
     const at = new Date();
+    // Online/Offline: sign-in counts as a heartbeat, sign-out ends it now.
+    if (actor.id) {
+      await cashierRepository
+        .setLastSeen(actor.id, action === 'login' ? at : null)
+        .catch(error => console.error('Failed to update cashier presence', error));
+    }
     await this.record({actor, action, req, at});
     try {
       const admins = (await adminRepository.listAll()) ?? [];

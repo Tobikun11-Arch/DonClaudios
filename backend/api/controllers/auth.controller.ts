@@ -6,6 +6,7 @@ import {ApiError} from '../utils/error';
 import {customerRepository} from '../repositories/customer.repository';
 import {adminRepository} from '../repositories/admin.repository';
 import {cashierRepository} from '../repositories/cashier.repository';
+import {cashierService} from '../services/cashier.service';
 import {CustomerModel, type CustomerDocument} from '../models/Customer.model';
 import type {CashierDocument} from '../models/Cashier.model';
 import jwt from 'jsonwebtoken';
@@ -539,6 +540,16 @@ export const authController = {
       const opts = getCookieOptions();
       res.clearCookie(ACCESS_COOKIE, opts);
       res.clearCookie(REFRESH_COOKIE, opts);
+      next(error);
+    }
+  },
+
+  /** POST /auth/heartbeat: a signed-in cashier app is open (see utils/presence). */
+  async heartbeat(req: Request, res: Response, next: NextFunction) {
+    try {
+      await cashierService.heartbeat(req.auth!.userId);
+      res.status(204).end();
+    } catch (error) {
       next(error);
     }
   },

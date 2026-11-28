@@ -35,7 +35,7 @@ export function buildDetailPdf(result: DetailResult, meta: {title: string; range
     const bottom = doc.page.height - doc.page.margins.bottom;
     // Wider columns for free text; everything else shares the rest.
     const weights = result.columns.map(c =>
-      ['items', 'detail', 'email', 'customer', 'product'].includes(c.key) ? 2.2 : c.type === 'datetime' ? 1.3 : 1
+      ['items', 'action', 'email', 'customer', 'product'].includes(c.key) ? 2.2 : c.type === 'datetime' ? 1.3 : 1
     );
     const sumW = weights.reduce((a, b) => a + b, 0);
     const colW = weights.map(w => (w / sumW) * width);

@@ -45,6 +45,8 @@ export const reportDetailQueryDto = reportRangeQueryDto.extend({
   status: z
     .enum(['pending', 'confirmed', 'preparing', 'ready', 'on_the_way', 'completed', 'cancelled'])
     .optional(),
+  search: z.string().trim().max(100).optional(),
+  presence: z.enum(['online', 'offline']).optional(),
   format: z.enum(['json', 'csv', 'pdf']).default('json')
 });
 

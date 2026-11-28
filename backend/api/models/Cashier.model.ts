@@ -2,8 +2,9 @@ import mongoose from 'mongoose';
 import {BaseUserDocument, createBaseUserSchema} from './base/BaseUser.schema';
 
 export interface CashierDocument extends BaseUserDocument {
-  isOnline: boolean;
   username: string;
+  /** Last heartbeat from a cashier app; null after sign-out. See utils/presence. */
+  lastSeenAt?: Date | null;
   profilePhoto?: string;
 }
 
@@ -11,7 +12,7 @@ const CashierSchema = createBaseUserSchema<CashierDocument>();
 
 CashierSchema.add({
   username: {type: String, required: true, unique: true, trim: true},
-  isOnline: {type: Boolean, default: false},
+  lastSeenAt: {type: Date, default: null},
   profilePhoto: {type: String}
 });
 

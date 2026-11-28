@@ -3,10 +3,22 @@ import {ApiError} from '../utils/error';
 import {cashierRepository} from '../repositories/cashier.repository';
 import {adminRepository} from '../repositories/admin.repository';
 import {customerRepository} from '../repositories/customer.repository';
+import {isOnline} from '../utils/presence';
+import type {CashierDocument} from '../models/Cashier.model';
+
+/** Cashier as the API returns it, with the Online/Offline status worked out from `lastSeenAt`. */
+function withPresence(cashier: CashierDocument) {
+  // Secrets never leave the API (GET /cashiers used to return the password hash).
+  const json = cashier.toJSON() as unknown as Record<string, unknown>;
+  delete json.passwordHash;
+  delete json.verificationCode;
+  delete json.verificationExpiry;
+  return {...json, lastSeenAt: cashier.lastSeenAt ?? null, isOnline: isOnline(cashier.lastSeenAt)};
+}
 
 export const cashierService = {
   async listCashiers() {
-    return cashierRepository.listAll();
+    return (await cashierRepository.listAll()).map(withPresence);
   },
 
   async getCashier(id: string) {
@@ -14,7 +26,12 @@ export const cashierService = {
     if (!cashier) {
       throw new ApiError(404, 'CASHIER_NOT_FOUND', 'Cashier not found');
     }
-    return cashier;
+    return withPresence(cashier);
+  },
+
+  /** POST /auth/heartbeat: the cashier app is open. */
+  async heartbeat(id: string) {
+    await cashierRepository.setLastSeen(id, new Date());
   },
 
   async createCashier(data: {
@@ -54,7 +71,6 @@ export const cashierService = {
       phoneNumber: data.phoneNumber,
       address: data.address,
       username: data.username.trim(),
-      isOnline: false,
       isVerified: true,
       verificationCode: null,
       verificationExpiry: null
@@ -112,7 +128,7 @@ export const cashierService = {
     if (!updated) {
       throw new ApiError(404, 'CASHIER_NOT_FOUND', 'Cashier not found');
     }
-    return updated;
+    return withPresence(updated);
   },
 
   async deleteCashier(id: string) {

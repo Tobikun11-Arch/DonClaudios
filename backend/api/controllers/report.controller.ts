@@ -185,7 +185,9 @@ export const reportController = {
           cashierId: q.cashierId || undefined,
           orderType: q.orderType || undefined,
           paymentMethod: q.paymentMethod || undefined,
-          status: q.status || undefined
+          status: q.status || undefined,
+          search: q.search || undefined,
+          presence: q.presence || undefined
         },
         {page: q.page ?? 1, pageSize: q.pageSize ?? 50, all: format !== 'json'}
       );
