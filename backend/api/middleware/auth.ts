@@ -37,10 +37,11 @@ export const ACCOUNT_DISABLED_MESSAGE = 'This account is disabled. Ask the owner
  * cashier the owner disabled (or deleted) is cut off at once, not when the
  * 15-minute access token runs out. 401 makes the web and the POS app try a
  * refresh, which is refused too, so both land on the sign-in screen.
+ * The same read records the cashier's presence (Online/Offline).
  */
 function checkCashier(payload: JwtPayload, onDone: (active: boolean) => void, next: NextFunction) {
   if (payload.type !== 'cashier') return onDone(true);
-  cashierRepository.isActive(payload.userId).then(onDone, next);
+  cashierRepository.checkActiveAndTouch(payload.userId).then(onDone, next);
 }
 
 export function requireAuth(req: Request, _res: Response, next: NextFunction) {

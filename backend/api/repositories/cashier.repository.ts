@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import {CashierModel, CashierDocument} from '../models/Cashier.model';
 import {phoneVariants} from '../utils/phone';
-import {onlineSinceFilter} from '../utils/presence';
+import {onlineSinceFilter, PRESENCE_TOUCH_MS} from '../utils/presence';
 
 export const cashierRepository = {
   findByEmail: (email: string) =>
@@ -51,6 +51,23 @@ export const cashierRepository = {
     if (!mongoose.isValidObjectId(id)) return false;
     const cashier = await CashierModel.findById(id, {isDisabled: 1}).lean().exec();
     return !!cashier && !cashier.isDisabled;
+  },
+
+  /**
+   * isActive for a cashier's own request, which also counts as presence: the
+   * web cashier and the POS app already poll every 20-30s, so no separate
+   * heartbeat request is needed. lastSeenAt is written at most once per
+   * PRESENCE_TOUCH_MS, so most requests cost the single read.
+   */
+  checkActiveAndTouch: async (id: string) => {
+    if (!mongoose.isValidObjectId(id)) return false;
+    const cashier = await CashierModel.findById(id, {isDisabled: 1, lastSeenAt: 1}).lean().exec();
+    if (!cashier || cashier.isDisabled) return false;
+    const last = cashier.lastSeenAt ? new Date(cashier.lastSeenAt).getTime() : 0;
+    if (Date.now() - last >= PRESENCE_TOUCH_MS) {
+      await CashierModel.updateOne({_id: id}, {$set: {lastSeenAt: new Date()}}, {timestamps: false}).exec();
+    }
+    return true;
   },
 
   /** Ids of cashiers whose last heartbeat is inside the presence timeout. */

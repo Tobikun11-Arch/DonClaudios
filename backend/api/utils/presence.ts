@@ -1,10 +1,15 @@
 /**
- * Cashier Online/Offline. The cashier apps (Expo POS and web cashier) call
- * POST /api/auth/heartbeat on sign-in, on app open and every minute while
- * open; sign-out clears it. A cashier is online while the last beat is
- * newer than PRESENCE_TIMEOUT_MS, so a killed app goes offline on its own.
+ * Cashier Online/Offline. Any request a signed-in cashier makes updates
+ * lastSeenAt (at most once per PRESENCE_TOUCH_MS, see requireAuth). The web
+ * cashier and the POS app already poll every 20-30s while open, so no extra
+ * heartbeat traffic is needed. Sign-in sets it, sign-out clears it. A
+ * cashier is online while lastSeenAt is newer than PRESENCE_TIMEOUT_MS, so a
+ * closed or killed app goes offline on its own.
  */
 export const PRESENCE_TIMEOUT_MS = 3 * 60 * 1000;
+
+/** How often a cashier's requests may rewrite lastSeenAt (well under the timeout). */
+export const PRESENCE_TOUCH_MS = 60 * 1000;
 
 export function isOnline(lastSeenAt?: Date | string | null, now = Date.now()): boolean {
   if (!lastSeenAt) return false;
